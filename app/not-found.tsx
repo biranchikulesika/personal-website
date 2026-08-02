@@ -6,7 +6,7 @@ import { DesktopNav, MobileNav } from '@/components/nav-links';
 export const metadata: Metadata = {
   robots: {
     index: false,
-    follow: false,
+    follow: true,
   },
 };
 import { PersonaSearch } from '@/components/persona-search';

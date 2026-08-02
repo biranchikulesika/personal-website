@@ -46,9 +46,7 @@ export async function generateMetadata({
   const post = await getCachedPost(resolvedParams.slug);
 
   if (!post || (!isPreview && (post.status === 'draft' || (post.status && post.status.toLowerCase() === 'draft') || post.hidden === true))) {
-    return {
-      title: 'Post Not Found',
-    };
+    notFound();
   }
 
   // Generate OG image: use cover image if available, otherwise use dynamic OG generator
@@ -61,6 +59,11 @@ export async function generateMetadata({
     title: `${post.title} | Biranchi Kulesika`,
     description: post.excerpt || post.title,
     authors: [{ name: AUTHOR.name, url: AUTHOR.url }],
+    // Preview URLs (?preview=true) render draft/unpublished content and must
+    // never appear in search results — noindex them while keeping canonical.
+    robots: isPreview
+      ? { index: false, follow: true }
+      : { index: true, follow: true },
     openGraph: {
       title: post.title,
       description: post.excerpt || post.title,
@@ -109,11 +112,13 @@ export default async function Page({
     getCachedPostsMeta(),
   ]);
 
-  // For a missing post, or draft/hidden (unless preview), pass undefined
-  let finalPost = post;
+  // For a missing post, or draft/hidden (unless preview), render a real 404 —
+  // not a soft-404 page that returns HTTP 200.
   if (!post || (!isPreview && (post.status === 'draft' || (post.status && post.status.toLowerCase() === 'draft') || post.hidden === true))) {
-    finalPost = undefined;
+    notFound();
   }
+
+  const finalPost = post;
 
   // Compile MDX content for rich rendering with JSX components
   // (<Image>, <Callout>, <YouTube>, etc.). If compilation fails (e.g. the
