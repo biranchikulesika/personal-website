@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   title: "Reading | Inside The Head",
   description: "Books that have shaped the way I think.",
   alternates: {
-    canonical: getCanonicalUrl('/thinker/reading'),
+    canonical: getCanonicalUrl('/thinker/reading', 'thinker'),
   },
   robots: {
     index: true,
