@@ -417,7 +417,8 @@ export default function MDXEditor({
             <div
               key={tab.id}
               onClick={() => onTabSelect?.(tab.id)}
-              className={`flex items-center h-full px-3 cursor-pointer min-w-[140px] max-w-[210px] group transition-colors border-r border-[#111111] ${isSelected ? 'bg-[#1e1e1e] text-[#cccccc]' : 'bg-[#2d2d2d] text-[#888888] hover:bg-[#2a2d2e]'}`}
+              title={tab.title || 'untitled.mdx'}
+              className={`flex items-center h-full px-3 cursor-pointer min-w-[140px] max-w-[260px] group transition-colors border-r border-[#111111] ${isSelected ? 'bg-[#1e1e1e] text-[#cccccc]' : 'bg-[#2d2d2d] text-[#888888] hover:bg-[#2a2d2e]'}`}
             >
               <Type className={`w-3.5 h-3.5 mr-2 shrink-0 ${isSelected ? 'text-[#519aba]' : 'text-[#888888]'}`} />
               <span className="text-[13px] font-sans truncate select-none flex-1">
@@ -517,17 +518,27 @@ export default function MDXEditor({
           <UploadProgress uploads={uploads} onRetry={retryUpload} onDismiss={dismissUpload} onClearCompleted={clearCompleted} />
 
           {/* VS Code Breadcrumbs */}
-          <div className="flex items-center h-[26px] bg-[#1e1e1e] px-4 text-[#cccccc] shrink-0 text-[12px] font-sans shadow-[0_1px_2px_rgba(0,0,0,0.2)] z-10 relative">
-            <span className="opacity-60 font-mono">{persona}</span>
-            <span className="mx-2 opacity-40">›</span>
-            <input type="text" value={title} onChange={(e) => onTitleChange(e.target.value)} placeholder="Post Title" className="bg-transparent border-none outline-none text-[#cccccc] placeholder-[#666] focus:ring-0 w-32 lg:w-48 shrink-0 py-0"
+          <div className="flex items-center min-h-[32px] bg-[#1e1e1e] px-4 text-[#cccccc] shrink-0 text-[13px] font-sans shadow-[0_1px_2px_rgba(0,0,0,0.2)] z-10 relative">
+            <span className="opacity-60 font-mono shrink-0">{persona}</span>
+            <span className="mx-2 opacity-40 shrink-0">›</span>
+            <input
+              type="text"
+              value={title}
+              onChange={(e) => onTitleChange(e.target.value)}
+              placeholder="Post Title"
+              className="flex-1 min-w-0 w-full bg-transparent border-none outline-none text-[#e6e6e6] font-medium placeholder-[#666] focus:ring-0 focus:text-white py-1 text-[13px]"
               onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); editorRef.current?.focus(); } }}
             />
           </div>
 
           {/* Subtitle Row */}
-          <div className="flex items-center h-[28px] bg-[#1a1a1a] px-4 text-[#cccccc] shrink-0 border-b border-[#222]">
-            <input type="text" value={subtitle} onChange={(e) => onSubtitleChange(e.target.value)} placeholder="Subtitle" className="w-full bg-transparent border-none outline-none text-[#999] placeholder-[#555] focus:ring-0 py-0 text-[12px] italic"
+          <div className="flex items-center min-h-[30px] bg-[#1a1a1a] px-4 text-[#cccccc] shrink-0 border-b border-[#222]">
+            <input
+              type="text"
+              value={subtitle}
+              onChange={(e) => onSubtitleChange(e.target.value)}
+              placeholder="Subtitle (optional)"
+              className="flex-1 min-w-0 w-full bg-transparent border-none outline-none text-[#a0a0a0] placeholder-[#555] focus:ring-0 focus:text-neutral-200 py-1 text-[12px] italic"
               onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); editorRef.current?.focus(); } }}
             />
           </div>
