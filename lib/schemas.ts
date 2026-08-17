@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-export const postSchema = z.object({
+export const postBaseSchema = z.object({
   id: z.string().optional(),
   persona: z.string(),
   title: z.string(),
@@ -15,17 +15,21 @@ export const postSchema = z.object({
   coverImageCaption: z.string().optional(),
   coverImageLocation: z.string().optional(),
   coverImageCredit: z.string().optional(),
-  autoCoverImage: z.boolean(),
+  autoCoverImage: z.boolean().optional(),
   content: z.string().optional(),
   draftContent: z.string().optional(),
-  tags: z.array(z.string()),
+  tags: z.array(z.string()).optional(),
   readingTime: z.number().optional(),
   publishedAt: z.string().nullable().optional(),
-  featured: z.boolean(),
-  hidden: z.boolean(),
+  featured: z.boolean().optional(),
+  hidden: z.boolean().optional(),
   createdAt: z.string().optional(),
   updatedAt: z.string().optional(),
-}).superRefine((data, ctx) => {
+});
+
+export const updatePostSchema = postBaseSchema.partial();
+
+export const postSchema = postBaseSchema.superRefine((data, ctx) => {
   if (data.status === 'published') {
     if (!data.title || data.title.trim() === '') {
       ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Title is required for published posts", path: ["title"] });

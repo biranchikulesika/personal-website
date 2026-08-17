@@ -1,7 +1,7 @@
 'use server';
 import { verifyAuth } from '@/lib/auth/verify';
 import { PostService } from '@/lib/services/post.service';
-import { postSchema } from '@/lib/schemas';
+import { postSchema, updatePostSchema } from '@/lib/schemas';
 import { revalidatePath } from 'next/cache';
 
 const postService = new PostService();
@@ -90,7 +90,7 @@ export async function createPost(data: any): Promise<ActionResponse<any>> {
 export async function updatePost(id: string, data: any): Promise<ActionResponse<any>> {
   try {
     await verifyAuth();
-    const validData = postSchema.partial().parse(data);
+    const validData = updatePostSchema.parse(data);
     const result = await postService.update(id, validData as any);
     
     // Revalidate ISR caches
