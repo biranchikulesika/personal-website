@@ -7,8 +7,9 @@ export class ThoughtFragmentSupabaseRepository implements IRepository<ThoughtFra
     const dbObj: any = {};
     if (data.content !== undefined || data.text !== undefined) dbObj.content = data.content || data.text;
     if (data.title !== undefined) dbObj.title = data.title;
-    if (data.hidden !== undefined) dbObj.hidden = data.hidden;
-    if (data.publishedAt !== undefined) dbObj.published_at = data.publishedAt;
+    if (data.publishedAt !== undefined) {
+      dbObj.published_at = (typeof data.publishedAt === 'string' && data.publishedAt.trim() !== '') ? data.publishedAt.trim() : null;
+    }
     return dbObj;
   }
 

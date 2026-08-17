@@ -10,14 +10,12 @@ export type ActionResponse<T> = { success: true; data: T } | { success: false; e
 
 function handleError(error: any): { success: false; error: string } {
   console.error("Action error:", error);
-  let message = 'An unexpected error occurred. Please try again.';
+  let message = error?.message || 'An unexpected error occurred. Please try again.';
   if (error?.message) {
     if (error.message.includes('23505') || error.message.includes('duplicate key')) {
-      message = 'A record with this identifier already exists.';
+      message = 'A record with this identifier or slug already exists.';
     } else if (error.message.includes('Failed to fetch') || error.message.includes('timeout')) {
       message = 'Database connection error. Please try again.';
-    } else if (error.message.includes('PGRST') || error.message.includes('Supabase Error') || error.message.includes('Database Error')) {
-      message = 'Database operation failed.';
     }
   }
   return { success: false, error: message };
