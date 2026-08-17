@@ -3,7 +3,7 @@ import Image from 'next/image';
 import { Send, X, RefreshCw, Loader2, Sparkles, Globe, Share2, RotateCcw, ChevronDown, ChevronUp, Check, AlertCircle } from 'lucide-react';
 import { uploadImage } from '@/lib/supabase/storage';
 import { useFocusTrap } from '@/hooks/use-focus-trap';
-import { optimizePostMetadataAction } from '@/app/admin/actions/posts.actions';
+import { optimizePostMetadataAction, checkSlugExists } from '@/app/admin/actions/posts.actions';
 import type { CompletePostMetadata } from '@/lib/ai/post-metadata';
 
 interface PublishDrawerProps {
@@ -65,6 +65,8 @@ export default function PublishDrawer({
   const [isGeneratingAI, setIsGeneratingAI] = useState(false);
   const [previewTab, setPreviewTab] = useState<'search' | 'social'>('search');
   const [showAdvancedSeo, setShowAdvancedSeo] = useState(false);
+  const [isPersonaOpen, setIsPersonaOpen] = useState(false);
+  const personaDropdownRef = React.useRef<HTMLDivElement>(null);
 
   const manualOverrides: string[] = useMemo(
     () => (Array.isArray(formData.manualOverrides) ? formData.manualOverrides : []),
@@ -92,9 +94,32 @@ export default function PublishDrawer({
     await handleGenerateAI(true, nextOverrides);
   };
 
-  const handleGenerateAI = useCallback(async (force = false, currentOverrides?: string[]) => {
+  /** Returns the first slug from `candidates` that isn't already used; if all
+   *  are taken, appends -1, -2, -3... to the first candidate until one is free. */
+  const pickAvailableSlug = useCallback(async (candidates: string[]): Promise<string> => {
+    const persona = formData.persona || 'builder';
+    for (const candidate of candidates) {
+      if (!candidate) continue;
+      const res = await checkSlugExists(candidate, currentPostId, persona);
+      if (res.success && !res.data) return candidate;
+    }
+    const base = candidates[0] || 'untitled';
+    let counter = 1;
+    while (counter < 100) {
+      const candidate = `${base}-${counter}`;
+      const res = await checkSlugExists(candidate, currentPostId, persona);
+      if (res.success && !res.data) return candidate;
+      counter++;
+    }
+    return `${base}-${Date.now()}`;
+  }, [currentPostId, formData.persona]);
+
+  const handleGenerateAI = useCallback(async (force = false, currentOverrides?: string[], onlyField?: 'excerpt' | 'tags' | 'slug') => {
     if (isGeneratingAI) return;
     if (formData.autoOptimize === false && !force) return;
+    // While the user is editing the excerpt, don't auto-regenerate/overwrite it
+    // (an explicit per-field Generate is allowed).
+    if (isEditingExcerpt && !force && onlyField !== 'excerpt') return;
 
     setIsGeneratingAI(true);
     try {
@@ -125,25 +150,36 @@ export default function PublishDrawer({
 
       if (res.success && res.data) {
         const data: CompletePostMetadata = res.data;
+        const overrideSet = new Set(overridesToUse);
+
+        // Resolve the slug BEFORE the state update since availability is async.
+        const shouldAutoSetSlug = onlyField === 'slug' ||
+          (!overrideSet.has('slug') && (!formData.slug || formData.slug.trim() === '' || formData.slug === 'untitled-post'));
+        const resolvedSlug = shouldAutoSetSlug
+          ? await pickAvailableSlug(data.slugCandidates?.length ? data.slugCandidates : [data.suggestedSlug])
+          : null;
+
         setFormData((prev: any) => {
           const updated = { ...prev };
-          const overrideSet = new Set(overridesToUse);
+          const apply = (field: string) => !onlyField || onlyField === field;
 
-          if (!overrideSet.has('excerpt')) updated.excerpt = data.excerpt;
-          if (!overrideSet.has('seoTitle')) updated.seoTitle = data.seoTitle;
-          if (!overrideSet.has('seoDescription')) updated.seoDescription = data.seoDescription;
-          if (!overrideSet.has('ogTitle')) updated.ogTitle = data.ogTitle;
-          if (!overrideSet.has('ogDescription')) updated.ogDescription = data.ogDescription;
-          if (!overrideSet.has('twitterTitle')) updated.twitterTitle = data.twitterTitle;
-          if (!overrideSet.has('twitterDescription')) updated.twitterDescription = data.twitterDescription;
-          if (!overrideSet.has('keywords')) updated.keywords = data.keywords;
-          if (!overrideSet.has('coverImageAlt') && data.coverImageAlt) updated.coverImageAlt = data.coverImageAlt;
-          if (!overrideSet.has('tags')) {
+          if (apply('excerpt') && !overrideSet.has('excerpt') && (onlyField === 'excerpt' || !isEditingExcerpt)) {
+            updated.excerpt = data.excerpt;
+          }
+          if (apply('seoTitle') && !overrideSet.has('seoTitle')) updated.seoTitle = data.seoTitle;
+          if (apply('seoDescription') && !overrideSet.has('seoDescription')) updated.seoDescription = data.seoDescription;
+          if (apply('ogTitle') && !overrideSet.has('ogTitle')) updated.ogTitle = data.ogTitle;
+          if (apply('ogDescription') && !overrideSet.has('ogDescription')) updated.ogDescription = data.ogDescription;
+          if (apply('twitterTitle') && !overrideSet.has('twitterTitle')) updated.twitterTitle = data.twitterTitle;
+          if (apply('twitterDescription') && !overrideSet.has('twitterDescription')) updated.twitterDescription = data.twitterDescription;
+          if (apply('keywords') && !overrideSet.has('keywords')) updated.keywords = data.keywords;
+          if (apply('coverImageAlt') && !overrideSet.has('coverImageAlt') && data.coverImageAlt) updated.coverImageAlt = data.coverImageAlt;
+          if (apply('tags') && !overrideSet.has('tags')) {
             updated.tags = data.tags;
             setPasteTagsText(data.tags.join(', '));
           }
-          if (!overrideSet.has('slug') && (!prev.slug || prev.slug.trim() === '' || prev.slug === 'untitled-post')) {
-            updated.slug = data.suggestedSlug;
+          if (shouldAutoSetSlug && resolvedSlug) {
+            updated.slug = resolvedSlug;
           }
 
           updated.aiMetadataStatus = 'completed';
@@ -169,15 +205,34 @@ export default function PublishDrawer({
     formData.excerpt, formData.slug, formData.ogTitle, formData.ogDescription,
     formData.twitterTitle, formData.twitterDescription, formData.tags,
     formData.keywords, formData.coverImageAlt, richTextContent, manualOverrides,
-    currentPostId, isGeneratingAI, setFormData, setPasteTagsText
+    currentPostId, isGeneratingAI, isEditingExcerpt, setFormData, setPasteTagsText,
+    pickAvailableSlug
   ]);
 
-  // Automatically trigger AI optimization on open if ungenerated or empty
+  // Automatically trigger AI optimization on open if ungenerated or empty.
+  // Skipped while the user is editing the excerpt to avoid regenerating
+  // (and flashing) the field mid-edit.
   useEffect(() => {
-    if (isOpen && formData.autoOptimize !== false && (!formData.seoTitle || !formData.excerpt || !pasteTagsText) && (richTextContent?.trim() || formData.title?.trim())) {
+    if (isOpen && !isEditingExcerpt && formData.autoOptimize !== false && (!formData.seoTitle || !formData.excerpt || !pasteTagsText) && (richTextContent?.trim() || formData.title?.trim())) {
       handleGenerateAI(false);
     }
-  }, [isOpen, formData.autoOptimize, formData.seoTitle, formData.excerpt, pasteTagsText, richTextContent, formData.title, handleGenerateAI]);
+  }, [isOpen, isEditingExcerpt, formData.autoOptimize, formData.seoTitle, formData.excerpt, pasteTagsText, richTextContent, formData.title, handleGenerateAI]);
+
+  // Close the persona dropdown when the drawer closes or on outside click
+  useEffect(() => {
+    if (!isOpen) setIsPersonaOpen(false);
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (!isPersonaOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (personaDropdownRef.current && !personaDropdownRef.current.contains(e.target as Node)) {
+        setIsPersonaOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isPersonaOpen]);
 
   // Focus trap
   const { containerRef: drawerRef } = useFocusTrap<HTMLDivElement>({
@@ -249,28 +304,15 @@ export default function PublishDrawer({
                         </span>
                       )}
                     </div>
-                    <p className="text-[10px] text-neutral-400 mt-0.5">
-                      {formData.autoOptimize !== false 
-                        ? 'Analyzes content in background to generate SEO title, description, social cards & tags.'
-                        : 'Automatic generation stopped for this post. Manually entered metadata is preserved.'}
-                    </p>
+                    {formData.autoOptimize === false && (
+                      <p className="text-[10px] text-neutral-400 mt-0.5">
+                        Automatic generation stopped for this post. Manually entered metadata is preserved.
+                      </p>
+                    )}
                   </div>
                 </div>
 
                 <div className="flex items-center gap-2">
-                  {formData.autoOptimize !== false && (
-                    <button
-                      type="button"
-                      onClick={() => handleGenerateAI(true)}
-                      disabled={isGeneratingAI}
-                      className="text-[10px] text-[#ff7700] hover:text-[#ff9933] font-mono uppercase px-2 py-1 bg-neutral-900 border border-[#333] hover:border-[#ff7700] rounded flex items-center gap-1 disabled:opacity-50 transition-colors"
-                      title="Re-run background optimization"
-                    >
-                      <RotateCcw className={`w-3 h-3 ${isGeneratingAI ? 'animate-spin' : ''}`} />
-                      {isGeneratingAI ? 'Optimizing...' : 'Regenerate'}
-                    </button>
-                  )}
-
                   <button
                     type="button"
                     onClick={() => {
@@ -368,29 +410,54 @@ export default function PublishDrawer({
             </div>
             
             {/* Persona Channel Selector */}
-            <div>
+            <div className="relative" ref={personaDropdownRef}>
               <label className="block text-[10px] uppercase font-mono tracking-widest font-semibold text-neutral-500 mb-1.5">Compose persona channel</label>
-              <div className="grid grid-cols-2 gap-2">
-                {(['builder', 'operator', 'thinker', 'wanderer'] as const).map((persona) => {
-                  const info = personaInfoMap[persona];
-                  const isSelected = formData.persona === persona;
-                  return (
-                    <button
-                      key={persona}
-                      type="button"
-                      onClick={() => setFormData((prev: any) => ({ ...prev, persona }))}
-                      className={`flex flex-col items-start p-3 border rounded text-left transition-all ${
-                        isSelected 
-                          ? `border-[#ff7700] bg-[#1a1a1a] ${info.color}` 
-                          : 'border-[#222] bg-[#0d0d0d] text-neutral-400 hover:border-[#444]'
-                      }`}
-                    >
-                      <span className="text-xs font-bold uppercase tracking-wider">{info.label}</span>
-                      <span className="text-[9px] opacity-70 mt-1 uppercase font-mono tracking-widest">{info.system}</span>
-                    </button>
-                  );
-                })}
-              </div>
+              <button
+                type="button"
+                onClick={() => setIsPersonaOpen(open => !open)}
+                className="w-full flex items-center justify-between gap-2 px-3 py-2 rounded border border-[#333] bg-[#0d0d0d] hover:border-[#444] text-left transition-all"
+              >
+                <span className="flex items-center gap-2.5 min-w-0">
+                  <span className={`w-2 h-2 rounded-full shrink-0 ${personaInfoMap[formData.persona]?.color || 'bg-neutral-500'}`} />
+                  <span className="text-xs font-bold uppercase tracking-wider text-neutral-200 truncate">
+                    {personaInfoMap[formData.persona]?.label || 'Select channel'}
+                  </span>
+                </span>
+                <ChevronDown className={`w-4 h-4 text-neutral-500 shrink-0 transition-transform ${isPersonaOpen ? 'rotate-180' : ''}`} />
+              </button>
+
+              {isPersonaOpen && (
+                <div className="absolute z-20 mt-1 w-full rounded border border-[#333] bg-[#111] shadow-xl overflow-hidden">
+                  {(['builder', 'operator', 'thinker', 'wanderer'] as const).map((persona) => {
+                    const info = personaInfoMap[persona];
+                    const isSelected = formData.persona === persona;
+                    return (
+                      <button
+                        key={persona}
+                        type="button"
+                        onClick={() => {
+                          setFormData((prev: any) => ({ ...prev, persona }));
+                          setIsPersonaOpen(false);
+                        }}
+                        className={`w-full flex items-center justify-between gap-2 px-3 py-2 text-left transition-all ${
+                          isSelected ? 'bg-[#1a1a1a]' : 'hover:bg-[#1a1a1a]/60'
+                        }`}
+                      >
+                        <span className="flex items-center gap-2.5 min-w-0">
+                          <span className={`w-2 h-2 rounded-full shrink-0 ${info.color}`} />
+                          <span className={`text-xs font-bold uppercase tracking-wider truncate ${isSelected ? 'text-neutral-200' : 'text-neutral-400'}`}>
+                            {info.label}
+                          </span>
+                          <span className="text-[9px] opacity-70 uppercase font-mono tracking-widest text-neutral-500 hidden sm:inline">
+                            {info.system}
+                          </span>
+                        </span>
+                        {isSelected && <Check className="w-3.5 h-3.5 text-[#ff7700] shrink-0" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </div>
 
             {/* Summary / Excerpt */}
@@ -409,11 +476,21 @@ export default function PublishDrawer({
                   )}
                 </div>
                 <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleGenerateAI(true, manualOverrides.filter(f => f !== 'excerpt'), 'excerpt')}
+                    disabled={isGeneratingAI}
+                    className="text-[9px] text-[#ff7700] hover:text-[#ff9933] font-mono uppercase flex items-center gap-1 disabled:opacity-50"
+                    title="Generate a new summary from the article content"
+                  >
+                    <RotateCcw className={`w-2.5 h-2.5 ${isGeneratingAI ? 'animate-spin' : ''}`} />
+                    {isGeneratingAI ? 'Generating...' : 'Generate'}
+                  </button>
                   {manualOverrides.includes('excerpt') && (
                     <button 
                       type="button"
                       onClick={() => resetFieldToAI('excerpt')}
-                      className="text-[9px] text-[#ff7700] hover:text-[#ff9933] font-mono uppercase flex items-center gap-1"
+                      className="text-[9px] text-neutral-400 hover:text-[#ff9933] font-mono uppercase flex items-center gap-1"
                     >
                       [Reset to AI]
                     </button>
@@ -466,15 +543,27 @@ export default function PublishDrawer({
                     </span>
                   )}
                 </div>
-                {manualOverrides.includes('tags') && (
-                  <button 
+                <div className="flex items-center gap-2">
+                  <button
                     type="button"
-                    onClick={() => resetFieldToAI('tags')}
-                    className="text-[9px] text-[#ff7700] hover:text-[#ff9933] font-mono uppercase flex items-center gap-1"
+                    onClick={() => handleGenerateAI(true, manualOverrides.filter(f => f !== 'tags'), 'tags')}
+                    disabled={isGeneratingAI}
+                    className="text-[9px] text-[#ff7700] hover:text-[#ff9933] font-mono uppercase flex items-center gap-1 disabled:opacity-50"
+                    title="Generate tags from the article content"
                   >
-                    [Reset to AI]
+                    <RotateCcw className={`w-2.5 h-2.5 ${isGeneratingAI ? 'animate-spin' : ''}`} />
+                    {isGeneratingAI ? 'Generating...' : 'Generate'}
                   </button>
-                )}
+                  {manualOverrides.includes('tags') && (
+                    <button 
+                      type="button"
+                      onClick={() => resetFieldToAI('tags')}
+                      className="text-[9px] text-neutral-400 hover:text-[#ff9933] font-mono uppercase flex items-center gap-1"
+                    >
+                      [Reset to AI]
+                    </button>
+                  )}
+                </div>
               </div>
               <input 
                 type="text" 
@@ -535,17 +624,29 @@ export default function PublishDrawer({
                     </div>
                   </div>
                 ) : (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setCustomUrlVal(formData.slug || '');
-                      setIsCustomizingUrl(true);
-                      setUrlValidationError(null);
-                    }}
-                    className="self-start text-[10px] text-[#ff7700] hover:text-[#ff881a] font-mono block hover:underline transition-all mt-1 font-semibold"
-                  >
-                    [ Customize ]
-                  </button>
+                  <div className="flex items-center gap-3 mt-1">
+                    <button
+                      type="button"
+                      onClick={() => handleGenerateAI(true, manualOverrides.filter(f => f !== 'slug'), 'slug')}
+                      disabled={isGeneratingAI}
+                      className="text-[10px] text-[#ff7700] hover:text-[#ff881a] font-mono flex items-center gap-1 hover:underline transition-all font-semibold disabled:opacity-50"
+                      title="Generate slug candidates from the article and pick the first available one"
+                    >
+                      <RotateCcw className={`w-2.5 h-2.5 ${isGeneratingAI ? 'animate-spin' : ''}`} />
+                      {isGeneratingAI ? 'Generating...' : '[ Generate ]'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCustomUrlVal(formData.slug || '');
+                        setIsCustomizingUrl(true);
+                        setUrlValidationError(null);
+                      }}
+                      className="text-[10px] text-neutral-400 hover:text-neutral-200 font-mono hover:underline transition-all font-semibold"
+                    >
+                      [ Customize ]
+                    </button>
+                  </div>
                 )}
               </div>
             </div>
