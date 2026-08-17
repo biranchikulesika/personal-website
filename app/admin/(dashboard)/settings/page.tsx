@@ -242,7 +242,7 @@ export default function SettingsPage() {
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10">
         <div>
           <h1 className="text-3xl font-medium tracking-tight text-neutral-100 mb-2">System Settings</h1>
-          <p className="text-neutral-500 text-sm">Manage workspace configuration, identity providers, and authentication methods.</p>
+          <p className="text-neutral-500 text-sm">Manage authentication methods, passkeys, and linked identity providers.</p>
         </div>
       </div>
 
@@ -268,18 +268,6 @@ export default function SettingsPage() {
           </button>
         </div>
       )}
-
-      {/* Workspace Configuration */}
-      <div className="max-w-2xl bg-[#111111] p-6 rounded-lg border border-[#1a1a1a] space-y-6 mb-8">
-        <div>
-          <label className="block text-xs uppercase tracking-widest text-neutral-500 font-mono mb-2">Workspace Name</label>
-          <input
-            type="text"
-            className="w-full bg-[#161616] border border-[#222] rounded-md px-4 py-2.5 text-sm text-neutral-200 outline-none focus:border-neutral-500 transition-colors"
-            defaultValue="Biranchi Operator Workspace"
-          />
-        </div>
-      </div>
 
       {/* Security & Authentication */}
       <div className="max-w-2xl bg-[#111111] p-6 rounded-lg border border-[#1a1a1a] space-y-8">
