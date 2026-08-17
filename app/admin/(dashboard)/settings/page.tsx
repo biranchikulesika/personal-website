@@ -292,8 +292,8 @@ export default function SettingsPage() {
           {/* Passkeys Section */}
           <div className="border border-[#222] rounded-lg overflow-hidden bg-[#141414]">
             <div className="p-4 sm:p-5 border-b border-[#222] bg-[#161616] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div className="flex items-start gap-3">
-                <div className="p-2.5 bg-neutral-800/80 rounded-lg text-neutral-300 shrink-0 mt-0.5">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-neutral-800/80 rounded-lg text-neutral-300 shrink-0">
                   <Fingerprint className="w-5 h-5 text-[#ff7700]" />
                 </div>
                 <div>
@@ -303,9 +303,6 @@ export default function SettingsPage() {
                       Standard
                     </span>
                   </div>
-                  <p className="text-xs text-neutral-400 mt-1 max-w-md leading-relaxed">
-                    Sign in securely using your device, fingerprint, face recognition, PIN, or hardware security key. Biometric data never leaves your device.
-                  </p>
                 </div>
               </div>
 
