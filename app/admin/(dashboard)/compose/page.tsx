@@ -687,11 +687,11 @@ function ComposePageContent() {
         const res = await compileMDXAction(richTextContent);
         if (res.source) {
           setCompiledMdx(res.source);
-        } else {
-          console.error(res.error);
+        } else if (res.error) {
+          console.warn('Live preview MDX compilation:', res.error);
         }
       } catch (e) {
-        console.error(e);
+        console.warn('Live preview compilation exception:', e);
       } finally {
         setIsCompilingPreview(false);
       }
