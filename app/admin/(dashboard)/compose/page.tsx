@@ -996,6 +996,14 @@ function ComposePageContent() {
                           <>
                             <button
                               type="button"
+                              onClick={() => setActiveTab('preview')}
+                              className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-sans text-neutral-300 hover:text-white hover:bg-[#333] transition-colors border border-transparent hover:border-[#444]"
+                              title="Open Preview"
+                            >
+                              <Eye className="w-3.5 h-3.5" strokeWidth={1.5} /> Preview
+                            </button>
+                            <button
+                              type="button"
                               onClick={() => manualSaveTab(activeTabId)}
                               disabled={saveStatus === 'Saving...'}
                               className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-[11px] font-sans transition-colors border ${
@@ -1021,14 +1029,6 @@ function ComposePageContent() {
                                   <span>Saved</span>
                                 </>
                               )}
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setActiveTab('preview')}
-                              className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-sans text-neutral-300 hover:text-white hover:bg-[#333] transition-colors border border-transparent hover:border-[#444]"
-                              title="Open Preview"
-                            >
-                              <Eye className="w-3.5 h-3.5" strokeWidth={1.5} /> Preview
                             </button>
                             <button
                               onClick={() => setIsPublishModalOpen(true)}
