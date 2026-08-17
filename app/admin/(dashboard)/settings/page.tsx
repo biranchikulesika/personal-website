@@ -284,10 +284,7 @@ export default function SettingsPage() {
       {/* Security & Authentication */}
       <div className="max-w-2xl bg-[#111111] p-6 rounded-lg border border-[#1a1a1a] space-y-8">
         <div>
-          <h2 className="text-xl font-medium text-neutral-200 mb-1">Security & Passkeys</h2>
-          <p className="text-sm text-neutral-500 mb-6">
-            Configure WebAuthn passkeys and external identity providers for secure authentication.
-          </p>
+          <h2 className="text-xl font-medium text-neutral-200 mb-6">Security & Passkeys</h2>
 
           {/* Passkeys Section */}
           <div className="border border-[#222] rounded-lg overflow-hidden bg-[#141414]">
@@ -297,12 +294,7 @@ export default function SettingsPage() {
                   <Fingerprint className="w-5 h-5 text-[#ff7700]" />
                 </div>
                 <div>
-                  <div className="flex items-center gap-2">
-                    <p className="text-sm font-medium text-neutral-100">Passkeys (FIDO2 / WebAuthn)</p>
-                    <span className="px-2 py-0.5 text-[10px] font-mono uppercase tracking-wider rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                      Standard
-                    </span>
-                  </div>
+                  <p className="text-sm font-medium text-neutral-100">Passkeys (FIDO2 / WebAuthn)</p>
                 </div>
               </div>
 
