@@ -4,7 +4,8 @@ import { useState, useEffect, useRef, Suspense, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Plus, X, Image as ImageIcon, GripVertical, Check,
-  Trash2, Undo, Redo, Eye, CloudUpload, ChevronUp, ChevronRight
+  Trash2, Undo, Redo, Eye, CloudUpload, ChevronUp, ChevronRight,
+  RefreshCw, AlertCircle
 } from 'lucide-react';
 import { getPosts, createPost, updatePost, checkSlugExists } from '@/app/admin/actions/posts.actions';
 import PostRenderer from '@/components/post-renderer/PostRenderer';
@@ -201,42 +202,361 @@ function ComposePageContent() {
   const wasPublished = activeTabData.wasPublished;
   const initialSlug = activeTabData.initialSlug;
 
-  // Setters bridging the gap for the active tab
-  const updateActiveTab = useCallback((updater: (prev: TabData) => TabData) => {
-    setTabs(prev => prev.map(t => t.id === activeTabId ? updater(t) : t));
+  // Refs for concurrency, debouncing, and stale-closure prevention
+  const tabsRef = useRef<TabData[]>(tabs);
+  useEffect(() => {
+    tabsRef.current = tabs;
+  }, [tabs]);
+
+  const activeTabIdRef = useRef<string>(activeTabId);
+  useEffect(() => {
+    activeTabIdRef.current = activeTabId;
   }, [activeTabId]);
 
+  const lastSavedFingerprintRef = useRef<Record<string, string>>({});
+  const pendingTimersRef = useRef<Record<string, NodeJS.Timeout>>({});
+  const inFlightRef = useRef<Record<string, boolean>>({});
+  const queuedSaveRef = useRef<Record<string, boolean>>({});
+
+  const getTabFingerprint = useCallback((tab: TabData): string => {
+    const splitTags = tab.pasteTagsText.split(',').map((t: string) => t.trim()).filter(Boolean);
+    return JSON.stringify({
+      title: (tab.formData.title || '').trim(),
+      subtitle: (tab.formData.subtitle || '').trim(),
+      persona: tab.formData.persona || '',
+      coverImageUrl: tab.formData.coverImageUrl || '',
+      autoCoverImage: tab.formData.autoCoverImage,
+      excerpt: (tab.formData.excerpt || '').trim(),
+      draftContent: tab.richTextContent || '',
+      tags: splitTags,
+      slug: tab.formData.slug || '',
+    });
+  }, []);
+
+  const saveTab = useCallback(async (tabId: string, options?: { force?: boolean }) => {
+    const tab = tabsRef.current.find(t => t.id === tabId);
+    if (!tab) return;
+
+    const currentFingerprint = getTabFingerprint(tab);
+
+    // If not forced, check if there's any real delta to save
+    if (!options?.force) {
+      if (!tab.dbId) {
+        const hasTitle = (tab.formData.title || '').trim().length > 0;
+        const hasContent = (tab.richTextContent || '').trim().length > 0;
+        const hasExcerpt = (tab.formData.excerpt || '').trim().length > 0;
+        if (!hasTitle && !hasContent && !hasExcerpt) {
+          if (tab.saveStatus !== 'Saved') {
+            setTabs(prev => prev.map(t => t.id === tabId ? { ...t, saveStatus: 'Saved', isDirty: false } : t));
+          }
+          return;
+        }
+      }
+
+      if (lastSavedFingerprintRef.current[tabId] === currentFingerprint) {
+        if (tab.saveStatus !== 'Saved' && tab.saveStatus !== 'Saved as draft') {
+          setTabs(prev => prev.map(t => t.id === tabId ? { ...t, saveStatus: 'Saved as draft', isDirty: false } : t));
+        }
+        return;
+      }
+    }
+
+    // Concurrency guard: if save is already in-flight for this tab, queue follow-up save
+    if (inFlightRef.current[tabId]) {
+      queuedSaveRef.current[tabId] = true;
+      return;
+    }
+
+    inFlightRef.current[tabId] = true;
+
+    // Update status to 'Saving...'
+    setTabs(prev => prev.map(t => t.id === tabId ? { ...t, saveStatus: 'Saving...' } : t));
+
+    try {
+      const fd = tab.formData;
+      const rtc = tab.richTextContent;
+      const ptt = tab.pasteTagsText;
+      const cpi = tab.dbId;
+      const wp = tab.wasPublished;
+
+      let coverUrl = fd.coverImageUrl || '';
+      if (fd.autoCoverImage) {
+        const imageMatch = rtc.match(/<Image[^>]*?path\s*=\s*["']([^"']+)["']/);
+        if (imageMatch) {
+          coverUrl = imageMatch[1];
+          if (coverUrl && !/^https?:\/\//i.test(coverUrl)) {
+            coverUrl = getPublicUrl({ bucket: 'post-images', path: coverUrl });
+          }
+        } else {
+          const fallbackMatch = rtc.match(/<img[^>]*?src\s*=\s*["']([^"']+)["']/);
+          if (fallbackMatch) {
+            coverUrl = fallbackMatch[1];
+            if (coverUrl && !/^https?:\/\//i.test(coverUrl)) {
+              coverUrl = getPublicUrl({ bucket: 'post-images', path: coverUrl });
+            }
+          } else {
+            coverUrl = '';
+          }
+        }
+      }
+
+      const titleToSave = fd.title ? fd.title.trim() : '';
+      let baseSlug = fd.slug || (titleToSave ? slugify(titleToSave) : 'untitled-post');
+      if (!baseSlug) baseSlug = 'untitled-post';
+
+      let finalSlug = baseSlug;
+      if (!wp) {
+        finalSlug = await getUniqueSlug(baseSlug, cpi, fd.persona);
+      }
+
+      const currentOldSlugs = fd.oldSlugs || [];
+      const slugChanged = wp && finalSlug !== fd.slug && fd.slug;
+      const splitTags = ptt.split(',').map((t: string) => t.trim()).filter(Boolean);
+
+      const cleanText = rtc ? rtc.replace(/<[^>]*>/g, '').trim() : '';
+      const wordCount = cleanText ? cleanText.split(/\s+/).filter(Boolean).length : 0;
+      const readingTime = Math.max(1, Math.ceil(wordCount / 220));
+
+      const payload: any = {
+        ...fd,
+        title: titleToSave,
+        draftContent: rtc,
+        slug: finalSlug,
+        tags: splitTags,
+        coverImageUrl: coverUrl,
+        readingTime,
+        status: wp ? (fd.status || 'published') : 'draft',
+        oldSlugs: slugChanged && !currentOldSlugs.includes(fd.slug)
+          ? [...currentOldSlugs, fd.slug]
+          : currentOldSlugs,
+      };
+
+      // Never overwrite live content on background autosave
+      delete payload.content;
+
+      let newDbId = cpi;
+      if (cpi) {
+        const updateRes = await updatePost(cpi, payload);
+        if (!updateRes.success) {
+          throw new Error("error" in updateRes ? updateRes.error : "Failed to update post");
+        }
+      } else {
+        const createdRes = await createPost(payload);
+        if (!createdRes.success) {
+          throw new Error("error" in createdRes ? createdRes.error : "Failed to create post");
+        }
+        if (createdRes.data?.id) {
+          newDbId = createdRes.data.id;
+        }
+      }
+
+      // Record successful fingerprint
+      const latestTabState = tabsRef.current.find(t => t.id === tabId);
+      if (latestTabState) {
+        lastSavedFingerprintRef.current[tabId] = getTabFingerprint({
+          ...latestTabState,
+          dbId: newDbId,
+          formData: { ...latestTabState.formData, slug: finalSlug, coverImageUrl: coverUrl }
+        });
+      }
+
+      // Update state for this specific tab
+      setTabs(prev => prev.map(t => {
+        if (t.id !== tabId) return t;
+        return {
+          ...t,
+          dbId: newDbId,
+          formData: {
+            ...t.formData,
+            slug: finalSlug,
+            coverImageUrl: coverUrl,
+          },
+          saveStatus: 'Saved as draft',
+          isDirty: false,
+        };
+      }));
+
+      // If active tab acquired a new dbId, update history
+      if (newDbId && activeTabIdRef.current === tabId && (!tab.dbId || tab.dbId !== newDbId)) {
+        window.history.replaceState(null, '', `/admin/compose?id=${newDbId}`);
+      }
+    } catch (err: any) {
+      console.error(`Autosave failed for tab ${tabId}:`, err);
+      setTabs(prev => prev.map(t => t.id === tabId ? { ...t, saveStatus: 'Error saving' } : t));
+    } finally {
+      inFlightRef.current[tabId] = false;
+      if (queuedSaveRef.current[tabId]) {
+        queuedSaveRef.current[tabId] = false;
+        // Schedule follow-up save for changes that occurred during flight
+        if (pendingTimersRef.current[tabId]) {
+          clearTimeout(pendingTimersRef.current[tabId]);
+        }
+        pendingTimersRef.current[tabId] = setTimeout(() => {
+          delete pendingTimersRef.current[tabId];
+          saveTab(tabId);
+        }, 500);
+      }
+    }
+  }, [getTabFingerprint]);
+
+  const scheduleAutosave = useCallback((tabId: string, delay = 1500) => {
+    if (pendingTimersRef.current[tabId]) {
+      clearTimeout(pendingTimersRef.current[tabId]);
+      delete pendingTimersRef.current[tabId];
+    }
+    pendingTimersRef.current[tabId] = setTimeout(() => {
+      delete pendingTimersRef.current[tabId];
+      saveTab(tabId);
+    }, delay);
+  }, [saveTab]);
+
+  const flushSaveTab = useCallback((tabId: string) => {
+    if (pendingTimersRef.current[tabId]) {
+      clearTimeout(pendingTimersRef.current[tabId]);
+      delete pendingTimersRef.current[tabId];
+    }
+    saveTab(tabId);
+  }, [saveTab]);
+
+  // Clean up all timers on unmount
+  useEffect(() => {
+    const timers = pendingTimersRef.current;
+    return () => {
+      Object.values(timers).forEach(timer => clearTimeout(timer));
+    };
+  }, []);
+
+  // Setters bridging mutations for active tab with automatic debounce scheduling
   const setFormData = useCallback((updater: any) => {
-    updateActiveTab(t => ({
-      ...t,
-      formData: typeof updater === 'function' ? updater(t.formData) : { ...t.formData, ...updater },
-      isDirty: true
+    const currentTabId = activeTabIdRef.current;
+    setTabs(prev => prev.map(t => {
+      if (t.id !== currentTabId) return t;
+      const newFormData = typeof updater === 'function' ? updater(t.formData) : { ...t.formData, ...updater };
+      return {
+        ...t,
+        formData: newFormData,
+        isDirty: true,
+        saveStatus: 'Unsaved'
+      };
     }));
-  }, [updateActiveTab]);
+    scheduleAutosave(currentTabId, 1500);
+  }, [scheduleAutosave]);
 
   const setRichTextContent = useCallback((content: string) => {
-    updateActiveTab(t => ({ ...t, richTextContent: content, isDirty: true }));
-  }, [updateActiveTab]);
+    const currentTabId = activeTabIdRef.current;
+    setTabs(prev => prev.map(t => {
+      if (t.id !== currentTabId) return t;
+      return {
+        ...t,
+        richTextContent: content,
+        isDirty: true,
+        saveStatus: 'Unsaved'
+      };
+    }));
+    scheduleAutosave(currentTabId, 1500);
+  }, [scheduleAutosave]);
 
   const setPasteTagsText = useCallback((text: string) => {
-    updateActiveTab(t => ({ ...t, pasteTagsText: text, isDirty: true }));
-  }, [updateActiveTab]);
+    const currentTabId = activeTabIdRef.current;
+    setTabs(prev => prev.map(t => {
+      if (t.id !== currentTabId) return t;
+      return {
+        ...t,
+        pasteTagsText: text,
+        isDirty: true,
+        saveStatus: 'Unsaved'
+      };
+    }));
+    scheduleAutosave(currentTabId, 1500);
+  }, [scheduleAutosave]);
 
-  const setCurrentPostId = useCallback((id: string | null) => {
-    updateActiveTab(t => ({ ...t, dbId: id }));
-  }, [updateActiveTab]);
+  const handleTabSelect = useCallback((nextTabId: string) => {
+    const prevTabId = activeTabIdRef.current;
+    if (prevTabId && prevTabId !== nextTabId) {
+      const prevTab = tabsRef.current.find(t => t.id === prevTabId);
+      if (prevTab && (prevTab.isDirty || prevTab.saveStatus === 'Unsaved')) {
+        flushSaveTab(prevTabId);
+      }
+    }
 
-  const setSaveStatus = useCallback((status: string) => {
-    updateActiveTab(t => ({ ...t, saveStatus: status }));
-  }, [updateActiveTab]);
+    setActiveTabId(nextTabId);
 
-  const setWasPublished = useCallback((published: boolean) => {
-    updateActiveTab(t => ({ ...t, wasPublished: published }));
-  }, [updateActiveTab]);
-  
-  const setInitialSlug = useCallback((slug: string) => {
-    updateActiveTab(t => ({ ...t, initialSlug: slug }));
-  }, [updateActiveTab]);
+    const nextTab = tabsRef.current.find(t => t.id === nextTabId);
+    if (nextTab?.dbId) {
+      window.history.replaceState(null, '', `/admin/compose?id=${nextTab.dbId}`);
+    } else {
+      window.history.replaceState(null, '', `/admin/compose`);
+    }
+  }, [flushSaveTab]);
+
+  const handleTabClose = useCallback((tabIdToClose: string) => {
+    const targetTab = tabsRef.current.find(t => t.id === tabIdToClose);
+    if (targetTab && (targetTab.isDirty || targetTab.saveStatus === 'Unsaved')) {
+      const confirmed = window.confirm("This tab has unsaved changes. Are you sure you want to close it?");
+      if (!confirmed) return;
+    }
+
+    if (pendingTimersRef.current[tabIdToClose]) {
+      clearTimeout(pendingTimersRef.current[tabIdToClose]);
+      delete pendingTimersRef.current[tabIdToClose];
+    }
+    delete inFlightRef.current[tabIdToClose];
+    delete queuedSaveRef.current[tabIdToClose];
+    delete lastSavedFingerprintRef.current[tabIdToClose];
+
+    setTabs(prev => {
+      const newTabs = prev.filter(t => t.id !== tabIdToClose);
+      if (newTabs.length === 0) {
+        const emptyTab: TabData = {
+          id: generateUniqueId(),
+          dbId: null,
+          formData: { ...defaultFormData, persona: targetPersona || 'unassigned' },
+          richTextContent: '',
+          pasteTagsText: '',
+          wasPublished: false,
+          saveStatus: 'Saved',
+          initialSlug: '',
+          isDirty: false
+        };
+        lastSavedFingerprintRef.current[emptyTab.id] = getTabFingerprint(emptyTab);
+        setTimeout(() => {
+          setActiveTabId(emptyTab.id);
+          window.history.replaceState(null, '', '/admin/compose');
+        }, 0);
+        return [emptyTab];
+      }
+      if (activeTabIdRef.current === tabIdToClose) {
+        const fallbackTab = newTabs[0];
+        setTimeout(() => {
+          setActiveTabId(fallbackTab.id);
+          if (fallbackTab.dbId) {
+            window.history.replaceState(null, '', `/admin/compose?id=${fallbackTab.dbId}`);
+          } else {
+            window.history.replaceState(null, '', '/admin/compose');
+          }
+        }, 0);
+      }
+      return newTabs;
+    });
+  }, [targetPersona, getTabFingerprint]);
+
+  const handleNewTab = useCallback(() => {
+    const newTab: TabData = {
+      id: generateUniqueId(),
+      dbId: null,
+      formData: { ...defaultFormData, persona: targetPersona || 'unassigned' },
+      richTextContent: '',
+      pasteTagsText: '',
+      wasPublished: false,
+      saveStatus: 'Saved',
+      initialSlug: '',
+      isDirty: false
+    };
+    lastSavedFingerprintRef.current[newTab.id] = getTabFingerprint(newTab);
+    setTabs(prev => [...prev, newTab]);
+    setActiveTabId(newTab.id);
+    window.history.replaceState(null, '', '/admin/compose');
+  }, [targetPersona, getTabFingerprint]);
 
   useEffect(() => {
     if (!loading) {
@@ -260,10 +580,6 @@ function ComposePageContent() {
   const [compiledMdx, setCompiledMdx] = useState<any>(null);
   const [isCompilingPreview, setIsCompilingPreview] = useState(false);
 
-  // Focus and Slash commands
-  const [focusedBlockId, setFocusedBlockId] = useState<string | null>(null);
-  const [slashMenuBlockId, setSlashMenuBlockId] = useState<string | null>(null);
-
   useEffect(() => {
     if (isDraftsModalOpen) {
       const fetchDrafts = async () => {
@@ -280,9 +596,7 @@ function ComposePageContent() {
     }
   }, [isDraftsModalOpen]);
 
-  // Debounced MDX compilation for the full preview tab.
-  // The `compiledMdx` state is only cleared when content becomes empty, so the
-  // previous compiled result stays on screen during recompilation — no flash.
+  // Debounced MDX compilation for the full preview tab
   useEffect(() => {
     if (activeTab !== 'preview' || !richTextContent) {
       if (!richTextContent) {
@@ -305,7 +619,7 @@ function ComposePageContent() {
       } finally {
         setIsCompilingPreview(false);
       }
-    }, 600); // 600ms debounce
+    }, 600);
 
     return () => clearTimeout(timer);
   }, [activeTab, richTextContent]);
@@ -313,15 +627,14 @@ function ComposePageContent() {
   const handleApplyCustomUrl = async () => {
     setUrlValidationError(null);
     const resultObj = await validateCustomSlug(customUrlVal, currentPostId, formData.persona);
-            const result = resultObj;
-    if (!result.valid) {
-      setUrlValidationError(result.error || "Invalid slug.");
+    if (!resultObj.valid) {
+      setUrlValidationError(resultObj.error || "Invalid slug.");
       return;
     }
 
     setFormData((prev: any) => ({
       ...prev,
-      slug: result.cleanSlug
+      slug: resultObj.cleanSlug
     }));
 
     setIsCustomizingUrl(false);
@@ -338,18 +651,18 @@ function ComposePageContent() {
         setTabs(prev => {
           const existing = prev.find(t => t.dbId === editId || t.formData.slug === editId);
           if (existing) {
-             setTimeout(() => setActiveTabId(existing.id), 0);
-             return prev;
+            setTimeout(() => setActiveTabId(existing.id), 0);
+            return prev;
           }
           
           const found = (posts || []).find((p: any) => p.id === editId || p.slug === editId);
           if (found) {
             let htmlContent = found.draftContent || found.content || '';
             try {
-                const maybeJson = JSON.parse(htmlContent);
-                if (Array.isArray(maybeJson)) {
-                    htmlContent = compileFromBlocks(maybeJson);
-                }
+              const maybeJson = JSON.parse(htmlContent);
+              if (Array.isArray(maybeJson)) {
+                htmlContent = compileFromBlocks(maybeJson);
+              }
             } catch (e) {}
             
             const newTab: TabData = {
@@ -363,17 +676,17 @@ function ComposePageContent() {
               initialSlug: found.slug || '',
               isDirty: false
             };
+            lastSavedFingerprintRef.current[newTab.id] = getTabFingerprint(newTab);
             setTimeout(() => setActiveTabId(newTab.id), 0);
             return [...prev, newTab];
           } else {
-             setTimeout(() => router.push('/admin/compose'), 0);
-             return prev;
+            setTimeout(() => router.push('/admin/compose'), 0);
+            return prev;
           }
         });
       } else {
         setTabs(prev => {
           const defaultPersona = targetPersona || 'unassigned';
-          // Check if there is already an empty draft for this persona
           const emptyTab = prev.find(t => !t.dbId && !t.richTextContent && t.formData.title === '' && t.formData.persona === defaultPersona);
           if (emptyTab) {
             setTimeout(() => setActiveTabId(emptyTab.id), 0);
@@ -391,6 +704,7 @@ function ComposePageContent() {
             initialSlug: '',
             isDirty: false
           };
+          lastSavedFingerprintRef.current[newTab.id] = getTabFingerprint(newTab);
           setTimeout(() => setActiveTabId(newTab.id), 0);
           return [...prev, newTab];
         });
@@ -400,7 +714,7 @@ function ComposePageContent() {
     } finally {
       setLoading(false);
     }
-  }, [editId, targetPersona, router]);
+  }, [editId, targetPersona, router, getTabFingerprint]);
 
   useEffect(() => {
     loadPostToComposer();
@@ -433,229 +747,11 @@ function ComposePageContent() {
     return null;
   };
 
-  // ── Autosave with race condition protection ──────────────────────────
-  const isInitialMount = useRef(true);
-  const lastSavedPayloadRef = useRef<Record<string, string>>({});
-  // Prevents overlapping autosaves — if a save is in progress, skip the next one
-  const isAutosavingRef = useRef(false);
-
-  // Stale-closure protection: the async setTimeout callback captures values
-  // from the render when the timer was created. If the user types during the
-  // 5-second debounce, the timer is cancelled and a new one starts, but if the
-  // async save takes longer than the debounce gap, the callback could read
-  // stale values. This ref always holds the latest values so the callback
-  // never operates on stale data.
-  const autosaveRef = useRef({
-    formData,
-    richTextContent,
-    pasteTagsText,
-    currentPostId,
-    wasPublished,
-    activeTabId,
-  });
-  // Sync the ref on every render so the async callback always reads the latest values
-  autosaveRef.current = {
-    formData,
-    richTextContent,
-    pasteTagsText,
-    currentPostId,
-    wasPublished,
-    activeTabId,
-  };
-
-  // Show "Unsaved" immediately upon any state changes
-  useEffect(() => {
-    if (loading || !activeTabId) return;
-
-    const splitTags = pasteTagsText.split(',').map(t => t.trim()).filter(Boolean);
-    const currentPayloadStr = JSON.stringify({
-      title: formData.title || '',
-      subtitle: formData.subtitle || '',
-      persona: formData.persona || '',
-      coverImageUrl: formData.coverImageUrl || '',
-      autoCoverImage: formData.autoCoverImage,
-      excerpt: formData.excerpt || '',
-      content: richTextContent,
-      tags: splitTags,
-    });
-
-    if (!lastSavedPayloadRef.current[activeTabId]) {
-      lastSavedPayloadRef.current[activeTabId] = currentPayloadStr;
-      return;
-    }
-
-    if (lastSavedPayloadRef.current[activeTabId] === currentPayloadStr) {
-      return; // No actual content delta
-    }
-
-    // Only show "Unsaved" if not currently autosaving (avoids flash)
-    if (!isAutosavingRef.current) {
-      setSaveStatus('Unsaved');
-    }
-  }, [formData.title, formData.subtitle, formData.persona, formData.coverImageUrl, formData.autoCoverImage, formData.excerpt, richTextContent, pasteTagsText, loading, activeTabId, setSaveStatus]);
-
-  useEffect(() => {
-    if (loading || saveStatus !== 'Unsaved') return;
-    // GUARD: Prevent overlapping autosaves
-    if (isAutosavingRef.current) return;
-
-    // CRITICAL: Do NOT call setSaveStatus here! Setting saveStatus to 'Saving...'
-    // would trigger a re-render (saveStatus is in this effect's deps), which runs
-    // the cleanup function, which clears the timer and resets the guard ref.
-    // The cleanup cancels the timer BEFORE it ever fires — autosave never happens.
-    // Instead, keep saveStatus as 'Unsaved' until the save actually completes.
-    isAutosavingRef.current = true;
-
-    const timer = setTimeout(async () => {
-      try {
-        // Read from stale-closure-protected ref so the callback always
-        // operates on the latest values, even if the user continued typing
-        // during the debounce or while the async save was in-flight.
-        const now = autosaveRef.current;
-        const fd = now.formData;
-        const rtc = now.richTextContent;
-        const ptt = now.pasteTagsText;
-        const cpi = now.currentPostId;
-        const wp = now.wasPublished;
-        const ati = now.activeTabId;
-
-        // Cover image extraction: only match <Image> components, not random src attrs
-        let coverUrl = fd.coverImageUrl;
-        if (fd.autoCoverImage) {
-          // Match both single and double quoted attributes
-          const imageMatch = rtc.match(/<Image[^>]*?path\s*=\s*["']([^"']+)["']/);
-          if (imageMatch) {
-            coverUrl = imageMatch[1];
-            // Resolve relative Supabase storage path to full public URL
-            if (coverUrl && !/^https?:\/\//i.test(coverUrl)) {
-              coverUrl = getPublicUrl({ bucket: 'post-images', path: coverUrl });
-            }
-          } else {
-            const fallbackMatch = rtc.match(/<img[^>]*?src\s*=\s*["']([^"']+)["']/);
-            if (fallbackMatch) {
-              coverUrl = fallbackMatch[1];
-              // Also resolve in case the src is a relative storage path
-              if (coverUrl && !/^https?:\/\//i.test(coverUrl)) {
-                coverUrl = getPublicUrl({ bucket: 'post-images', path: coverUrl });
-              }
-            } else coverUrl = '';
-          }
-        }
-
-        const titleToSave = fd.title.trim() || '';
-        let baseSlug = fd.slug || (titleToSave ? slugify(titleToSave) : 'untitled-post');
-        if (!baseSlug) {
-          baseSlug = 'untitled';
-        }
-
-        let finalSlug = baseSlug;
-        if (!wp) {
-          finalSlug = await getUniqueSlug(baseSlug, cpi, fd.persona);
-        }
-
-        // Track slug changes for redirect support
-        const currentOldSlugs = fd.oldSlugs || [];
-        const slugChanged = wp && finalSlug !== fd.slug && fd.slug;
-
-        const splitTags = ptt.split(',').map(t => t.trim()).filter(Boolean);
-
-        const currentPayloadStr = JSON.stringify({
-          title: titleToSave,
-          subtitle: fd.subtitle || '',
-          persona: fd.persona || '',
-          coverImageUrl: coverUrl,
-          autoCoverImage: fd.autoCoverImage,
-          excerpt: fd.excerpt || '',
-          draftContent: rtc,
-          tags: splitTags,
-        });
-
-        // Compute word count/reading time inline to avoid stale closure on getWordCount/getReadingTime
-        const cleanText = rtc ? rtc.replace(/<[^>]*>/g, '').trim() : '';
-        const wordCount = cleanText ? cleanText.split(/\s+/).filter(Boolean).length : 0;
-        const readingTime = Math.max(1, Math.ceil(wordCount / 220));
-
-        const payload: any = {
-          ...fd,
-          title: titleToSave,
-          draftContent: rtc,
-          slug: finalSlug,
-          tags: splitTags,
-          coverImageUrl: coverUrl,
-          readingTime,
-          status: 'draft',
-          oldSlugs: slugChanged && !currentOldSlugs.includes(fd.slug)
-            ? [...currentOldSlugs, fd.slug]
-            : currentOldSlugs,
-        };
-
-        // Never touch content field during autosave — only update draftContent
-        delete payload.content;
-
-        if (cpi) {
-          const updateRes = await updatePost(cpi, payload);
-          if (!updateRes.success) throw new Error("error" in updateRes ? updateRes.error : "Error");
-          lastSavedPayloadRef.current[ati] = currentPayloadStr;
-          if (payload.slug !== fd.slug) {
-            setFormData((prev: any) => ({ ...prev, slug: payload.slug }));
-          }
-        } else {
-          const createdRes = await createPost(payload);
-          if (!createdRes.success) throw new Error("error" in createdRes ? createdRes.error : "Error");
-          const created = createdRes.data;
-          if (created && created.id) {
-            setCurrentPostId(created.id);
-            lastSavedPayloadRef.current[ati] = currentPayloadStr;
-            setFormData((prev: any) => ({ ...prev, slug: created.slug || payload.slug }));
-            window.history.replaceState(null, '', `/admin/compose?id=${created.id}`);
-          }
-        }
-        setSaveStatus('Saved as draft');
-        updateActiveTab(t => ({ ...t, isDirty: false }));
-      } catch (err) {
-        console.error('Autosave error:', err);
-        setSaveStatus('Error saving');
-      } finally {
-        isAutosavingRef.current = false;
-      }
-    }, 5000); // 5-second debounce — short enough to catch rapid edits, long enough to batch them
-
-    return () => {
-      clearTimeout(timer);
-      // Must reset the guard ref so the next effect invocation (triggered by the
-      // same dep change) can start a fresh debounce timer. Without this reset,
-      // isAutosavingRef stays `true` forever, and all future autosaves are blocked.
-      isAutosavingRef.current = false;
-    };
-  }, [
-    // IMPORTANT: Do NOT add saveStatus here! Changing saveStatus (e.g. 'Saving...')
-    // would trigger cleanup which cancels the timer. The timer must survive
-    // re-renders that don't change the content.
-    formData.title,
-    formData.subtitle,
-    formData.persona,
-    formData.coverImageUrl,
-    formData.autoCoverImage,
-    formData.excerpt,
-    richTextContent,
-    pasteTagsText,
-    loading,
-    currentPostId,
-    wasPublished,
-    formData.slug,
-    formData.status,
-    formData,
-    router,
-    activeTabId,
-    setCurrentPostId,
-    setFormData,
-    setSaveStatus,
-    updateActiveTab
-  ]);
-
+  // Warn before unload if any tab is unsaved
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      if (saveStatus === 'Unsaved' || saveStatus === 'Saving...' || saveStatus === 'Error saving') {
+      const hasUnsaved = tabsRef.current.some(t => t.isDirty || t.saveStatus === 'Unsaved' || t.saveStatus === 'Saving...');
+      if (hasUnsaved) {
         e.preventDefault();
         const msg = "You have unsaved changes. Are you sure you want to leave?";
         e.returnValue = msg;
@@ -664,41 +760,45 @@ function ComposePageContent() {
     };
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [saveStatus]);
-
-
+  }, []);
 
   const handleSavePost = async (isNewDraftState: boolean) => {
+    const currentTabId = activeTabIdRef.current;
+    const currentTab = tabsRef.current.find(t => t.id === currentTabId);
+    if (!currentTab) return;
+
+    if (pendingTimersRef.current[currentTabId]) {
+      clearTimeout(pendingTimersRef.current[currentTabId]);
+      delete pendingTimersRef.current[currentTabId];
+    }
+
     setDbError(null);
     setSaving(true);
 
-    let coverUrl = formData.coverImageUrl;
-    // CRITICAL: When updating a published article, we save edits to draftContent ONLY.
-    // The live content field is only overwritten on explicit publish (not draft save).
-    // This prevents accidental overwrite of published content when editing a live post.
-    const isPublishing = !isNewDraftState;
-    const wasPreviouslyPublished = wasPublished || formData.status === 'published';
+    const fd = currentTab.formData;
+    const rtc = currentTab.richTextContent;
+    const ptt = currentTab.pasteTagsText;
+    const cpi = currentTab.dbId;
+    const wp = currentTab.wasPublished;
 
-    // Calculate reading time from content length
+    let coverUrl = fd.coverImageUrl;
+    const isPublishing = !isNewDraftState;
+    const wasPreviouslyPublished = wp || fd.status === 'published';
+
     const wordCount = getWordCount();
     const readingTime = Math.max(1, Math.ceil(wordCount / 220));
 
-    if (formData.autoCoverImage) {
-      // Only match cover image from <Image> components, not random src attributes
-      // Match both single and double quoted attributes
-      const imageMatch = richTextContent.match(/<Image[^>]*?path\s*=\s*["']([^"']+)["']/);
+    if (fd.autoCoverImage) {
+      const imageMatch = rtc.match(/<Image[^>]*?path\s*=\s*["']([^"']+)["']/);
       if (imageMatch) {
         coverUrl = imageMatch[1];
-        // Resolve relative Supabase storage path to full public URL
         if (coverUrl && !/^https?:\/\//i.test(coverUrl)) {
           coverUrl = getPublicUrl({ bucket: 'post-images', path: coverUrl });
         }
       } else {
-        // Fallback: first image src in the content
-        const fallbackMatch = richTextContent.match(/<img[^>]*?src\s*=\s*["']([^"']+)["']/);
+        const fallbackMatch = rtc.match(/<img[^>]*?src\s*=\s*["']([^"']+)["']/);
         if (fallbackMatch) {
           coverUrl = fallbackMatch[1];
-          // Also resolve in case the src is a relative storage path
           if (coverUrl && !/^https?:\/\//i.test(coverUrl)) {
             coverUrl = getPublicUrl({ bucket: 'post-images', path: coverUrl });
           }
@@ -706,61 +806,75 @@ function ComposePageContent() {
       }
     }
 
-    const titleToSave = formData.title.trim() || 'Untitled Post';
-    let baseSlug = formData.slug || slugify(titleToSave);
+    const titleToSave = fd.title.trim() || 'Untitled Post';
+    let baseSlug = fd.slug || slugify(titleToSave);
     if (!baseSlug) {
-      baseSlug = 'untitled';
+      baseSlug = 'untitled-post';
     }
 
     let finalSlug = baseSlug;
     if (!wasPreviouslyPublished) {
-      finalSlug = await getUniqueSlug(baseSlug, currentPostId, formData.persona);
+      finalSlug = await getUniqueSlug(baseSlug, cpi, fd.persona);
     }
 
-    const splitTags = pasteTagsText.split(',').map(t => t.trim()).filter(Boolean);
+    const splitTags = ptt.split(',').map((t: string) => t.trim()).filter(Boolean);
 
     const payload: any = {
-      ...formData,
+      ...fd,
       title: titleToSave,
       slug: finalSlug,
       tags: splitTags,
       coverImageUrl: coverUrl,
       readingTime,
       status: isNewDraftState ? 'draft' : 'published',
-      // FIX: Preserve original publishedAt if reverting to draft; set on first publish
       publishedAt: isNewDraftState
-        ? formData.publishedAt || null  // Keep original date if reverting
-        : formData.publishedAt || new Date().toISOString(),
+        ? fd.publishedAt || null
+        : fd.publishedAt || new Date().toISOString(),
     };
 
-    // CRITICAL: Separate live content from draft content
-    // - On publish: write to both content (live) and draftContent
-    // - On draft save: write to draftContent ONLY (never touch live content)
-    // This allows editing a published article without taking it offline
     if (isPublishing) {
-      payload.content = richTextContent;
-      payload.draftContent = richTextContent;
-    } else if (isNewDraftState) {
-      payload.draftContent = richTextContent;
-      // Don't touch content field — leave existing live content intact
+      payload.content = rtc;
+      payload.draftContent = rtc;
+    } else {
+      payload.draftContent = rtc;
     }
 
-    // Track slug changes for redirect support
-    if (wasPreviouslyPublished && finalSlug !== formData.slug && formData.slug) {
-      const currentOldSlugs = formData.oldSlugs || [];
-      if (!currentOldSlugs.includes(formData.slug)) {
-        payload.oldSlugs = [...currentOldSlugs, formData.slug];
+    if (wasPreviouslyPublished && finalSlug !== fd.slug && fd.slug) {
+      const currentOldSlugs = fd.oldSlugs || [];
+      if (!currentOldSlugs.includes(fd.slug)) {
+        payload.oldSlugs = [...currentOldSlugs, fd.slug];
       }
     }
 
     try {
-      if (currentPostId) {
-        const upRes = await updatePost(currentPostId, payload);
-        if (!upRes.success) throw new Error("error" in upRes ? upRes.error : "Error");
+      let savedId = cpi;
+      if (cpi) {
+        const upRes = await updatePost(cpi, payload);
+        if (!upRes.success) throw new Error("error" in upRes ? upRes.error : "Failed to update post");
       } else {
         const createRes2 = await createPost(payload);
-        if (!createRes2.success) throw new Error("error" in createRes2 ? createRes2.error : "Error");
+        if (!createRes2.success) throw new Error("error" in createRes2 ? createRes2.error : "Failed to create post");
+        if (createRes2.data?.id) savedId = createRes2.data.id;
       }
+
+      lastSavedFingerprintRef.current[currentTabId] = getTabFingerprint({
+        ...currentTab,
+        dbId: savedId,
+        formData: { ...payload }
+      });
+
+      setTabs(prev => prev.map(t => {
+        if (t.id !== currentTabId) return t;
+        return {
+          ...t,
+          dbId: savedId,
+          formData: { ...payload },
+          wasPublished: isPublishing || wasPreviouslyPublished,
+          saveStatus: 'Saved',
+          isDirty: false
+        };
+      }));
+
       router.push('/admin/library');
     } catch (err: any) {
       console.error(err);
@@ -815,34 +929,11 @@ function ComposePageContent() {
                         }}
                         subtitle={formData.subtitle}
                         onSubtitleChange={(subtitle) => setFormData((prev: any) => ({ ...prev, subtitle }))}
-                        tabs={tabs.map(t => ({ id: t.id, title: t.formData.title, isDirty: t.isDirty }))}
+                        tabs={tabs.map(t => ({ id: t.id, title: t.formData.title, isDirty: t.isDirty, saveStatus: t.saveStatus }))}
                         activeTabId={activeTabId}
-                        onTabSelect={(id) => setActiveTabId(id)}
-                        onTabClose={(id) => {
-                          setTabs(prev => {
-                            const newTabs = prev.filter(t => t.id !== id);
-                            if (newTabs.length === 0) {
-                              const emptyTab: TabData = {
-                                id: generateUniqueId(), dbId: null, formData: { ...defaultFormData, persona: 'unassigned' },
-                                richTextContent: '', pasteTagsText: '', wasPublished: false, saveStatus: 'Saved', initialSlug: '', isDirty: false
-                              };
-                              setTimeout(() => setActiveTabId(emptyTab.id), 0);
-                              return [emptyTab];
-                            }
-                            if (activeTabId === id) {
-                              setTimeout(() => setActiveTabId(newTabs[0].id), 0);
-                            }
-                            return newTabs;
-                          });
-                        }}
-                        onNewTab={() => {
-                          const newTab: TabData = {
-                            id: generateUniqueId(), dbId: null, formData: { ...defaultFormData, persona: 'unassigned' },
-                            richTextContent: '', pasteTagsText: '', wasPublished: false, saveStatus: 'Saved', initialSlug: '', isDirty: false
-                          };
-                          setTabs(prev => [...prev, newTab]);
-                          setActiveTabId(newTab.id);
-                        }}
+                        onTabSelect={handleTabSelect}
+                        onTabClose={handleTabClose}
+                        onNewTab={handleNewTab}
                         onOpenDrafts={() => setIsDraftsModalOpen(true)}
                         actionButtons={
                           <>
@@ -921,10 +1012,34 @@ function ComposePageContent() {
       {/* Status Bar (Bottom) */}
       <div className="h-[22px] bg-[#007acc] text-white flex items-center justify-between px-3 text-[11px] font-sans shrink-0 border-t border-[#005f9e]">
         <div className="flex items-center gap-4">
-          <span className="flex items-center gap-1.5 hover:bg-[#ffffff22] px-1 cursor-pointer transition-colors">
-            <Check className="w-3 h-3" />
-            {saveStatus}
-          </span>
+          <button
+            type="button"
+            onClick={() => saveTab(activeTabId, { force: true })}
+            className="flex items-center gap-1.5 hover:bg-[#ffffff22] px-1.5 py-0.5 rounded cursor-pointer transition-colors outline-none"
+            title="Click to save immediately"
+          >
+            {saveStatus === 'Saving...' ? (
+              <>
+                <RefreshCw className="w-3 h-3 animate-spin text-blue-200" />
+                <span>Saving...</span>
+              </>
+            ) : saveStatus === 'Error saving' ? (
+              <>
+                <AlertCircle className="w-3 h-3 text-red-200" />
+                <span className="text-red-200">Error saving (click to retry)</span>
+              </>
+            ) : saveStatus === 'Unsaved' ? (
+              <>
+                <span className="w-2 h-2 rounded-full bg-amber-300 animate-pulse" />
+                <span>Unsaved changes</span>
+              </>
+            ) : (
+              <>
+                <Check className="w-3 h-3 text-emerald-300" />
+                <span>{saveStatus || 'Saved'}</span>
+              </>
+            )}
+          </button>
           <div className="relative">
             <button 
               onClick={() => setIsPersonaMenuOpen(!isPersonaMenuOpen)}
@@ -1018,7 +1133,7 @@ function ComposePageContent() {
                         setIsDraftsModalOpen(false);
                         const existingTab = tabs.find(t => t.dbId === draft.id);
                         if (existingTab) {
-                          setActiveTabId(existingTab.id);
+                          handleTabSelect(existingTab.id);
                         } else {
                           const newTab: TabData = {
                             id: generateUniqueId(),
@@ -1031,8 +1146,10 @@ function ComposePageContent() {
                             initialSlug: draft.slug || '',
                             isDirty: false
                           };
+                          lastSavedFingerprintRef.current[newTab.id] = getTabFingerprint(newTab);
                           setTabs(prev => [...prev, newTab]);
                           setActiveTabId(newTab.id);
+                          window.history.replaceState(null, '', `/admin/compose?id=${draft.id}`);
                         }
                       }}
                       className="w-full flex items-center justify-between p-3 rounded bg-[#1e1e1e] hover:bg-[#2a2a2a] transition-colors border border-transparent hover:border-[#444] text-left group"

@@ -16,6 +16,7 @@ export type EditorTab = {
   id: string;
   title: string;
   isDirty?: boolean;
+  saveStatus?: string;
 };
 
 interface MDXEditorProps {
@@ -133,6 +134,53 @@ export default function MDXEditor({
   const onChangeRef = useRef(onChange);
   useEffect(() => { onChangeRef.current = onChange; }, [onChange]);
 
+  // ── Formatting Helpers ────────────────────────────────────────────────
+
+  const applyFormat = useCallback((wrapper: string) => {
+    const editor = editorRef.current;
+    if (!editor) return;
+    const sel = editor.getSelection();
+    const model = editor.getModel();
+    if (!model || !sel) return;
+    const text = model.getValueInRange(sel);
+    const unwrapped = text.startsWith(wrapper) && text.endsWith(wrapper);
+    editor.executeEdits('format', [
+      { range: sel, text: unwrapped ? text.slice(wrapper.length, -wrapper.length) : `${wrapper}${text}${wrapper}`, forceMoveMarkers: true }
+    ]);
+    editor.focus();
+  }, []);
+
+  const applyLink = useCallback(() => {
+    const editor = editorRef.current;
+    if (!editor) return;
+    const sel = editor.getSelection();
+    const model = editor.getModel();
+    if (!model || !sel) return;
+    const text = model.getValueInRange(sel);
+    const url = window.prompt('URL:');
+    if (url === null) return;
+    editor.executeEdits('link', [{ range: sel, text: text ? `[${text}](${url})` : `[Link text](${url})`, forceMoveMarkers: true }]);
+    editor.focus();
+  }, []);
+
+  const insertComponent = useCallback((tag: string, props: Record<string, string> = {}) => {
+    const editor = editorRef.current;
+    if (!editor) return;
+    const sel = editor.getSelection();
+    const propsStr = Object.entries(props).map(([k, v]) => `${k}="${v}"`).join(' ');
+    editor.executeEdits('component', [{ range: sel, text: `<${tag}${propsStr ? ' ' + propsStr : ''}>\n\n</${tag}>\n`, forceMoveMarkers: true }]);
+    editor.focus();
+  }, []);
+
+  const insertSelfClosingComponent = useCallback((tag: string, props: Record<string, string> = {}) => {
+    const editor = editorRef.current;
+    if (!editor) return;
+    const sel = editor.getSelection();
+    const propsStr = Object.entries(props).map(([k, v]) => `${k}="${v}"`).join(' ');
+    editor.executeEdits('component', [{ range: sel, text: `<${tag}${propsStr ? ' ' + propsStr : ''} />\n`, forceMoveMarkers: true }]);
+    editor.focus();
+  }, []);
+
   // ── Initialize Monaco directly ──────────────────────────────────────
   //
   // CRITICAL: Uses a local `isCancelled` flag instead of a ref to handle
@@ -142,8 +190,8 @@ export default function MDXEditor({
   // causing the second mount's async init to abort early. A local variable
   // is scoped to each closure invocation, so each mount gets a fresh
   // `isCancelled = false`.
-  //
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const initialContentRef = useRef(content);
+
   useEffect(() => {
     let editor: any = null;
     let model: any = null;
@@ -170,7 +218,7 @@ export default function MDXEditor({
         } catch { /* language config override is best-effort */ }
 
         // Create the model first so we can pass it directly
-        model = monaco.editor.createModel(content || '', 'mdx');
+        model = monaco.editor.createModel(initialContentRef.current || '', 'mdx');
         if (isCancelled) { model.dispose(); model = null; return; }
 
         // Create the editor with the model
@@ -234,7 +282,7 @@ export default function MDXEditor({
         model.dispose();
       }
     };
-  }, []);
+  }, [applyFormat, applyLink]);
 
   // ── Sync content from parent (tab switch, load draft) ───────────────
   // CRITICAL: This effect must only fire when content changes FROM OUTSIDE
@@ -323,53 +371,6 @@ export default function MDXEditor({
     document.body.style.cursor = 'col-resize';
   };
 
-  // ── Formatting Helpers ────────────────────────────────────────────────
-
-  const applyFormat = useCallback((wrapper: string) => {
-    const editor = editorRef.current;
-    if (!editor) return;
-    const sel = editor.getSelection();
-    const model = editor.getModel();
-    if (!model || !sel) return;
-    const text = model.getValueInRange(sel);
-    const unwrapped = text.startsWith(wrapper) && text.endsWith(wrapper);
-    editor.executeEdits('format', [
-      { range: sel, text: unwrapped ? text.slice(wrapper.length, -wrapper.length) : `${wrapper}${text}${wrapper}`, forceMoveMarkers: true }
-    ]);
-    editor.focus();
-  }, []);
-
-  const applyLink = useCallback(() => {
-    const editor = editorRef.current;
-    if (!editor) return;
-    const sel = editor.getSelection();
-    const model = editor.getModel();
-    if (!model || !sel) return;
-    const text = model.getValueInRange(sel);
-    const url = window.prompt('URL:');
-    if (url === null) return;
-    editor.executeEdits('link', [{ range: sel, text: text ? `[${text}](${url})` : `[Link text](${url})`, forceMoveMarkers: true }]);
-    editor.focus();
-  }, []);
-
-  const insertComponent = useCallback((tag: string, props: Record<string, string> = {}) => {
-    const editor = editorRef.current;
-    if (!editor) return;
-    const sel = editor.getSelection();
-    const propsStr = Object.entries(props).map(([k, v]) => `${k}="${v}"`).join(' ');
-    editor.executeEdits('component', [{ range: sel, text: `<${tag}${propsStr ? ' ' + propsStr : ''}>\n\n</${tag}>\n`, forceMoveMarkers: true }]);
-    editor.focus();
-  }, []);
-
-  const insertSelfClosingComponent = useCallback((tag: string, props: Record<string, string> = {}) => {
-    const editor = editorRef.current;
-    if (!editor) return;
-    const sel = editor.getSelection();
-    const propsStr = Object.entries(props).map(([k, v]) => `${k}="${v}"`).join(' ');
-    editor.executeEdits('component', [{ range: sel, text: `<${tag}${propsStr ? ' ' + propsStr : ''} />\n`, forceMoveMarkers: true }]);
-    editor.focus();
-  }, []);
-
   // ── Clipboard Paste (Image) ───────────────────────────────────────────
 
   useEffect(() => {
@@ -408,17 +409,27 @@ export default function MDXEditor({
         {tabs.map(tab => {
           const isSelected = activeTabId === tab.id;
           const displayTabName = (tab.title || 'untitled').toLowerCase().replace(/[^a-z0-9]+/g, '-') + '.mdx';
+          const isSaving = tab.saveStatus === 'Saving...';
+          const isError = tab.saveStatus === 'Error saving';
+          const isDirty = tab.isDirty || tab.saveStatus === 'Unsaved';
+
           return (
             <div
               key={tab.id}
               onClick={() => onTabSelect?.(tab.id)}
-              className={`flex items-center h-full px-3 cursor-pointer min-w-[140px] max-w-[200px] group transition-colors border-r border-[#111111] ${isSelected ? 'bg-[#1e1e1e] text-[#cccccc]' : 'bg-[#2d2d2d] text-[#888888] hover:bg-[#2a2d2e]'}`}
+              className={`flex items-center h-full px-3 cursor-pointer min-w-[140px] max-w-[210px] group transition-colors border-r border-[#111111] ${isSelected ? 'bg-[#1e1e1e] text-[#cccccc]' : 'bg-[#2d2d2d] text-[#888888] hover:bg-[#2a2d2e]'}`}
             >
               <Type className={`w-3.5 h-3.5 mr-2 shrink-0 ${isSelected ? 'text-[#519aba]' : 'text-[#888888]'}`} />
               <span className="text-[13px] font-sans truncate select-none flex-1">
                 {displayTabName.replace(/^-+|-+$/g, '') || 'untitled.mdx'}
-                {tab.isDirty && <span className="ml-1 opacity-70">*</span>}
               </span>
+              {isSaving ? (
+                <span className="w-2 h-2 ml-1.5 rounded-full border border-blue-400 border-t-transparent animate-spin shrink-0" title="Saving..." />
+              ) : isError ? (
+                <span className="w-2 h-2 ml-1.5 rounded-full bg-red-500 shrink-0" title="Error saving" />
+              ) : isDirty ? (
+                <span className="ml-1.5 opacity-80 font-mono text-amber-400 text-xs shrink-0" title="Unsaved changes">●</span>
+              ) : null}
               <X
                 onClick={(e) => { e.stopPropagation(); onTabClose?.(tab.id); }}
                 className={`w-4 h-4 ml-2 rounded p-0.5 transition-all shrink-0 ${isSelected ? 'opacity-0 group-hover:opacity-100 hover:bg-[#333]' : 'opacity-0 group-hover:opacity-100 hover:bg-[#444]'}`}
