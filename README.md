@@ -52,9 +52,9 @@ Create a `.env.local` file at the root of the project by copying the example for
 ```env
 # .env.local
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-# Required for server-side elevated privilege if needed (keep secret!)
-SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your_supabase_publishable_key
+# Required for server-side elevated privilege (keep secret!)
+SUPABASE_SECRET_KEY=your_supabase_secret_key
 ```
 
 ### 3. Run the Development Server

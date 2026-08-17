@@ -18,8 +18,8 @@ export interface WebAuthnConfig {
 export function getWebAuthnConfig(reqHeaders?: Headers | Record<string, string | null | undefined>): WebAuthnConfig {
   const isDev = process.env.NODE_ENV === 'development';
 
-  // 1. RP Name
-  const rpName = process.env.WEBAUTHN_RP_NAME || process.env.NEXT_PUBLIC_WEBAUTHN_RP_NAME || 'Biranchi CMS';
+  // 1. RP Name (Canonical server environment variable)
+  const rpName = process.env.WEBAUTHN_RP_NAME || 'Biranchi CMS';
 
   // 2. Derive host / domain from headers if available
   let headerHost: string | null = null;
@@ -39,8 +39,8 @@ export function getWebAuthnConfig(reqHeaders?: Headers | Record<string, string |
   // Remove port from host if present
   const rawHostname = headerHost ? headerHost.split(':')[0] : null;
 
-  // 3. Determine RP ID (must be a valid domain string, never a full URL or IP unless permitted)
-  let rpID = process.env.WEBAUTHN_RP_ID || process.env.NEXT_PUBLIC_WEBAUTHN_RP_ID;
+  // 3. Determine RP ID (Canonical server environment variable)
+  let rpID = process.env.WEBAUTHN_RP_ID;
 
   if (!rpID) {
     if (isDev) {
@@ -54,8 +54,8 @@ export function getWebAuthnConfig(reqHeaders?: Headers | Record<string, string |
     }
   }
 
-  // 4. Determine Expected Origins
-  const configuredOrigin = process.env.WEBAUTHN_ORIGIN || process.env.NEXT_PUBLIC_WEBAUTHN_ORIGIN;
+  // 4. Determine Expected Origins (Canonical server environment variable)
+  const configuredOrigin = process.env.WEBAUTHN_ORIGIN;
   const expectedOriginsSet = new Set<string>();
 
   if (configuredOrigin) {

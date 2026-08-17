@@ -11,8 +11,8 @@ async function generateLogEntry(commits, feature) {
     .map(c => `- ${c.message.split('\n')[0].trim()}`)
     .join('\n');
 
-  // Provider configuration based on Environment Variables (default to NVIDIA integrate API)
-  const apiKey = process.env.AI_API_KEY || process.env.NVIDIA_API_KEY;
+  // Provider configuration based on canonical AI environment variables
+  const apiKey = process.env.AI_API_KEY;
   const model = process.env.AI_MODEL || 'deepseek-ai/deepseek-v4-flash';
   
   let baseUrl = 'https://integrate.api.nvidia.com/v1/chat/completions';

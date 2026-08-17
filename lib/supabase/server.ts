@@ -4,8 +4,8 @@ import { cookies } from 'next/headers';
 import { Database } from '../database.types';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+const supabasePublishableKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || '';
+const supabaseSecretKey = process.env.SUPABASE_SECRET_KEY || '';
 
 export async function getSupabaseServerClient() {
   let cookieStore: Awaited<ReturnType<typeof cookies>> | null = null;
@@ -21,7 +21,7 @@ export async function getSupabaseServerClient() {
   if (!cookieStore) {
     return createServerClient<Database>(
       supabaseUrl,
-      supabaseAnonKey,
+      supabasePublishableKey,
       {
         cookies: {
           getAll() { return []; },
@@ -33,7 +33,7 @@ export async function getSupabaseServerClient() {
 
   return createServerClient<Database>(
     supabaseUrl,
-    supabaseAnonKey,
+    supabasePublishableKey,
     {
       cookies: {
         getAll() {
@@ -53,7 +53,11 @@ export async function getSupabaseServerClient() {
   );
 }
 
-// For use ONLY in trusted contexts like cron jobs, bypassing RLS
+// For use ONLY in trusted server-side contexts bypassing RLS
 export function getSupabaseAdmin() {
-  return createClient<Database>(supabaseUrl, supabaseServiceKey);
+  if (!supabaseUrl || !supabaseSecretKey) {
+    throw new Error('Missing required Supabase server configuration: NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SECRET_KEY');
+  }
+  return createClient<Database>(supabaseUrl, supabaseSecretKey);
 }
+

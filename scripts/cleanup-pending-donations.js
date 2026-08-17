@@ -8,14 +8,14 @@
 const { createClient } = require('@supabase/supabase-js');
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const supabaseSecretKey = process.env.SUPABASE_SECRET_KEY;
 
-if (!supabaseUrl || !supabaseKey) {
-  console.error('Error: Supabase environment variables (NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY) are required.');
+if (!supabaseUrl || !supabaseSecretKey) {
+  console.error('Error: Required environment variables (NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SECRET_KEY) are missing.');
   process.exit(1);
 }
 
-const supabase = createClient(supabaseUrl, supabaseKey);
+const supabase = createClient(supabaseUrl, supabaseSecretKey);
 
 async function runCleanup() {
   const days = parseInt(process.env.CLEANUP_RETENTION_DAYS || '30', 10);

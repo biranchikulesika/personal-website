@@ -41,12 +41,11 @@ export async function POST(request: Request) {
   const secret =
     body.secret || request.headers.get('x-revalidation-secret') || '';
 
-  const expectedSecret =
-    process.env.REVALIDATION_SECRET || process.env.CRON_SECRET || '';
+  const expectedSecret = process.env.REVALIDATION_SECRET;
 
   if (!expectedSecret) {
     console.error(
-      '[revalidate] REVALIDATION_SECRET / CRON_SECRET is not configured.'
+      '[revalidate] Missing required configuration: REVALIDATION_SECRET.'
     );
     return NextResponse.json(
       { error: 'Revalidation secret not configured on server.' },
