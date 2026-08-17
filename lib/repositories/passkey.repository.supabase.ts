@@ -3,33 +3,48 @@ import { getSupabaseAdmin } from '../supabase/server';
 
 export class PasskeySupabaseRepository {
   async getByUserId(userId: string): Promise<PasskeyCredential[]> {
-    const admin = getSupabaseAdmin();
-    const { data, error } = await admin
-      .from('passkey_credentials')
-      .select('*')
-      .eq('userId', userId)
-      .order('createdAt', { ascending: false });
+    try {
+      const admin = getSupabaseAdmin();
+      const { data, error } = await admin
+        .from('passkey_credentials')
+        .select('*')
+        .eq('userId', userId)
+        .order('createdAt', { ascending: false });
 
-    if (error) {
-      console.error('Error fetching passkeys for user:', error);
-      throw error;
+      if (error) {
+        if (error.code === '42P01' || error.code === 'PGRST116') {
+          // Table not yet migrated or empty
+          return [];
+        }
+        console.warn('Could not query passkeys table:', error.message);
+        return [];
+      }
+      return (data || []) as any as PasskeyCredential[];
+    } catch {
+      return [];
     }
-    return (data || []) as any as PasskeyCredential[];
   }
 
   async getByCredentialId(credentialId: string): Promise<PasskeyCredential | null> {
-    const admin = getSupabaseAdmin();
-    const { data, error } = await admin
-      .from('passkey_credentials')
-      .select('*')
-      .eq('credentialId', credentialId)
-      .maybeSingle();
+    try {
+      const admin = getSupabaseAdmin();
+      const { data, error } = await admin
+        .from('passkey_credentials')
+        .select('*')
+        .eq('credentialId', credentialId)
+        .maybeSingle();
 
-    if (error) {
-      console.error('Error fetching passkey by credentialId:', error);
-      throw error;
+      if (error) {
+        if (error.code === '42P01' || error.code === 'PGRST116') {
+          return null;
+        }
+        console.warn('Could not query passkey by credentialId:', error.message);
+        return null;
+      }
+      return (data || null) as any as PasskeyCredential | null;
+    } catch {
+      return null;
     }
-    return (data || null) as any as PasskeyCredential | null;
   }
 
   async create(data: Omit<PasskeyCredential, 'id' | 'createdAt' | 'updatedAt'>): Promise<PasskeyCredential> {

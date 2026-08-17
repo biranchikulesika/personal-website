@@ -53,18 +53,22 @@ export default function SettingsPage() {
     try {
       setPasskeysLoading(true);
       const list = await listPasskeysAction();
-      setPasskeys(list);
-    } catch (err: any) {
-      console.error('Failed to load passkeys:', err);
+      setPasskeys(list || []);
+    } catch {
+      setPasskeys([]);
     } finally {
       setPasskeysLoading(false);
     }
   }, []);
 
   const fetchIdentities = useCallback(async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user?.identities) {
-      setIdentities(user.identities);
+    try {
+      const { data, error } = await supabase.auth.getUser();
+      if (!error && data?.user?.identities) {
+        setIdentities(data.user.identities);
+      }
+    } catch {
+      // Ignored
     }
   }, [supabase.auth]);
 
@@ -241,8 +245,7 @@ export default function SettingsPage() {
     <div className="w-full max-w-350 mx-auto p-5 md:p-8 lg:p-12 font-sans">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10">
         <div>
-          <h1 className="text-3xl font-medium tracking-tight text-neutral-100 mb-2">System Settings</h1>
-          <p className="text-neutral-500 text-sm">Manage authentication methods, passkeys, and linked identity providers.</p>
+          <h1 className="text-3xl font-medium tracking-tight text-neutral-100">System Settings</h1>
         </div>
       </div>
 
