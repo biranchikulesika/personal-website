@@ -228,12 +228,10 @@ function ComposePageContent() {
   }, [activeTabId]);
 
   const lastSavedFingerprintRef = useRef<Record<string, string>>({});
-  const pendingTimersRef = useRef<Record<string, NodeJS.Timeout>>({});
   const inFlightRef = useRef<Record<string, boolean>>({});
-  const queuedSaveRef = useRef<Record<string, boolean>>({});
 
   const getTabFingerprint = useCallback((tab: TabData): string => {
-    const splitTags = tab.pasteTagsText.split(',').map((t: string) => t.trim()).filter(Boolean);
+    const splitTags = tab.pasteTagsText ? tab.pasteTagsText.split(',').map((t: string) => t.trim()).filter(Boolean) : [];
     return JSON.stringify({
       title: (tab.formData.title || '').trim(),
       subtitle: (tab.formData.subtitle || '').trim(),
@@ -247,44 +245,19 @@ function ComposePageContent() {
     });
   }, []);
 
-  const saveTab = useCallback(async (tabId: string, options?: { force?: boolean }) => {
-    const tab = tabsRef.current.find(t => t.id === tabId);
+  const manualSaveTab = useCallback(async (tabId?: string) => {
+    const targetTabId = tabId || activeTabIdRef.current;
+    const tab = tabsRef.current.find(t => t.id === targetTabId);
     if (!tab) return;
 
-    const currentFingerprint = getTabFingerprint(tab);
-
-    // If not forced, check if there's any real delta to save
-    if (!options?.force) {
-      if (!tab.dbId) {
-        const hasTitle = (tab.formData.title || '').trim().length > 0;
-        const hasContent = (tab.richTextContent || '').trim().length > 0;
-        const hasExcerpt = (tab.formData.excerpt || '').trim().length > 0;
-        if (!hasTitle && !hasContent && !hasExcerpt) {
-          if (tab.saveStatus !== 'Saved') {
-            setTabs(prev => prev.map(t => t.id === tabId ? { ...t, saveStatus: 'Saved', isDirty: false } : t));
-          }
-          return;
-        }
-      }
-
-      if (lastSavedFingerprintRef.current[tabId] === currentFingerprint) {
-        if (tab.saveStatus !== 'Saved' && tab.saveStatus !== 'Saved as draft') {
-          setTabs(prev => prev.map(t => t.id === tabId ? { ...t, saveStatus: 'Saved as draft', isDirty: false } : t));
-        }
-        return;
-      }
-    }
-
-    // Concurrency guard: if save is already in-flight for this tab, queue follow-up save
-    if (inFlightRef.current[tabId]) {
-      queuedSaveRef.current[tabId] = true;
+    // Prevent concurrent saves for the same tab
+    if (inFlightRef.current[targetTabId]) {
       return;
     }
 
-    inFlightRef.current[tabId] = true;
-
-    // Update status to 'Saving...'
-    setTabs(prev => prev.map(t => t.id === tabId ? { ...t, saveStatus: 'Saving...' } : t));
+    inFlightRef.current[targetTabId] = true;
+    setTabs(prev => prev.map(t => t.id === targetTabId ? { ...t, saveStatus: 'Saving...' } : t));
+    setDbError(null);
 
     try {
       const fd = tab.formData;
@@ -325,7 +298,7 @@ function ComposePageContent() {
 
       const currentOldSlugs = fd.oldSlugs || [];
       const slugChanged = wp && finalSlug !== fd.slug && fd.slug;
-      const splitTags = ptt.split(',').map((t: string) => t.trim()).filter(Boolean);
+      const splitTags = ptt ? ptt.split(',').map((t: string) => t.trim()).filter(Boolean) : (Array.isArray(fd.tags) ? fd.tags : []);
 
       const cleanText = rtc ? rtc.replace(/<[^>]*>/g, '').trim() : '';
       const wordCount = cleanText ? cleanText.split(/\s+/).filter(Boolean).length : 0;
@@ -333,7 +306,7 @@ function ComposePageContent() {
 
       const payload: any = {
         ...fd,
-        title: titleToSave,
+        title: titleToSave || 'Untitled Post',
         draftContent: rtc,
         slug: finalSlug,
         tags: splitTags,
@@ -345,8 +318,9 @@ function ComposePageContent() {
           : currentOldSlugs,
       };
 
-      // Never overwrite live content on background autosave
-      delete payload.content;
+      if (!wp) {
+        delete payload.content;
+      }
 
       let newDbId = cpi;
       if (cpi) {
@@ -365,18 +339,18 @@ function ComposePageContent() {
       }
 
       // Record successful fingerprint
-      const latestTabState = tabsRef.current.find(t => t.id === tabId);
+      const latestTabState = tabsRef.current.find(t => t.id === targetTabId);
       if (latestTabState) {
-        lastSavedFingerprintRef.current[tabId] = getTabFingerprint({
+        lastSavedFingerprintRef.current[targetTabId] = getTabFingerprint({
           ...latestTabState,
           dbId: newDbId,
           formData: { ...latestTabState.formData, slug: finalSlug, coverImageUrl: coverUrl }
         });
       }
 
-      // Update state for this specific tab
+      // Update state for this specific tab to Saved
       setTabs(prev => prev.map(t => {
-        if (t.id !== tabId) return t;
+        if (t.id !== targetTabId) return t;
         return {
           ...t,
           dbId: newDbId,
@@ -385,33 +359,26 @@ function ComposePageContent() {
             slug: finalSlug,
             coverImageUrl: coverUrl,
           },
-          saveStatus: 'Saved as draft',
+          saveStatus: 'Saved',
           isDirty: false,
         };
       }));
 
-      // If active tab acquired a new dbId, update history
-      if (newDbId && activeTabIdRef.current === tabId && (!tab.dbId || tab.dbId !== newDbId)) {
+      // Update browser URL if active tab acquired a new dbId
+      if (newDbId && activeTabIdRef.current === targetTabId && (!tab.dbId || tab.dbId !== newDbId)) {
         window.history.replaceState(null, '', `/admin/compose?id=${newDbId}`);
       }
     } catch (err: any) {
-      console.error(`Autosave failed for tab ${tabId}:`, err);
-      setTabs(prev => prev.map(t => t.id === tabId ? { ...t, saveStatus: 'Error saving' } : t));
+      console.error(`Manual save failed for tab ${targetTabId}:`, err);
+      const errMsg = parseDbError(err) || ("error" in err ? err.error : err.message) || "Failed to save article";
+      setDbError(errMsg);
+      setTabs(prev => prev.map(t => t.id === targetTabId ? { ...t, saveStatus: 'Error saving' } : t));
     } finally {
-      inFlightRef.current[tabId] = false;
-      if (queuedSaveRef.current[tabId]) {
-        queuedSaveRef.current[tabId] = false;
-        // Schedule follow-up save for changes that occurred during flight
-        if (pendingTimersRef.current[tabId]) {
-          clearTimeout(pendingTimersRef.current[tabId]);
-        }
-        pendingTimersRef.current[tabId] = setTimeout(() => {
-          delete pendingTimersRef.current[tabId];
-          saveTab(tabId);
-        }, 500);
-      }
+      inFlightRef.current[targetTabId] = false;
     }
   }, [getTabFingerprint]);
+
+  const saveTab = manualSaveTab;
 
   const aiOptimizationTimersRef = useRef<Record<string, NodeJS.Timeout>>({});
   const aiOptimizingInFlightRef = useRef<Record<string, boolean>>({});
@@ -525,36 +492,27 @@ function ComposePageContent() {
     }, delay);
   }, [runBackgroundOptimization]);
 
-  const scheduleAutosave = useCallback((tabId: string, delay = 1500) => {
-    if (pendingTimersRef.current[tabId]) {
-      clearTimeout(pendingTimersRef.current[tabId]);
-      delete pendingTimersRef.current[tabId];
-    }
-    pendingTimersRef.current[tabId] = setTimeout(() => {
-      delete pendingTimersRef.current[tabId];
-      saveTab(tabId);
-    }, delay);
-  }, [saveTab]);
-
-  const flushSaveTab = useCallback((tabId: string) => {
-    if (pendingTimersRef.current[tabId]) {
-      clearTimeout(pendingTimersRef.current[tabId]);
-      delete pendingTimersRef.current[tabId];
-    }
-    saveTab(tabId);
-  }, [saveTab]);
-
-  // Clean up all timers on unmount
+  // Clean up timers on unmount
   useEffect(() => {
-    const timers = pendingTimersRef.current;
     const aiTimers = aiOptimizationTimersRef.current;
     return () => {
-      Object.values(timers).forEach(timer => clearTimeout(timer));
       Object.values(aiTimers).forEach(timer => clearTimeout(timer));
     };
   }, []);
 
-  // Setters bridging mutations for active tab with automatic debounce scheduling
+  // Keyboard shortcut for manual saving (Ctrl+S / Cmd+S)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault();
+        manualSaveTab(activeTabIdRef.current);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [manualSaveTab]);
+
+  // Setters marking active tab as unsaved — NO automatic persistence
   const setFormData = useCallback((updater: any) => {
     const currentTabId = activeTabIdRef.current;
     setTabs(prev => prev.map(t => {
@@ -564,12 +522,11 @@ function ComposePageContent() {
         ...t,
         formData: newFormData,
         isDirty: true,
-        saveStatus: 'Unsaved'
+        saveStatus: 'Unsaved changes'
       };
     }));
-    scheduleAutosave(currentTabId, 1500);
     scheduleAIOptimization(currentTabId, 3500);
-  }, [scheduleAutosave, scheduleAIOptimization]);
+  }, [scheduleAIOptimization]);
 
   const setRichTextContent = useCallback((content: string) => {
     const currentTabId = activeTabIdRef.current;
@@ -579,12 +536,11 @@ function ComposePageContent() {
         ...t,
         richTextContent: content,
         isDirty: true,
-        saveStatus: 'Unsaved'
+        saveStatus: 'Unsaved changes'
       };
     }));
-    scheduleAutosave(currentTabId, 1500);
     scheduleAIOptimization(currentTabId, 3500);
-  }, [scheduleAutosave, scheduleAIOptimization]);
+  }, [scheduleAIOptimization]);
 
   const setPasteTagsText = useCallback((text: string) => {
     const currentTabId = activeTabIdRef.current;
@@ -594,44 +550,33 @@ function ComposePageContent() {
         ...t,
         pasteTagsText: text,
         isDirty: true,
-        saveStatus: 'Unsaved'
+        saveStatus: 'Unsaved changes'
       };
     }));
-    scheduleAutosave(currentTabId, 1500);
-  }, [scheduleAutosave]);
+  }, []);
 
   const handleTabSelect = useCallback((nextTabId: string) => {
-    const prevTabId = activeTabIdRef.current;
-    if (prevTabId && prevTabId !== nextTabId) {
-      const prevTab = tabsRef.current.find(t => t.id === prevTabId);
-      if (prevTab && (prevTab.isDirty || prevTab.saveStatus === 'Unsaved')) {
-        flushSaveTab(prevTabId);
-      }
-    }
-
     setActiveTabId(nextTabId);
-
     const nextTab = tabsRef.current.find(t => t.id === nextTabId);
     if (nextTab?.dbId) {
       window.history.replaceState(null, '', `/admin/compose?id=${nextTab.dbId}`);
     } else {
       window.history.replaceState(null, '', `/admin/compose`);
     }
-  }, [flushSaveTab]);
+  }, []);
 
   const handleTabClose = useCallback((tabIdToClose: string) => {
     const targetTab = tabsRef.current.find(t => t.id === tabIdToClose);
-    if (targetTab && (targetTab.isDirty || targetTab.saveStatus === 'Unsaved')) {
-      const confirmed = window.confirm("This tab has unsaved changes. Are you sure you want to close it?");
+    if (targetTab && (targetTab.isDirty || targetTab.saveStatus === 'Unsaved changes' || targetTab.saveStatus === 'Unsaved')) {
+      const confirmed = window.confirm("This draft has unsaved changes. Are you sure you want to close it?");
       if (!confirmed) return;
     }
 
-    if (pendingTimersRef.current[tabIdToClose]) {
-      clearTimeout(pendingTimersRef.current[tabIdToClose]);
-      delete pendingTimersRef.current[tabIdToClose];
+    if (aiOptimizationTimersRef.current[tabIdToClose]) {
+      clearTimeout(aiOptimizationTimersRef.current[tabIdToClose]);
+      delete aiOptimizationTimersRef.current[tabIdToClose];
     }
     delete inFlightRef.current[tabIdToClose];
-    delete queuedSaveRef.current[tabIdToClose];
     delete lastSavedFingerprintRef.current[tabIdToClose];
 
     setTabs(prev => {
@@ -897,11 +842,6 @@ function ComposePageContent() {
     const currentTab = tabsRef.current.find(t => t.id === currentTabId);
     if (!currentTab) return;
 
-    if (pendingTimersRef.current[currentTabId]) {
-      clearTimeout(pendingTimersRef.current[currentTabId]);
-      delete pendingTimersRef.current[currentTabId];
-    }
-
     setDbError(null);
     setSaving(true);
 
@@ -1071,6 +1011,34 @@ function ComposePageContent() {
                           <>
                             <button
                               type="button"
+                              onClick={() => manualSaveTab(activeTabId)}
+                              disabled={saveStatus === 'Saving...'}
+                              className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-[11px] font-sans transition-colors border ${
+                                saveStatus === 'Unsaved changes' || activeTabData.isDirty
+                                  ? 'bg-[#252526] hover:bg-[#333] text-amber-300 border-amber-500/40 hover:border-amber-400'
+                                  : 'bg-[#1e1e1e] hover:bg-[#2a2a2a] text-neutral-300 hover:text-white border-[#333]'
+                              } disabled:opacity-50`}
+                              title="Save Draft (Ctrl+S / Cmd+S)"
+                            >
+                              {saveStatus === 'Saving...' ? (
+                                <>
+                                  <RefreshCw className="w-3.5 h-3.5 animate-spin text-blue-400" />
+                                  <span>Saving...</span>
+                                </>
+                              ) : saveStatus === 'Unsaved changes' || activeTabData.isDirty ? (
+                                <>
+                                  <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+                                  <span>Save Draft</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Check className="w-3.5 h-3.5 text-emerald-400" />
+                                  <span>Saved</span>
+                                </>
+                              )}
+                            </button>
+                            <button
+                              type="button"
                               onClick={() => setActiveTab('preview')}
                               className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-sans text-neutral-300 hover:text-white hover:bg-[#333] transition-colors border border-transparent hover:border-[#444]"
                               title="Open Preview"
@@ -1146,9 +1114,10 @@ function ComposePageContent() {
         <div className="flex items-center gap-4">
           <button
             type="button"
-            onClick={() => saveTab(activeTabId, { force: true })}
-            className="flex items-center gap-1.5 hover:bg-[#ffffff22] px-1.5 py-0.5 rounded cursor-pointer transition-colors outline-none"
-            title="Click to save immediately"
+            onClick={() => manualSaveTab(activeTabId)}
+            disabled={saveStatus === 'Saving...'}
+            className="flex items-center gap-1.5 hover:bg-[#ffffff22] px-1.5 py-0.5 rounded cursor-pointer transition-colors outline-none disabled:opacity-50"
+            title="Click to save manually (Ctrl+S / Cmd+S)"
           >
             {saveStatus === 'Saving...' ? (
               <>
@@ -1160,7 +1129,7 @@ function ComposePageContent() {
                 <AlertCircle className="w-3 h-3 text-red-200" />
                 <span className="text-red-200">Error saving (click to retry)</span>
               </>
-            ) : saveStatus === 'Unsaved' ? (
+            ) : saveStatus === 'Unsaved changes' || activeTabData.isDirty ? (
               <>
                 <span className="w-2 h-2 rounded-full bg-amber-300 animate-pulse" />
                 <span>Unsaved changes</span>
@@ -1168,7 +1137,7 @@ function ComposePageContent() {
             ) : (
               <>
                 <Check className="w-3 h-3 text-emerald-300" />
-                <span>{saveStatus || 'Saved'}</span>
+                <span>Saved</span>
               </>
             )}
           </button>

@@ -576,7 +576,6 @@ export default function PostPage() {
 
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'error' | 'unsaved'>('idle');
   const lastSavedData = React.useRef<any>(null);
-  const autoSaveTimer = React.useRef<NodeJS.Timeout | null>(null);
 
   const extractCoverImage = (payload: any) => {
     if (payload.autoCoverImage && payload.content) {
@@ -610,50 +609,7 @@ export default function PostPage() {
 
     setSaveState('unsaved');
     setDbError(null);
-
-    if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
-
-    autoSaveTimer.current = setTimeout(async () => {
-      // Don't auto-save if completely empty to avoid junk records,
-      // but do if there's at least a title or some content
-      if (!formData.title?.trim() && !formData.content?.trim()) return;
-
-      setSaveState('saving');
-      try {
-        let payload = extractCoverImage({ ...formData, draft: true });
-
-        if (!payload.slug && payload.title) {
-            payload.slug = payload.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
-        }
-
-        if (editingId && editingId !== 'none') {
-          const res = await updatePost(editingId, payload);
-          if (!res.success) throw new Error("error" in res ? res.error : "Error");
-          lastSavedData.current = { ...formData, draft: true, slug: payload.slug };
-          setFormData(prev => ({ ...prev, slug: payload.slug, draft: true }));
-        } else {
-          const res = await createPost(payload);
-          if (res.success && res.data && res.data.id) {
-            const data = res.data;
-            setEditingId(data.id);
-            lastSavedData.current = { ...formData, id: data.id, draft: true, slug: payload.slug };
-            setFormData(prev => ({ ...prev, id: data.id, draft: true, slug: payload.slug }));
-            // load data in background to update the table
-            loadData();
-          }
-        }
-        setSaveState('saved');
-        setTimeout(() => setSaveState(s => s === 'saved' ? 'idle' : s), 2000);
-      } catch (err: any) {
-        setSaveState('error');
-        setDbError(parseDbError(err) || "Failed to auto-save");
-      }
-    }, 1500);
-
-    return () => {
-      if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
-    };
-  }, [formData, isEditing, editingId]);
+  }, [formData, isEditing]);
 
   const errors: Record<string, string> = {};
   if (!formData.persona?.trim()) {
