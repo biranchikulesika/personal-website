@@ -2,6 +2,7 @@
 import { verifyAuth } from '@/lib/auth/verify';
 import { PostService } from '@/lib/services/post.service';
 import { postSchema, updatePostSchema } from '@/lib/schemas';
+import { generatePostMetadata } from '@/lib/ai/post-metadata';
 import { revalidatePath } from 'next/cache';
 
 const postService = new PostService();
@@ -250,6 +251,16 @@ export async function revertPostToDraft(id: string): Promise<ActionResponse<any>
     }
     revalidatePath('/sitemap.xml', 'layout');
     
+    return { success: true, data: result };
+  } catch (error) {
+    return handleError(error);
+  }
+}
+
+export async function generatePostMetadataAction(input: { title: string; content: string; persona?: string }): Promise<ActionResponse<{ excerpt: string; tags: string[] }>> {
+  try {
+    await verifyAuth();
+    const result = await generatePostMetadata(input);
     return { success: true, data: result };
   } catch (error) {
     return handleError(error);

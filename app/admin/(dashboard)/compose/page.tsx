@@ -818,10 +818,12 @@ function ComposePageContent() {
     }
 
     const splitTags = ptt.split(',').map((t: string) => t.trim()).filter(Boolean);
+    const finalExcerpt = fd.excerpt?.trim() || getExcerptFromContent();
 
     const payload: any = {
       ...fd,
       title: titleToSave,
+      excerpt: finalExcerpt,
       slug: finalSlug,
       tags: splitTags,
       coverImageUrl: coverUrl,
@@ -1087,6 +1089,7 @@ function ComposePageContent() {
         onClose={() => setIsPublishModalOpen(false)}
         formData={formData}
         setFormData={setFormData}
+        richTextContent={richTextContent}
         personaInfoMap={personaInfoMap}
         saving={saving}
         isCustomizingUrl={isCustomizingUrl}

@@ -11,7 +11,7 @@ import Image from 'next/image';
 import { MarkdownRenderer } from '@/components/mdx/MarkdownRenderer';
 import { uploadImage, getRecentUploads } from '@/lib/supabase/storage';
 import { UploadCloud, Clock } from 'lucide-react';
-import { getPosts, createPost, updatePost, deletePost, hidePost, unhidePost, featurePost, unfeaturePost, revertPostToDraft } from '@/app/admin/actions/posts.actions';
+import { getPosts, createPost, updatePost, deletePost, hidePost, unhidePost, featurePost, unfeaturePost, revertPostToDraft, generatePostMetadataAction } from '@/app/admin/actions/posts.actions';
 import { FormLabel, InlineError, ValidationSummary, parseDbError, InlineWarning } from '@/components/admin/validation';
 
 function formatToDatetimeLocal(isoString?: string): string {
@@ -43,6 +43,30 @@ export default function PostPage() {
   const previewMode = activeTab === 'preview';
 
   const [isUploading, setIsUploading] = useState(false);
+  const [isGeneratingAI, setIsGeneratingAI] = useState(false);
+
+  const handleAutoGenerateAI = async () => {
+    if (isGeneratingAI) return;
+    setIsGeneratingAI(true);
+    try {
+      const res = await generatePostMetadataAction({
+        title: formData.title || '',
+        content: formData.content || '',
+        persona: formData.persona || 'builder',
+      });
+      if (res.success && res.data) {
+        setFormData((prev: any) => ({
+          ...prev,
+          excerpt: res.data.excerpt,
+          tags: res.data.tags,
+        }));
+      }
+    } catch (err) {
+      console.error('AI generation error:', err);
+    } finally {
+      setIsGeneratingAI(false);
+    }
+  };
   const [recentUploads, setRecentUploads] = useState<any[]>([]);
   const [uploadError, setUploadError] = useState('');
   const [isDragOverTextarea, setIsDragOverTextarea] = useState(false);
@@ -934,7 +958,19 @@ export default function PostPage() {
                 <InlineError message={showValidation && !formData.slug?.trim() ? 'Post Slug is required.' : undefined} />
               </div>
               <div>
-                <FormLabel label="Excerpt" />
+                <div className="flex items-center justify-between mb-1.5">
+                  <FormLabel label="Excerpt" />
+                  <button
+                    type="button"
+                    onClick={handleAutoGenerateAI}
+                    disabled={isGeneratingAI}
+                    className="text-[10px] text-[#ff7700] hover:text-[#ff9933] font-mono uppercase tracking-wider flex items-center gap-1 disabled:opacity-50 transition-colors"
+                    title="Auto-generate summary and tags with AI"
+                  >
+                    <Sparkles className="w-3 h-3" />
+                    {isGeneratingAI ? 'Generating...' : 'AI Generate'}
+                  </button>
+                </div>
                 <textarea value={formData.excerpt || ''} onChange={(e) => setFormData({...formData, excerpt: e.target.value})} className="w-full h-32 bg-[#161616] border border-[#222] rounded-md px-4 py-2.5 text-sm text-neutral-200 outline-none focus:border-neutral-500 resize-none"></textarea>
                 <InlineWarning message={!formData.excerpt?.trim() ? 'Excerpts are optional but recommended as summaries in lists.' : undefined} />
               </div>
@@ -1550,7 +1586,19 @@ export default function PostPage() {
 </div>
 
               <div>
-                <FormLabel label="Tags (comma separated)" />
+                <div className="flex items-center justify-between mb-1.5">
+                  <FormLabel label="Tags (comma separated)" />
+                  <button
+                    type="button"
+                    onClick={handleAutoGenerateAI}
+                    disabled={isGeneratingAI}
+                    className="text-[10px] text-[#ff7700] hover:text-[#ff9933] font-mono uppercase tracking-wider flex items-center gap-1 disabled:opacity-50 transition-colors"
+                    title="Auto-generate tags and summary with AI"
+                  >
+                    <Sparkles className="w-3 h-3" />
+                    {isGeneratingAI ? 'Generating...' : 'AI Generate'}
+                  </button>
+                </div>
                 <input type="text" value={(formData.tags || []).join(', ')} onChange={(e) => setFormData({...formData, tags: e.target.value.split(',').map(s=>s.trim())})} className="w-full bg-[#161616] border border-[#222] rounded-md px-4 py-2.5 text-sm text-neutral-200 outline-none focus:border-neutral-500" />
                 <InlineWarning message={(!formData.tags || formData.tags.length === 0 || (formData.tags.length === 1 && !formData.tags[0])) ? "No tags are listed. Tags aggregate search capabilities across subjects." : undefined} />
               </div>

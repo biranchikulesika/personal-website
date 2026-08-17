@@ -1,14 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
-import { Send, X, RefreshCw, Loader2 } from 'lucide-react';
+import { Send, X, RefreshCw, Loader2, Sparkles } from 'lucide-react';
 import { uploadImage } from '@/lib/supabase/storage';
 import { useFocusTrap } from '@/hooks/use-focus-trap';
+import { generatePostMetadataAction } from '@/app/admin/actions/posts.actions';
 
 interface PublishDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   formData: any;
   setFormData: (data: any) => void;
+  richTextContent?: string;
   personaInfoMap: Record<string, { label: string; system: string; color: string; bg: string }>;
   saving: boolean;
   isCustomizingUrl: boolean;
@@ -36,6 +38,7 @@ export default function PublishDrawer({
   onClose,
   formData,
   setFormData,
+  richTextContent = '',
   personaInfoMap,
   saving,
   isCustomizingUrl,
@@ -58,6 +61,39 @@ export default function PublishDrawer({
   setIsEditingExcerpt
 }: PublishDrawerProps) {
   const [isUploadingCover, setIsUploadingCover] = useState(false);
+  const [isGeneratingAI, setIsGeneratingAI] = useState(false);
+
+  const handleGenerateAI = useCallback(async (override = false) => {
+    if (isGeneratingAI) return;
+    setIsGeneratingAI(true);
+    try {
+      const res = await generatePostMetadataAction({
+        title: formData.title || '',
+        content: richTextContent || '',
+        persona: formData.persona || 'builder',
+      });
+      if (res.success && res.data) {
+        if (override || !formData.excerpt || formData.excerpt.trim() === '') {
+          setFormData((prev: any) => ({ ...prev, excerpt: res.data.excerpt }));
+        }
+        if (override || !pasteTagsText || pasteTagsText.trim() === '') {
+          setPasteTagsText(res.data.tags.join(', '));
+          setFormData((prev: any) => ({ ...prev, tags: res.data.tags }));
+        }
+      }
+    } catch (e) {
+      console.error('AI metadata generation error:', e);
+    } finally {
+      setIsGeneratingAI(false);
+    }
+  }, [formData.title, formData.persona, formData.excerpt, richTextContent, pasteTagsText, isGeneratingAI, setFormData, setPasteTagsText]);
+
+  // Auto-generate on drawer open if summary or tags are empty and content exists
+  useEffect(() => {
+    if (isOpen && (!formData.excerpt?.trim() || !pasteTagsText?.trim()) && (richTextContent?.trim() || formData.title?.trim())) {
+      handleGenerateAI(false);
+    }
+  }, [isOpen, formData.excerpt, pasteTagsText, richTextContent, formData.title, handleGenerateAI]);
 
   // Focus trap
   const { containerRef: drawerRef } = useFocusTrap<HTMLDivElement>({
@@ -206,14 +242,34 @@ export default function PublishDrawer({
             {/* Custom Excerpt Summary Input */}
             <div>
               <div className="flex items-center justify-between mb-1.5">
-                <label className="block text-[10px] uppercase font-mono tracking-widest font-semibold text-neutral-500">Summary / Excerpt</label>
-                <button 
-                  type="button"
-                  onClick={() => setIsEditingExcerpt(!isEditingExcerpt)}
-                  className="text-[9px] text-[#ff7700] hover:text-[#ff881a] font-mono tracking-widest uppercase"
-                >
-                  {isEditingExcerpt ? '[Cancel]' : '[Edit]'}
-                </button>
+                <div className="flex items-center gap-2">
+                  <label className="block text-[10px] uppercase font-mono tracking-widest font-semibold text-neutral-500">Summary / Excerpt</label>
+                  {isGeneratingAI && (
+                    <span className="flex items-center gap-1 text-[9px] text-[#ff7700] font-mono animate-pulse">
+                      <Sparkles className="w-2.5 h-2.5 animate-spin" />
+                      AI Generating...
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  <button 
+                    type="button"
+                    onClick={() => handleGenerateAI(true)}
+                    disabled={isGeneratingAI}
+                    className="text-[9px] text-[#ff7700] hover:text-[#ff9933] font-mono tracking-wider uppercase flex items-center gap-1 disabled:opacity-50 transition-colors"
+                    title="Auto-generate summary with AI"
+                  >
+                    <Sparkles className="w-2.5 h-2.5" />
+                    [AI Generate]
+                  </button>
+                  <button 
+                    type="button"
+                    onClick={() => setIsEditingExcerpt(!isEditingExcerpt)}
+                    className="text-[9px] text-neutral-400 hover:text-neutral-200 font-mono tracking-widest uppercase"
+                  >
+                    {isEditingExcerpt ? '[Cancel]' : '[Edit]'}
+                  </button>
+                </div>
               </div>
               
               {isEditingExcerpt ? (
@@ -234,19 +290,31 @@ export default function PublishDrawer({
                 </div>
               ) : (
                 <p className="text-xs text-neutral-400 font-sans italic bg-[#141414] border border-[#222] rounded p-2.5 whitespace-pre-wrap">
-                  {formData.excerpt || getExcerptFromContent() || '(Auto summary generated on submit)'}
+                  {formData.excerpt || (isGeneratingAI ? 'Generating summary with AI...' : getExcerptFromContent() || '(Auto summary generated with AI on publish)')}
                 </p>
               )}
             </div>
 
             {/* Tags Selection */}
             <div>
-              <label className="block text-[10px] uppercase font-mono tracking-widest font-semibold text-neutral-500 mb-1.5">Suggested Tags</label>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-[10px] uppercase font-mono tracking-widest font-semibold text-neutral-500">Suggested Tags</label>
+                <button 
+                  type="button"
+                  onClick={() => handleGenerateAI(true)}
+                  disabled={isGeneratingAI}
+                  className="text-[9px] text-[#ff7700] hover:text-[#ff9933] font-mono tracking-wider uppercase flex items-center gap-1 disabled:opacity-50 transition-colors"
+                  title="Auto-generate tags with AI"
+                >
+                  <Sparkles className="w-2.5 h-2.5" />
+                  [AI Tags]
+                </button>
+              </div>
               <input 
                 type="text" 
                 value={pasteTagsText}
                 onChange={(e) => setPasteTagsText(e.target.value)}
-                placeholder="tech, journals, philosophy"
+                placeholder="tech, architecture, philosophy"
                 className="w-full bg-[#141414] border border-[#222] focus:border-[#ff7700] rounded px-3 py-2 text-xs font-mono text-neutral-300 outline-none"
               />
               <p className="text-xs text-neutral-500 mt-1">Separate tags with commas.</p>
