@@ -20,6 +20,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
+    "test": "npx tsx --test tests/*.test.ts",
     "clean": "next clean"
   },
   "dependencies": {

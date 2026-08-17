@@ -354,9 +354,50 @@ CREATE TABLE IF NOT EXISTS "public"."passkey_credentials" (
 CREATE INDEX IF NOT EXISTS idx_passkey_credentials_user_id ON "public"."passkey_credentials"("userId");
 CREATE INDEX IF NOT EXISTS idx_passkey_credentials_credential_id ON "public"."passkey_credentials"("credentialId");
 
-DROP TRIGGER IF EXISTS update_passkey_credentials_updated_at ON "public"."passkey_credentials";
-CREATE TRIGGER update_passkey_credentials_updated_at BEFORE UPDATE ON "public"."passkey_credentials" FOR EACH ROW EXECUTE FUNCTION "update_updatedAt_column"();
+-- UPLOADED IMAGES REGISTRY
+CREATE TABLE IF NOT EXISTS "public"."uploaded_images" (
+    "id" UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    "bucket" TEXT NOT NULL DEFAULT 'post-images',
+    "storage_path" TEXT NOT NULL,
+    "public_url" TEXT NOT NULL,
+    "file_name" TEXT,
+    "content_type" TEXT,
+    "size_bytes" BIGINT,
+    "first_uploaded_at" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    "last_referenced_at" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    "reference_count" INTEGER NOT NULL DEFAULT 0,
+    "status" TEXT NOT NULL DEFAULT 'active',
+    "last_scanned_at" TIMESTAMPTZ,
+    "metadata" JSONB DEFAULT '{}',
+    "created_at" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    "updated_at" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE ("bucket", "storage_path")
+);
+CREATE INDEX IF NOT EXISTS idx_uploaded_images_status_last_ref ON "public"."uploaded_images"("status", "last_referenced_at");
+CREATE INDEX IF NOT EXISTS idx_uploaded_images_storage_path ON "public"."uploaded_images"("storage_path");
+CREATE INDEX IF NOT EXISTS idx_uploaded_images_bucket ON "public"."uploaded_images"("bucket");
 
+DROP TRIGGER IF EXISTS update_uploaded_images_updated_at ON "public"."uploaded_images";
+CREATE TRIGGER update_uploaded_images_updated_at BEFORE UPDATE ON "public"."uploaded_images" FOR EACH ROW EXECUTE FUNCTION "update_updated_at_column"();
+
+-- IMAGE CLEANUP AUDIT LOGS
+CREATE TABLE IF NOT EXISTS "public"."image_cleanup_logs" (
+    "id" UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    "scanned_count" INTEGER NOT NULL DEFAULT 0,
+    "referenced_count" INTEGER NOT NULL DEFAULT 0,
+    "orphaned_count" INTEGER NOT NULL DEFAULT 0,
+    "deleted_count" INTEGER NOT NULL DEFAULT 0,
+    "skipped_count" INTEGER NOT NULL DEFAULT 0,
+    "failed_count" INTEGER NOT NULL DEFAULT 0,
+    "retention_days" INTEGER NOT NULL DEFAULT 60,
+    "deleted_paths" TEXT[] DEFAULT '{}',
+    "errors" TEXT[] DEFAULT '{}',
+    "details" JSONB DEFAULT '{}',
+    "duration_ms" INTEGER NOT NULL DEFAULT 0,
+    "status" TEXT NOT NULL DEFAULT 'success',
+    "executed_at" TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_image_cleanup_logs_executed_at ON "public"."image_cleanup_logs"("executed_at" DESC);
 
 -- 5. ROW LEVEL SECURITY (RLS)
 ALTER TABLE "public"."active_systems" ENABLE ROW LEVEL SECURITY;
@@ -377,6 +418,8 @@ ALTER TABLE "public"."questions" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."redistribution_records" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."donations" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."passkey_credentials" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "public"."uploaded_images" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "public"."image_cleanup_logs" ENABLE ROW LEVEL SECURITY;
 
 -- Admin full access across all tables
 DO $$

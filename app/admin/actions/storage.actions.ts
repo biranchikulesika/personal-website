@@ -1,6 +1,7 @@
 'use server';
 
 import { verifyAuth } from '@/lib/auth/verify';
+import { ImageCleanupService, CleanupResult } from '@/lib/services/image-cleanup.service';
 
 export async function uploadImageServerAction(formData: FormData) {
   const file = formData.get('file') as File | null;
@@ -49,7 +50,7 @@ export async function uploadImageServerAction(formData: FormData) {
   const path = `${uuid}.${ext}`;
 
   // Use the verified supabase client which has the user's context/auth
-  const { data, error } = await supabase.storage
+  const { error } = await supabase.storage
     .from(bucket)
     .upload(path, file, {
       cacheControl: '3600',
@@ -63,6 +64,13 @@ export async function uploadImageServerAction(formData: FormData) {
 
   const { data: { publicUrl } } = supabase.storage.from(bucket).getPublicUrl(path);
 
+  // Register in uploaded_images tracking table
+  await ImageCleanupService.registerUpload(bucket, path, publicUrl, {
+    fileName: file.name,
+    sizeBytes: file.size,
+    contentType: file.type,
+  });
+
   return { publicUrl, path };
 }
 
@@ -74,4 +82,27 @@ export async function deleteImageServerAction(bucket: string, path: string) {
     console.error('Delete Error:', error);
     throw new Error('Failed to delete image.');
   }
+
+  // Also remove from registry
+  await supabase
+    .from('uploaded_images')
+    .delete()
+    .eq('bucket', bucket)
+    .eq('storage_path', path);
+}
+
+export async function runImageCleanupAction(options?: { dryRun?: boolean; retentionDays?: number }): Promise<CleanupResult> {
+  await verifyAuth();
+  const service = new ImageCleanupService(options?.retentionDays);
+  return await service.runCleanup({ dryRun: options?.dryRun });
+}
+
+export async function getStorageHealthSummaryAction() {
+  await verifyAuth();
+  return await ImageCleanupService.getStorageHealthSummary();
+}
+
+export async function getRecentCleanupLogsAction(limit = 10) {
+  await verifyAuth();
+  return await ImageCleanupService.getRecentLogs(limit);
 }
