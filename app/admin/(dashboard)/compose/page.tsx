@@ -5,9 +5,10 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Plus, X, Image as ImageIcon, GripVertical, Check,
   Trash2, Undo, Redo, Eye, CloudUpload, ChevronUp, ChevronRight,
-  RefreshCw, AlertCircle
+  RefreshCw, AlertCircle, Sparkles
 } from 'lucide-react';
-import { getPosts, createPost, updatePost, checkSlugExists } from '@/app/admin/actions/posts.actions';
+import { getPosts, createPost, updatePost, checkSlugExists, optimizePostMetadataAction } from '@/app/admin/actions/posts.actions';
+import { computeContentHash } from '@/lib/ai/post-metadata';
 import PostRenderer from '@/components/post-renderer/PostRenderer';
 import PublishDrawer from './PublishDrawer';
 import MDXEditor from './MDXEditor';
@@ -160,7 +161,20 @@ const defaultFormData = {
   publishedAt: '',
   featured: false,
   hidden: false,
-  status: 'draft'
+  status: 'draft',
+  autoOptimize: true,
+  seoTitle: '',
+  seoDescription: '',
+  ogTitle: '',
+  ogDescription: '',
+  twitterTitle: '',
+  twitterDescription: '',
+  keywords: [],
+  manualOverrides: [],
+  aiMetadataStatus: 'idle',
+  aiMetadataLastGeneratedAt: null,
+  aiMetadataContentHash: null,
+  aiMetadataError: null,
 };
 
 function ComposePageContent() {
@@ -399,6 +413,118 @@ function ComposePageContent() {
     }
   }, [getTabFingerprint]);
 
+  const aiOptimizationTimersRef = useRef<Record<string, NodeJS.Timeout>>({});
+  const aiOptimizingInFlightRef = useRef<Record<string, boolean>>({});
+
+  const runBackgroundOptimization = useCallback(async (tabId: string, force = false) => {
+    const tab = tabsRef.current.find(t => t.id === tabId);
+    if (!tab) return;
+    if (tab.formData.autoOptimize === false && !force) return;
+
+    const title = tab.formData.title || '';
+    const content = tab.richTextContent || '';
+    const persona = tab.formData.persona || 'builder';
+    const coverImageUrl = tab.formData.coverImageUrl || '';
+
+    // Only run if there is at least a title or some content
+    if (!title.trim() && !content.trim()) return;
+
+    const currentHash = tab.formData.aiMetadataContentHash;
+    const newHash = computeContentHash(title, content, persona, coverImageUrl);
+    if (!force && currentHash === newHash && tab.formData.seoTitle) return;
+    if (aiOptimizingInFlightRef.current[tabId]) return;
+
+    aiOptimizingInFlightRef.current[tabId] = true;
+    setTabs(prev => prev.map(t => t.id === tabId ? {
+      ...t,
+      formData: { ...t.formData, aiMetadataStatus: 'generating' }
+    } : t));
+
+    try {
+      const overrides = Array.isArray(tab.formData.manualOverrides) ? tab.formData.manualOverrides : [];
+      const res = await optimizePostMetadataAction({
+        id: tab.dbId || undefined,
+        title,
+        content,
+        persona,
+        coverImageUrl,
+        manualOverrides: overrides,
+        existingData: {
+          seoTitle: tab.formData.seoTitle,
+          seoDescription: tab.formData.seoDescription,
+          excerpt: tab.formData.excerpt,
+          suggestedSlug: tab.formData.slug,
+          ogTitle: tab.formData.ogTitle,
+          ogDescription: tab.formData.ogDescription,
+          twitterTitle: tab.formData.twitterTitle,
+          twitterDescription: tab.formData.twitterDescription,
+          tags: tab.formData.tags,
+          keywords: tab.formData.keywords,
+          coverImageAlt: tab.formData.coverImageAlt,
+        },
+        currentHash,
+        force,
+      });
+
+      if (res.success && res.data) {
+        const data = res.data;
+        setTabs(prev => prev.map(t => {
+          if (t.id !== tabId) return t;
+          const overrideSet = new Set(overrides);
+          const updatedFd = { ...t.formData };
+
+          if (!overrideSet.has('excerpt') && (!updatedFd.excerpt || !updatedFd.excerpt.trim())) {
+            updatedFd.excerpt = data.excerpt;
+          }
+          if (!overrideSet.has('seoTitle')) updatedFd.seoTitle = data.seoTitle;
+          if (!overrideSet.has('seoDescription')) updatedFd.seoDescription = data.seoDescription;
+          if (!overrideSet.has('ogTitle')) updatedFd.ogTitle = data.ogTitle;
+          if (!overrideSet.has('ogDescription')) updatedFd.ogDescription = data.ogDescription;
+          if (!overrideSet.has('twitterTitle')) updatedFd.twitterTitle = data.twitterTitle;
+          if (!overrideSet.has('twitterDescription')) updatedFd.twitterDescription = data.twitterDescription;
+          if (!overrideSet.has('keywords')) updatedFd.keywords = data.keywords;
+          if (!overrideSet.has('coverImageAlt') && data.coverImageAlt) updatedFd.coverImageAlt = data.coverImageAlt;
+          if (!overrideSet.has('tags') && (!t.pasteTagsText || !t.pasteTagsText.trim())) {
+            updatedFd.tags = data.tags;
+          }
+          if (!overrideSet.has('slug') && (!updatedFd.slug || updatedFd.slug.trim() === '')) {
+            updatedFd.slug = data.suggestedSlug;
+          }
+
+          updatedFd.aiMetadataStatus = 'completed';
+          updatedFd.aiMetadataContentHash = data.contentHash;
+          updatedFd.aiMetadataLastGeneratedAt = new Date().toISOString();
+          updatedFd.aiMetadataError = null;
+
+          return {
+            ...t,
+            formData: updatedFd,
+            pasteTagsText: (!overrideSet.has('tags') && (!t.pasteTagsText || !t.pasteTagsText.trim())) ? data.tags.join(', ') : t.pasteTagsText,
+          };
+        }));
+      }
+    } catch (e: any) {
+      console.warn("Background AI optimization error:", e);
+      setTabs(prev => prev.map(t => t.id === tabId ? {
+        ...t,
+        formData: { ...t.formData, aiMetadataStatus: 'failed', aiMetadataError: e.message }
+      } : t));
+    } finally {
+      delete aiOptimizingInFlightRef.current[tabId];
+    }
+  }, []);
+
+  const scheduleAIOptimization = useCallback((tabId: string, delay = 3500) => {
+    if (aiOptimizationTimersRef.current[tabId]) {
+      clearTimeout(aiOptimizationTimersRef.current[tabId]);
+      delete aiOptimizationTimersRef.current[tabId];
+    }
+    aiOptimizationTimersRef.current[tabId] = setTimeout(() => {
+      delete aiOptimizationTimersRef.current[tabId];
+      runBackgroundOptimization(tabId);
+    }, delay);
+  }, [runBackgroundOptimization]);
+
   const scheduleAutosave = useCallback((tabId: string, delay = 1500) => {
     if (pendingTimersRef.current[tabId]) {
       clearTimeout(pendingTimersRef.current[tabId]);
@@ -421,8 +547,10 @@ function ComposePageContent() {
   // Clean up all timers on unmount
   useEffect(() => {
     const timers = pendingTimersRef.current;
+    const aiTimers = aiOptimizationTimersRef.current;
     return () => {
       Object.values(timers).forEach(timer => clearTimeout(timer));
+      Object.values(aiTimers).forEach(timer => clearTimeout(timer));
     };
   }, []);
 
@@ -440,7 +568,8 @@ function ComposePageContent() {
       };
     }));
     scheduleAutosave(currentTabId, 1500);
-  }, [scheduleAutosave]);
+    scheduleAIOptimization(currentTabId, 3500);
+  }, [scheduleAutosave, scheduleAIOptimization]);
 
   const setRichTextContent = useCallback((content: string) => {
     const currentTabId = activeTabIdRef.current;
@@ -454,7 +583,8 @@ function ComposePageContent() {
       };
     }));
     scheduleAutosave(currentTabId, 1500);
-  }, [scheduleAutosave]);
+    scheduleAIOptimization(currentTabId, 3500);
+  }, [scheduleAutosave, scheduleAIOptimization]);
 
   const setPasteTagsText = useCallback((text: string) => {
     const currentTabId = activeTabIdRef.current;
@@ -1075,6 +1205,33 @@ function ComposePageContent() {
               <div className="fixed inset-0 z-40" onClick={() => setIsPersonaMenuOpen(false)} />
             )}
           </div>
+
+          {/* AI Background Content Optimizer Status Badge */}
+          <button
+            type="button"
+            onClick={() => runBackgroundOptimization(activeTabId, true)}
+            className="flex items-center gap-1.5 hover:bg-[#ffffff22] px-1.5 py-0.5 rounded cursor-pointer transition-colors outline-none font-sans"
+            title={formData.autoOptimize === false ? "AI generation disabled for this article (click to optimize once)" : "Click to manually force background SEO & metadata sync"}
+          >
+            {formData.autoOptimize === false ? (
+              <span className="text-[10px] text-blue-200 opacity-80 font-mono">✨ AI: Manual</span>
+            ) : formData.aiMetadataStatus === 'generating' ? (
+              <>
+                <Sparkles className="w-3 h-3 text-amber-300 animate-spin" />
+                <span className="text-[10px] text-amber-200">AI: Optimizing...</span>
+              </>
+            ) : formData.aiMetadataStatus === 'completed' ? (
+              <>
+                <Sparkles className="w-3 h-3 text-emerald-300" />
+                <span className="text-[10px] text-emerald-200">AI: Synced</span>
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-3 h-3 text-blue-200" />
+                <span className="text-[10px] text-blue-100">AI: Active</span>
+              </>
+            )}
+          </button>
         </div>
         <div className="flex items-center gap-4">
           <span className="font-mono hover:bg-[#ffffff22] px-1 cursor-pointer transition-colors">{getWordCount()} words</span>

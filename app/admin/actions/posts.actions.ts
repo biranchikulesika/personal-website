@@ -2,7 +2,7 @@
 import { verifyAuth } from '@/lib/auth/verify';
 import { PostService } from '@/lib/services/post.service';
 import { postSchema, updatePostSchema } from '@/lib/schemas';
-import { generatePostMetadata } from '@/lib/ai/post-metadata';
+import { generatePostMetadata, generateCompletePostMetadata, computeContentHash, type CompletePostMetadata } from '@/lib/ai/post-metadata';
 import { revalidatePath } from 'next/cache';
 
 const postService = new PostService();
@@ -261,6 +261,41 @@ export async function generatePostMetadataAction(input: { title: string; content
   try {
     await verifyAuth();
     const result = await generatePostMetadata(input);
+    return { success: true, data: result };
+  } catch (error) {
+    return handleError(error);
+  }
+}
+
+export async function optimizePostMetadataAction(input: {
+  id?: string;
+  title: string;
+  content: string;
+  persona?: string;
+  coverImageUrl?: string;
+  manualOverrides?: string[];
+  existingData?: Partial<CompletePostMetadata>;
+  currentHash?: string;
+  force?: boolean;
+}): Promise<ActionResponse<CompletePostMetadata>> {
+  try {
+    await verifyAuth();
+    const newHash = computeContentHash(input.title, input.content, input.persona || 'builder', input.coverImageUrl || '');
+    
+    // If not forced and content hash hasn't changed, return cached data
+    if (!input.force && input.currentHash && input.currentHash === newHash && input.existingData) {
+      return { success: true, data: { ...input.existingData, contentHash: newHash } as CompletePostMetadata };
+    }
+
+    const result = await generateCompletePostMetadata({
+      title: input.title,
+      content: input.content,
+      persona: input.persona,
+      coverImageUrl: input.coverImageUrl,
+      manualOverrides: input.manualOverrides,
+      existingData: input.existingData,
+    });
+
     return { success: true, data: result };
   } catch (error) {
     return handleError(error);

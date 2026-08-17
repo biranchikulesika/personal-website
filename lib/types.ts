@@ -21,6 +21,19 @@ export interface Post {
   publishedAt?: string;
   featured: boolean;
   hidden: boolean;
+  autoOptimize?: boolean;
+  seoTitle?: string;
+  seoDescription?: string;
+  ogTitle?: string;
+  ogDescription?: string;
+  twitterTitle?: string;
+  twitterDescription?: string;
+  keywords?: string[];
+  manualOverrides?: string[];
+  aiMetadataStatus?: 'idle' | 'generating' | 'completed' | 'failed';
+  aiMetadataLastGeneratedAt?: string;
+  aiMetadataContentHash?: string;
+  aiMetadataError?: string;
   createdAt: string;
   updatedAt: string;
 }

@@ -55,9 +55,20 @@ export async function generateMetadata({
     : getDynamicPostOgUrl(post.title, post.excerpt, post.persona);
   const canonicalUrl = getCanonicalUrl(`/p/${resolvedParams.slug}`);
 
+  const seoTitle = post.seoTitle || post.title;
+  const seoDescription = post.seoDescription || post.excerpt || post.title;
+  const ogTitle = post.ogTitle || seoTitle;
+  const ogDescription = post.ogDescription || seoDescription;
+  const twitterTitle = post.twitterTitle || seoTitle;
+  const twitterDescription = post.twitterDescription || seoDescription;
+  const keywords = Array.isArray(post.keywords) && post.keywords.length > 0
+    ? post.keywords
+    : (Array.isArray(post.tags) ? post.tags : []);
+
   return {
-    title: `${post.title} | Biranchi Kulesika`,
-    description: post.excerpt || post.title,
+    title: `${seoTitle} | Biranchi Kulesika`,
+    description: seoDescription,
+    keywords: keywords.length > 0 ? keywords : undefined,
     authors: [{ name: AUTHOR.name, url: AUTHOR.url }],
     // Preview URLs (?preview=true) render draft/unpublished content and must
     // never appear in search results — noindex them while keeping canonical.
@@ -65,19 +76,20 @@ export async function generateMetadata({
       ? { index: false, follow: true }
       : { index: true, follow: true },
     openGraph: {
-      title: post.title,
-      description: post.excerpt || post.title,
+      title: ogTitle,
+      description: ogDescription,
       type: 'article',
       url: canonicalUrl,
       images: [ogImage],
       publishedTime: post.publishedAt || post.createdAt,
       modifiedTime: post.updatedAt || post.publishedAt || post.createdAt,
       authors: [AUTHOR.name],
+      tags: post.tags || [],
     },
     twitter: {
       card: 'summary_large_image',
-      title: post.title,
-      description: post.excerpt || post.title,
+      title: twitterTitle,
+      description: twitterDescription,
       images: [ogImage],
       creator: AUTHOR.twitter,
     },

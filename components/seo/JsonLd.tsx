@@ -32,11 +32,17 @@ interface ArticleJsonLdProps {
 }
 
 export function ArticleJsonLd({ post, url }: ArticleJsonLdProps) {
+  const headline = post.seoTitle || post.title;
+  const description = post.seoDescription || post.excerpt || post.title;
+  const keywords = Array.isArray(post.keywords) && post.keywords.length > 0
+    ? post.keywords.join(', ')
+    : (Array.isArray(post.tags) && post.tags.length > 0 ? post.tags.join(', ') : undefined);
+
   const data = {
     '@context': 'https://schema.org',
-    '@type': 'Article',
-    headline: post.title,
-    description: post.excerpt || post.title,
+    '@type': 'BlogPosting',
+    headline,
+    description,
     datePublished: post.publishedAt || post.createdAt,
     dateModified: post.updatedAt || post.publishedAt || post.createdAt,
     author: {
@@ -56,7 +62,7 @@ export function ArticleJsonLd({ post, url }: ArticleJsonLdProps) {
     },
     image: getPostOgImage(post),
     url,
-    ...(post.tags && post.tags.length > 0 && { keywords: post.tags.join(', ') }),
+    ...(keywords && { keywords }),
   };
 
   return <JsonLdScript data={data} />;

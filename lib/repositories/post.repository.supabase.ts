@@ -25,6 +25,19 @@ const UpdatePostDTO = z.object({
   publishedAt: z.string().nullable().optional(),
   tags: z.array(z.string()).optional(),
   oldSlugs: z.array(z.string()).optional(),
+  autoOptimize: z.boolean().optional(),
+  seoTitle: z.string().nullable().optional(),
+  seoDescription: z.string().nullable().optional(),
+  ogTitle: z.string().nullable().optional(),
+  ogDescription: z.string().nullable().optional(),
+  twitterTitle: z.string().nullable().optional(),
+  twitterDescription: z.string().nullable().optional(),
+  keywords: z.array(z.string()).optional(),
+  manualOverrides: z.array(z.string()).optional(),
+  aiMetadataStatus: z.enum(['idle', 'generating', 'completed', 'failed']).optional(),
+  aiMetadataLastGeneratedAt: z.string().nullable().optional(),
+  aiMetadataContentHash: z.string().nullable().optional(),
+  aiMetadataError: z.string().nullable().optional(),
 }).strip();
 
 function toDbFormat(data: Partial<Post>) {
@@ -47,7 +60,20 @@ function toDbFormat(data: Partial<Post>) {
     featured: data.featured !== undefined ? data.featured : false,
     hidden: data.hidden !== undefined ? data.hidden : false,
     tags: Array.isArray(data.tags) ? data.tags : [],
-    old_slugs: Array.isArray(data.oldSlugs) ? data.oldSlugs : []
+    old_slugs: Array.isArray(data.oldSlugs) ? data.oldSlugs : [],
+    auto_optimize: data.autoOptimize !== undefined ? data.autoOptimize : true,
+    seo_title: data.seoTitle !== undefined ? data.seoTitle : null,
+    seo_description: data.seoDescription !== undefined ? data.seoDescription : null,
+    og_title: data.ogTitle !== undefined ? data.ogTitle : null,
+    og_description: data.ogDescription !== undefined ? data.ogDescription : null,
+    twitter_title: data.twitterTitle !== undefined ? data.twitterTitle : null,
+    twitter_description: data.twitterDescription !== undefined ? data.twitterDescription : null,
+    keywords: Array.isArray(data.keywords) ? data.keywords : [],
+    manual_overrides: Array.isArray(data.manualOverrides) ? data.manualOverrides : [],
+    ai_metadata_status: data.aiMetadataStatus || 'idle',
+    ai_metadata_last_generated_at: data.aiMetadataLastGeneratedAt || null,
+    ai_metadata_content_hash: data.aiMetadataContentHash || null,
+    ai_metadata_error: data.aiMetadataError || null,
   };
 
   if (data.status !== undefined) {
@@ -107,6 +133,19 @@ function fromDbFormat(dbData: any): Post {
     publishedAt: dbData.published_at,
     tags: dbData.tags || [],
     oldSlugs: dbData.old_slugs || [],
+    autoOptimize: dbData.auto_optimize !== undefined ? dbData.auto_optimize : true,
+    seoTitle: dbData.seo_title,
+    seoDescription: dbData.seo_description,
+    ogTitle: dbData.og_title,
+    ogDescription: dbData.og_description,
+    twitterTitle: dbData.twitter_title,
+    twitterDescription: dbData.twitter_description,
+    keywords: dbData.keywords || [],
+    manualOverrides: dbData.manual_overrides || [],
+    aiMetadataStatus: dbData.ai_metadata_status || 'idle',
+    aiMetadataLastGeneratedAt: dbData.ai_metadata_last_generated_at,
+    aiMetadataContentHash: dbData.ai_metadata_content_hash,
+    aiMetadataError: dbData.ai_metadata_error,
     createdAt: dbData.created_at,
     updatedAt: dbData.updated_at
   };
