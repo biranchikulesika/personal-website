@@ -218,6 +218,54 @@ export type Database = {
         }
         Relationships: []
       }
+      passkey_credentials: {
+        Row: {
+          aaguid: string | null
+          backedUp: boolean
+          counter: number
+          createdAt: string
+          credentialId: string
+          deviceType: string
+          id: string
+          lastUsedAt: string | null
+          name: string
+          publicKey: string
+          transports: string[] | null
+          updatedAt: string
+          userId: string
+        }
+        Insert: {
+          aaguid?: string | null
+          backedUp?: boolean
+          counter?: number
+          createdAt?: string
+          credentialId: string
+          deviceType?: string
+          id?: string
+          lastUsedAt?: string | null
+          name?: string
+          publicKey: string
+          transports?: string[] | null
+          updatedAt?: string
+          userId: string
+        }
+        Update: {
+          aaguid?: string | null
+          backedUp?: boolean
+          counter?: number
+          createdAt?: string
+          credentialId?: string
+          deviceType?: string
+          id?: string
+          lastUsedAt?: string | null
+          name?: string
+          publicKey?: string
+          transports?: string[] | null
+          updatedAt?: string
+          userId?: string
+        }
+        Relationships: []
+      }
       field_notes: {
         Row: {
           category: string

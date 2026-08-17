@@ -227,3 +227,25 @@ export const donationSchema = z.object({
   createdAt: z.string().optional(),
   updatedAt: z.string().optional(),
 });
+
+export const passkeyCredentialSchema = z.object({
+  id: z.string().optional(),
+  userId: z.string().uuid(),
+  credentialId: z.string().min(1),
+  publicKey: z.string().min(1),
+  counter: z.number().int().nonnegative().default(0),
+  deviceType: z.enum(['singleDevice', 'multiDevice']).default('singleDevice'),
+  backedUp: z.boolean().default(false),
+  transports: z.array(z.string()).default([]),
+  name: z.string().min(1).max(100).default('Passkey'),
+  aaguid: z.string().nullable().optional(),
+  lastUsedAt: z.string().nullable().optional(),
+  createdAt: z.string().optional(),
+  updatedAt: z.string().optional(),
+});
+
+export const passkeyRenameSchema = z.object({
+  id: z.string().uuid(),
+  name: z.string().trim().min(1, 'Name cannot be empty').max(50, 'Name must be 50 characters or less'),
+});
+

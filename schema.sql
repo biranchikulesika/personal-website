@@ -322,6 +322,29 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
+-- PASSKEY CREDENTIALS (WEBAUTHN FIDO2)
+CREATE TABLE IF NOT EXISTS "public"."passkey_credentials" (
+    "id" UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    "userId" UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    "credentialId" TEXT NOT NULL UNIQUE,
+    "publicKey" TEXT NOT NULL,
+    "counter" BIGINT NOT NULL DEFAULT 0,
+    "deviceType" TEXT NOT NULL DEFAULT 'singleDevice',
+    "backedUp" BOOLEAN NOT NULL DEFAULT false,
+    "transports" TEXT[] DEFAULT '{}',
+    "name" TEXT NOT NULL DEFAULT 'Passkey',
+    "aaguid" TEXT,
+    "lastUsedAt" TIMESTAMPTZ,
+    "createdAt" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_passkey_credentials_user_id ON "public"."passkey_credentials"("userId");
+CREATE INDEX IF NOT EXISTS idx_passkey_credentials_credential_id ON "public"."passkey_credentials"("credentialId");
+
+DROP TRIGGER IF EXISTS update_passkey_credentials_updated_at ON "public"."passkey_credentials";
+CREATE TRIGGER update_passkey_credentials_updated_at BEFORE UPDATE ON "public"."passkey_credentials" FOR EACH ROW EXECUTE FUNCTION "update_updatedAt_column"();
+
+
 -- 5. ROW LEVEL SECURITY (RLS)
 ALTER TABLE "public"."active_systems" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."books" ENABLE ROW LEVEL SECURITY;
@@ -340,6 +363,7 @@ ALTER TABLE "public"."posts" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."questions" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."redistribution_records" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."donations" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "public"."passkey_credentials" ENABLE ROW LEVEL SECURITY;
 
 -- Admin full access across all tables
 DO $$
