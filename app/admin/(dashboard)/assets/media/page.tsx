@@ -122,7 +122,6 @@ export default function MediaAssetsPage() {
             <span className="text-[10px] tracking-[0.25em] text-[#ff7700] uppercase font-mono font-bold">Studio Assets</span>
           </div>
           <h1 className="text-3xl font-medium tracking-tight text-foreground mb-2 font-sans">Media Library</h1>
-          <p className="text-muted-text text-sm">Directly upload, manage, and automatically clean up unreferenced media assets.</p>
         </div>
 
         {/* Upload Button overlay */}
