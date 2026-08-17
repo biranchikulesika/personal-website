@@ -4,7 +4,7 @@
 
 import { useState, useEffect } from 'react';
 import { Plus, Search, Edit2, Trash2, Save, X } from 'lucide-react';
-import { getBuilderStatuss, createBuilderStatus, updateBuilderStatus, deleteBuilderStatus } from '@/app/admin/actions/builderStatuses.actions';
+import { getBuilderStatuses, createBuilderStatus, updateBuilderStatus, deleteBuilderStatus } from '@/app/admin/actions/builderStatuses.actions';
 
 export default function BuilderStatusPage() {
   const [items, setItems] = useState<any[]>([]);
@@ -14,7 +14,7 @@ export default function BuilderStatusPage() {
   const [formData, setFormData] = useState<any>({"operationalState":"","statusText":"","currentFocus":""});
 
   const loadData = async () => {
-    const data = await getBuilderStatuss();
+    const data = await getBuilderStatuses();
     setItems(data || []);
   };
 

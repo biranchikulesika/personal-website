@@ -5,7 +5,7 @@ import { builderStatusSchema } from '@/lib/schemas';
 
 const builderStatusService = new BuilderStatusService();
 
-export async function getBuilderStatuss() {
+export async function getBuilderStatuses() {
   await verifyAuth();
   return await builderStatusService.getAll();
 }

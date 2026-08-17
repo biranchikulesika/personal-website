@@ -11,8 +11,8 @@ import {
 import { getPosts, deletePost } from '@/app/admin/actions/posts.actions';
 import { getBuildLogs, createBuildLog, updateBuildLog, deleteBuildLog } from '@/app/admin/actions/buildLogs.actions';
 import { getActiveSystems, createActiveSystem, updateActiveSystem, deleteActiveSystem, moveActiveSystemUp, moveActiveSystemDown } from '@/app/admin/actions/activeSystems.actions';
-import { getBuilderStatuss, createBuilderStatus, updateBuilderStatus, deleteBuilderStatus } from '@/app/admin/actions/builderStatuses.actions';
-import { getOperatorFocuss, createOperatorFocus, updateOperatorFocus, deleteOperatorFocus, moveOperatorFocusUp, moveOperatorFocusDown } from '@/app/admin/actions/operatorFocuses.actions';
+import { getBuilderStatuses, createBuilderStatus, updateBuilderStatus, deleteBuilderStatus } from '@/app/admin/actions/builderStatuses.actions';
+import { getOperatorFocuses, createOperatorFocus, updateOperatorFocus, deleteOperatorFocus, moveOperatorFocusUp, moveOperatorFocusDown } from '@/app/admin/actions/operatorFocuses.actions';
 import { getQuestions, createQuestion, updateQuestion, deleteQuestion, moveQuestionUp, moveQuestionDown } from '@/app/admin/actions/questions.actions';
 import { getThoughtFragments, createThoughtFragment, updateThoughtFragment, deleteThoughtFragment, moveThoughtFragmentUp, moveThoughtFragmentDown } from '@/app/admin/actions/thoughtFragments.actions';
 import { getFragments, createFragment, updateFragment, deleteFragment, moveFragmentUp, moveFragmentDown } from '@/app/admin/actions/fragments.actions';
@@ -70,13 +70,13 @@ export default function PersonaDashboardPage({ params }: { params: any }) {
         const [logs, sys, stats] = await Promise.all([
           getBuildLogs(),
           getActiveSystems(),
-          getBuilderStatuss()
+          getBuilderStatuses()
         ]);
         setBuildLogs(logs || []);
         setActiveSystems(sys || []);
         setBuilderStatus(stats || []);
       } else if (isSignal) {
-        const focus = await getOperatorFocuss();
+        const focus = await getOperatorFocuses();
         setOperatorFocus(focus || []);
       } else if (isHead) {
         const [q, tf, gf] = await Promise.all([

@@ -2,7 +2,7 @@ import Link from 'next/link';
 export const dynamic = 'force-static';
 export const revalidate = 3600;
 import {
-  getBuilderStatuss,
+  getBuilderStatuses,
   getActiveSystems,
   getBuildLogs,
   getPostsMeta,
@@ -148,7 +148,7 @@ const SystemCard = ({ system }: { system: SystemItem }) => {
 export default async function BuilderPage() {
   // All data fetched on the server — parallel, no client-side waterfalls
   const [statusData, systemsDataResponse, logsData, allPosts] = await Promise.all([
-    getBuilderStatuss(),
+    getBuilderStatuses(),
     getActiveSystems(),
     getBuildLogs(),
     getPostsMeta(),

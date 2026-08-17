@@ -1,13 +1,13 @@
 import Link from 'next/link';
 export const dynamic = 'force-static';
 export const revalidate = 3600;
-import { getOperatorFocuss, getPostsMeta } from '@/lib/queries';
+import { getOperatorFocuses, getPostsMeta } from '@/lib/queries';
 import { getPersonaUrl } from '@/lib/utils';
 
 export default async function OperatorPage() {
   // Server-side parallel data fetching
   const [fData, pData] = await Promise.all([
-    getOperatorFocuss(),
+    getOperatorFocuses(),
     getPostsMeta(),
   ]);
 
