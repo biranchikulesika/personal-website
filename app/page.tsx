@@ -10,7 +10,7 @@ import { getPersonaUrl } from '@/lib/utils';
 import { SOCIAL_LINKS } from '@/lib/config/socials';
 import { WebSiteJsonLd, ProfilePageJsonLd, OrganizationJsonLd } from '@/components/seo/JsonLd';
 import { SITE_URL } from '@/lib/config/seo';
-import QUOTES from './quotes.json';
+import QUOTES from '@/lib/data/quotes.json';
 
 // Statically pick a quote — deterministic per build, avoids client-side flicker
 const quote = QUOTES[Math.floor(Math.random() * QUOTES.length)];

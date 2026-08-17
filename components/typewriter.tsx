@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import PHRASES from '@/app/phrases.json';
+import PHRASES from '@/lib/data/phrases.json';
 
 export function Typewriter() {
   const [text, setText] = useState('Kulesika');

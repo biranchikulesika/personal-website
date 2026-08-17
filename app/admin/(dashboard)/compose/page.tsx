@@ -13,7 +13,7 @@ import PostRenderer from '@/components/post-renderer/PostRenderer';
 import PublishDrawer from './PublishDrawer';
 import MDXEditor from './MDXEditor';
 import { compileMDXAction } from './actions';
-import { generateUniqueId, compileFromBlocks } from '@/lib/parsers';
+import { generateUniqueId, compileFromBlocks } from '@/lib/block-serializer';
 import { parseDbError } from '@/components/admin/validation';
 import { EditorErrorBoundary } from '@/components/admin/editor-error-boundary';
 import { PreviewErrorBoundary } from '@/components/admin/preview-error-boundary';

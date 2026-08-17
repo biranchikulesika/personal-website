@@ -9,7 +9,7 @@ import { ArrowRight, Check } from 'lucide-react';
 import { useState, useEffect, useTransition } from 'react';
 import { getNewsletterProfiles } from '@/lib/queries';
 import { getNewsletterIssues } from '@/lib/queries';
-import { subscribeNewsletter } from '@/app/public.actions';
+import { subscribeNewsletter } from '@/app/actions/public.actions';
 import { getPersonaUrl } from '@/lib/utils';
 import { SOCIAL_LINKS } from '@/lib/config/socials';
 import { Logo } from '@/components/ui/logo';

@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import { ArrowRight } from 'lucide-react';
-import { subscribeNewsletter } from '@/app/public.actions';
+import { subscribeNewsletter } from '@/app/actions/public.actions';
 
 const newsletters = [
   { id: 'builder', persona: 'Builder', name: 'Forge', desc: 'code, systems, technology' },

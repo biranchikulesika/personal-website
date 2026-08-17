@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, useTransition } from 'react';
 import { Search, X, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { searchPublishedPosts } from '@/app/public.actions';
+import { searchPublishedPosts } from '@/app/actions/public.actions';
 import { useRouter } from 'next/navigation';
 import { useDebounce } from '@/hooks/use-debounce';
 import { useFocusTrap } from '@/hooks/use-focus-trap';

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { subscribeNewsletter } from '@/app/public.actions';
+import { subscribeNewsletter } from '@/app/actions/public.actions';
 
 type NewsletterStatus = 'idle' | 'submitting' | 'success' | 'error';
 

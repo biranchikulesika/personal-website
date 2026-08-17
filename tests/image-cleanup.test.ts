@@ -3,7 +3,7 @@ import { test, describe } from 'node:test';
 import {
   normalizeImagePath,
   extractImageReferencesFromText,
-} from '../lib/services/image-cleanup.service.ts';
+} from '../lib/services/image-cleanup.service';
 
 describe('Automatic Orphaned-Image Cleanup System Test Suite', () => {
 

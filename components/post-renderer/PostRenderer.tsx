@@ -11,7 +11,7 @@ import { FooterBuilder } from '@/components/footer-builder';
 import { FooterWanderer } from '@/components/footer-wanderer';
 import { FooterOperator } from '@/components/footer-operator';
 import { FooterMain } from '@/components/footer-main';
-import { MarkdownRenderer } from '@/lib/mdx/renderer';
+import { MarkdownRenderer } from '@/components/mdx/MarkdownRenderer';
 
 // Standard HTML element patterns — used to distinguish raw HTML content
 // from plain markdown or MDX (which uses component tags like <Image>).
@@ -49,7 +49,7 @@ import { PersonaSwitcher } from '@/components/persona-switcher';
 import { PersonaSearch } from '@/components/persona-search';
 import { DesktopNav, MobileNav } from '@/components/nav-links';
 import { FieldNoteDivider } from '@/components/field-note-divider';
-import { subscribeNewsletter } from '@/app/public.actions';
+import { subscribeNewsletter } from '@/app/actions/public.actions';
 
 const getEmojiForLocation = (location: string): string => {
   const loc = location.toLowerCase();

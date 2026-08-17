@@ -1,7 +1,7 @@
 'use client';
 
 import { FileImage, Loader2, CheckCircle2, AlertCircle, X, RefreshCw, FileDown } from 'lucide-react';
-import type { UploadItem } from '@/hooks/useImageUpload';
+import type { UploadItem } from '@/hooks/use-image-upload';
 
 interface UploadProgressProps {
   uploads: UploadItem[];
