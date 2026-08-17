@@ -30,6 +30,8 @@ export interface CompletePostMetadata {
   seoDescription: string;
   excerpt: string;
   suggestedSlug: string;
+  /** Ranked slug alternatives, best first — the first available one is used */
+  slugCandidates: string[];
   ogTitle: string;
   ogDescription: string;
   twitterTitle: string;
@@ -159,7 +161,10 @@ export function generateHeuristicMetadata(
   }
 
   const tags = Array.from(matched);
-  const keywords = Array.from(new Set([...tags, ...textWords.slice(0, 8)]));
+  // Advanced SEO & social keywords are AI-generated. The fallback never
+  // auto-extracts random words from the post; it only reuses the curated
+  // matched terms and persona defaults above.
+  const keywords = Array.from(matched);
   const suggestedSlug = slugify(cleanTitle) || 'untitled-post';
   const seoTitle = cleanTitle.length > 55 ? cleanTitle.slice(0, 55).replace(/\s+\S*$/, '') : cleanTitle;
   const seoDescription = excerpt.length > 155 ? excerpt.slice(0, 155).replace(/\s+\S*$/, '') + '...' : excerpt;
@@ -170,6 +175,7 @@ export function generateHeuristicMetadata(
     seoDescription,
     excerpt,
     suggestedSlug,
+    slugCandidates: [suggestedSlug],
     ogTitle: cleanTitle,
     ogDescription: seoDescription,
     twitterTitle: cleanTitle,
@@ -213,7 +219,11 @@ export async function generateCompletePostMetadata(input: PostMetadataInput): Pr
   }
 
   const cleanText = cleanContentText(content);
-  const promptSnippet = cleanText.slice(0, 4000);
+  // Send the whole post so the AI can summarize it accurately; cap only to stay
+  // within model context limits and note when a very long post was truncated.
+  const MAX_CONTENT_CHARS = 50000;
+  const promptSnippet = cleanText.slice(0, MAX_CONTENT_CHARS);
+  const contentTruncated = cleanText.length > MAX_CONTENT_CHARS;
 
   const systemPrompt = `You are a background SEO & Content Optimization Engine for an author's personal publication.
 The site features 4 writing channels/personas:
@@ -223,19 +233,21 @@ The site features 4 writing channels/personas:
 - "wanderer": Field sketches, travel reflections, observations, culture.
 
 TASK:
-Analyze the Article Title, Persona, and Content. Generate production-ready metadata:
+Read the ENTIRE Article Content below. Understand the full argument, key points, examples, and conclusion before generating anything. Base every field on the whole article, not just the opening.
+Generate production-ready metadata:
 1. "seoTitle": Clear, high-impact SEO title (50-60 characters maximum, no clickbait or keyword stuffing).
 2. "seoDescription": Meta description for search engines (130-160 characters, natural summary).
-3. "excerpt": A rich 1-2 sentence article summary for feed and card displays (120-200 characters) in the persona's voice.
+3. "excerpt": A rich 1-2 sentence article summary for feed and card displays (120-200 characters) in the persona's voice, capturing the core thesis and what a reader will gain from the entire post.
 4. "suggestedSlug": Clean, kebab-case URL slug (e.g. "understanding-distributed-consensus").
-5. "ogTitle": OpenGraph sharing title.
-6. "ogDescription": OpenGraph sharing description.
-7. "twitterTitle": Twitter/X card title.
-8. "twitterDescription": Twitter/X card summary.
-9. "tags": 3 to 6 lowercase specific topic tags (e.g. ["distributed-systems", "raft", "databases"]).
-10. "keywords": 5 to 8 search terms / keywords.
-11. "suggestedCategory": Channel or category name (e.g. "${persona}").
-12. "coverImageAlt": Concise alt text describing the article theme for screen readers.
+5. "slugCandidates": 3 ranked kebab-case URL slug alternatives derived from the WHOLE article, best first (e.g. ["understanding-distributed-consensus", "distributed-consensus-explained", "consensus-in-distributed-systems"]). The first candidate that is not already used will become the post URL.
+6. "ogTitle": OpenGraph sharing title.
+7. "ogDescription": OpenGraph sharing description.
+8. "twitterTitle": Twitter/X card title.
+9. "twitterDescription": Twitter/X card summary.
+10. "tags": 3 to 6 lowercase specific topic tags (e.g. ["distributed-systems", "raft", "databases"]) reflecting the full scope of the article across all its sections, not just the intro.
+11. "keywords": 5 to 8 search terms / keywords.
+12. "suggestedCategory": Channel or category name (e.g. "${persona}").
+13. "coverImageAlt": Concise alt text describing the article theme for screen readers.
 
 OUTPUT FORMAT:
 Return ONLY valid JSON matching this schema with no explanation, preamble, or markdown backticks:
@@ -244,6 +256,7 @@ Return ONLY valid JSON matching this schema with no explanation, preamble, or ma
   "seoDescription": "string",
   "excerpt": "string",
   "suggestedSlug": "string",
+  "slugCandidates": ["string", "string", "string"],
   "ogTitle": "string",
   "ogDescription": "string",
   "twitterTitle": "string",
@@ -259,7 +272,7 @@ Persona: ${persona}
 ${coverImageUrl ? `Cover Image Available: Yes` : `Cover Image Available: No`}
 
 Article Content:
-${promptSnippet || '(Short note without body text)'}`;
+${promptSnippet || '(Short note without body text)'}${contentTruncated ? '\n\n[Note: The article exceeds the prompt limit; the content above was truncated. Summarize based on what is provided.]' : ''}`;
 
   try {
     const controller = new AbortController();
@@ -310,6 +323,23 @@ ${promptSnippet || '(Short note without body text)'}`;
       seoDescription: (typeof parsed.seoDescription === 'string' && parsed.seoDescription.trim()) ? parsed.seoDescription.trim() : heuristic.seoDescription,
       excerpt: (typeof parsed.excerpt === 'string' && parsed.excerpt.trim()) ? parsed.excerpt.trim() : heuristic.excerpt,
       suggestedSlug: (typeof parsed.suggestedSlug === 'string' && parsed.suggestedSlug.trim()) ? slugify(parsed.suggestedSlug) : heuristic.suggestedSlug,
+      slugCandidates: (() => {
+        const raw = Array.isArray(parsed.slugCandidates)
+          ? parsed.slugCandidates
+          : Array.isArray(parsed.suggestedSlugs)
+            ? parsed.suggestedSlugs
+            : [];
+        const cleaned = Array.from(new Set<string>(
+          raw
+            .filter((s: any): s is string => typeof s === 'string' && s.trim().length > 0)
+            .map((s: string) => slugify(s))
+            .filter((s: string) => s.length > 1 && s.length < 100)
+        ));
+        const primary = (typeof parsed.suggestedSlug === 'string' && parsed.suggestedSlug.trim())
+          ? slugify(parsed.suggestedSlug)
+          : heuristic.suggestedSlug;
+        return cleaned.length > 0 ? [...new Set([primary, ...cleaned])].slice(0, 5) : [primary];
+      })(),
       ogTitle: (typeof parsed.ogTitle === 'string' && parsed.ogTitle.trim()) ? parsed.ogTitle.trim() : heuristic.ogTitle,
       ogDescription: (typeof parsed.ogDescription === 'string' && parsed.ogDescription.trim()) ? parsed.ogDescription.trim() : heuristic.ogDescription,
       twitterTitle: (typeof parsed.twitterTitle === 'string' && parsed.twitterTitle.trim()) ? parsed.twitterTitle.trim() : heuristic.twitterTitle,
