@@ -11,7 +11,19 @@
  * Implements intelligent debouncing, content hashing, and respectful manual override preservation.
  */
 
-import { slugify } from '@/lib/utils';
+function slugify(text: string): string {
+  if (!text) return '';
+  return text
+    .toString()
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, '-')
+    .replace(/&/g, '-and-')
+    .replace(/[^\w-]+/g, '')
+    .replace(/--+/g, '-')
+    .replace(/^-+/, '')
+    .replace(/-+$/, '');
+}
 
 export interface CompletePostMetadata {
   seoTitle: string;
