@@ -141,109 +141,85 @@ export default function MediaAssetsPage() {
         </div>
       </div>
 
-      {/* Storage Health & Automated Orphan Cleanup Card */}
-      <div className="mb-8 p-5 bg-[#141414] border border-[#262626] rounded-xl font-sans">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-[#222]">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-[#ff7700]/10 text-[#ff7700] border border-[#ff7700]/20">
-              <ShieldCheck className="w-5 h-5" />
-            </div>
-            <div>
-              <h2 className="text-sm font-medium text-white flex items-center gap-2">
-                Automatic Orphaned-Image Cleanup
-                <span className="text-[10px] font-mono font-normal px-2 py-0.5 rounded bg-emerald-950/60 text-emerald-400 border border-emerald-800/40">
-                  {healthSummary?.retentionDays || 60}-Day Safety Buffer
-                </span>
-              </h2>
-              <p className="text-xs text-neutral-400 mt-0.5">
-                Images unreferenced by any published/draft post or site model for over 2 months are automatically purged in the background.
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2 shrink-0">
-            <button
-              type="button"
-              onClick={() => handleRunCleanup(true)}
-              disabled={isCleaning}
-              className="px-3 py-1.5 rounded text-xs font-mono font-medium text-neutral-300 hover:text-white bg-[#222] hover:bg-[#2e2e2e] border border-[#333] transition-colors disabled:opacity-50 flex items-center gap-1.5"
-              title="Test scan without deleting anything"
-            >
-              {isCleaning ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Play className="w-3.5 h-3.5" />}
-              Dry Run
-            </button>
-            <button
-              type="button"
-              onClick={() => handleRunCleanup(false)}
-              disabled={isCleaning}
-              className="px-3 py-1.5 rounded text-xs font-mono font-medium text-[#ff7700] hover:text-white bg-[#ff7700]/10 hover:bg-[#ff7700] border border-[#ff7700]/30 hover:border-[#ff7700] transition-colors disabled:opacity-50 flex items-center gap-1.5"
-              title="Run live cleanup and delete eligible images"
-            >
-              {isCleaning ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
-              Run Cleanup Now
-            </button>
-          </div>
-        </div>
-
-        {/* Health Metrics Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-4">
-          <div className="p-3 bg-[#0d0d0d] rounded-lg border border-[#1f1f1f]">
-            <span className="text-[10px] font-mono uppercase tracking-wider text-neutral-500">Tracked Images</span>
-            <div className="text-xl font-semibold text-white mt-1 font-mono">{healthSummary?.totalTracked ?? '—'}</div>
-            <p className="text-[10px] text-neutral-500 mt-0.5">In storage registry</p>
-          </div>
-
-          <div className="p-3 bg-[#0d0d0d] rounded-lg border border-[#1f1f1f]">
-            <span className="text-[10px] font-mono uppercase tracking-wider text-emerald-500">Active In Use</span>
-            <div className="text-xl font-semibold text-emerald-400 mt-1 font-mono">{healthSummary?.activeCount ?? '—'}</div>
-            <p className="text-[10px] text-neutral-500 mt-0.5">Referenced in content</p>
-          </div>
-
-          <div className="p-3 bg-[#0d0d0d] rounded-lg border border-[#1f1f1f]">
-            <span className="text-[10px] font-mono uppercase tracking-wider text-amber-500">In Grace Period</span>
-            <div className="text-xl font-semibold text-amber-300 mt-1 font-mono">{healthSummary?.orphanedInGracePeriod ?? '—'}</div>
-            <p className="text-[10px] text-neutral-500 mt-0.5">&lt; {healthSummary?.retentionDays || 60} days unreferenced</p>
-          </div>
-
-          <div className="p-3 bg-[#0d0d0d] rounded-lg border border-[#1f1f1f]">
-            <span className="text-[10px] font-mono uppercase tracking-wider text-red-400">Eligible Cleanup</span>
-            <div className="text-xl font-semibold text-red-400 mt-1 font-mono">{healthSummary?.eligibleForCleanup ?? '—'}</div>
-            <p className="text-[10px] text-neutral-500 mt-0.5">&gt; {healthSummary?.retentionDays || 60} days unreferenced</p>
-          </div>
-        </div>
-
-        {/* Cleanup Feedback Banner */}
-        {cleanupResult && (
-          <div className={`mt-4 p-3.5 rounded-lg border text-xs font-mono flex items-start gap-2.5 ${
-            cleanupResult.success ? 'bg-emerald-950/20 border-emerald-900/40 text-emerald-300' : 'bg-amber-950/20 border-amber-900/40 text-amber-300'
-          }`}>
-            <CheckCircle className="w-4 h-4 shrink-0 mt-0.5" />
-            <div>
-              <div className="font-semibold">
-                Cleanup {cleanupResult.dryRun ? 'Dry Run' : 'Completed'} in {cleanupResult.durationMs}ms:
-              </div>
-              <div className="text-neutral-300 mt-1">
-                Scanned {cleanupResult.scannedCount} files · {cleanupResult.referencedCount} active · {cleanupResult.orphanedCount} unreferenced · {cleanupResult.deletedCount} {cleanupResult.dryRun ? 'would be deleted' : 'deleted'} · {cleanupResult.skippedCount} skipped in grace period · {cleanupResult.failedCount} failed
-              </div>
-              {cleanupResult.deletedPaths?.length > 0 && (
-                <div className="mt-1.5 text-[11px] text-neutral-400 max-h-20 overflow-y-auto">
-                  {cleanupResult.deletedPaths.join(', ')}
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Last Scheduled Run Status */}
-        {healthSummary?.lastCleanupLog && (
-          <div className="mt-3 text-[11px] font-mono text-neutral-500 flex items-center justify-between">
-            <span>Last background run: {new Date(healthSummary.lastCleanupLog.executed_at).toLocaleString()}</span>
-            <span className={healthSummary.lastCleanupLog.status === 'success' ? 'text-emerald-400' : 'text-amber-400'}>
-              Status: {healthSummary.lastCleanupLog.status} ({healthSummary.lastCleanupLog.deleted_count} deleted)
+      {/* Compact Automatic Cleanup & Storage Status Strip */}
+      <div className="mb-6 px-3.5 py-2.5 bg-[#121212] border border-[#242424] rounded-lg flex flex-wrap items-center justify-between gap-3 text-xs font-mono">
+        <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-neutral-400">
+          <div className="flex items-center gap-1.5 text-neutral-200">
+            <ShieldCheck className="w-3.5 h-3.5 text-[#ff7700]" />
+            <span className="font-medium">Auto-Cleanup</span>
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-neutral-800 text-neutral-400 border border-neutral-700">
+              {healthSummary?.retentionDays || 60}d buffer
             </span>
           </div>
-        )}
+
+          <div className="flex items-center gap-2.5 text-[11px]">
+            <span title="Total tracked in storage registry">
+              Tracked: <strong className="text-white font-semibold">{healthSummary?.totalTracked ?? 0}</strong>
+            </span>
+            <span className="text-neutral-700">•</span>
+            <span title="Actively referenced in content">
+              Active: <strong className="text-emerald-400 font-semibold">{healthSummary?.activeCount ?? 0}</strong>
+            </span>
+            <span className="text-neutral-700">•</span>
+            <span title="Unreferenced but protected by 60-day safety buffer">
+              Grace (&lt;60d): <strong className="text-amber-300 font-semibold">{healthSummary?.orphanedInGracePeriod ?? 0}</strong>
+            </span>
+            <span className="text-neutral-700">•</span>
+            <span title="Unreferenced for >60 days and eligible for deletion">
+              Orphaned (&gt;60d): <strong className={(healthSummary?.eligibleForCleanup || 0) > 0 ? "text-red-400 font-semibold" : "text-neutral-400"}>{healthSummary?.eligibleForCleanup ?? 0}</strong>
+            </span>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 shrink-0 text-[11px]">
+          {healthSummary?.lastCleanupLog && (
+            <span className="hidden md:inline text-[10px] text-neutral-500 mr-2">
+              Last run: {new Date(healthSummary.lastCleanupLog.executed_at).toLocaleDateString()}
+            </span>
+          )}
+          <button
+            type="button"
+            onClick={() => handleRunCleanup(true)}
+            disabled={isCleaning}
+            className="px-2.5 py-1 rounded text-[11px] text-neutral-300 hover:text-white bg-[#1c1c1c] hover:bg-[#282828] border border-[#333] transition-colors disabled:opacity-50 flex items-center gap-1"
+            title="Scan references without deleting files"
+          >
+            {isCleaning ? <RefreshCw className="w-3 h-3 animate-spin" /> : <Play className="w-3 h-3" />}
+            Dry Run
+          </button>
+          <button
+            type="button"
+            onClick={() => handleRunCleanup(false)}
+            disabled={isCleaning}
+            className="px-2.5 py-1 rounded text-[11px] text-[#ff7700] hover:text-white bg-[#ff7700]/10 hover:bg-[#ff7700] border border-[#ff7700]/30 hover:border-[#ff7700] transition-colors disabled:opacity-50 flex items-center gap-1"
+            title="Run background cleanup and purge >60d unreferenced files"
+          >
+            {isCleaning ? <RefreshCw className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+            Clean Now
+          </button>
+        </div>
       </div>
+
+      {/* Compact Cleanup Feedback Toast/Banner */}
+      {cleanupResult && (
+        <div className={`mb-6 px-3 py-2 rounded-lg border text-xs font-mono flex items-center justify-between gap-2 ${
+          cleanupResult.success ? 'bg-emerald-950/20 border-emerald-900/40 text-emerald-300' : 'bg-amber-950/20 border-amber-900/40 text-amber-300'
+        }`}>
+          <div className="flex items-center gap-2 truncate">
+            <CheckCircle className="w-3.5 h-3.5 shrink-0" />
+            <span className="truncate">
+              Cleanup {cleanupResult.dryRun ? 'Dry Run' : 'Done'} ({cleanupResult.durationMs}ms): {cleanupResult.scannedCount} scanned · {cleanupResult.referencedCount} active · {cleanupResult.deletedCount} {cleanupResult.dryRun ? 'would delete' : 'deleted'} · {cleanupResult.skippedCount} in grace · {cleanupResult.failedCount} failed
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setCleanupResult(null)}
+            className="text-[10px] text-neutral-400 hover:text-white px-1.5 py-0.5 rounded hover:bg-neutral-800 transition-colors"
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
       {uploadError && (
         <div className="mb-6 p-4 bg-red-950/20 border border-red-900/30 rounded text-red-400 text-xs font-mono">
