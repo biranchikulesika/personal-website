@@ -328,9 +328,6 @@ export default function ContentLibraryPage() {
       {/* Header and Quick Navigation */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10">
         <div>
-          <div className="flex items-center gap-2 mb-2">
-            <span className="text-[10px] tracking-[0.25em] text-[#ff7700] uppercase font-mono font-bold">Studio Archive</span>
-          </div>
           <h1 className="text-3xl font-medium tracking-tight text-neutral-100 mb-2 font-sans">Content Library</h1>
         </div>
 
