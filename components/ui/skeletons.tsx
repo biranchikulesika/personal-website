@@ -355,31 +355,58 @@ export function AdminDashboardSkeleton({ shimmer = true }: { shimmer?: boolean }
 }
 
 /* ── Admin compose editor skeleton ── */
-export function AdminEditorSkeleton({ shimmer = true }: { shimmer?: boolean } = {}) {
+export function AdminEditorSkeleton() {
   return (
-    <div className="flex flex-col h-full" aria-label="Loading editor">
-      {/* Toolbar */}
-      <div className="flex items-center gap-3 p-4 border-b border-border">
-        <Skeleton className="h-8 w-24" shimmer={shimmer} />
-        <Skeleton className="h-8 w-24" shimmer={shimmer} />
-        <div className="flex-1" />
-        <Skeleton className="h-8 w-32" shimmer={shimmer} />
-      </div>
-      {/* Editor area */}
-      <div className="flex flex-1">
-        <div className="flex-1 p-6">
-          {/* Title */}
-          <Skeleton className="h-10 w-3/4 mb-6" shimmer={shimmer} />
-          {/* Content lines */}
-          <div className="space-y-3">
-            <TextBlock lines={12} shimmer={shimmer} />
+    <div className="flex flex-col h-full w-full bg-[#0a0a0a] text-neutral-400 font-sans overflow-hidden select-none" aria-label="Loading editor">
+      {/* VS Code Top Tab Bar */}
+      <div className="h-[36px] bg-[#181818] border-b border-[#222] px-2 flex items-center justify-between shrink-0">
+        <div className="flex items-center gap-1">
+          <div className="h-7 px-3 rounded-t bg-[#1e1e1e] border-t border-t-[#ff7700] border-x border-[#282828] flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-neutral-600" />
+            <div className="w-20 h-3 rounded bg-neutral-700/60 animate-pulse" />
           </div>
         </div>
-        {/* Sidebar */}
-        <div className="w-72 border-l border-border p-4 space-y-4">
-          <Skeleton className="h-40 w-full rounded" shimmer={shimmer} />
-          <Skeleton className="h-32 w-full rounded" shimmer={shimmer} />
-          <Skeleton className="h-24 w-full rounded" shimmer={shimmer} />
+        <div className="flex items-center gap-2 pr-2">
+          <div className="w-16 h-6 rounded bg-neutral-800/80 animate-pulse" />
+          <div className="w-16 h-6 rounded bg-[#ff7700]/20 animate-pulse" />
+        </div>
+      </div>
+
+      {/* Breadcrumb row */}
+      <div className="h-[32px] bg-[#1e1e1e] border-b border-[#222] px-4 flex items-center gap-2 shrink-0">
+        <div className="w-16 h-3 rounded bg-neutral-800 animate-pulse" />
+        <span className="text-neutral-600 text-xs">›</span>
+        <div className="w-48 h-3.5 rounded bg-neutral-800/80 animate-pulse" />
+      </div>
+
+      {/* Subtitle row */}
+      <div className="h-[30px] bg-[#1a1a1a] border-b border-[#222] px-4 flex items-center shrink-0">
+        <div className="w-64 h-3 rounded bg-neutral-800/50 animate-pulse" />
+      </div>
+
+      {/* Editor Body */}
+      <div className="flex-1 min-h-0 bg-[#1e1e1e] flex flex-row">
+        {/* Monaco Line Numbers Gutter */}
+        <div className="w-12 bg-[#1e1e1e] border-r border-[#282828] py-4 flex flex-col items-center gap-3 text-[11px] font-mono text-neutral-700 shrink-0">
+          <span>1</span>
+          <span>2</span>
+          <span>3</span>
+          <span>4</span>
+          <span>5</span>
+          <span>6</span>
+          <span>7</span>
+          <span>8</span>
+          <span>9</span>
+          <span>10</span>
+        </div>
+
+        {/* Code Canvas Placeholder */}
+        <div className="flex-1 p-6 space-y-3">
+          <div className="w-1/3 h-4 rounded bg-neutral-800/60 animate-pulse" />
+          <div className="w-2/3 h-3.5 rounded bg-neutral-800/40 animate-pulse" />
+          <div className="w-1/2 h-3.5 rounded bg-neutral-800/40 animate-pulse" />
+          <div className="w-4/5 h-3.5 rounded bg-neutral-800/30 animate-pulse" />
+          <div className="w-3/5 h-3.5 rounded bg-neutral-800/30 animate-pulse" />
         </div>
       </div>
     </div>

@@ -183,7 +183,7 @@ function ComposePageContent() {
   const editId = searchParams.get('id');
   const targetPersona = searchParams.get('persona');
 
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(Boolean(editId));
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState<'composer' | 'preview'>('composer');
   const [dbError, setDbError] = useState<string | null>(null);
@@ -199,7 +199,8 @@ function ComposePageContent() {
       pasteTagsText: '',
       wasPublished: false,
       saveStatus: 'Saved',
-      initialSlug: ''
+      initialSlug: '',
+      isDirty: false,
     }
   ]);
   const [activeTabId, setActiveTabId] = useState<string>(tabs[0].id);
@@ -717,79 +718,63 @@ function ComposePageContent() {
 
   // Fetch / Select Post
   const loadPostToComposer = useCallback(async () => {
+    if (!editId) {
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     try {
       const postsResponse = await getPosts();
       const posts = postsResponse.success ? postsResponse.data : [];
 
-      if (editId) {
-        setTabs(prev => {
-          const existing = prev.find(t => t.dbId === editId || t.formData.slug === editId);
-          if (existing) {
-            setTimeout(() => setActiveTabId(existing.id), 0);
-            return prev;
-          }
-          
-          const found = (posts || []).find((p: any) => p.id === editId || p.slug === editId);
-          if (found) {
-            let htmlContent = found.draftContent || found.content || '';
-            try {
-              const maybeJson = JSON.parse(htmlContent);
-              if (Array.isArray(maybeJson)) {
-                htmlContent = compileFromBlocks(maybeJson);
-              }
-            } catch (e) {}
-            
-            const newTab: TabData = {
-              id: generateUniqueId(),
-              dbId: found.id,
-              formData: { ...found, tags: found.tags || [], oldSlugs: found.oldSlugs || [] },
-              richTextContent: htmlContent,
-              pasteTagsText: (found.tags || []).join(', '),
-              wasPublished: found.status === 'published' && !!found.publishedAt,
-              saveStatus: 'Saved',
-              initialSlug: found.slug || '',
-              isDirty: false
-            };
-            lastSavedFingerprintRef.current[newTab.id] = getTabFingerprint(newTab);
-            setTimeout(() => setActiveTabId(newTab.id), 0);
-            return [...prev, newTab];
-          } else {
-            setTimeout(() => router.push('/admin/compose'), 0);
-            return prev;
-          }
-        });
-      } else {
-        setTabs(prev => {
-          const defaultPersona = targetPersona || 'unassigned';
-          const emptyTab = prev.find(t => !t.dbId && !t.richTextContent && t.formData.title === '' && t.formData.persona === defaultPersona);
-          if (emptyTab) {
-            setTimeout(() => setActiveTabId(emptyTab.id), 0);
-            return prev;
-          }
+      setTabs(prev => {
+        const existing = prev.find(t => t.dbId === editId || t.formData.slug === editId);
+        if (existing) {
+          setActiveTabId(existing.id);
+          return prev;
+        }
+        
+        const found = (posts || []).find((p: any) => p.id === editId || p.slug === editId);
+        if (found) {
+          let htmlContent = found.draftContent || found.content || '';
+          try {
+            const maybeJson = JSON.parse(htmlContent);
+            if (Array.isArray(maybeJson)) {
+              htmlContent = compileFromBlocks(maybeJson);
+            }
+          } catch (e) {}
           
           const newTab: TabData = {
             id: generateUniqueId(),
-            dbId: null,
-            formData: { ...defaultFormData, persona: defaultPersona },
-            richTextContent: '',
-            pasteTagsText: '',
-            wasPublished: false,
+            dbId: found.id,
+            formData: { ...found, tags: found.tags || [], oldSlugs: found.oldSlugs || [] },
+            richTextContent: htmlContent,
+            pasteTagsText: (found.tags || []).join(', '),
+            wasPublished: found.status === 'published' && !!found.publishedAt,
             saveStatus: 'Saved',
-            initialSlug: '',
+            initialSlug: found.slug || '',
             isDirty: false
           };
           lastSavedFingerprintRef.current[newTab.id] = getTabFingerprint(newTab);
-          setTimeout(() => setActiveTabId(newTab.id), 0);
+          setActiveTabId(newTab.id);
+
+          // If the previous single tab was blank and unused, replace it
+          if (prev.length === 1 && !prev[0].dbId && !prev[0].richTextContent && !prev[0].formData.title) {
+            return [newTab];
+          }
           return [...prev, newTab];
-        });
-      }
+        } else {
+          router.push('/admin/compose');
+          return prev;
+        }
+      });
     } catch (e) {
       console.error('Error in workspace composer initialization: ', e);
     } finally {
       setLoading(false);
     }
-  }, [editId, targetPersona, router, getTabFingerprint]);
+  }, [editId, router, getTabFingerprint]);
 
   useEffect(() => {
     loadPostToComposer();

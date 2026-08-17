@@ -55,26 +55,30 @@ const ToolbarButton = ({ icon: Icon, label, onClick }: { icon: any; label: strin
 // and eliminates wrapper bugs that could cause cursor/view desync.
 
 // Dynamic import to avoid SSR issues
-let monacoModule: any = null;
-async function getMonaco() {
-  if (!monacoModule) {
-    monacoModule = await import('monaco-editor');
-    // Configure the global Monaco environment to use the local npm package's
-    // workers via blob URLs, eliminating CDN dependency entirely.
-    const monaco = monacoModule;
-    monaco.editor.MonacoEnvironment = {
-      getWorker(_workerId: string, _label: string) {
-        return new Worker(
-          new URL(
-            'monaco-editor/esm/vs/editor/editor.worker.js',
-            import.meta.url
-          ),
-          { type: 'module' }
-        );
-      },
-    };
+let monacoPromise: Promise<any> | null = null;
+function getMonaco(): Promise<any> {
+  if (!monacoPromise) {
+    monacoPromise = import('monaco-editor').then((monaco) => {
+      (globalThis as any).MonacoEnvironment = {
+        getWorker(_workerId: string, _label: string) {
+          return new Worker(
+            new URL(
+              'monaco-editor/esm/vs/editor/editor.worker.js',
+              import.meta.url
+            ),
+            { type: 'module' }
+          );
+        },
+      };
+      return monaco;
+    });
   }
-  return monacoModule;
+  return monacoPromise;
+}
+
+// Pre-warm Monaco as soon as client bundle is loaded
+if (typeof window !== 'undefined') {
+  getMonaco().catch(() => {});
 }
 
 /**
@@ -545,16 +549,10 @@ export default function MDXEditor({
 
           <div className="flex-1 flex flex-row relative min-h-0" ref={containerRef}>
             {/* Left Editor — using direct Monaco instance instead of @monaco-editor/react */}
-            <div className="relative h-full min-w-0" style={{ width: isSplitView ? `${editorWidthPercent}%` : '100%' }}>
-              {!monacoReady && (
-                <div className="absolute inset-0 flex items-center justify-center bg-[#1e1e1e] text-neutral-500 text-sm font-sans">
-                  <span className="animate-pulse">Loading editor...</span>
-                </div>
-              )}
+            <div className="relative h-full min-w-0 bg-[#1e1e1e]" style={{ width: isSplitView ? `${editorWidthPercent}%` : '100%' }}>
               <div
                 ref={editorContainerRef}
-                className="w-full h-full"
-                style={{ visibility: monacoReady ? 'visible' : 'hidden' }}
+                className="w-full h-full bg-[#1e1e1e]"
               />
             </div>
 
