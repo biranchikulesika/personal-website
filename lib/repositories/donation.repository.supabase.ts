@@ -1,6 +1,6 @@
 import { Donation } from '../types';
 import { IRepository } from './registry';
-import { getSupabaseServerClient } from '../supabase/server';
+import { getSupabaseServerClient, getSupabaseAdmin } from '../supabase/server';
 
 export class DonationSupabaseRepository implements IRepository<Donation> {
   async getAll(): Promise<Donation[]> {
@@ -29,8 +29,24 @@ export class DonationSupabaseRepository implements IRepository<Donation> {
   }
 
   async delete(id: string): Promise<boolean> {
-    const { error } = await ((await getSupabaseServerClient()) as any).from('donations').delete().eq('id', id);
+    const admin = getSupabaseAdmin();
+    const { error } = await admin.from('donations').delete().eq('id', id);
     if (error) throw error;
     return true;
   }
+
+  async deleteExpiredPending(olderThanDays = 30): Promise<number> {
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - olderThanDays);
+    const admin = getSupabaseAdmin();
+    const { data, error } = await admin
+      .from('donations')
+      .delete()
+      .eq('status', 'pending')
+      .lt('createdAt', cutoffDate.toISOString())
+      .select('id');
+    if (error) throw error;
+    return data ? data.length : 0;
+  }
 }
+

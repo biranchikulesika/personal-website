@@ -2,7 +2,16 @@
 
 import React, { useState, useEffect } from 'react';
 import { Plus, Search, Edit2, Trash2, Save, X, Eye, EyeOff, Activity, ArrowRightLeft, DollarSign, Wallet } from 'lucide-react';
-import { getRedistributionRecords, createRedistributionRecord, updateRedistributionRecord, deleteRedistributionRecord, getIncomingDonations, updateDonationPublicName } from '@/app/admin/actions/redistributionRecords.actions';
+import {
+  getRedistributionRecords,
+  createRedistributionRecord,
+  updateRedistributionRecord,
+  deleteRedistributionRecord,
+  getIncomingDonations,
+  updateDonationPublicName,
+  deleteExpiredPendingDonationsAction,
+  deleteDonationRecordAction
+} from '@/app/admin/actions/redistributionRecords.actions';
 
 export default function RedistributionRecordPage() {
   const [items, setItems] = useState<any[]>([]);
@@ -11,6 +20,8 @@ export default function RedistributionRecordPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [totalRedirected, setTotalRedirected] = useState(0);
   const [totalCollected, setTotalCollected] = useState(0);
+  const [isPruning, setIsPruning] = useState(false);
+  const [pruneMessage, setPruneMessage] = useState<string | null>(null);
   
   const [editingPublicNameId, setEditingPublicNameId] = useState<string | null>(null);
   const [editingPublicNameValue, setEditingPublicNameValue] = useState<string>('');
@@ -79,6 +90,35 @@ export default function RedistributionRecordPage() {
     loadData();
   };
 
+  const handlePruneExpiredPending = async () => {
+    if (!confirm('Clean up all pending donation records older than 1 month (30 days)?')) return;
+    setIsPruning(true);
+    setPruneMessage(null);
+    try {
+      const res = await deleteExpiredPendingDonationsAction(30);
+      setPruneMessage(`Cleaned up ${res.deletedCount} expired record(s).`);
+      setTimeout(() => setPruneMessage(null), 4000);
+      loadData();
+    } catch (err) {
+      console.error(err);
+      alert('Failed to clean up expired pending donations.');
+    } finally {
+      setIsPruning(false);
+    }
+  };
+
+  const handleDeleteDonation = async (id: string) => {
+    if (confirm('Are you sure you want to delete this pending donation record?')) {
+      try {
+        await deleteDonationRecordAction(id);
+        loadData();
+      } catch (err) {
+        console.error(err);
+        alert('Failed to delete donation record.');
+      }
+    }
+  };
+
   return (
     <div className="w-full max-w-5xl mx-auto p-4 md:p-6 text-neutral-300">
       
@@ -135,7 +175,26 @@ export default function RedistributionRecordPage() {
       <div className="flex flex-col gap-8">
         
         <div>
-          <h2 className="text-sm font-medium text-neutral-300 font-sans tracking-tight mb-4 uppercase">Recent Incoming Donations</h2>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+            <h2 className="text-sm font-medium text-neutral-300 font-sans tracking-tight uppercase">Recent Incoming Donations</h2>
+            <div className="flex items-center gap-3">
+              {pruneMessage && (
+                <span className="text-xs text-emerald-400 font-mono animate-fade-in">
+                  {pruneMessage}
+                </span>
+              )}
+              <button
+                type="button"
+                onClick={handlePruneExpiredPending}
+                disabled={isPruning}
+                className="text-xs bg-[#1a1a1a] hover:bg-[#252525] text-neutral-400 hover:text-neutral-200 border border-[#333] px-2.5 py-1 rounded transition-colors flex items-center gap-1.5 disabled:opacity-50"
+                title="Clean up pending records older than 1 month"
+              >
+                <Trash2 className="w-3 h-3 text-neutral-500" />
+                <span>{isPruning ? 'Cleaning...' : 'Prune Expired Pending (>30d)'}</span>
+              </button>
+            </div>
+          </div>
           {donations.length === 0 ? (
             <div className="text-center py-8 text-neutral-600 font-sans text-sm border border-[#222] rounded border-dashed">
               No incoming donations found yet.
@@ -151,6 +210,7 @@ export default function RedistributionRecordPage() {
                     <th className="px-4 py-3 font-medium">Amount</th>
                     <th className="px-4 py-3 font-medium">Status</th>
                     <th className="px-4 py-3 font-medium">Tx ID</th>
+                    <th className="px-4 py-3 font-medium text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#222]">
@@ -200,6 +260,18 @@ export default function RedistributionRecordPage() {
                       </td>
                       <td className="px-4 py-3 text-neutral-500 font-mono text-[10px] truncate max-w-[120px]">
                         {d.razorpayPaymentId || d.razorpayOrderId}
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        {d.status === 'pending' && (
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteDonation(d.id)}
+                            className="text-neutral-500 hover:text-red-400 p-1 rounded transition-colors"
+                            title="Delete pending donation record"
+                          >
+                            <Trash2 className="w-3.5 h-3.5 inline-block" />
+                          </button>
+                        )}
                       </td>
                     </tr>
                   ))}

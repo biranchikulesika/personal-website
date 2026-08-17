@@ -303,8 +303,24 @@ CREATE TABLE IF NOT EXISTS "public"."donations" (
     "createdAt" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+CREATE INDEX IF NOT EXISTS idx_donations_status_created_at ON "public"."donations"("status", "createdAt");
+
 DROP TRIGGER IF EXISTS update_donations_updated_at ON "public"."donations";
 CREATE TRIGGER update_donations_updated_at BEFORE UPDATE ON "public"."donations" FOR EACH ROW EXECUTE FUNCTION "update_updatedAt_column"();
+
+-- Function to auto delete expired pending donation records older than N days (default: 30 days)
+CREATE OR REPLACE FUNCTION "public"."delete_expired_pending_donations"(retention_days INTEGER DEFAULT 30)
+RETURNS INTEGER AS $$
+DECLARE
+    deleted_count INTEGER;
+BEGIN
+    DELETE FROM "public"."donations"
+    WHERE status = 'pending'
+      AND "createdAt" < NOW() - (retention_days || ' days')::INTERVAL;
+    GET DIAGNOSTICS deleted_count = ROW_COUNT;
+    RETURN deleted_count;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- 5. ROW LEVEL SECURITY (RLS)
 ALTER TABLE "public"."active_systems" ENABLE ROW LEVEL SECURITY;
