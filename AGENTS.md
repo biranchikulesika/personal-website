@@ -128,18 +128,22 @@ Before opening the Pull Request:
 * Run the project's relevant linting, type checking, tests, and build checks.
 * Confirm the implementation is actually complete.
 
-### Step 4: Open a Pull Request into `develop`
+### Step 4: Merge into `develop` via Squash and Merge
 
-The feature/fix branch must be merged into `develop` through a Pull Request.
+All development branches must be integrated into `develop` using **Squash and Merge**.
 
 ```text
-feature/* → develop
-fix/*     → develop
-chore/*   → develop
-refactor/* → develop
+feature/*  ──(Squash & Merge)──► develop
+fix/*      ──(Squash & Merge)──► develop
+chore/*    ──(Squash & Merge)──► develop
+refactor/* ──(Squash & Merge)──► develop
 ```
 
-Do not merge directly from a feature branch into `production`.
+#### Mandatory Squash and Merge Rules:
+* **Always Squash and Merge into `develop`**: Combine all incremental development commits from the working branch into a single, cohesive, and descriptive commit.
+* **Never create messy merge bubbles**: Do not pollute `develop` with multiple micro-commits, WIP saves, or merge commit nodes.
+* **Keep `develop` History Linear and Clean**: Each commit on `develop` must represent a fully tested, complete feature, fix, or chore.
+* Do not merge directly from a feature branch into `production`.
 
 ---
 
@@ -250,7 +254,7 @@ Before making changes:
 5. Make changes only on that branch.
 6. Never directly modify or push `develop`.
 7. Never directly modify or push `production`.
-8. Open a Pull Request into `develop` when the work is complete.
+8. Integrate into `develop` exclusively via **Squash and Merge** (`git merge --squash` / PR Squash & Merge) once approved.
 9. Only create a `develop → production` Pull Request when the user explicitly indicates that the completed development state is ready for production.
 
 If the current branch is `production`, do not begin normal feature development there.
