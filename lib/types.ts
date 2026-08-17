@@ -1,3 +1,5 @@
+import type { AuthenticatorTransportFuture, CredentialDeviceType } from '@simplewebauthn/server';
+
 export interface Post {
   id: string;
   persona: string;
@@ -21,6 +23,19 @@ export interface Post {
   publishedAt?: string;
   featured: boolean;
   hidden: boolean;
+  autoOptimize?: boolean;
+  seoTitle?: string;
+  seoDescription?: string;
+  ogTitle?: string;
+  ogDescription?: string;
+  twitterTitle?: string;
+  twitterDescription?: string;
+  keywords?: string[];
+  manualOverrides?: string[];
+  aiMetadataStatus?: 'idle' | 'generating' | 'completed' | 'failed';
+  aiMetadataLastGeneratedAt?: string;
+  aiMetadataContentHash?: string;
+  aiMetadataError?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -215,4 +230,31 @@ export interface Donation {
   status: string;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface PasskeyCredential {
+  id: string;
+  userId: string;
+  credentialId: string;
+  publicKey: string;
+  counter: number;
+  deviceType: CredentialDeviceType;
+  backedUp: boolean;
+  transports: AuthenticatorTransportFuture[];
+  name: string;
+  aaguid?: string | null;
+  lastUsedAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PasskeyListItem {
+  id: string;
+  credentialId: string;
+  name: string;
+  deviceType: CredentialDeviceType;
+  backedUp: boolean;
+  transports: AuthenticatorTransportFuture[];
+  createdAt: string;
+  lastUsedAt?: string | null;
 }

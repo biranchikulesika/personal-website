@@ -10,7 +10,7 @@ async function saveBuildLog(logEntry) {
   // Initialize Supabase client with service role (full access)
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_ROLE_KEY
+    process.env.SUPABASE_SECRET_KEY
   );
 
   // Check if an entry for today already exists with same title
@@ -73,7 +73,7 @@ async function saveBuildLog(logEntry) {
 async function updateBuildLog(id, updates) {
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_ROLE_KEY
+    process.env.SUPABASE_SECRET_KEY
   );
 
   const dbPayload = {};
@@ -113,7 +113,7 @@ async function hideBuildLog(id) {
 async function deleteBuildLog(id) {
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_ROLE_KEY
+    process.env.SUPABASE_SECRET_KEY
   );
 
   const { error } = await supabase

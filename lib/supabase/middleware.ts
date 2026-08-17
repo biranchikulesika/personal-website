@@ -11,12 +11,12 @@ export async function updateSession(request: NextRequest) {
     return supabaseResponse
   }
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
-  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder';
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+  const supabasePublishableKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || '';
 
   const supabase = createServerClient(
     supabaseUrl,
-    supabaseKey,
+    supabasePublishableKey,
     {
       cookies: {
         getAll() {

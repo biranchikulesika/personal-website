@@ -5,7 +5,7 @@ import { operatorFocusSchema } from '@/lib/schemas';
 
 const operatorFocusService = new OperatorFocusService();
 
-export async function getOperatorFocuss() {
+export async function getOperatorFocuses() {
   await verifyAuth();
   return await operatorFocusService.getAll();
 }
@@ -54,7 +54,7 @@ export async function moveOperatorFocusDown(id: string) {
 }
 
 
-export async function reorderOperatorFocuss(ids: string[]) {
+export async function reorderOperatorFocuses(ids: string[]) {
   await verifyAuth();
   return await operatorFocusService.reorder(ids);
 }

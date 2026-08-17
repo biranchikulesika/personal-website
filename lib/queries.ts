@@ -28,7 +28,7 @@ export const getPostBySlug = cache(async (slug: string, persona?: string) => saf
 export const getFragments = cache(async () => safeArray(() => new FragmentService().getAll()));
 export const getJournalMoments = cache(async () => safeArray(() => new JournalMomentService().getAll()));
 export const getBooks = cache(async () => safeArray(() => new BookService().getAll()));
-export const getBuilderStatuss = cache(async () => safeArray(() => new BuilderStatusService().getAll()));
+export const getBuilderStatuses = cache(async () => safeArray(() => new BuilderStatusService().getAll()));
 export const getActiveSystems = cache(async () => safeArray(() => new ActiveSystemService().getAll()));
 export const getBuildLogs = cache(async () => safeArray(() => new BuildLogService().getAll()));
 export const getRedistributionRecords = cache(async () => safeArray(() => new RedistributionRecordService().getAll()));
@@ -36,5 +36,5 @@ export const getNewsletterProfiles = cache(async () => safeArray(() => new Newsl
 export const getNewsletterIssues = cache(async () => safeArray(() => new NewsletterIssueService().getAll()));
 export const getQuestions = cache(async () => safeArray(() => new QuestionService().getAll()));
 export const getThoughtFragments = cache(async () => safeArray(() => new ThoughtFragmentService().getAll()));
-export const getOperatorFocuss = cache(async () => safeArray(() => new OperatorFocusService().getAll()));
+export const getOperatorFocuses = cache(async () => safeArray(() => new OperatorFocusService().getAll()));
 export const getDonations = cache(async () => safeArray(() => new DonationService().getAll()));

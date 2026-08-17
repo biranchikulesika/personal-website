@@ -1,0 +1,31 @@
+name: Cleanup Expired Pending Donations
+on:
+  schedule:
+    # Runs daily at 03:00 UTC (8:30 AM IST)
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24.16.0'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run cleanup script
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+          CLEANUP_RETENTION_DAYS: '30'
+        run: node scripts/cleanup-pending-donations.js
+
+      - name: Report status
+        if: always()
+        run: echo "Pending donations cleanup completed at $(date)"

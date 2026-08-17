@@ -11,8 +11,9 @@ import Image from 'next/image';
 import { MarkdownRenderer } from '@/components/mdx/MarkdownRenderer';
 import { uploadImage, getRecentUploads } from '@/lib/supabase/storage';
 import { UploadCloud, Clock } from 'lucide-react';
-import { getPosts, createPost, updatePost, deletePost, hidePost, unhidePost, featurePost, unfeaturePost, revertPostToDraft } from '@/app/admin/actions/posts.actions';
+import { getPosts, createPost, updatePost, deletePost, hidePost, unhidePost, featurePost, unfeaturePost, revertPostToDraft, generatePostMetadataAction } from '@/app/admin/actions/posts.actions';
 import { FormLabel, InlineError, ValidationSummary, parseDbError, InlineWarning } from '@/components/admin/validation';
+import { parseToBlocks, compileFromBlocks } from '@/lib/block-serializer';
 
 function formatToDatetimeLocal(isoString?: string): string {
   if (!isoString) return '';
@@ -43,6 +44,30 @@ export default function PostPage() {
   const previewMode = activeTab === 'preview';
 
   const [isUploading, setIsUploading] = useState(false);
+  const [isGeneratingAI, setIsGeneratingAI] = useState(false);
+
+  const handleAutoGenerateAI = async () => {
+    if (isGeneratingAI) return;
+    setIsGeneratingAI(true);
+    try {
+      const res = await generatePostMetadataAction({
+        title: formData.title || '',
+        content: formData.content || '',
+        persona: formData.persona || 'builder',
+      });
+      if (res.success && res.data) {
+        setFormData((prev: any) => ({
+          ...prev,
+          excerpt: res.data.excerpt,
+          tags: res.data.tags,
+        }));
+      }
+    } catch (err) {
+      console.error('AI generation error:', err);
+    } finally {
+      setIsGeneratingAI(false);
+    }
+  };
   const [recentUploads, setRecentUploads] = useState<any[]>([]);
   const [uploadError, setUploadError] = useState('');
   const [isDragOverTextarea, setIsDragOverTextarea] = useState(false);
@@ -51,103 +76,6 @@ export default function PostPage() {
   const [composerBlocks, setComposerBlocks] = useState<any[]>([]);
   const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
 
-  const parseToBlocks = (text: string) => {
-    if (!text) return [];
-    // Split text by the ImageBlock tags
-    const regex = /(<ImageBlock[\s\S]*?\/>)/g;
-    const parts = text.split(regex);
-    const result: any[] = [];
-
-    parts.forEach((part, index) => {
-      if (!part) return;
-      const trimmed = part.trim();
-      if (trimmed.startsWith('<ImageBlock')) {
-        const srcMatch = part.match(/src="([^"]*)"/);
-        const altMatch = part.match(/alt="([^"]*)"/);
-        const captionMatch = part.match(/caption="([^"]*)"/);
-        const locationMatch = part.match(/location="([^"]*)"/);
-        const creditMatch = part.match(/credit="([^"]*)"/);
-        const alignMatch = part.match(/align="([^"]*)"/) || part.match(/alignment="([^"]*)"/);
-
-        const srcVal = srcMatch ? srcMatch[1] : '';
-        const isUploading = srcVal === 'uploading';
-        const uploadIdMatch = part.match(/uploadId="([^"]*)"/);
-        const progressMatch = part.match(/progress="([^"]*)"/);
-
-        result.push({
-          id: uploadIdMatch ? uploadIdMatch[1] : `img_${index}_${Math.random().toString(36).substring(2, 6)}`,
-          type: 'image',
-          rawTag: part,
-          src: srcVal,
-          alt: altMatch ? altMatch[1] : 'Image',
-          caption: captionMatch ? captionMatch[1] : '',
-          location: locationMatch ? locationMatch[1] : '',
-          credit: creditMatch ? creditMatch[1] : '',
-          align: (alignMatch ? alignMatch[1] : 'center') as 'left' | 'center' | 'right' | 'full',
-          isUploading,
-          uploadId: uploadIdMatch ? uploadIdMatch[1] : '',
-          progress: progressMatch ? Number(progressMatch[1]) : 0
-        });
-      } else {
-        // Split further into paragraphs, headings, blockquotes, and lists by dual blank lines
-        const subParts = part.split(/\n\s*\n/);
-        subParts.forEach((sub, subIdx) => {
-          const subTrim = sub.trim();
-          if (!subTrim) return;
-          const id = `blk_${index}_${subIdx}_${Math.random().toString(36).substring(2, 6)}`;
-
-          if (subTrim.startsWith('#')) {
-            const hMatch = subTrim.match(/^(#{1,6})\s+([\s\S]*)$/);
-            const level = hMatch ? hMatch[1].length : 2;
-            const content = hMatch ? hMatch[2] : subTrim.replace(/^#+\s*/, '');
-            result.push({ id, type: 'heading', level, content });
-          } else if (subTrim.startsWith('>')) {
-            const content = subTrim.replace(/^>\s*/, '');
-            result.push({ id, type: 'quote', content });
-          } else if (subTrim.startsWith('- ') || subTrim.startsWith('* ') || /^\d+\.\s/.test(subTrim)) {
-            result.push({ id, type: 'list', content: subTrim });
-          } else {
-            result.push({ id, type: 'text', content: sub });
-          }
-        });
-      }
-    });
-    return result;
-  };
-
-  const compileFromBlocks = (blocks: any[]) => {
-    return blocks.map(b => {
-      if (b.type === 'image') {
-        let tag = `<ImageBlock
-  src="${b.src}"
-  alt="${b.alt || 'Image'}"`;
-        if (b.caption) tag += `
-  caption="${b.caption}"`;
-        if (b.location) tag += `
-  location="${b.location}"`;
-        if (b.credit) tag += `
-  credit="${b.credit}"`;
-        if (b.align && b.align !== 'center') tag += `
-  align="${b.align}"`;
-        if (b.isUploading) {
-          if (b.uploadId) tag += `
-  uploadId="${b.uploadId}"`;
-          if (b.progress) tag += `
-  progress="${b.progress}"`;
-        }
-        tag += '\\n/>';
-        return tag;
-      } else if (b.type === 'heading') {
-        return `${'#'.repeat(b.level || 2)} ${b.content}`;
-      } else if (b.type === 'quote') {
-        return `> ${b.content}`;
-      } else if (b.type === 'list') {
-        return b.content;
-      } else {
-        return b.content;
-      }
-    }).join('\\n\\n');
-  };
 
   const updateBlocksAndSync = (newBlocks: any[]) => {
     setComposerBlocks(newBlocks);
@@ -552,7 +480,6 @@ export default function PostPage() {
 
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'error' | 'unsaved'>('idle');
   const lastSavedData = React.useRef<any>(null);
-  const autoSaveTimer = React.useRef<NodeJS.Timeout | null>(null);
 
   const extractCoverImage = (payload: any) => {
     if (payload.autoCoverImage && payload.content) {
@@ -586,50 +513,7 @@ export default function PostPage() {
 
     setSaveState('unsaved');
     setDbError(null);
-
-    if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
-
-    autoSaveTimer.current = setTimeout(async () => {
-      // Don't auto-save if completely empty to avoid junk records,
-      // but do if there's at least a title or some content
-      if (!formData.title?.trim() && !formData.content?.trim()) return;
-
-      setSaveState('saving');
-      try {
-        let payload = extractCoverImage({ ...formData, draft: true });
-
-        if (!payload.slug && payload.title) {
-            payload.slug = payload.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
-        }
-
-        if (editingId && editingId !== 'none') {
-          const res = await updatePost(editingId, payload);
-          if (!res.success) throw new Error("error" in res ? res.error : "Error");
-          lastSavedData.current = { ...formData, draft: true, slug: payload.slug };
-          setFormData(prev => ({ ...prev, slug: payload.slug, draft: true }));
-        } else {
-          const res = await createPost(payload);
-          if (res.success && res.data && res.data.id) {
-            const data = res.data;
-            setEditingId(data.id);
-            lastSavedData.current = { ...formData, id: data.id, draft: true, slug: payload.slug };
-            setFormData(prev => ({ ...prev, id: data.id, draft: true, slug: payload.slug }));
-            // load data in background to update the table
-            loadData();
-          }
-        }
-        setSaveState('saved');
-        setTimeout(() => setSaveState(s => s === 'saved' ? 'idle' : s), 2000);
-      } catch (err: any) {
-        setSaveState('error');
-        setDbError(parseDbError(err) || "Failed to auto-save");
-      }
-    }, 1500);
-
-    return () => {
-      if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
-    };
-  }, [formData, isEditing, editingId]);
+  }, [formData, isEditing]);
 
   const errors: Record<string, string> = {};
   if (!formData.persona?.trim()) {
@@ -934,7 +818,19 @@ export default function PostPage() {
                 <InlineError message={showValidation && !formData.slug?.trim() ? 'Post Slug is required.' : undefined} />
               </div>
               <div>
-                <FormLabel label="Excerpt" />
+                <div className="flex items-center justify-between mb-1.5">
+                  <FormLabel label="Excerpt" />
+                  <button
+                    type="button"
+                    onClick={handleAutoGenerateAI}
+                    disabled={isGeneratingAI}
+                    className="text-[10px] text-[#ff7700] hover:text-[#ff9933] font-mono uppercase tracking-wider flex items-center gap-1 disabled:opacity-50 transition-colors"
+                    title="Auto-generate summary and tags with AI"
+                  >
+                    <Sparkles className="w-3 h-3" />
+                    {isGeneratingAI ? 'Generating...' : 'AI Generate'}
+                  </button>
+                </div>
                 <textarea value={formData.excerpt || ''} onChange={(e) => setFormData({...formData, excerpt: e.target.value})} className="w-full h-32 bg-[#161616] border border-[#222] rounded-md px-4 py-2.5 text-sm text-neutral-200 outline-none focus:border-neutral-500 resize-none"></textarea>
                 <InlineWarning message={!formData.excerpt?.trim() ? 'Excerpts are optional but recommended as summaries in lists.' : undefined} />
               </div>
@@ -1550,7 +1446,19 @@ export default function PostPage() {
 </div>
 
               <div>
-                <FormLabel label="Tags (comma separated)" />
+                <div className="flex items-center justify-between mb-1.5">
+                  <FormLabel label="Tags (comma separated)" />
+                  <button
+                    type="button"
+                    onClick={handleAutoGenerateAI}
+                    disabled={isGeneratingAI}
+                    className="text-[10px] text-[#ff7700] hover:text-[#ff9933] font-mono uppercase tracking-wider flex items-center gap-1 disabled:opacity-50 transition-colors"
+                    title="Auto-generate tags and summary with AI"
+                  >
+                    <Sparkles className="w-3 h-3" />
+                    {isGeneratingAI ? 'Generating...' : 'AI Generate'}
+                  </button>
+                </div>
                 <input type="text" value={(formData.tags || []).join(', ')} onChange={(e) => setFormData({...formData, tags: e.target.value.split(',').map(s=>s.trim())})} className="w-full bg-[#161616] border border-[#222] rounded-md px-4 py-2.5 text-sm text-neutral-200 outline-none focus:border-neutral-500" />
                 <InlineWarning message={(!formData.tags || formData.tags.length === 0 || (formData.tags.length === 1 && !formData.tags[0])) ? "No tags are listed. Tags aggregate search capabilities across subjects." : undefined} />
               </div>

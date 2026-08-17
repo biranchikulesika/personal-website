@@ -27,14 +27,12 @@ jobs:
 
       - name: Generate and save build logs
         env:
-          GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
-          AI_PROVIDER: ${{ secrets.AI_PROVIDER }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           AI_API_KEY: ${{ secrets.AI_API_KEY }}
           AI_MODEL: ${{ secrets.AI_MODEL }}
           AI_BASE_URL: ${{ secrets.AI_BASE_URL }}
-          NVIDIA_API_KEY: ${{ secrets.NVIDIA_API_KEY }}
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
         run: node scripts/generate-build-logs.js
 
       - name: Report status

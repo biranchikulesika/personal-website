@@ -43,6 +43,10 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
+# PR description drafts (never commit these)
+PR_DESCRIPTION.md
+release-notes.md
+
 # Misc
 *.pem
 

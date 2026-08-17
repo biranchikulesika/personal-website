@@ -12,6 +12,7 @@
   --animate-slide-up: slide-up 0.8s ease-out both;
   --animate-shimmer: shimmer 2s ease-in-out infinite;
   --animate-shimmer-fast: shimmer 1.5s ease-in-out infinite;
+  --animate-tooltip-in: tooltip-in 0.15s ease-out both;
 
   @keyframes marquee {
     from {
@@ -35,6 +36,11 @@
   @keyframes shimmer {
     0% { transform: translateX(-100%); }
     100% { transform: translateX(100%); }
+  }
+
+  @keyframes tooltip-in {
+    from { opacity: 0; transform: translateY(-50%) translateX(-4px); }
+    to { opacity: 1; transform: translateY(-50%) translateX(0); }
   }
 
   /* Core Palette */

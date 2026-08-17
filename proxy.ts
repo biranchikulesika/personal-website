@@ -182,7 +182,7 @@ export const config = {
 };
 
 // Static routes that don't need middleware processing (SSG, sitemaps, feeds, robots)
-const STATIC_ROUTES = new Set(['/pages-sitemap', '/sitemap-index', '/robots.txt', '/feed.xml']);
+const STATIC_ROUTES = new Set(['/sitemap.xml', '/pages-sitemap.xml', '/posts-sitemap.xml', '/robots.txt', '/feed.xml']);
 
 export default async function proxy(req: NextRequest) {
   const url = req.nextUrl;

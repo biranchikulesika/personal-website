@@ -218,6 +218,54 @@ export type Database = {
         }
         Relationships: []
       }
+      passkey_credentials: {
+        Row: {
+          aaguid: string | null
+          backedUp: boolean
+          counter: number
+          createdAt: string
+          credentialId: string
+          deviceType: string
+          id: string
+          lastUsedAt: string | null
+          name: string
+          publicKey: string
+          transports: string[] | null
+          updatedAt: string
+          userId: string
+        }
+        Insert: {
+          aaguid?: string | null
+          backedUp?: boolean
+          counter?: number
+          createdAt?: string
+          credentialId: string
+          deviceType?: string
+          id?: string
+          lastUsedAt?: string | null
+          name?: string
+          publicKey: string
+          transports?: string[] | null
+          updatedAt?: string
+          userId: string
+        }
+        Update: {
+          aaguid?: string | null
+          backedUp?: boolean
+          counter?: number
+          createdAt?: string
+          credentialId?: string
+          deviceType?: string
+          id?: string
+          lastUsedAt?: string | null
+          name?: string
+          publicKey?: string
+          transports?: string[] | null
+          updatedAt?: string
+          userId?: string
+        }
+        Relationships: []
+      }
       field_notes: {
         Row: {
           category: string
@@ -676,6 +724,111 @@ export type Database = {
           published_at?: string | null
           title?: string | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      uploaded_images: {
+        Row: {
+          id: string
+          bucket: string
+          storage_path: string
+          public_url: string
+          file_name: string | null
+          content_type: string | null
+          size_bytes: number | null
+          first_uploaded_at: string
+          last_referenced_at: string
+          reference_count: number
+          status: string
+          last_scanned_at: string | null
+          metadata: Json | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          bucket?: string
+          storage_path: string
+          public_url: string
+          file_name?: string | null
+          content_type?: string | null
+          size_bytes?: number | null
+          first_uploaded_at?: string
+          last_referenced_at?: string
+          reference_count?: number
+          status?: string
+          last_scanned_at?: string | null
+          metadata?: Json | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          bucket?: string
+          storage_path?: string
+          public_url?: string
+          file_name?: string | null
+          content_type?: string | null
+          size_bytes?: number | null
+          first_uploaded_at?: string
+          last_referenced_at?: string
+          reference_count?: number
+          status?: string
+          last_scanned_at?: string | null
+          metadata?: Json | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      image_cleanup_logs: {
+        Row: {
+          id: string
+          scanned_count: number
+          referenced_count: number
+          orphaned_count: number
+          deleted_count: number
+          skipped_count: number
+          failed_count: number
+          retention_days: number
+          deleted_paths: string[] | null
+          errors: string[] | null
+          details: Json | null
+          duration_ms: number
+          status: string
+          executed_at: string
+        }
+        Insert: {
+          id?: string
+          scanned_count?: number
+          referenced_count?: number
+          orphaned_count?: number
+          deleted_count?: number
+          skipped_count?: number
+          failed_count?: number
+          retention_days?: number
+          deleted_paths?: string[] | null
+          errors?: string[] | null
+          details?: Json | null
+          duration_ms?: number
+          status?: string
+          executed_at?: string
+        }
+        Update: {
+          id?: string
+          scanned_count?: number
+          referenced_count?: number
+          orphaned_count?: number
+          deleted_count?: number
+          skipped_count?: number
+          failed_count?: number
+          retention_days?: number
+          deleted_paths?: string[] | null
+          errors?: string[] | null
+          details?: Json | null
+          duration_ms?: number
+          status?: string
+          executed_at?: string
         }
         Relationships: []
       }

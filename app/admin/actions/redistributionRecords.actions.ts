@@ -4,7 +4,10 @@ import { getSupabaseAdmin } from '@/lib/supabase/server';
 import { RedistributionRecordService } from '@/lib/services/redistributionRecord.service';
 import { redistributionRecordSchema } from '@/lib/schemas';
 
+import { DonationService } from '@/lib/services/donation.service';
+
 const redistributionRecordService = new RedistributionRecordService();
+const donationService = new DonationService();
 
 export async function getRedistributionRecords() {
   await verifyAuth();
@@ -45,6 +48,14 @@ export async function unhideRedistributionRecord(id: string) {
 
 export async function getIncomingDonations() {
   await verifyAuth();
+
+  // Auto-prune pending donations initiated by users that were never completed and are older than 1 month (30 days)
+  try {
+    await donationService.deleteExpiredPending(30);
+  } catch (err) {
+    console.error('Auto-prune of expired pending donations error:', err);
+  }
+
   const admin = getSupabaseAdmin();
   const { data, error } = await admin
     .from('donations')
@@ -73,4 +84,16 @@ export async function updateDonationPublicName(id: string, publicName: string | 
     throw new Error('Failed to update public name');
   }
   return data;
+}
+
+export async function deleteExpiredPendingDonationsAction(olderThanDays = 30) {
+  await verifyAuth();
+  const deletedCount = await donationService.deleteExpiredPending(olderThanDays);
+  return { success: true, deletedCount };
+}
+
+export async function deleteDonationRecordAction(id: string) {
+  await verifyAuth();
+  await donationService.delete(id);
+  return { success: true };
 }

@@ -5,12 +5,12 @@ import { z } from 'zod';
 
 const UpdatePostDTO = z.object({
   title: z.string().optional(),
-  subtitle: z.string().optional(),
-  byline: z.string().optional(),
+  subtitle: z.string().nullable().optional(),
+  byline: z.string().nullable().optional(),
   slug: z.string().optional(),
-  content: z.string().optional(),
-  draftContent: z.string().optional(),
-  excerpt: z.string().optional(),
+  content: z.string().nullable().optional(),
+  draftContent: z.string().nullable().optional(),
+  excerpt: z.string().nullable().optional(),
   status: z.enum(['draft', 'published', 'archived']).optional(),
   persona: z.string().optional(),
   coverImageUrl: z.string().nullable().optional(),
@@ -23,31 +23,57 @@ const UpdatePostDTO = z.object({
   featured: z.boolean().optional(),
   hidden: z.boolean().optional(),
   publishedAt: z.string().nullable().optional(),
-  tags: z.array(z.string()).optional(),
-  oldSlugs: z.array(z.string()).optional(),
+  tags: z.array(z.string()).nullable().optional(),
+  oldSlugs: z.array(z.string()).nullable().optional(),
+  autoOptimize: z.boolean().optional(),
+  seoTitle: z.string().nullable().optional(),
+  seoDescription: z.string().nullable().optional(),
+  ogTitle: z.string().nullable().optional(),
+  ogDescription: z.string().nullable().optional(),
+  twitterTitle: z.string().nullable().optional(),
+  twitterDescription: z.string().nullable().optional(),
+  keywords: z.array(z.string()).nullable().optional(),
+  manualOverrides: z.array(z.string()).nullable().optional(),
+  aiMetadataStatus: z.enum(['idle', 'generating', 'completed', 'failed']).nullable().optional(),
+  aiMetadataLastGeneratedAt: z.string().nullable().optional(),
+  aiMetadataContentHash: z.string().nullable().optional(),
+  aiMetadataError: z.string().nullable().optional(),
 }).strip();
 
 function toDbFormat(data: Partial<Post>) {
   const result: any = {
-    title: data.title,
-    subtitle: data.subtitle,
-    byline: data.byline,
-    slug: data.slug,
-    content: data.content,
-    draft_content: data.draftContent,
-    excerpt: data.excerpt,
-    persona: data.persona,
-    cover_image_url: data.coverImageUrl,
-    cover_image_alt: data.coverImageAlt,
-    cover_image_caption: data.coverImageCaption,
-    cover_image_location: data.coverImageLocation,
-    cover_image_credit: data.coverImageCredit,
-    auto_cover_image: data.autoCoverImage,
-    reading_time: data.readingTime,
-    featured: data.featured,
-    hidden: data.hidden,
-    tags: data.tags,
-    old_slugs: data.oldSlugs
+    title: data.title !== undefined ? data.title : null,
+    subtitle: data.subtitle !== undefined ? data.subtitle : null,
+    byline: data.byline !== undefined ? data.byline : null,
+    slug: data.slug !== undefined ? data.slug : null,
+    content: data.content !== undefined ? data.content : null,
+    draft_content: data.draftContent !== undefined ? data.draftContent : null,
+    excerpt: data.excerpt !== undefined ? data.excerpt : null,
+    persona: data.persona !== undefined ? data.persona : 'unassigned',
+    cover_image_url: data.coverImageUrl || null,
+    cover_image_alt: data.coverImageAlt || null,
+    cover_image_caption: data.coverImageCaption || null,
+    cover_image_location: data.coverImageLocation || null,
+    cover_image_credit: data.coverImageCredit || null,
+    auto_cover_image: data.autoCoverImage !== undefined ? data.autoCoverImage : true,
+    reading_time: typeof data.readingTime === 'number' && !isNaN(data.readingTime) ? data.readingTime : null,
+    featured: data.featured !== undefined ? data.featured : false,
+    hidden: data.hidden !== undefined ? data.hidden : false,
+    tags: Array.isArray(data.tags) ? data.tags : [],
+    old_slugs: Array.isArray(data.oldSlugs) ? data.oldSlugs : [],
+    auto_optimize: data.autoOptimize !== undefined ? data.autoOptimize : true,
+    seo_title: data.seoTitle !== undefined ? data.seoTitle : null,
+    seo_description: data.seoDescription !== undefined ? data.seoDescription : null,
+    og_title: data.ogTitle !== undefined ? data.ogTitle : null,
+    og_description: data.ogDescription !== undefined ? data.ogDescription : null,
+    twitter_title: data.twitterTitle !== undefined ? data.twitterTitle : null,
+    twitter_description: data.twitterDescription !== undefined ? data.twitterDescription : null,
+    keywords: Array.isArray(data.keywords) ? data.keywords : [],
+    manual_overrides: Array.isArray(data.manualOverrides) ? data.manualOverrides : [],
+    ai_metadata_status: data.aiMetadataStatus || 'idle',
+    ai_metadata_last_generated_at: data.aiMetadataLastGeneratedAt || null,
+    ai_metadata_content_hash: data.aiMetadataContentHash || null,
+    ai_metadata_error: data.aiMetadataError || null,
   };
 
   if (data.status !== undefined) {
@@ -55,8 +81,13 @@ function toDbFormat(data: Partial<Post>) {
   }
 
   if (data.publishedAt !== undefined) {
-    result.published_at = data.publishedAt;
+    result.published_at = (typeof data.publishedAt === 'string' && data.publishedAt.trim() !== '') ? data.publishedAt.trim() : null;
   }
+
+  // Remove any remaining undefined values
+  Object.keys(result).forEach(key => {
+    if (result[key] === undefined) delete result[key];
+  });
 
   return result;
 }
@@ -102,6 +133,19 @@ function fromDbFormat(dbData: any): Post {
     publishedAt: dbData.published_at,
     tags: dbData.tags || [],
     oldSlugs: dbData.old_slugs || [],
+    autoOptimize: dbData.auto_optimize !== undefined ? dbData.auto_optimize : true,
+    seoTitle: dbData.seo_title,
+    seoDescription: dbData.seo_description,
+    ogTitle: dbData.og_title,
+    ogDescription: dbData.og_description,
+    twitterTitle: dbData.twitter_title,
+    twitterDescription: dbData.twitter_description,
+    keywords: dbData.keywords || [],
+    manualOverrides: dbData.manual_overrides || [],
+    aiMetadataStatus: dbData.ai_metadata_status || 'idle',
+    aiMetadataLastGeneratedAt: dbData.ai_metadata_last_generated_at,
+    aiMetadataContentHash: dbData.ai_metadata_content_hash,
+    aiMetadataError: dbData.ai_metadata_error,
     createdAt: dbData.created_at,
     updatedAt: dbData.updated_at
   };

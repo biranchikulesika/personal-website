@@ -52,4 +52,16 @@ export class DonationService {
       throw error;
     }
   }
+
+  async deleteExpiredPending(olderThanDays = 30): Promise<number> {
+    try {
+      if ('deleteExpiredPending' in this.repository) {
+        return await (this.repository as any).deleteExpiredPending(olderThanDays);
+      }
+      return 0;
+    } catch (error) {
+      console.error("Failed to delete expired pending donations:", error);
+      throw error;
+    }
+  }
 }

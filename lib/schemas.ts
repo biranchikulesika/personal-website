@@ -1,31 +1,48 @@
 import { z } from 'zod';
 
-export const postSchema = z.object({
+export const postBaseSchema = z.object({
   id: z.string().optional(),
   persona: z.string(),
   title: z.string(),
-  subtitle: z.string().optional(),
-  byline: z.string().optional(),
+  subtitle: z.string().nullable().optional(),
+  byline: z.string().nullable().optional(),
   slug: z.string(),
-  oldSlugs: z.array(z.string()).optional(),
+  oldSlugs: z.array(z.string()).nullable().optional(),
   status: z.enum(['draft', 'published', 'archived']).optional(),
-  excerpt: z.string().optional(),
-  coverImageUrl: z.string().optional(),
-  coverImageAlt: z.string().optional(),
-  coverImageCaption: z.string().optional(),
-  coverImageLocation: z.string().optional(),
-  coverImageCredit: z.string().optional(),
-  autoCoverImage: z.boolean(),
-  content: z.string().optional(),
-  draftContent: z.string().optional(),
-  tags: z.array(z.string()),
-  readingTime: z.number().optional(),
+  excerpt: z.string().nullable().optional(),
+  coverImageUrl: z.string().nullable().optional(),
+  coverImageAlt: z.string().nullable().optional(),
+  coverImageCaption: z.string().nullable().optional(),
+  coverImageLocation: z.string().nullable().optional(),
+  coverImageCredit: z.string().nullable().optional(),
+  autoCoverImage: z.boolean().optional(),
+  content: z.string().nullable().optional(),
+  draftContent: z.string().nullable().optional(),
+  tags: z.array(z.string()).nullable().optional(),
+  readingTime: z.number().nullable().optional(),
   publishedAt: z.string().nullable().optional(),
-  featured: z.boolean(),
-  hidden: z.boolean(),
+  featured: z.boolean().optional(),
+  hidden: z.boolean().optional(),
+  autoOptimize: z.boolean().optional(),
+  seoTitle: z.string().nullable().optional(),
+  seoDescription: z.string().nullable().optional(),
+  ogTitle: z.string().nullable().optional(),
+  ogDescription: z.string().nullable().optional(),
+  twitterTitle: z.string().nullable().optional(),
+  twitterDescription: z.string().nullable().optional(),
+  keywords: z.array(z.string()).nullable().optional(),
+  manualOverrides: z.array(z.string()).nullable().optional(),
+  aiMetadataStatus: z.enum(['idle', 'generating', 'completed', 'failed']).nullable().optional(),
+  aiMetadataLastGeneratedAt: z.string().nullable().optional(),
+  aiMetadataContentHash: z.string().nullable().optional(),
+  aiMetadataError: z.string().nullable().optional(),
   createdAt: z.string().optional(),
   updatedAt: z.string().optional(),
-}).superRefine((data, ctx) => {
+});
+
+export const updatePostSchema = postBaseSchema.partial();
+
+export const postSchema = postBaseSchema.superRefine((data, ctx) => {
   if (data.status === 'published') {
     if (!data.title || data.title.trim() === '') {
       ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Title is required for published posts", path: ["title"] });
@@ -227,3 +244,25 @@ export const donationSchema = z.object({
   createdAt: z.string().optional(),
   updatedAt: z.string().optional(),
 });
+
+export const passkeyCredentialSchema = z.object({
+  id: z.string().optional(),
+  userId: z.string().uuid(),
+  credentialId: z.string().min(1),
+  publicKey: z.string().min(1),
+  counter: z.number().int().nonnegative().default(0),
+  deviceType: z.enum(['singleDevice', 'multiDevice']).default('singleDevice'),
+  backedUp: z.boolean().default(false),
+  transports: z.array(z.string()).default([]),
+  name: z.string().min(1).max(100).default('Passkey'),
+  aaguid: z.string().nullable().optional(),
+  lastUsedAt: z.string().nullable().optional(),
+  createdAt: z.string().optional(),
+  updatedAt: z.string().optional(),
+});
+
+export const passkeyRenameSchema = z.object({
+  id: z.string().uuid(),
+  name: z.string().trim().min(1, 'Name cannot be empty').max(50, 'Name must be 50 characters or less'),
+});
+

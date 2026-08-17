@@ -20,29 +20,58 @@ export async function deleteImage(bucket: StorageBucket, path: string) {
   return await deleteImageServerAction(bucket, path);
 }
 
-export async function getRecentUploads(bucket: StorageBucket, limit: number = 10) {
-  const { data, error } = await supabaseClient.storage.from(bucket).list('', {
-    limit,
-    offset: 0,
-    sortBy: { column: 'created_at', order: 'desc' }
-  });
+export async function getRecentUploads(bucket: StorageBucket, limit: number = 40) {
+  // First attempt: fetch directly from uploaded_images registry
+  const { data: dbRecords, error: dbError } = await supabaseClient
+    .from('uploaded_images')
+    .select('storage_path, file_name, public_url, created_at, first_uploaded_at')
+    .eq('bucket', bucket)
+    .neq('status', 'deleted')
+    .order('created_at', { ascending: false })
+    .limit(limit);
 
-  if (error) {
-    console.error('List Error:', error);
-    return [];
+  if (!dbError && dbRecords && dbRecords.length > 0) {
+    return dbRecords.map(item => ({
+      name: item.file_name || item.storage_path.split('/').pop() || item.storage_path,
+      created_at: item.created_at || item.first_uploaded_at,
+      publicUrl: item.public_url,
+      path: item.storage_path,
+    }));
   }
 
-  return data
-    .filter(file => file.name !== '.emptyFolderPlaceholder')
-    .map(file => {
-      const { data: { publicUrl } } = supabaseClient.storage.from(bucket).getPublicUrl(file.name);
-      return {
-        name: file.name,
-        created_at: file.created_at,
-        publicUrl,
-        path: file.name
-      };
+  // Fallback: list from storage recursively
+  const fetchFolder = async (folderPath: string, maxItems: number): Promise<any[]> => {
+    const { data, error } = await supabaseClient.storage.from(bucket).list(folderPath, {
+      limit: maxItems,
+      sortBy: { column: 'created_at', order: 'desc' },
     });
+
+    if (error || !data) return [];
+
+    const items: any[] = [];
+    for (const item of data) {
+      if (item.name === '.emptyFolderPlaceholder') continue;
+      const fullPath = folderPath ? `${folderPath}/${item.name}` : item.name;
+
+      if (!item.id && !item.metadata) {
+        // It is a folder, traverse into it
+        const nested = await fetchFolder(fullPath, maxItems);
+        items.push(...nested);
+      } else {
+        const { data: { publicUrl } } = supabaseClient.storage.from(bucket).getPublicUrl(fullPath);
+        items.push({
+          name: item.name,
+          created_at: item.created_at || new Date().toISOString(),
+          publicUrl,
+          path: fullPath,
+        });
+      }
+    }
+    return items;
+  };
+
+  const results = await fetchFolder('', limit);
+  return results.slice(0, limit);
 }
 
 export function getPublicUrl({ bucket, path }: { bucket: StorageBucket; path: string }) {

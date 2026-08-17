@@ -1,15 +1,18 @@
 'use client';
 
-'use client';
-
 import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import {
   getRecentUploads, uploadImage, deleteImage, StorageBucket
 } from '@/lib/supabase/storage';
 import {
+  runImageCleanupAction,
+  getStorageHealthSummaryAction,
+  getRecentCleanupLogsAction
+} from '@/app/admin/actions/storage.actions';
+import {
   UploadCloud, Trash2, Copy, ImageIcon, CheckCircle,
-  ExternalLink
+  ExternalLink, ShieldCheck, RefreshCw, AlertTriangle, Play, Sparkles
 } from 'lucide-react';
 import { MediaGridSkeleton } from '@/components/ui/skeletons';
 
@@ -20,6 +23,11 @@ export default function MediaAssetsPage() {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState('');
   const [copiedPath, setCopiedPath] = useState<string | null>(null);
+
+  // Storage Health & Cleanup State
+  const [healthSummary, setHealthSummary] = useState<any>(null);
+  const [isCleaning, setIsCleaning] = useState(false);
+  const [cleanupResult, setCleanupResult] = useState<any>(null);
 
   const loadMedia = useCallback(async () => {
     setLoading(true);
@@ -34,9 +42,39 @@ export default function MediaAssetsPage() {
     }
   }, [activeBucket]);
 
+  const loadHealthSummary = useCallback(async () => {
+    try {
+      const summary = await getStorageHealthSummaryAction();
+      setHealthSummary(summary);
+    } catch (err) {
+      console.warn('Failed to load storage health summary:', err);
+    }
+  }, []);
+
   useEffect(() => {
     loadMedia();
   }, [activeBucket, loadMedia]);
+
+  useEffect(() => {
+    loadHealthSummary();
+  }, [loadHealthSummary]);
+
+  const handleRunCleanup = async (dryRun: boolean) => {
+    setIsCleaning(true);
+    setCleanupResult(null);
+    try {
+      const res = await runImageCleanupAction({ dryRun });
+      setCleanupResult(res);
+      await loadHealthSummary();
+      if (!dryRun) {
+        await loadMedia();
+      }
+    } catch (err: any) {
+      alert('Cleanup failed: ' + (err.message || 'Unknown error'));
+    } finally {
+      setIsCleaning(false);
+    }
+  };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
@@ -46,6 +84,7 @@ export default function MediaAssetsPage() {
     try {
       await uploadImage({ bucket: activeBucket, file: selectedFile });
       loadMedia();
+      loadHealthSummary();
     } catch (err: any) {
       setUploadError(err.message || 'Upload failed.');
     } finally {
@@ -54,10 +93,11 @@ export default function MediaAssetsPage() {
   };
 
   const handleDeleteFile = async (path: string) => {
-    if (confirm('Delete this media permanently from Storage?')) {
+    if (confirm('Delete this media permanently from Storage and Registry?')) {
       try {
         await deleteImage(activeBucket, path);
         loadMedia();
+        loadHealthSummary();
       } catch (err: any) {
         alert('Delete failed: ' + err.message);
       }
@@ -76,13 +116,9 @@ export default function MediaAssetsPage() {
     <div className="w-full max-w-350 mx-auto p-5 md:p-8 lg:p-12 text-heading">
 
       {/* Title ribbon */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8">
         <div>
-          <div className="flex items-center gap-2 mb-2">
-            <span className="text-[10px] tracking-[0.25em] text-[#ff7700] uppercase font-mono font-bold">Studio Assets</span>
-          </div>
           <h1 className="text-3xl font-medium tracking-tight text-foreground mb-2 font-sans">Media Library</h1>
-          <p className="text-muted-text text-sm">Directly upload and manage static content images and layout file assets.</p>
         </div>
 
         {/* Upload Button overlay */}
@@ -100,6 +136,86 @@ export default function MediaAssetsPage() {
           </label>
         </div>
       </div>
+
+      {/* Compact Automatic Cleanup & Storage Status Strip */}
+      <div className="mb-6 px-3.5 py-2.5 bg-[#121212] border border-[#242424] rounded-lg flex flex-wrap items-center justify-between gap-3 text-xs font-mono">
+        <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-neutral-400">
+          <div className="flex items-center gap-1.5 text-neutral-200">
+            <ShieldCheck className="w-3.5 h-3.5 text-[#ff7700]" />
+            <span className="font-medium">Auto-Cleanup</span>
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-neutral-800 text-neutral-400 border border-neutral-700">
+              {healthSummary?.retentionDays || 60}d buffer
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2.5 text-[11px]">
+            <span title="Total tracked in storage registry">
+              Tracked: <strong className="text-white font-semibold">{healthSummary?.totalTracked ?? 0}</strong>
+            </span>
+            <span className="text-neutral-700">•</span>
+            <span title="Actively referenced in content">
+              Active: <strong className="text-emerald-400 font-semibold">{healthSummary?.activeCount ?? 0}</strong>
+            </span>
+            <span className="text-neutral-700">•</span>
+            <span title="Unreferenced but protected by 60-day safety buffer">
+              Grace (&lt;60d): <strong className="text-amber-300 font-semibold">{healthSummary?.orphanedInGracePeriod ?? 0}</strong>
+            </span>
+            <span className="text-neutral-700">•</span>
+            <span title="Unreferenced for >60 days and eligible for deletion">
+              Orphaned (&gt;60d): <strong className={(healthSummary?.eligibleForCleanup || 0) > 0 ? "text-red-400 font-semibold" : "text-neutral-400"}>{healthSummary?.eligibleForCleanup ?? 0}</strong>
+            </span>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 shrink-0 text-[11px]">
+          {healthSummary?.lastCleanupLog && (
+            <span className="hidden md:inline text-[10px] text-neutral-500 mr-2">
+              Last run: {new Date(healthSummary.lastCleanupLog.executed_at).toLocaleDateString()}
+            </span>
+          )}
+          <button
+            type="button"
+            onClick={() => handleRunCleanup(true)}
+            disabled={isCleaning}
+            className="px-2.5 py-1 rounded text-[11px] text-neutral-300 hover:text-white bg-[#1c1c1c] hover:bg-[#282828] border border-[#333] transition-colors disabled:opacity-50 flex items-center gap-1"
+            title="Scan references without deleting files"
+          >
+            {isCleaning ? <RefreshCw className="w-3 h-3 animate-spin" /> : <Play className="w-3 h-3" />}
+            Dry Run
+          </button>
+          <button
+            type="button"
+            onClick={() => handleRunCleanup(false)}
+            disabled={isCleaning}
+            className="px-2.5 py-1 rounded text-[11px] text-[#ff7700] hover:text-white bg-[#ff7700]/10 hover:bg-[#ff7700] border border-[#ff7700]/30 hover:border-[#ff7700] transition-colors disabled:opacity-50 flex items-center gap-1"
+            title="Run background cleanup and purge >60d unreferenced files"
+          >
+            {isCleaning ? <RefreshCw className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+            Clean Now
+          </button>
+        </div>
+      </div>
+
+      {/* Compact Cleanup Feedback Toast/Banner */}
+      {cleanupResult && (
+        <div className={`mb-6 px-3 py-2 rounded-lg border text-xs font-mono flex items-center justify-between gap-2 ${
+          cleanupResult.success ? 'bg-emerald-950/20 border-emerald-900/40 text-emerald-300' : 'bg-amber-950/20 border-amber-900/40 text-amber-300'
+        }`}>
+          <div className="flex items-center gap-2 truncate">
+            <CheckCircle className="w-3.5 h-3.5 shrink-0" />
+            <span className="truncate">
+              Cleanup {cleanupResult.dryRun ? 'Dry Run' : 'Done'} ({cleanupResult.durationMs}ms): {cleanupResult.scannedCount} scanned · {cleanupResult.referencedCount} active · {cleanupResult.deletedCount} {cleanupResult.dryRun ? 'would delete' : 'deleted'} · {cleanupResult.skippedCount} in grace · {cleanupResult.failedCount} failed
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setCleanupResult(null)}
+            className="text-[10px] text-neutral-400 hover:text-white px-1.5 py-0.5 rounded hover:bg-neutral-800 transition-colors"
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
       {uploadError && (
         <div className="mb-6 p-4 bg-red-950/20 border border-red-900/30 rounded text-red-400 text-xs font-mono">

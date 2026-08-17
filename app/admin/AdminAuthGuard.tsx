@@ -12,12 +12,12 @@ export function AdminAuthGuard({ children }: { children: React.ReactNode }) {
   // Need to handle cases where we might be outside the App Router provider in standalone tests,
   // but it's safe to assume this will run in Next.js environment.
   
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
-  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder';
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+  const supabasePublishableKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || '';
 
   const supabase = createBrowserClient(
     supabaseUrl,
-    supabaseKey,
+    supabasePublishableKey,
     {
       auth: {
         experimental: {

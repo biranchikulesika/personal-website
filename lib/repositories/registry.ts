@@ -23,6 +23,7 @@ import { BookSupabaseRepository } from './book.repository.supabase';
 import { SubscriberSupabaseRepository } from './subscriber.repository.supabase';
 import { SubscriptionSupabaseRepository } from './subscription.repository.supabase';
 import { DonationSupabaseRepository } from './donation.repository.supabase';
+import { PasskeySupabaseRepository } from './passkey.repository.supabase';
 
 export class RepositoryRegistry {
   private static instance: RepositoryRegistry;
@@ -53,7 +54,9 @@ export class RepositoryRegistry {
   getSubscriberRepository(): IRepository<any> { return new SubscriberSupabaseRepository() as any; }
   getSubscriptionRepository(): IRepository<any> { return new SubscriptionSupabaseRepository() as any; }
   getDonationRepository(): IRepository<any> { return new DonationSupabaseRepository() as any; }
+  getPasskeyRepository(): PasskeySupabaseRepository { return new PasskeySupabaseRepository(); }
 }
 
 export const repositoryRegistry = RepositoryRegistry.getInstance();
+
 

@@ -132,6 +132,10 @@ function visit(tree: any, types: string[], callback: (node: any, index: number, 
  * ──────────────────────────────────────────────────────────────────────────
  */
 export async function compileMDX(source: string) {
+  if (!source || source.trim() === '') {
+    return null;
+  }
+
   try {
     const mdxSource = await serialize(source, {
       mdxOptions: {
@@ -161,8 +165,9 @@ export async function compileMDX(source: string) {
     });
     
     return mdxSource;
-  } catch (error) {
-    console.error('Error compiling MDX:', error);
-    throw new Error('Failed to compile MDX content');
+  } catch (error: any) {
+    const errMsg = error?.message || 'Failed to compile MDX content';
+    console.warn('MDX Compilation Warning:', errMsg);
+    throw new Error(errMsg);
   }
 }

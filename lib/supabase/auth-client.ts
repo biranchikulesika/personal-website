@@ -1,12 +1,12 @@
-import { createBrowserClient } from '@supabase/ssr'
+import { createBrowserClient } from '@supabase/ssr';
 
 export function createAuthClient() {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
-  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder';
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const supabasePublishableKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!;
 
   return createBrowserClient(
     supabaseUrl,
-    supabaseKey,
+    supabasePublishableKey,
     {
       auth: {
         experimental: {
@@ -14,5 +14,6 @@ export function createAuthClient() {
         },
       },
     }
-  )
+  );
 }
+

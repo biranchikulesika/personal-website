@@ -1,7 +1,8 @@
 'use server';
 import { verifyAuth } from '@/lib/auth/verify';
 import { PostService } from '@/lib/services/post.service';
-import { postSchema } from '@/lib/schemas';
+import { postSchema, updatePostSchema } from '@/lib/schemas';
+import { generatePostMetadata, generateCompletePostMetadata, computeContentHash, type CompletePostMetadata } from '@/lib/ai/post-metadata';
 import { revalidatePath } from 'next/cache';
 
 const postService = new PostService();
@@ -10,14 +11,12 @@ export type ActionResponse<T> = { success: true; data: T } | { success: false; e
 
 function handleError(error: any): { success: false; error: string } {
   console.error("Action error:", error);
-  let message = 'An unexpected error occurred. Please try again.';
+  let message = error?.message || 'An unexpected error occurred. Please try again.';
   if (error?.message) {
     if (error.message.includes('23505') || error.message.includes('duplicate key')) {
-      message = 'A record with this identifier already exists.';
+      message = 'A record with this identifier or slug already exists.';
     } else if (error.message.includes('Failed to fetch') || error.message.includes('timeout')) {
       message = 'Database connection error. Please try again.';
-    } else if (error.message.includes('PGRST') || error.message.includes('Supabase Error') || error.message.includes('Database Error')) {
-      message = 'Database operation failed.';
     }
   }
   return { success: false, error: message };
@@ -92,7 +91,7 @@ export async function createPost(data: any): Promise<ActionResponse<any>> {
 export async function updatePost(id: string, data: any): Promise<ActionResponse<any>> {
   try {
     await verifyAuth();
-    const validData = postSchema.partial().parse(data);
+    const validData = updatePostSchema.parse(data);
     const result = await postService.update(id, validData as any);
     
     // Revalidate ISR caches
@@ -252,6 +251,51 @@ export async function revertPostToDraft(id: string): Promise<ActionResponse<any>
     }
     revalidatePath('/sitemap.xml', 'layout');
     
+    return { success: true, data: result };
+  } catch (error) {
+    return handleError(error);
+  }
+}
+
+export async function generatePostMetadataAction(input: { title: string; content: string; persona?: string }): Promise<ActionResponse<{ excerpt: string; tags: string[] }>> {
+  try {
+    await verifyAuth();
+    const result = await generatePostMetadata(input);
+    return { success: true, data: result };
+  } catch (error) {
+    return handleError(error);
+  }
+}
+
+export async function optimizePostMetadataAction(input: {
+  id?: string;
+  title: string;
+  content: string;
+  persona?: string;
+  coverImageUrl?: string;
+  manualOverrides?: string[];
+  existingData?: Partial<CompletePostMetadata>;
+  currentHash?: string;
+  force?: boolean;
+}): Promise<ActionResponse<CompletePostMetadata>> {
+  try {
+    await verifyAuth();
+    const newHash = computeContentHash(input.title, input.content, input.persona || 'builder', input.coverImageUrl || '');
+    
+    // If not forced and content hash hasn't changed, return cached data
+    if (!input.force && input.currentHash && input.currentHash === newHash && input.existingData) {
+      return { success: true, data: { ...input.existingData, contentHash: newHash } as CompletePostMetadata };
+    }
+
+    const result = await generateCompletePostMetadata({
+      title: input.title,
+      content: input.content,
+      persona: input.persona,
+      coverImageUrl: input.coverImageUrl,
+      manualOverrides: input.manualOverrides,
+      existingData: input.existingData,
+    });
+
     return { success: true, data: result };
   } catch (error) {
     return handleError(error);

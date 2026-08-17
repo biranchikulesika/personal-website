@@ -6,16 +6,17 @@ import { Bold, Italic, Link as LinkIcon, Image as ImageIcon, Code, LayoutTemplat
 
 import MediaLibraryModal from './MediaLibraryModal';
 import MDXPreview from './MDXPreview';
-import { useImageUpload } from '@/hooks/useImageUpload';
+import { useImageUpload } from '@/hooks/use-image-upload';
 import ImageUploadOverlay from '@/components/admin/image-upload-overlay';
 import UploadProgress from '@/components/admin/upload-progress';
-import { COMPONENT_GROUPS } from '@/components/admin/editor/component-library';
-import type { ComponentEntry } from '@/components/admin/editor/component-library';
+import { COMPONENT_GROUPS } from '@/components/admin/component-library';
+import type { ComponentEntry } from '@/components/admin/component-library';
 
 export type EditorTab = {
   id: string;
   title: string;
   isDirty?: boolean;
+  saveStatus?: string;
 };
 
 interface MDXEditorProps {
@@ -54,26 +55,30 @@ const ToolbarButton = ({ icon: Icon, label, onClick }: { icon: any; label: strin
 // and eliminates wrapper bugs that could cause cursor/view desync.
 
 // Dynamic import to avoid SSR issues
-let monacoModule: any = null;
-async function getMonaco() {
-  if (!monacoModule) {
-    monacoModule = await import('monaco-editor');
-    // Configure the global Monaco environment to use the local npm package's
-    // workers via blob URLs, eliminating CDN dependency entirely.
-    const monaco = monacoModule;
-    monaco.editor.MonacoEnvironment = {
-      getWorker(_workerId: string, _label: string) {
-        return new Worker(
-          new URL(
-            'monaco-editor/esm/vs/editor/editor.worker.js',
-            import.meta.url
-          ),
-          { type: 'module' }
-        );
-      },
-    };
+let monacoPromise: Promise<any> | null = null;
+function getMonaco(): Promise<any> {
+  if (!monacoPromise) {
+    monacoPromise = import('monaco-editor').then((monaco) => {
+      (globalThis as any).MonacoEnvironment = {
+        getWorker(_workerId: string, _label: string) {
+          return new Worker(
+            new URL(
+              'monaco-editor/esm/vs/editor/editor.worker.js',
+              import.meta.url
+            ),
+            { type: 'module' }
+          );
+        },
+      };
+      return monaco;
+    });
   }
-  return monacoModule;
+  return monacoPromise;
+}
+
+// Pre-warm Monaco as soon as client bundle is loaded
+if (typeof window !== 'undefined') {
+  getMonaco().catch(() => {});
 }
 
 /**
@@ -133,6 +138,53 @@ export default function MDXEditor({
   const onChangeRef = useRef(onChange);
   useEffect(() => { onChangeRef.current = onChange; }, [onChange]);
 
+  // ── Formatting Helpers ────────────────────────────────────────────────
+
+  const applyFormat = useCallback((wrapper: string) => {
+    const editor = editorRef.current;
+    if (!editor) return;
+    const sel = editor.getSelection();
+    const model = editor.getModel();
+    if (!model || !sel) return;
+    const text = model.getValueInRange(sel);
+    const unwrapped = text.startsWith(wrapper) && text.endsWith(wrapper);
+    editor.executeEdits('format', [
+      { range: sel, text: unwrapped ? text.slice(wrapper.length, -wrapper.length) : `${wrapper}${text}${wrapper}`, forceMoveMarkers: true }
+    ]);
+    editor.focus();
+  }, []);
+
+  const applyLink = useCallback(() => {
+    const editor = editorRef.current;
+    if (!editor) return;
+    const sel = editor.getSelection();
+    const model = editor.getModel();
+    if (!model || !sel) return;
+    const text = model.getValueInRange(sel);
+    const url = window.prompt('URL:');
+    if (url === null) return;
+    editor.executeEdits('link', [{ range: sel, text: text ? `[${text}](${url})` : `[Link text](${url})`, forceMoveMarkers: true }]);
+    editor.focus();
+  }, []);
+
+  const insertComponent = useCallback((tag: string, props: Record<string, string> = {}) => {
+    const editor = editorRef.current;
+    if (!editor) return;
+    const sel = editor.getSelection();
+    const propsStr = Object.entries(props).map(([k, v]) => `${k}="${v}"`).join(' ');
+    editor.executeEdits('component', [{ range: sel, text: `<${tag}${propsStr ? ' ' + propsStr : ''}>\n\n</${tag}>\n`, forceMoveMarkers: true }]);
+    editor.focus();
+  }, []);
+
+  const insertSelfClosingComponent = useCallback((tag: string, props: Record<string, string> = {}) => {
+    const editor = editorRef.current;
+    if (!editor) return;
+    const sel = editor.getSelection();
+    const propsStr = Object.entries(props).map(([k, v]) => `${k}="${v}"`).join(' ');
+    editor.executeEdits('component', [{ range: sel, text: `<${tag}${propsStr ? ' ' + propsStr : ''} />\n`, forceMoveMarkers: true }]);
+    editor.focus();
+  }, []);
+
   // ── Initialize Monaco directly ──────────────────────────────────────
   //
   // CRITICAL: Uses a local `isCancelled` flag instead of a ref to handle
@@ -142,8 +194,8 @@ export default function MDXEditor({
   // causing the second mount's async init to abort early. A local variable
   // is scoped to each closure invocation, so each mount gets a fresh
   // `isCancelled = false`.
-  //
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const initialContentRef = useRef(content);
+
   useEffect(() => {
     let editor: any = null;
     let model: any = null;
@@ -170,7 +222,7 @@ export default function MDXEditor({
         } catch { /* language config override is best-effort */ }
 
         // Create the model first so we can pass it directly
-        model = monaco.editor.createModel(content || '', 'mdx');
+        model = monaco.editor.createModel(initialContentRef.current || '', 'mdx');
         if (isCancelled) { model.dispose(); model = null; return; }
 
         // Create the editor with the model
@@ -234,7 +286,7 @@ export default function MDXEditor({
         model.dispose();
       }
     };
-  }, []);
+  }, [applyFormat, applyLink]);
 
   // ── Sync content from parent (tab switch, load draft) ───────────────
   // CRITICAL: This effect must only fire when content changes FROM OUTSIDE
@@ -323,53 +375,6 @@ export default function MDXEditor({
     document.body.style.cursor = 'col-resize';
   };
 
-  // ── Formatting Helpers ────────────────────────────────────────────────
-
-  const applyFormat = useCallback((wrapper: string) => {
-    const editor = editorRef.current;
-    if (!editor) return;
-    const sel = editor.getSelection();
-    const model = editor.getModel();
-    if (!model || !sel) return;
-    const text = model.getValueInRange(sel);
-    const unwrapped = text.startsWith(wrapper) && text.endsWith(wrapper);
-    editor.executeEdits('format', [
-      { range: sel, text: unwrapped ? text.slice(wrapper.length, -wrapper.length) : `${wrapper}${text}${wrapper}`, forceMoveMarkers: true }
-    ]);
-    editor.focus();
-  }, []);
-
-  const applyLink = useCallback(() => {
-    const editor = editorRef.current;
-    if (!editor) return;
-    const sel = editor.getSelection();
-    const model = editor.getModel();
-    if (!model || !sel) return;
-    const text = model.getValueInRange(sel);
-    const url = window.prompt('URL:');
-    if (url === null) return;
-    editor.executeEdits('link', [{ range: sel, text: text ? `[${text}](${url})` : `[Link text](${url})`, forceMoveMarkers: true }]);
-    editor.focus();
-  }, []);
-
-  const insertComponent = useCallback((tag: string, props: Record<string, string> = {}) => {
-    const editor = editorRef.current;
-    if (!editor) return;
-    const sel = editor.getSelection();
-    const propsStr = Object.entries(props).map(([k, v]) => `${k}="${v}"`).join(' ');
-    editor.executeEdits('component', [{ range: sel, text: `<${tag}${propsStr ? ' ' + propsStr : ''}>\n\n</${tag}>\n`, forceMoveMarkers: true }]);
-    editor.focus();
-  }, []);
-
-  const insertSelfClosingComponent = useCallback((tag: string, props: Record<string, string> = {}) => {
-    const editor = editorRef.current;
-    if (!editor) return;
-    const sel = editor.getSelection();
-    const propsStr = Object.entries(props).map(([k, v]) => `${k}="${v}"`).join(' ');
-    editor.executeEdits('component', [{ range: sel, text: `<${tag}${propsStr ? ' ' + propsStr : ''} />\n`, forceMoveMarkers: true }]);
-    editor.focus();
-  }, []);
-
   // ── Clipboard Paste (Image) ───────────────────────────────────────────
 
   useEffect(() => {
@@ -408,17 +413,28 @@ export default function MDXEditor({
         {tabs.map(tab => {
           const isSelected = activeTabId === tab.id;
           const displayTabName = (tab.title || 'untitled').toLowerCase().replace(/[^a-z0-9]+/g, '-') + '.mdx';
+          const isSaving = tab.saveStatus === 'Saving...';
+          const isError = tab.saveStatus === 'Error saving';
+          const isDirty = tab.isDirty || tab.saveStatus === 'Unsaved';
+
           return (
             <div
               key={tab.id}
               onClick={() => onTabSelect?.(tab.id)}
-              className={`flex items-center h-full px-3 cursor-pointer min-w-[140px] max-w-[200px] group transition-colors border-r border-[#111111] ${isSelected ? 'bg-[#1e1e1e] text-[#cccccc]' : 'bg-[#2d2d2d] text-[#888888] hover:bg-[#2a2d2e]'}`}
+              title={tab.title || 'untitled.mdx'}
+              className={`flex items-center h-full px-3 cursor-pointer min-w-[140px] max-w-[260px] group transition-colors border-r border-[#111111] ${isSelected ? 'bg-[#1e1e1e] text-[#cccccc]' : 'bg-[#2d2d2d] text-[#888888] hover:bg-[#2a2d2e]'}`}
             >
               <Type className={`w-3.5 h-3.5 mr-2 shrink-0 ${isSelected ? 'text-[#519aba]' : 'text-[#888888]'}`} />
               <span className="text-[13px] font-sans truncate select-none flex-1">
                 {displayTabName.replace(/^-+|-+$/g, '') || 'untitled.mdx'}
-                {tab.isDirty && <span className="ml-1 opacity-70">*</span>}
               </span>
+              {isSaving ? (
+                <span className="w-2 h-2 ml-1.5 rounded-full border border-blue-400 border-t-transparent animate-spin shrink-0" title="Saving..." />
+              ) : isError ? (
+                <span className="w-2 h-2 ml-1.5 rounded-full bg-red-500 shrink-0" title="Error saving" />
+              ) : isDirty ? (
+                <span className="ml-1.5 opacity-80 font-mono text-amber-400 text-xs shrink-0" title="Unsaved changes">●</span>
+              ) : null}
               <X
                 onClick={(e) => { e.stopPropagation(); onTabClose?.(tab.id); }}
                 className={`w-4 h-4 ml-2 rounded p-0.5 transition-all shrink-0 ${isSelected ? 'opacity-0 group-hover:opacity-100 hover:bg-[#333]' : 'opacity-0 group-hover:opacity-100 hover:bg-[#444]'}`}
@@ -506,33 +522,37 @@ export default function MDXEditor({
           <UploadProgress uploads={uploads} onRetry={retryUpload} onDismiss={dismissUpload} onClearCompleted={clearCompleted} />
 
           {/* VS Code Breadcrumbs */}
-          <div className="flex items-center h-[26px] bg-[#1e1e1e] px-4 text-[#cccccc] shrink-0 text-[12px] font-sans shadow-[0_1px_2px_rgba(0,0,0,0.2)] z-10 relative">
-            <span className="opacity-60 font-mono">{persona}</span>
-            <span className="mx-2 opacity-40">›</span>
-            <input type="text" value={title} onChange={(e) => onTitleChange(e.target.value)} placeholder="Post Title" className="bg-transparent border-none outline-none text-[#cccccc] placeholder-[#666] focus:ring-0 w-32 lg:w-48 shrink-0 py-0"
+          <div className="flex items-center min-h-[32px] bg-[#1e1e1e] px-4 text-[#cccccc] shrink-0 text-[13px] font-sans shadow-[0_1px_2px_rgba(0,0,0,0.2)] z-10 relative">
+            <span className="opacity-60 font-mono shrink-0">{persona}</span>
+            <span className="mx-2 opacity-40 shrink-0">›</span>
+            <input
+              type="text"
+              value={title}
+              onChange={(e) => onTitleChange(e.target.value)}
+              placeholder="Post Title"
+              className="flex-1 min-w-0 w-full bg-transparent border-none outline-none text-[#e6e6e6] font-medium placeholder-[#666] focus:ring-0 focus:text-white py-1 text-[13px]"
               onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); editorRef.current?.focus(); } }}
             />
           </div>
 
           {/* Subtitle Row */}
-          <div className="flex items-center h-[28px] bg-[#1a1a1a] px-4 text-[#cccccc] shrink-0 border-b border-[#222]">
-            <input type="text" value={subtitle} onChange={(e) => onSubtitleChange(e.target.value)} placeholder="Subtitle" className="w-full bg-transparent border-none outline-none text-[#999] placeholder-[#555] focus:ring-0 py-0 text-[12px] italic"
+          <div className="flex items-center min-h-[30px] bg-[#1a1a1a] px-4 text-[#cccccc] shrink-0 border-b border-[#222]">
+            <input
+              type="text"
+              value={subtitle}
+              onChange={(e) => onSubtitleChange(e.target.value)}
+              placeholder="Subtitle (optional)"
+              className="flex-1 min-w-0 w-full bg-transparent border-none outline-none text-[#a0a0a0] placeholder-[#555] focus:ring-0 focus:text-neutral-200 py-1 text-[12px] italic"
               onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); editorRef.current?.focus(); } }}
             />
           </div>
 
           <div className="flex-1 flex flex-row relative min-h-0" ref={containerRef}>
             {/* Left Editor — using direct Monaco instance instead of @monaco-editor/react */}
-            <div className="relative h-full min-w-0" style={{ width: isSplitView ? `${editorWidthPercent}%` : '100%' }}>
-              {!monacoReady && (
-                <div className="absolute inset-0 flex items-center justify-center bg-[#1e1e1e] text-neutral-500 text-sm font-sans">
-                  <span className="animate-pulse">Loading editor...</span>
-                </div>
-              )}
+            <div className="relative h-full min-w-0 bg-[#1e1e1e]" style={{ width: isSplitView ? `${editorWidthPercent}%` : '100%' }}>
               <div
                 ref={editorContainerRef}
-                className="w-full h-full"
-                style={{ visibility: monacoReady ? 'visible' : 'hidden' }}
+                className="w-full h-full bg-[#1e1e1e]"
               />
             </div>
 
