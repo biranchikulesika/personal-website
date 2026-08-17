@@ -209,6 +209,23 @@ git push origin production
 
 Do not bypass the Pull Request process.
 
+### Never commit PR description files
+
+PR description files (e.g. `PR_DESCRIPTION.md`, `release-notes.md`) are working
+notes used to draft the Pull Request body. They must **never** be committed to the
+repository.
+
+Rules:
+
+* Keep PR description files untracked and local-only.
+* Ensure they are listed in `.gitignore` so they cannot be staged or committed
+  accidentally.
+* Paste their contents into the Pull Request body and delete or leave them
+  untracked after the PR is created.
+* Never `git add` or commit these files, even unintentionally.
+* If one has already been committed, remove it from the index and add it to
+  `.gitignore` before continuing.
+
 ### Never push directly to `develop`
 
 ```bash
