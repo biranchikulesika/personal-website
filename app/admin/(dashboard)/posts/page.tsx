@@ -13,6 +13,7 @@ import { uploadImage, getRecentUploads } from '@/lib/supabase/storage';
 import { UploadCloud, Clock } from 'lucide-react';
 import { getPosts, createPost, updatePost, deletePost, hidePost, unhidePost, featurePost, unfeaturePost, revertPostToDraft, generatePostMetadataAction } from '@/app/admin/actions/posts.actions';
 import { FormLabel, InlineError, ValidationSummary, parseDbError, InlineWarning } from '@/components/admin/validation';
+import { parseToBlocks, compileFromBlocks } from '@/lib/block-serializer';
 
 function formatToDatetimeLocal(isoString?: string): string {
   if (!isoString) return '';
@@ -75,103 +76,6 @@ export default function PostPage() {
   const [composerBlocks, setComposerBlocks] = useState<any[]>([]);
   const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
 
-  const parseToBlocks = (text: string) => {
-    if (!text) return [];
-    // Split text by the ImageBlock tags
-    const regex = /(<ImageBlock[\s\S]*?\/>)/g;
-    const parts = text.split(regex);
-    const result: any[] = [];
-
-    parts.forEach((part, index) => {
-      if (!part) return;
-      const trimmed = part.trim();
-      if (trimmed.startsWith('<ImageBlock')) {
-        const srcMatch = part.match(/src="([^"]*)"/);
-        const altMatch = part.match(/alt="([^"]*)"/);
-        const captionMatch = part.match(/caption="([^"]*)"/);
-        const locationMatch = part.match(/location="([^"]*)"/);
-        const creditMatch = part.match(/credit="([^"]*)"/);
-        const alignMatch = part.match(/align="([^"]*)"/) || part.match(/alignment="([^"]*)"/);
-
-        const srcVal = srcMatch ? srcMatch[1] : '';
-        const isUploading = srcVal === 'uploading';
-        const uploadIdMatch = part.match(/uploadId="([^"]*)"/);
-        const progressMatch = part.match(/progress="([^"]*)"/);
-
-        result.push({
-          id: uploadIdMatch ? uploadIdMatch[1] : `img_${index}_${Math.random().toString(36).substring(2, 6)}`,
-          type: 'image',
-          rawTag: part,
-          src: srcVal,
-          alt: altMatch ? altMatch[1] : 'Image',
-          caption: captionMatch ? captionMatch[1] : '',
-          location: locationMatch ? locationMatch[1] : '',
-          credit: creditMatch ? creditMatch[1] : '',
-          align: (alignMatch ? alignMatch[1] : 'center') as 'left' | 'center' | 'right' | 'full',
-          isUploading,
-          uploadId: uploadIdMatch ? uploadIdMatch[1] : '',
-          progress: progressMatch ? Number(progressMatch[1]) : 0
-        });
-      } else {
-        // Split further into paragraphs, headings, blockquotes, and lists by dual blank lines
-        const subParts = part.split(/\n\s*\n/);
-        subParts.forEach((sub, subIdx) => {
-          const subTrim = sub.trim();
-          if (!subTrim) return;
-          const id = `blk_${index}_${subIdx}_${Math.random().toString(36).substring(2, 6)}`;
-
-          if (subTrim.startsWith('#')) {
-            const hMatch = subTrim.match(/^(#{1,6})\s+([\s\S]*)$/);
-            const level = hMatch ? hMatch[1].length : 2;
-            const content = hMatch ? hMatch[2] : subTrim.replace(/^#+\s*/, '');
-            result.push({ id, type: 'heading', level, content });
-          } else if (subTrim.startsWith('>')) {
-            const content = subTrim.replace(/^>\s*/, '');
-            result.push({ id, type: 'quote', content });
-          } else if (subTrim.startsWith('- ') || subTrim.startsWith('* ') || /^\d+\.\s/.test(subTrim)) {
-            result.push({ id, type: 'list', content: subTrim });
-          } else {
-            result.push({ id, type: 'text', content: sub });
-          }
-        });
-      }
-    });
-    return result;
-  };
-
-  const compileFromBlocks = (blocks: any[]) => {
-    return blocks.map(b => {
-      if (b.type === 'image') {
-        let tag = `<ImageBlock
-  src="${b.src}"
-  alt="${b.alt || 'Image'}"`;
-        if (b.caption) tag += `
-  caption="${b.caption}"`;
-        if (b.location) tag += `
-  location="${b.location}"`;
-        if (b.credit) tag += `
-  credit="${b.credit}"`;
-        if (b.align && b.align !== 'center') tag += `
-  align="${b.align}"`;
-        if (b.isUploading) {
-          if (b.uploadId) tag += `
-  uploadId="${b.uploadId}"`;
-          if (b.progress) tag += `
-  progress="${b.progress}"`;
-        }
-        tag += '\\n/>';
-        return tag;
-      } else if (b.type === 'heading') {
-        return `${'#'.repeat(b.level || 2)} ${b.content}`;
-      } else if (b.type === 'quote') {
-        return `> ${b.content}`;
-      } else if (b.type === 'list') {
-        return b.content;
-      } else {
-        return b.content;
-      }
-    }).join('\\n\\n');
-  };
 
   const updateBlocksAndSync = (newBlocks: any[]) => {
     setComposerBlocks(newBlocks);

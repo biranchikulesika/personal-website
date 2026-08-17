@@ -69,22 +69,36 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 
 ## 🏗 Directory Structure
 
-*   **/app:** Next.js App Router root.
-    *   **(admin):** Protected dashboard routes for content management, block composition, and settings.
-    *   **/[persona]:** Dynamic routes resolving the public portfolios of the Thinker, Wanderer, Builder, Operator, etc.
-    *   **/api:** Next.js API routes.
-*   **/components:** Reusable React components.
-    *   **/ui:** Base-level UI elements (buttons, inputs).
-    *   **/blog:** Public-facing post and archive layouts.
-    *   **/post-renderer:** Custom renderer processing the TipTap HTML output and legacy block formats to HTML/Markdown.
-    *   **/mdx:** Markdown specific view components.
-*   **/lib:** Core utility functions.
-    *   **/supabase:** Supabase clients and helper methods.
-    *   **/repositories:** Data layer logic abstracting Supabase interactions.
-    *   **/services:** Business logic orchestrating data flows.
-    *   `actions.ts`: Secure Server Actions handling DB inserts and updates.
-    *   `schemas.ts`: Zod schema definitions.
-*   **/public:** Static assets.
+*   **/app:** Next.js App Router routes (files here become URLs).
+    *   **/admin:** Protected dashboard — `actions/` holds the secure Server Actions (DB + auth), `login/` the auth flow, and `(dashboard)/` the content management pages (compose, posts, library, media, newsletter, settings, …).
+    *   **/actions:** Public-facing Server Actions (search, newsletter subscription, donations).
+    *   **/[builder|operator|thinker|wanderer]:** Persona route groups (home, about, blogs, newsletter). Each page is a thin wrapper around shared components in `components/<area>/shared/`.
+    *   **/api:** Route handlers — cron jobs, Razorpay webhooks, passkey registration, OG images, revalidation.
+    *   **/p/[slug]:** Public post pages. Sitemap/feed/robots routes live alongside.
+*   **/components:** Reusable React components, grouped by area.
+    *   **/ui:** Base-level UI elements (logo, skeletons, canvas).
+    *   **/admin:** Admin-only form validation and editor components.
+    *   **/blog, /newsletter, /builder, /thinker, /wanderer, /reading:** Persona/area-specific components; shared code in `<area>/shared/`.
+    *   **/mdx:** Markdown/MDX view components (content blocks + core element overrides).
+    *   **/post-renderer:** Client renderer for public post pages.
+    *   **/seo:** `JsonLd` structured data.
+*   **/hooks:** Shared React hooks (kebab-case filenames).
+*   **/lib:** Non-UI application code.
+    *   **/repositories:** Data-access layer — one `*.repository.supabase.ts` per table, plus a `registry.ts` factory.
+    *   **/services:** Business logic orchestrating repositories.
+    *   **/supabase:** Supabase clients (browser, server, admin, middleware) and storage/upload helpers.
+    *   **/auth:** Passkey/WebAuthn verification and server auth checks.
+    *   **/ai:** AI post-metadata generation (excerpts, tags, SEO).
+    *   **/mdx:** MDX compilation and rendering.
+    *   **/config:** Site/SEO configuration.
+    *   **/data:** Static content data (quotes, phrases).
+    *   `types.ts`: Domain TypeScript types. `schemas.ts`: Zod validation schemas.
+    *   `queries.ts`: Cached server-side query functions. `block-serializer.ts`: compose-editor block serialization.
+    *   `database.types.ts`: Generated Supabase types.
+*   **/scripts:** Standalone Node scripts (build-log generation, donation cleanup, passkey tests).
+*   **/supabase:** SQL schema (`schema.sql`), reset (`reset.sql`), storage setup (`storage.sql`), and local dev config (`config.toml`).
+*   **/tests:** Unit/integration tests (`npm test`).
+*   **/public:** Static assets (icons, images, manifest).
 
 ## 🔐 Security Notes
 

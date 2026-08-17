@@ -143,7 +143,7 @@ export function createNewsletterPage(persona: string) {
       if (!emailValue) return;
       setIsSubmitting(true);
 
-      const { subscribeNewsletter } = await import('@/app/public.actions');
+      const { subscribeNewsletter } = await import('@/app/actions/public.actions');
       const result = await subscribeNewsletter(emailValue, [persona], persona);
 
       setIsSubmitting(false);

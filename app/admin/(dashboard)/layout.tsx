@@ -16,6 +16,8 @@ export default function AdminDashboardLayout({ children }: { children: React.Rea
   const [mobileOpen, setMobileOpen] = useState(false);
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [commandQuery, setCommandQuery] = useState('');
+  const [hoveredLabel, setHoveredLabel] = useState<string | null>(null);
+  const [tooltipPos, setTooltipPos] = useState<{ x: number; y: number } | null>(null);
   const pathname = usePathname();
   const router = useRouter();
 
@@ -57,6 +59,25 @@ export default function AdminDashboardLayout({ children }: { children: React.Rea
     localStorage.setItem('sidebar-collapsed', String(newState));
   };
 
+  const showTooltip = (e: React.SyntheticEvent<HTMLElement>, label: string) => {
+    if (!isCollapsed) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    setHoveredLabel(label);
+    setTooltipPos({ x: rect.right + 12, y: rect.top + rect.height / 2 });
+  };
+
+  const hideTooltip = () => {
+    setHoveredLabel(null);
+    setTooltipPos(null);
+  };
+
+  useEffect(() => {
+    if (!isCollapsed) {
+      setHoveredLabel(null);
+      setTooltipPos(null);
+    }
+  }, [isCollapsed]);
+
   // Close mobile menu on path change
   useEffect(() => {
     setTimeout(() => {
@@ -68,38 +89,32 @@ export default function AdminDashboardLayout({ children }: { children: React.Rea
     {
       title: 'Workspace',
       items: [
-        { label: 'Home', href: '/admin', icon: <Home className="w-4 h-4" />, active: true },
-      ]
-    },
-    {
-      title: 'Create',
-      items: [
-        { label: 'New Article', href: '/admin/compose?new=true', icon: <Plus className="w-4 h-4" />, active: true },
+        { label: 'Home', href: '/admin', icon: <Home className="w-5 h-5" />, active: true },
       ]
     },
     {
       title: 'Content',
       items: [
-        { label: 'Content Library', href: '/admin/library', icon: <Library className="w-4 h-4" />, active: true },
-        { label: 'Media', href: '/admin/assets/media', icon: <ImageIcon className="w-4 h-4" />, active: true },
-        { label: 'Newsletter', href: '/admin/newsletter', icon: <Mail className="w-4 h-4" />, active: true },
+        { label: 'Content Library', href: '/admin/library', icon: <Library className="w-5 h-5" />, active: true },
+        { label: 'Media', href: '/admin/assets/media', icon: <ImageIcon className="w-5 h-5" />, active: true },
+        { label: 'Newsletter', href: '/admin/newsletter', icon: <Mail className="w-5 h-5" />, active: true },
       ]
     },
     {
       title: 'Channels',
       items: [
-        { label: 'Forge', href: '/admin/personas/forge', icon: <Zap className="w-4 h-4" />, active: true },
-        { label: 'Signal', href: '/admin/personas/signal', icon: <Hash className="w-4 h-4" />, active: true },
-        { label: 'Inside the Head', href: '/admin/personas/inside-the-head', icon: <Brain className="w-4 h-4" />, active: true },
-        { label: 'Scribble', href: '/admin/personas/scribble', icon: <Map className="w-4 h-4" />, active: true },
+        { label: 'Forge', href: '/admin/personas/forge', icon: <Zap className="w-5 h-5" />, active: true },
+        { label: 'Signal', href: '/admin/personas/signal', icon: <Hash className="w-5 h-5" />, active: true },
+        { label: 'Inside the Head', href: '/admin/personas/inside-the-head', icon: <Brain className="w-5 h-5" />, active: true },
+        { label: 'Scribble', href: '/admin/personas/scribble', icon: <Map className="w-5 h-5" />, active: true },
       ]
     },
     {
       title: 'System',
       items: [
-        { label: 'Fund Records', href: '/admin/fund', icon: <Wallet className="w-4 h-4" />, active: true },
-        { label: 'Settings', href: '/admin/settings', icon: <Settings className="w-4 h-4" />, active: true },
-        { label: 'View Website', href: '/', icon: <Sparkles className="w-4 h-4" />, active: true, target: "_blank" },
+        { label: 'Fund Records', href: '/admin/fund', icon: <Wallet className="w-5 h-5" />, active: true },
+        { label: 'Settings', href: '/admin/settings', icon: <Settings className="w-5 h-5" />, active: true },
+        { label: 'View Website', href: '/', icon: <Sparkles className="w-5 h-5" />, active: true, target: "_blank" },
       ]
     }
   ];
@@ -145,10 +160,13 @@ export default function AdminDashboardLayout({ children }: { children: React.Rea
         <div className="flex-1 overflow-y-auto py-3 px-2 space-y-4 scrollbar-hide">
           {navGroups.map((group, idx) => (
             <div key={idx} className="space-y-1">
-              <div className={`px-2.5 text-[9px] uppercase font-mono tracking-widest text-primary font-semibold mb-1 ${isCollapsed ? 'md:hidden' : ''}`}>
+              {isCollapsed && idx > 0 && (
+                <div className="hidden md:block my-2 border-t border-border" />
+              )}
+              <div className={`px-2.5 text-[10px] uppercase font-mono tracking-widest text-primary font-semibold mb-1.5 ${isCollapsed ? 'md:hidden' : ''}`}>
                 {group.title}
               </div>
-              <div className="space-y-0.5">
+              <div className="space-y-1">
                 {group.items.map((item, i) => {
                   const isActivePath = pathname === item.href;
                   
@@ -157,32 +175,36 @@ export default function AdminDashboardLayout({ children }: { children: React.Rea
                       key={i} 
                       href={item.href}
                       target={(item as any).target}
-                      className={`flex items-center gap-2 px-2.5 py-1.5 rounded transition-all group relative
+                      onMouseEnter={(e) => showTooltip(e, item.label)}
+                      onMouseLeave={hideTooltip}
+                      onFocus={(e) => showTooltip(e, item.label)}
+                      onBlur={hideTooltip}
+                      className={`flex items-center gap-2.5 px-3 py-2 rounded transition-all group relative
                         ${isActivePath ? 'bg-muted text-foreground border border-border' : 'text-primary hover:bg-muted/50 hover:text-foreground border border-transparent'}
-                        ${isCollapsed ? 'md:justify-center' : ''}
+                        ${isCollapsed ? 'md:justify-center md:px-0' : ''}
                       `}
-                      title={isCollapsed ? item.label : undefined}
                     >
                       <div className={`shrink-0 ${isActivePath ? 'text-foreground' : 'text-primary group-hover:text-foreground'}`}>
                         {item.icon}
                       </div>
-                      <span className={`whitespace-nowrap text-xs font-normal ${isCollapsed ? 'md:hidden' : 'block'}`}>
+                      <span className={`whitespace-nowrap text-sm font-normal ${isCollapsed ? 'md:hidden' : 'block'}`}>
                         {item.label}
                       </span>
                     </Link>
                   ) : (
                     <div 
                       key={i} 
-                      className={`flex items-center gap-2 px-2.5 py-1.5 rounded transition-all text-primary cursor-not-allowed group relative
-                        ${isCollapsed ? 'md:justify-center' : ''}
+                      onMouseEnter={(e) => showTooltip(e, `${item.label} (Coming Soon)`)}
+                      onMouseLeave={hideTooltip}
+                      className={`flex items-center gap-2.5 px-3 py-2 rounded transition-all text-primary cursor-not-allowed group relative
+                        ${isCollapsed ? 'md:justify-center md:px-0' : ''}
                       `}
-                      title={isCollapsed ? `${item.label} (Coming Soon)` : undefined}
                     >
                       <div className="shrink-0 opacity-50">
                         {item.icon}
                       </div>
                       <div className={`flex items-center justify-between w-full ${isCollapsed ? 'md:hidden' : 'block'}`}>
-                        <span className="whitespace-nowrap text-xs">{item.label}</span>
+                        <span className="whitespace-nowrap text-sm">{item.label}</span>
                         {!isCollapsed && <span className="text-[8px] uppercase font-mono tracking-wider opacity-60">Soon</span>}
                       </div>
                     </div>
@@ -197,13 +219,16 @@ export default function AdminDashboardLayout({ children }: { children: React.Rea
         <div className={`p-3 border-t border-border ${isCollapsed ? 'flex justify-center' : ''}`}>
           <button
             onClick={handleLogout}
-            className={`flex items-center gap-2 px-2.5 py-1.5 w-full rounded transition-all text-primary hover:bg-muted hover:text-foreground border border-transparent ${isCollapsed ? 'justify-center' : ''}`}
-            title={isCollapsed ? "Sign Out" : undefined}
+            onMouseEnter={(e) => showTooltip(e, 'Sign Out')}
+            onMouseLeave={hideTooltip}
+            onFocus={(e) => showTooltip(e, 'Sign Out')}
+            onBlur={hideTooltip}
+            className={`flex items-center gap-2.5 px-3 py-2 w-full rounded transition-all text-primary hover:bg-muted hover:text-foreground border border-transparent ${isCollapsed ? 'md:justify-center md:px-0' : ''}`}
           >
             <div className="shrink-0">
-              <LogOut className="w-4 h-4" />
+              <LogOut className="w-5 h-5" />
             </div>
-            {!isCollapsed && <span className="whitespace-nowrap text-xs">Sign Out</span>}
+            {!isCollapsed && <span className="whitespace-nowrap text-sm">Sign Out</span>}
           </button>
         </div>
       </aside>
@@ -293,6 +318,17 @@ export default function AdminDashboardLayout({ children }: { children: React.Rea
               </Link>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Collapsed sidebar tooltip */}
+      {isCollapsed && hoveredLabel && tooltipPos && (
+        <div
+          role="tooltip"
+          className="fixed z-100 pointer-events-none hidden md:block px-2.5 py-1.5 rounded-md bg-foreground text-background text-xs font-normal whitespace-nowrap shadow-lg animate-tooltip-in"
+          style={{ left: tooltipPos.x, top: tooltipPos.y, transform: 'translateY(-50%)' }}
+        >
+          {hoveredLabel}
         </div>
       )}
     </div>

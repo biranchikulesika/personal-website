@@ -7,7 +7,7 @@ import { PersonaSearch } from '@/components/persona-search';
 import { getPersonaUrl } from '@/lib/utils';
 import { useState, useEffect } from 'react';
 import { getRedistributionRecords } from '@/lib/queries';
-import { getPublicDonations } from '@/app/public.actions';
+import { getPublicDonations } from '@/app/actions/public.actions';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { FooterMain } from '@/components/footer-main';
 import { SOCIAL_LINKS } from '@/lib/config/socials';

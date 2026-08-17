@@ -14,7 +14,7 @@ import {
   renamePasskeyAction,
   deletePasskeyAction,
 } from '@/app/admin/actions/passkeys.actions';
-import type { PasskeyListItem } from '@/lib/types/passkey';
+import type { PasskeyListItem } from '@/lib/types';
 
 export default function SettingsPage() {
   const [loading, setLoading] = useState(false);

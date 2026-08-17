@@ -6,11 +6,11 @@ import { Bold, Italic, Link as LinkIcon, Image as ImageIcon, Code, LayoutTemplat
 
 import MediaLibraryModal from './MediaLibraryModal';
 import MDXPreview from './MDXPreview';
-import { useImageUpload } from '@/hooks/useImageUpload';
+import { useImageUpload } from '@/hooks/use-image-upload';
 import ImageUploadOverlay from '@/components/admin/image-upload-overlay';
 import UploadProgress from '@/components/admin/upload-progress';
-import { COMPONENT_GROUPS } from '@/components/admin/editor/component-library';
-import type { ComponentEntry } from '@/components/admin/editor/component-library';
+import { COMPONENT_GROUPS } from '@/components/admin/component-library';
+import type { ComponentEntry } from '@/components/admin/component-library';
 
 export type EditorTab = {
   id: string;

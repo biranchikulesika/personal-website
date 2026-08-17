@@ -13,7 +13,7 @@ import {
   consumeRegistrationChallenge,
 } from '@/lib/auth/passkey-challenge';
 import { PasskeyService } from '@/lib/services/passkey.service';
-import { PasskeyListItem } from '@/lib/types/passkey';
+import { PasskeyListItem } from '@/lib/types';
 
 const passkeyService = new PasskeyService();
 

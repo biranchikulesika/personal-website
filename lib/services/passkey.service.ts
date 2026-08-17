@@ -1,4 +1,4 @@
-import { PasskeyCredential, PasskeyListItem } from '../types/passkey';
+import { PasskeyCredential, PasskeyListItem } from '../types';
 import { PasskeySupabaseRepository } from '../repositories/passkey.repository.supabase';
 import { repositoryRegistry } from '../repositories/registry';
 import { passkeyCredentialSchema, passkeyRenameSchema } from '../schemas';

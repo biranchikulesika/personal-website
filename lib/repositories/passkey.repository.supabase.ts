@@ -1,4 +1,4 @@
-import { PasskeyCredential } from '../types/passkey';
+import { PasskeyCredential } from '../types';
 import { getSupabaseAdmin } from '../supabase/server';
 
 export class PasskeySupabaseRepository {

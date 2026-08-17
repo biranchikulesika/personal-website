@@ -2,32 +2,22 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { 
-  Plus, Library, ImageIcon, Mail, RefreshCw
+import {
+  Plus, Library, ImageIcon, Mail
 } from 'lucide-react';
 import { AdminDashboardSkeleton } from '@/components/ui/skeletons';
 import { getPosts } from '@/app/admin/actions/posts.actions';
-import { getQuestions } from '@/app/admin/actions/questions.actions';
-import { getNewsletterIssues } from '@/app/admin/actions/newsletterIssues.actions';
 
 export default function AdminDashboardPage() {
   const [posts, setPosts] = useState<any[]>([]);
-  const [questionsCount, setQuestionsCount] = useState(0);
-  const [issuesCount, setIssuesCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
   const loadDashboardData = async () => {
     setLoading(true);
     try {
-      const [dataRes, qData, iData] = await Promise.all([
-        getPosts(),
-        getQuestions(),
-        getNewsletterIssues()
-      ]);
+      const dataRes = await getPosts();
       const data = dataRes.success ? dataRes.data : [];
       setPosts(data || []);
-      setQuestionsCount((qData || []).length);
-      setIssuesCount((iData || []).filter(i => !i.publishedAt).length); // draft issues
     } catch (e) {
       console.error('Error fetching dashboard feeds: ', e);
     } finally {
@@ -149,31 +139,9 @@ export default function AdminDashboardPage() {
           )}
         </section>
 
-        {/* Quick Create & Attention Center Row */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
-          <section>
-            <h2 className="text-[10px] uppercase font-mono tracking-widest text-[#ff7700] font-semibold mb-3">Attention Center</h2>
-            <div className="bg-[#111] border border-[#222] rounded p-4 space-y-3">
-               <div className="flex justify-between items-center text-sm">
-                 <span className="text-neutral-400">Total Questions</span>
-                 <span className="font-mono text-neutral-200">{questionsCount}</span>
-               </div>
-               <div className="flex justify-between items-center text-sm">
-                 <span className="text-neutral-400">Newsletter Drafts</span>
-                 <span className="font-mono text-neutral-200">{issuesCount}</span>
-               </div>
-               <div className="flex justify-between items-center text-sm">
-                 <span className="text-neutral-400">Media Awaiting Org</span>
-                 <span className="font-mono text-neutral-200">0</span>
-               </div>
-               <div className="border-t border-[#222] pt-3 mt-1 text-[11px] font-mono text-neutral-500">
-                  Inbox Zero. System nominal.
-               </div>
-            </div>
-          </section>
-
-          <section>
-            <h2 className="text-[10px] uppercase font-mono tracking-widest text-[#ff7700] font-semibold mb-3">Quick Create</h2>
+        {/* Quick Create */}
+        <section>
+          <h2 className="text-[10px] uppercase font-mono tracking-widest text-[#ff7700] font-semibold mb-3">Quick Create</h2>
             <div className="grid grid-cols-2 gap-2">
               <Link href="/admin/compose?new=true&persona=forge" className="bg-[#111] hover:bg-[#161616] border border-[#222] hover:border-[#ff7700] p-3 rounded transition-colors text-[13px] font-medium text-neutral-300 hover:text-white flex items-center gap-2 group">
                  <span className="w-1.5 h-1.5 rounded-full bg-[#ff7700] transition-transform group-hover:scale-110" /> Forge 
@@ -188,11 +156,10 @@ export default function AdminDashboardPage() {
                  <span className="w-1.5 h-1.5 rounded-full bg-sky-500 transition-transform group-hover:scale-110" /> Scribble
               </Link>
             </div>
-            <div className="mt-3 text-[11px] text-neutral-500 font-mono">
-              Press <span className="px-1.5 py-0.5 bg-[#222] border border-[#333] rounded mx-1 text-neutral-300">Ctrl/Cmd + K</span> for palette
-            </div>
-          </section>
-        </div>
+          <div className="mt-3 text-[11px] text-neutral-500 font-mono">
+            Press <span className="px-1.5 py-0.5 bg-[#222] border border-[#333] rounded mx-1 text-neutral-300">Ctrl/Cmd + K</span> for palette
+          </div>
+        </section>
 
         {/* Recent Activity */}
         <section>
