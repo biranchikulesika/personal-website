@@ -2,7 +2,7 @@ import Link from 'next/link';
 export const dynamic = 'force-static';
 export const revalidate = 3600;
 import { getOperatorFocuses, getPostsMeta } from '@/lib/queries';
-import { getPersonaUrl } from '@/lib/utils';
+import { getPersonaUrl, formatDate } from '@/lib/utils';
 
 export default async function OperatorPage() {
   // Server-side parallel data fetching
@@ -29,7 +29,7 @@ export default async function OperatorPage() {
           id: p.slug || p.id,
           title: p.title,
           category: (p.tags && p.tags[0]) || 'Systems',
-          date: p.publishedAt ? new Date(p.publishedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Unknown',
+          date: formatDate(p.publishedAt) || 'Unknown',
           content: p.excerpt || p.subtitle || 'System note.',
         }));
       })()

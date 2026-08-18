@@ -7,6 +7,7 @@ import { searchPublishedPosts } from '@/app/actions/public.actions';
 import { useRouter } from 'next/navigation';
 import { useDebounce } from '@/hooks/use-debounce';
 import { useFocusTrap } from '@/hooks/use-focus-trap';
+import { formatDate } from '@/lib/utils';
 
 type PersonaSearchProps = {
   persona?: string;
@@ -66,7 +67,7 @@ function DesktopSearchResults({
               className={`px-3 py-2 text-sm rounded-md cursor-pointer transition-colors overflow-hidden hover:bg-muted focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset`}
             >
               <div className={`font-medium whitespace-nowrap overflow-hidden text-ellipsis ${isThinker ? 'font-serif opacity-80' : persona?.toLowerCase() === 'wanderer' ? 'font-cormorant text-lg italic opacity-95' : 'opacity-90'}`}>{r.title}</div>
-              <div className={`text-xs mt-1 text-primary/70`}>{new Date(r.publishedAt || r.createdAt).toLocaleDateString()}</div>
+              <div className={`text-xs mt-1 text-primary/70`}>{formatDate(r.publishedAt || r.createdAt)}</div>
             </div>
           )) : !isPending ? (
             <div className="px-3 py-4 text-center text-sm text-primary/60 italic">No results found</div>
@@ -163,7 +164,7 @@ function MobileSearchOverlay({
                   className={`px-4 py-4 rounded-md cursor-pointer transition-colors hover:bg-muted border-b border-border last:border-0 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset`}
                 >
                   <div className={`text-sm leading-tight ${isThinker ? 'font-serif opacity-80' : persona?.toLowerCase() === 'wanderer' ? 'font-cormorant text-xl italic opacity-95' : 'font-medium opacity-90'}`}>{r.title}</div>
-                  <div className={`text-xs mt-1.5 text-primary/70`}>{new Date(r.publishedAt || r.createdAt).toLocaleDateString()}</div>
+                  <div className={`text-xs mt-1.5 text-primary/70`}>{formatDate(r.publishedAt || r.createdAt)}</div>
                 </div>
               )) : !isPending ? (
                 <div className="px-4 py-8 text-center text-sm text-primary/60 italic">No results found</div>

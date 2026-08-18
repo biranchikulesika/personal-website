@@ -10,7 +10,7 @@ import { useState, useEffect, useTransition } from 'react';
 import { getNewsletterProfiles } from '@/lib/queries';
 import { getNewsletterIssues } from '@/lib/queries';
 import { subscribeNewsletter } from '@/app/actions/public.actions';
-import { getPersonaUrl } from '@/lib/utils';
+import { getPersonaUrl, formatDate } from '@/lib/utils';
 import { SOCIAL_LINKS } from '@/lib/config/socials';
 import { Logo } from '@/components/ui/logo';
 
@@ -71,7 +71,7 @@ export default function MainNewsletterPage() {
           setRecentLetters(visibleIssues.slice(0, 3).map((issue:any) => ({
              title: issue.title || issue.subject,
              persona: issue.persona || 'Updates',
-             date: issue.sentAt || issue.createdAt || 'Recent',
+             date: formatDate(issue.sentAt || issue.createdAt) || 'Recent',
              badgeStyle: 'dark:text-[#A7A39B] dark:bg-[#A7A39B]/10 bg-[#6F7175]/10 text-[#6F7175]'
           })));
         }

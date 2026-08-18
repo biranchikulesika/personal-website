@@ -24,6 +24,13 @@ export function getPersonaUrl(persona: 'builder' | 'operator' | 'wanderer' | 'th
   return `/${persona}${path}`;
 }
 
+export function formatDate(date: string | Date | null | undefined): string {
+  if (!date) return '';
+  const d = new Date(date);
+  if (isNaN(d.getTime())) return '';
+  return `${d.getDate()} ${d.toLocaleString('en-US', { month: 'short' })}, ${d.getFullYear()}`;
+}
+
 export function slugify(text: string): string {
   if (!text) return '';
   return text
