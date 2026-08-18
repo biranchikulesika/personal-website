@@ -334,16 +334,37 @@ export default function FundPage() {
         name: 'Biranchi',
         description: 'Contribution to Fund',
         order_id: data.orderId,
-        handler: function (response: any) {
-          // On Success
-          setMockReceiptId(`RG-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`);
-          setMockTxId(response.razorpay_payment_id);
-          
-          if (identityOption === 'name_email') {
-             setSavedEmail(donorEmail);
+        handler: async function (response: any) {
+          try {
+            // Verify the payment signature server-side before showing success
+            const verifyRes = await fetch('/api/razorpay/verify-payment', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_signature: response.razorpay_signature,
+              }),
+            });
+            const verifyData = await verifyRes.json();
+
+            if (!verifyRes.ok || !verifyData.verified) {
+              throw new Error('Payment could not be verified');
+            }
+
+            setMockReceiptId(`RG-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`);
+            setMockTxId(response.razorpay_payment_id);
+
+            if (identityOption === 'name_email') {
+               setSavedEmail(donorEmail);
+            }
+            setFlowStep('success');
+            window.scrollTo({ top: 0, behavior: 'instant' });
+          } catch (error) {
+            console.error('Payment verification error:', error);
+            alert('Payment verification failed. If you were charged, your contribution will still be recorded automatically.');
+            setFlowStep('identity');
           }
-          setFlowStep('success');
-          window.scrollTo({ top: 0, behavior: 'instant' });
         },
         prefill: {
           name: donorName.trim(),

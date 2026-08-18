@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import Razorpay from 'razorpay';
 import { getSupabaseAdmin } from '@/lib/supabase/server';
+import { getRazorpay } from '@/lib/razorpay';
 
 export async function POST(req: Request) {
   try {
@@ -10,17 +10,12 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Invalid amount' }, { status: 400 });
     }
 
-    const key_id = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
-    const key_secret = process.env.RAZORPAY_KEY_SECRET;
-
-    if (!key_id || !key_secret) {
+    let razorpay;
+    try {
+      razorpay = getRazorpay();
+    } catch {
       return NextResponse.json({ error: 'Razorpay keys missing' }, { status: 500 });
     }
-
-    const razorpay = new Razorpay({
-      key_id,
-      key_secret,
-    });
 
     const orderOptions = {
       amount: Math.round(amount * 100), // amount in paisa
@@ -43,7 +38,8 @@ export async function POST(req: Request) {
 
     if (dbError) {
       console.error('Error saving pending donation:', dbError);
-      // We still return the order so the payment can proceed, webhook can handle the rest if it misses.
+      // The webhook upserts the donation by razorpayOrderId if this insert
+      // failed, so the payment is still recorded when it gets captured.
     }
 
     return NextResponse.json({ orderId: order.id, amount: orderOptions.amount }, { status: 200 });

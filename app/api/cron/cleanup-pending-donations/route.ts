@@ -19,15 +19,16 @@ export async function GET(request: Request) {
     }
 
     const donationService = new DonationService();
-    const deletedCount = await donationService.deleteExpiredPending(olderThanDays);
+    const result = await donationService.reconcileExpiredPending(olderThanDays);
 
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - olderThanDays);
 
     return NextResponse.json({
       success: true,
-      message: `Cleaned up ${deletedCount} pending payment record(s) older than ${olderThanDays} days`,
-      deletedCount,
+      message: `Reconciled ${result.deleted} abandoned pending record(s) and recovered ${result.saved} paid donation(s) older than ${olderThanDays} days`,
+      deletedCount: result.deleted,
+      savedCount: result.saved,
       cutoffDate: cutoffDate.toISOString(),
       timestamp: new Date().toISOString(),
     });

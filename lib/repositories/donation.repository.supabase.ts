@@ -35,6 +35,19 @@ export class DonationSupabaseRepository implements IRepository<Donation> {
     return true;
   }
 
+  async listExpiredPending(olderThanDays = 30): Promise<Donation[]> {
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - olderThanDays);
+    const admin = getSupabaseAdmin();
+    const { data, error } = await admin
+      .from('donations')
+      .select('*')
+      .eq('status', 'pending')
+      .lt('createdAt', cutoffDate.toISOString());
+    if (error) throw error;
+    return data || [];
+  }
+
   async deleteExpiredPending(olderThanDays = 30): Promise<number> {
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - olderThanDays);
