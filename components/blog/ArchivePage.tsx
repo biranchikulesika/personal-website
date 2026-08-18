@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useTransition } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Loader2 } from 'lucide-react';
-import { useRouter, usePathname, useSearchParams } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 
 import { Post } from '@/lib/types';
 import { PERSONA_BLOG_THEMES } from './themes';
@@ -21,7 +21,6 @@ export function ArchivePage({ persona, databasePosts, initialSearchQuery = '' }:
   const theme = PERSONA_BLOG_THEMES[persona] || PERSONA_BLOG_THEMES.wanderer;
   const router = useRouter();
   const pathname = usePathname();
-  const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
 
   const [searchQuery, setSearchQuery] = useState(initialSearchQuery);
@@ -37,11 +36,14 @@ export function ArchivePage({ persona, databasePosts, initialSearchQuery = '' }:
     setPosts(dbPosts);
   }, [persona, databasePosts]);
 
-  // Debounce search query to URL
+  // Debounce search query to URL. searchParams is read from the live URL at
+  // call time (window.location) rather than subscribed to via useSearchParams:
+  // the hook returns a new object reference after every router.replace(), so
+  // including it in the deps would re-trigger this effect into an infinite loop.
   useEffect(() => {
-    const currentQ = searchParams.get('q') || '';
+    const params = new URLSearchParams(window.location.search);
+    const currentQ = params.get('q') || '';
     if (debouncedSearchQuery !== currentQ) {
-      const params = new URLSearchParams(searchParams.toString());
       if (debouncedSearchQuery) {
         params.set('q', debouncedSearchQuery);
       } else {
@@ -51,7 +53,7 @@ export function ArchivePage({ persona, databasePosts, initialSearchQuery = '' }:
         router.replace(`${pathname}?${params.toString()}`, { scroll: false });
       });
     }
-  }, [debouncedSearchQuery, pathname, router, searchParams]);
+  }, [debouncedSearchQuery, pathname, router]);
 
   return (
     <div className={`w-full min-h-screen ${theme.containerClass}`}>

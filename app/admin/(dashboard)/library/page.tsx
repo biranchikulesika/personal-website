@@ -197,13 +197,16 @@ export default function ContentLibraryPage() {
   };
 
   useEffect(() => {
-    loadLibrary(searchParams?.get('q') || '');
-  }, [searchParams]);
+    loadLibrary(debouncedSearchQuery);
+  }, [debouncedSearchQuery]);
 
+  // Read the query from the live URL at call time rather than subscribing to
+  // useSearchParams: the hook returns a new reference after every replace(),
+  // which would re-trigger this effect into an infinite loop.
   useEffect(() => {
-    const currentQ = searchParams?.get('q') || '';
+    const params = new URLSearchParams(window.location.search);
+    const currentQ = params.get('q') || '';
     if (debouncedSearchQuery !== currentQ) {
-      const params = new URLSearchParams(searchParams?.toString() || '');
       if (debouncedSearchQuery) params.set('q', debouncedSearchQuery);
       else params.delete('q');
 
@@ -211,7 +214,7 @@ export default function ContentLibraryPage() {
         router.replace(`${pathname}?${params.toString()}`, { scroll: false });
       });
     }
-  }, [debouncedSearchQuery, pathname, router, searchParams]);
+  }, [debouncedSearchQuery, pathname, router]);
 
   // Filter & Search Logic
   const filteredItems = items.filter(item => {
