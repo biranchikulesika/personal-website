@@ -8,8 +8,8 @@ export class ActiveSystemSupabaseRepository implements IRepository<ActiveSystem>
     if ((data as any).name !== undefined) dbObj.name = (data as any).name;
     if (data.title !== undefined) dbObj.name = data.title; // title takes priority over legacy name
     if (data.description !== undefined) dbObj.description = data.description;
-    if ((data as any).level !== undefined) dbObj.status = (data as any).level;
-    if (data.status !== undefined) dbObj.status = data.status; // status takes priority over legacy level
+    if ((data as any).level !== undefined) dbObj.level = (data as any).level;
+    if (data.status !== undefined) dbObj.status = data.status;
     if (data.stack !== undefined) dbObj.stack = data.stack;
     if (data.order !== undefined) dbObj["order"] = data.order;
     if (data.hidden !== undefined) dbObj.hidden = data.hidden;
@@ -23,7 +23,7 @@ export class ActiveSystemSupabaseRepository implements IRepository<ActiveSystem>
       name: dbData.name || '', // UI support
       description: dbData.description || '',
       status: dbData.status || '',
-      level: dbData.status || '', // UI support
+      level: dbData.level || '', // UI support
       stack: dbData.stack || [],
       updatedAt: dbData.updated_at,
       order: dbData["order"] || 0,

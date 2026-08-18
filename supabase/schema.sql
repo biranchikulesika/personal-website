@@ -36,6 +36,7 @@ CREATE TABLE IF NOT EXISTS "public"."active_systems" (
     "name" TEXT NOT NULL,
     "description" TEXT,
     "status" TEXT NOT NULL,
+    "level" TEXT,
     "stack" TEXT[] DEFAULT '{}',
     "order" INTEGER NOT NULL DEFAULT 0,
     "hidden" BOOLEAN NOT NULL DEFAULT false,
@@ -263,6 +264,15 @@ CREATE TABLE IF NOT EXISTS "public"."posts" (
     "ai_metadata_last_generated_at" TIMESTAMPTZ,
     "ai_metadata_content_hash" TEXT,
     "ai_metadata_error" TEXT,
+    "fts" tsvector GENERATED ALWAYS AS (
+        to_tsvector(
+            'english',
+            coalesce("title", '') || ' ' ||
+            coalesce("subtitle", '') || ' ' ||
+            coalesce("excerpt", '') || ' ' ||
+            coalesce("content", '')
+        )
+    ) STORED,
     "created_at" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     "updated_at" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     UNIQUE NULLS NOT DISTINCT ("persona", "slug")
@@ -271,6 +281,7 @@ DROP TRIGGER IF EXISTS update_posts_updated_at ON "public"."posts";
 CREATE TRIGGER update_posts_updated_at BEFORE UPDATE ON "public"."posts" FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE INDEX IF NOT EXISTS idx_posts_status ON "public"."posts"("status");
 CREATE INDEX IF NOT EXISTS idx_posts_persona ON "public"."posts"("persona");
+CREATE INDEX IF NOT EXISTS idx_posts_fts ON "public"."posts" USING GIN ("fts");
 
 -- QUESTIONS
 CREATE TABLE IF NOT EXISTS "public"."questions" (
@@ -294,6 +305,7 @@ CREATE TABLE IF NOT EXISTS "public"."redistribution_records" (
     "description" TEXT NOT NULL,
     "proofUrl" TEXT,
     "internalNotes" TEXT,
+    "hidden" BOOLEAN NOT NULL DEFAULT false,
     "donatedAt" TIMESTAMPTZ NOT NULL,
     "transactionReference" TEXT,
     "createdAt" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -353,6 +365,8 @@ CREATE TABLE IF NOT EXISTS "public"."passkey_credentials" (
 );
 CREATE INDEX IF NOT EXISTS idx_passkey_credentials_user_id ON "public"."passkey_credentials"("userId");
 CREATE INDEX IF NOT EXISTS idx_passkey_credentials_credential_id ON "public"."passkey_credentials"("credentialId");
+DROP TRIGGER IF EXISTS update_passkey_credentials_updated_at ON "public"."passkey_credentials";
+CREATE TRIGGER update_passkey_credentials_updated_at BEFORE UPDATE ON "public"."passkey_credentials" FOR EACH ROW EXECUTE FUNCTION "update_updatedAt_column"();
 
 -- UPLOADED IMAGES REGISTRY
 CREATE TABLE IF NOT EXISTS "public"."uploaded_images" (
@@ -434,7 +448,7 @@ END $$;
 
 -- Public read access policies
 CREATE POLICY "Public read active systems" ON "public"."active_systems" FOR SELECT USING (status = 'active' AND hidden = false);
-CREATE POLICY "Public read books" ON "public"."books" FOR SELECT USING (true);
+CREATE POLICY "Public read books" ON "public"."books" FOR SELECT USING (hidden = false);
 CREATE POLICY "Public read build logs" ON "public"."build_logs" FOR SELECT USING (hidden = false);
 CREATE POLICY "Public read builder status" ON "public"."builder_status" FOR SELECT USING (true);
 CREATE POLICY "Public read field notes" ON "public"."field_notes" FOR SELECT USING (hidden = false AND draft = false);
@@ -446,12 +460,19 @@ CREATE POLICY "Public read published newsletter issues" ON "public"."newsletter_
 CREATE POLICY "Public read operator focuses" ON "public"."operator_focuses" FOR SELECT USING (hidden = false);
 CREATE POLICY "Public read published posts" ON "public"."posts" FOR SELECT USING (status = 'published' AND hidden = false);
 CREATE POLICY "Public read questions" ON "public"."questions" FOR SELECT USING (status != 'archived' AND hidden = false);
-CREATE POLICY "Public read redistribution records" ON "public"."redistribution_records" FOR SELECT USING (true);
+CREATE POLICY "Public read redistribution records" ON "public"."redistribution_records" FOR SELECT USING (hidden = false);
 CREATE POLICY "Public read successful donations" ON "public"."donations" FOR SELECT USING (status = 'success');
 
--- Allow public to insert into subscriber tables
-CREATE POLICY "Public can subscribe" ON "public"."subscribers" FOR INSERT WITH CHECK (true);
-CREATE POLICY "Public can manage own subscription" ON "public"."subscriptions" FOR ALL USING (true);
+-- Anonymous users must not see internal/sensitive columns. Supabase's default
+-- table-level grants give anon full access, so drop them and grant SELECT only
+-- on the columns the public UI actually reads. RLS row filtering still applies.
+REVOKE ALL ON "public"."redistribution_records" FROM anon;
+GRANT SELECT ("id","amount","destination","description","proofUrl","donatedAt","transactionReference","createdAt","updatedAt","hidden") ON "public"."redistribution_records" TO anon;
+REVOKE ALL ON "public"."donations" FROM anon;
+GRANT SELECT ("id","amount","publicName","status","createdAt") ON "public"."donations" TO anon;
+
+-- No anonymous write policies: subscribeNewsletter uses the admin client and
+-- all other writes go through authenticated admin actions.
 
 -- 6. ADDITIONAL CONSTRAINTS & TRIGGERS
 CREATE OR REPLACE FUNCTION validate_published_post()
