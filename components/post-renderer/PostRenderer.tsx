@@ -1160,7 +1160,7 @@ export default function PostRenderer({ post, slug, allPosts, fallbackPersona, co
       transition={{ duration: 0.8, ease: 'easeOut' }}
       className={`min-h-screen flex flex-col relative w-full overflow-x-clip ${theme.wrapper}`}
     >
-      <header className={`sticky top-0 z-40 w-full p-4 md:p-6 flex justify-between items-center bg-opacity-70 backdrop-blur-md border-b ${theme.headerBg}`}>
+      <header className={`sticky top-0 z-40 w-full p-4 md:px-6 md:py-4 flex justify-between items-center bg-opacity-70 backdrop-blur-md border-b ${theme.headerBg}`}>
         <PersonaSwitcher currentPersona={personaCapitalized} currentStyle={theme.themeToggleText} />
         <div className="flex items-center gap-1 md:gap-2">
           <DesktopNav persona={p as any} />

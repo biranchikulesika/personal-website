@@ -110,7 +110,7 @@ export default function MainNewsletterPage() {
   if (loading) return (
     <div className="w-full dark:bg-[#050505] bg-[#F5F5F2] dark:text-[#e5e5e5] text-[#2B2B28] min-h-screen font-sans">
       {/* Fixed header skeleton */}
-      <header className="fixed top-0 w-full p-4 md:p-6 flex justify-between items-center z-50 dark:bg-[#050505]/80 bg-[#F5F5F2]/80 backdrop-blur-md border-b dark:border-stone-900/50 border-[#ECEBE6]">
+      <header className="fixed top-0 w-full p-4 md:px-6 md:py-4 flex justify-between items-center z-50 dark:bg-[#050505]/80 bg-[#F5F5F2]/80 backdrop-blur-md border-b dark:border-stone-900/50 border-[#ECEBE6]">
         <div className="h-8 w-24 bg-primary/5 rounded animate-pulse" />
         <div className="flex gap-2">
           <div className="h-8 w-20 bg-primary/5 rounded animate-pulse hidden md:block" />
@@ -145,7 +145,7 @@ export default function MainNewsletterPage() {
       className="w-full dark:bg-[#050505] bg-[#F5F5F2] dark:text-[#e5e5e5] text-[#2B2B28] flex flex-col font-sans overflow-x-hidden relative min-h-screen dark:selection:bg-stone-800 selection:bg-stone-300 dark:selection:text-white selection:text-black"
     >
       {/* Global Header */}
-      <header className="fixed top-0 w-full p-4 md:p-6 flex justify-between items-center z-50 dark:bg-[#050505]/80 bg-[#F5F5F2]/80 backdrop-blur-md border-b dark:border-stone-900/50 border-[#ECEBE6]">
+      <header className="fixed top-0 w-full p-4 md:px-6 md:py-4 flex justify-between items-center z-50 dark:bg-[#050505]/80 bg-[#F5F5F2]/80 backdrop-blur-md border-b dark:border-stone-900/50 border-[#ECEBE6]">
         <Link href={getPersonaUrl('main')} prefetch={true} className="hover:opacity-70 transition-opacity">
           <Logo />
         </Link>

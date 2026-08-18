@@ -24,7 +24,7 @@ export const metadata: Metadata = {
 export default function BlogsLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="w-full min-h-screen bg-background text-foreground flex flex-col font-sans">
-      <header className="sticky top-0 z-50 w-full p-4 md:p-6 flex justify-between items-center border-b border-border bg-background/80 backdrop-blur-md">
+      <header className="sticky top-0 z-50 w-full p-4 md:px-6 md:py-4 flex justify-between items-center border-b border-border bg-background/80 backdrop-blur-md">
         <Link href={getPersonaUrl('main')} prefetch={true} className="hover:opacity-70 transition-opacity">
           <Logo />
         </Link>

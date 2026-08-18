@@ -55,7 +55,7 @@ export default function Home() {
       <OrganizationJsonLd />
 
       {/* Global Header */}
-      <header className="fixed top-0 w-full p-4 md:p-6 flex justify-between items-center z-50 bg-background/80 backdrop-blur-md border-b border-border">
+      <header className="fixed top-0 w-full p-4 md:px-6 md:py-4 flex justify-between items-center z-50 bg-background/80 backdrop-blur-md border-b border-border">
         <Link href={getPersonaUrl('main')} prefetch={true} className="hover:opacity-70 transition-opacity">
           <Logo />
         </Link>
