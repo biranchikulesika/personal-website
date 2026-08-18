@@ -126,6 +126,7 @@ export interface ActiveSystem {
   title: string;
   description: string;
   status: string;
+  level?: string;
   stack: string[];
   updatedAt: string;
   order: number;

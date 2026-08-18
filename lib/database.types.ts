@@ -12,6 +12,31 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.5"
   }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       active_systems: {
@@ -20,6 +45,7 @@ export type Database = {
           description: string | null
           hidden: boolean
           id: string
+          level: string | null
           name: string
           order: number
           stack: string[] | null
@@ -31,6 +57,7 @@ export type Database = {
           description?: string | null
           hidden?: boolean
           id?: string
+          level?: string | null
           name: string
           order?: number
           stack?: string[] | null
@@ -42,6 +69,7 @@ export type Database = {
           description?: string | null
           hidden?: boolean
           id?: string
+          level?: string | null
           name?: string
           order?: number
           stack?: string[] | null
@@ -218,54 +246,6 @@ export type Database = {
         }
         Relationships: []
       }
-      passkey_credentials: {
-        Row: {
-          aaguid: string | null
-          backedUp: boolean
-          counter: number
-          createdAt: string
-          credentialId: string
-          deviceType: string
-          id: string
-          lastUsedAt: string | null
-          name: string
-          publicKey: string
-          transports: string[] | null
-          updatedAt: string
-          userId: string
-        }
-        Insert: {
-          aaguid?: string | null
-          backedUp?: boolean
-          counter?: number
-          createdAt?: string
-          credentialId: string
-          deviceType?: string
-          id?: string
-          lastUsedAt?: string | null
-          name?: string
-          publicKey: string
-          transports?: string[] | null
-          updatedAt?: string
-          userId: string
-        }
-        Update: {
-          aaguid?: string | null
-          backedUp?: boolean
-          counter?: number
-          createdAt?: string
-          credentialId?: string
-          deviceType?: string
-          id?: string
-          lastUsedAt?: string | null
-          name?: string
-          publicKey?: string
-          transports?: string[] | null
-          updatedAt?: string
-          userId?: string
-        }
-        Relationships: []
-      }
       field_notes: {
         Row: {
           category: string
@@ -341,6 +321,57 @@ export type Database = {
           source?: string
           title?: string | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      image_cleanup_logs: {
+        Row: {
+          deleted_count: number
+          deleted_paths: string[] | null
+          details: Json | null
+          duration_ms: number
+          errors: string[] | null
+          executed_at: string
+          failed_count: number
+          id: string
+          orphaned_count: number
+          referenced_count: number
+          retention_days: number
+          scanned_count: number
+          skipped_count: number
+          status: string
+        }
+        Insert: {
+          deleted_count?: number
+          deleted_paths?: string[] | null
+          details?: Json | null
+          duration_ms?: number
+          errors?: string[] | null
+          executed_at?: string
+          failed_count?: number
+          id?: string
+          orphaned_count?: number
+          referenced_count?: number
+          retention_days?: number
+          scanned_count?: number
+          skipped_count?: number
+          status?: string
+        }
+        Update: {
+          deleted_count?: number
+          deleted_paths?: string[] | null
+          details?: Json | null
+          duration_ms?: number
+          errors?: string[] | null
+          executed_at?: string
+          failed_count?: number
+          id?: string
+          orphaned_count?: number
+          referenced_count?: number
+          retention_days?: number
+          scanned_count?: number
+          skipped_count?: number
+          status?: string
         }
         Relationships: []
       }
@@ -482,9 +513,62 @@ export type Database = {
         }
         Relationships: []
       }
+      passkey_credentials: {
+        Row: {
+          aaguid: string | null
+          backedUp: boolean
+          counter: number
+          createdAt: string
+          credentialId: string
+          deviceType: string
+          id: string
+          lastUsedAt: string | null
+          name: string
+          publicKey: string
+          transports: string[] | null
+          updatedAt: string
+          userId: string
+        }
+        Insert: {
+          aaguid?: string | null
+          backedUp?: boolean
+          counter?: number
+          createdAt?: string
+          credentialId: string
+          deviceType?: string
+          id?: string
+          lastUsedAt?: string | null
+          name?: string
+          publicKey: string
+          transports?: string[] | null
+          updatedAt?: string
+          userId: string
+        }
+        Update: {
+          aaguid?: string | null
+          backedUp?: boolean
+          counter?: number
+          createdAt?: string
+          credentialId?: string
+          deviceType?: string
+          id?: string
+          lastUsedAt?: string | null
+          name?: string
+          publicKey?: string
+          transports?: string[] | null
+          updatedAt?: string
+          userId?: string
+        }
+        Relationships: []
+      }
       posts: {
         Row: {
+          ai_metadata_content_hash: string | null
+          ai_metadata_error: string | null
+          ai_metadata_last_generated_at: string | null
+          ai_metadata_status: string | null
           auto_cover_image: boolean | null
+          auto_optimize: boolean
           byline: string | null
           content: string | null
           cover_image_alt: string | null
@@ -496,21 +580,35 @@ export type Database = {
           draft_content: string | null
           excerpt: string | null
           featured: boolean | null
+          fts: unknown
           hidden: boolean | null
           id: string
+          keywords: string[] | null
+          manual_overrides: string[] | null
+          og_description: string | null
+          og_title: string | null
           old_slugs: string[] | null
           persona: string | null
           published_at: string | null
           reading_time: number | null
+          seo_description: string | null
+          seo_title: string | null
           slug: string | null
           status: Database["public"]["Enums"]["post_status"]
           subtitle: string | null
           tags: string[] | null
           title: string | null
+          twitter_description: string | null
+          twitter_title: string | null
           updated_at: string
         }
         Insert: {
+          ai_metadata_content_hash?: string | null
+          ai_metadata_error?: string | null
+          ai_metadata_last_generated_at?: string | null
+          ai_metadata_status?: string | null
           auto_cover_image?: boolean | null
+          auto_optimize?: boolean
           byline?: string | null
           content?: string | null
           cover_image_alt?: string | null
@@ -522,21 +620,35 @@ export type Database = {
           draft_content?: string | null
           excerpt?: string | null
           featured?: boolean | null
+          fts?: unknown
           hidden?: boolean | null
           id?: string
+          keywords?: string[] | null
+          manual_overrides?: string[] | null
+          og_description?: string | null
+          og_title?: string | null
           old_slugs?: string[] | null
           persona?: string | null
           published_at?: string | null
           reading_time?: number | null
+          seo_description?: string | null
+          seo_title?: string | null
           slug?: string | null
           status?: Database["public"]["Enums"]["post_status"]
           subtitle?: string | null
           tags?: string[] | null
           title?: string | null
+          twitter_description?: string | null
+          twitter_title?: string | null
           updated_at?: string
         }
         Update: {
+          ai_metadata_content_hash?: string | null
+          ai_metadata_error?: string | null
+          ai_metadata_last_generated_at?: string | null
+          ai_metadata_status?: string | null
           auto_cover_image?: boolean | null
+          auto_optimize?: boolean
           byline?: string | null
           content?: string | null
           cover_image_alt?: string | null
@@ -548,17 +660,26 @@ export type Database = {
           draft_content?: string | null
           excerpt?: string | null
           featured?: boolean | null
+          fts?: unknown
           hidden?: boolean | null
           id?: string
+          keywords?: string[] | null
+          manual_overrides?: string[] | null
+          og_description?: string | null
+          og_title?: string | null
           old_slugs?: string[] | null
           persona?: string | null
           published_at?: string | null
           reading_time?: number | null
+          seo_description?: string | null
+          seo_title?: string | null
           slug?: string | null
           status?: Database["public"]["Enums"]["post_status"]
           subtitle?: string | null
           tags?: string[] | null
           title?: string | null
+          twitter_description?: string | null
+          twitter_title?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -603,6 +724,7 @@ export type Database = {
           description: string
           destination: string
           donatedAt: string
+          hidden: boolean
           id: string
           internalNotes: string | null
           proofUrl: string | null
@@ -615,6 +737,7 @@ export type Database = {
           description: string
           destination: string
           donatedAt: string
+          hidden?: boolean
           id?: string
           internalNotes?: string | null
           proofUrl?: string | null
@@ -627,6 +750,7 @@ export type Database = {
           description?: string
           destination?: string
           donatedAt?: string
+          hidden?: boolean
           id?: string
           internalNotes?: string | null
           proofUrl?: string | null
@@ -729,106 +853,55 @@ export type Database = {
       }
       uploaded_images: {
         Row: {
-          id: string
           bucket: string
-          storage_path: string
-          public_url: string
-          file_name: string | null
           content_type: string | null
-          size_bytes: number | null
+          created_at: string
+          file_name: string | null
           first_uploaded_at: string
+          id: string
           last_referenced_at: string
-          reference_count: number
-          status: string
           last_scanned_at: string | null
           metadata: Json | null
-          created_at: string
+          public_url: string
+          reference_count: number
+          size_bytes: number | null
+          status: string
+          storage_path: string
           updated_at: string
         }
         Insert: {
-          id?: string
           bucket?: string
-          storage_path: string
+          content_type?: string | null
+          created_at?: string
+          file_name?: string | null
+          first_uploaded_at?: string
+          id?: string
+          last_referenced_at?: string
+          last_scanned_at?: string | null
+          metadata?: Json | null
           public_url: string
-          file_name?: string | null
-          content_type?: string | null
-          size_bytes?: number | null
-          first_uploaded_at?: string
-          last_referenced_at?: string
           reference_count?: number
+          size_bytes?: number | null
           status?: string
-          last_scanned_at?: string | null
-          metadata?: Json | null
-          created_at?: string
+          storage_path: string
           updated_at?: string
         }
         Update: {
-          id?: string
           bucket?: string
-          storage_path?: string
-          public_url?: string
-          file_name?: string | null
           content_type?: string | null
-          size_bytes?: number | null
+          created_at?: string
+          file_name?: string | null
           first_uploaded_at?: string
+          id?: string
           last_referenced_at?: string
-          reference_count?: number
-          status?: string
           last_scanned_at?: string | null
           metadata?: Json | null
-          created_at?: string
+          public_url?: string
+          reference_count?: number
+          size_bytes?: number | null
+          status?: string
+          storage_path?: string
           updated_at?: string
-        }
-        Relationships: []
-      }
-      image_cleanup_logs: {
-        Row: {
-          id: string
-          scanned_count: number
-          referenced_count: number
-          orphaned_count: number
-          deleted_count: number
-          skipped_count: number
-          failed_count: number
-          retention_days: number
-          deleted_paths: string[] | null
-          errors: string[] | null
-          details: Json | null
-          duration_ms: number
-          status: string
-          executed_at: string
-        }
-        Insert: {
-          id?: string
-          scanned_count?: number
-          referenced_count?: number
-          orphaned_count?: number
-          deleted_count?: number
-          skipped_count?: number
-          failed_count?: number
-          retention_days?: number
-          deleted_paths?: string[] | null
-          errors?: string[] | null
-          details?: Json | null
-          duration_ms?: number
-          status?: string
-          executed_at?: string
-        }
-        Update: {
-          id?: string
-          scanned_count?: number
-          referenced_count?: number
-          orphaned_count?: number
-          deleted_count?: number
-          skipped_count?: number
-          failed_count?: number
-          retention_days?: number
-          deleted_paths?: string[] | null
-          errors?: string[] | null
-          details?: Json | null
-          duration_ms?: number
-          status?: string
-          executed_at?: string
         }
         Relationships: []
       }
@@ -966,6 +1039,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       post_status: ["draft", "published", "archived"],

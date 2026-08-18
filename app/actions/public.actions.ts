@@ -2,7 +2,7 @@
 
 import { headers } from 'next/headers';
 import { getPostsMeta } from '@/lib/queries';
-import { getSupabaseServerClient } from '@/lib/supabase/server';
+import { getSupabaseServerClient, getSupabaseAdmin } from '@/lib/supabase/server';
 import { z } from 'zod';
 
 export async function searchPublishedPosts(query: string) {
@@ -56,11 +56,12 @@ export async function subscribeNewsletter(email: string, personas: string[], sou
     }
 
     const validData = subscribeSchema.parse({ email, personas, source });
-    // SECURITY: Use the server client (respects RLS) instead of the admin
-    // client (which bypasses RLS with the service role key).
-    // The 'subscribers' and 'subscriptions' tables have RLS policies that
-    // allow public INSERT, so this works without auth.
-    const client = await getSupabaseServerClient();
+    // Use the admin client here: this is a server-side action guarded by the
+    // rate limiter above, and the anonymous role has no SELECT policy on
+    // "subscribers", so an upsert ... RETURNING via the server client fails
+    // with a 42501 RLS error. Using the admin client also let us remove the
+    // over-broad public "subscriptions" policy (FOR ALL USING true).
+    const client = getSupabaseAdmin();
 
     // Upsert subscriber
     const { data: subscriber, error: subError } = await client

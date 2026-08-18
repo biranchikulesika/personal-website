@@ -118,39 +118,121 @@ export default function PersonaDashboardPage({ params }: { params: any }) {
     setIsEditingEntity(true);
   };
 
+  // The dialog only edits a handful of visible fields, but the Zod schemas and
+  // repositories expect the full canonical shape. Normalize the dialog payload
+  // into that shape, mapping legacy UI field names and filling defaults for any
+  // fields the dialog doesn't collect. Safe for both create and edit (edit rows
+  // already carry the canonical fields, so they pass through untouched).
+  const normalizeEntityData = (type: string, raw: any): any => {
+    const d = { ...raw };
+    switch (type) {
+      case 'buildLog': {
+        if (d.description === undefined && d.excerpt !== undefined) d.description = d.excerpt;
+        d.source = d.source ?? 'manual';
+        d.aiGenerated = d.aiGenerated ?? false;
+        d.relatedCommits = d.relatedCommits ?? [];
+        d.relatedRepositories = d.relatedRepositories ?? [];
+        d.hidden = d.hidden ?? false;
+        if (!d.date) d.date = new Date().toISOString().slice(0, 10);
+        return d;
+      }
+      case 'system': {
+        if (d.title === undefined && d.name !== undefined) d.title = d.name;
+        d.status = d.status ?? 'active';
+        d.level = d.level ?? '';
+        d.description = d.description ?? '';
+        d.stack = d.stack ?? [];
+        d.order = d.order ?? 0;
+        d.hidden = d.hidden ?? false;
+        return d;
+      }
+      case 'status': {
+        if (d.operationalState === undefined && d.label !== undefined) d.operationalState = d.label;
+        if (d.statusText === undefined && d.value !== undefined) d.statusText = d.value;
+        d.currentFocus = d.currentFocus ?? d.statusText ?? '';
+        return d;
+      }
+      case 'focus': {
+        if (d.label === undefined && d.area !== undefined) d.label = d.area;
+        d.value = d.value ?? '';
+        d.description = d.description ?? '';
+        d.order = d.order ?? 0;
+        d.hidden = d.hidden ?? false;
+        return d;
+      }
+      case 'question': {
+        if (d.text === undefined && d.question !== undefined) d.text = d.question;
+        d.text = d.text ?? '';
+        if (d.question === undefined) d.question = d.text;
+        d.context = d.context ?? '';
+        d.order = d.order ?? 0;
+        d.hidden = d.hidden ?? false;
+        return d;
+      }
+      case 'thought': {
+        if (d.text === undefined && d.content !== undefined) d.text = d.content;
+        d.text = d.text ?? '';
+        if (d.content === undefined) d.content = d.text;
+        d.hidden = d.hidden ?? false;
+        return d;
+      }
+      case 'fragment': {
+        if (d.quote === undefined && d.body !== undefined) d.quote = d.body;
+        d.quote = d.quote ?? '';
+        d.source = d.source ?? 'manual';
+        d.order = d.order ?? 0;
+        d.hidden = d.hidden ?? false;
+        return d;
+      }
+      case 'journal': {
+        d.title = d.title ?? '';
+        d.body = d.body ?? '';
+        d.timeLabel = d.timeLabel ?? '';
+        d.hidden = d.hidden ?? false;
+        return d;
+      }
+      default:
+        return d;
+    }
+  };
+
   const handleSaveEntity = async () => {
     try {
+      const data = normalizeEntityData(entityType, entityFormData);
+
       if (entityType === 'buildLog') {
-        if (entityId) await updateBuildLog(entityId, entityFormData);
-        else await createBuildLog(entityFormData);
+        if (entityId) await updateBuildLog(entityId, data);
+        else await createBuildLog(data);
       } else if (entityType === 'system') {
-        if (entityId) await updateActiveSystem(entityId, entityFormData);
-        else await createActiveSystem(entityFormData);
+        if (entityId) await updateActiveSystem(entityId, data);
+        else await createActiveSystem(data);
       } else if (entityType === 'status') {
-        if (entityId) await updateBuilderStatus(entityId, entityFormData);
-        else await createBuilderStatus(entityFormData);
+        if (entityId) await updateBuilderStatus(entityId, data);
+        else await createBuilderStatus(data);
       } else if (entityType === 'focus') {
-        if (entityId) await updateOperatorFocus(entityId, entityFormData);
-        else await createOperatorFocus(entityFormData);
+        if (entityId) await updateOperatorFocus(entityId, data);
+        else await createOperatorFocus(data);
       } else if (entityType === 'question') {
-        if (entityId) await updateQuestion(entityId, entityFormData);
-        else await createQuestion(entityFormData);
+        if (entityId) await updateQuestion(entityId, data);
+        else await createQuestion(data);
       } else if (entityType === 'thought') {
-        if (entityId) await updateThoughtFragment(entityId, entityFormData);
-        else await createThoughtFragment(entityFormData);
+        if (entityId) await updateThoughtFragment(entityId, data);
+        else await createThoughtFragment(data);
       } else if (entityType === 'fragment') {
-        if (entityId) await updateFragment(entityId, entityFormData);
-        else await createFragment(entityFormData);
+        if (entityId) await updateFragment(entityId, data);
+        else await createFragment(data);
       } else if (entityType === 'journal') {
-        if (entityId) await updateJournalMoment(entityId, entityFormData);
-        else await createJournalMoment(entityFormData);
+        if (entityId) await updateJournalMoment(entityId, data);
+        else await createJournalMoment(data);
       }
 
       setIsEditingEntity(false);
       await loadPersonaData();
-    } catch (e) {
+    } catch (e: any) {
       console.error('Save model failed: ', e);
-      alert('Save operation had constraints warning. Verify types.');
+      // Surface the actual validation/database error instead of a vague warning.
+      const detail = e?.message || e?.toString?.() || 'Unknown error';
+      alert(`Save failed: ${detail}`);
     }
   };
 
