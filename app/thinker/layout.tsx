@@ -56,7 +56,7 @@ export default function ThinkerLayout({ children }: { children: React.ReactNode 
   return (
     <div className={`${lora.variable} font-persona theme-thinker bg-background text-foreground min-h-screen selection:bg-primary/20 flex flex-col leading-[1.9] relative z-0`}>
       <div className="pointer-events-none fixed inset-0 z-[-1] dark:bg-[radial-gradient(circle_at_50%_0%,rgba(23,27,32,0.5)_0%,transparent_75%)] bg-[radial-gradient(circle_at_50%_0%,rgba(0,0,0,0.02)_0%,transparent_75%)]" />
-      <header className="sticky top-0 z-50 w-full p-4 md:p-6 flex justify-between items-center bg-background/70 backdrop-blur-xl border-b border-border transition-colors duration-1000">
+      <header className="sticky top-0 z-50 w-full p-4 md:px-6 md:py-4 flex justify-between items-center bg-background/70 backdrop-blur-xl border-b border-border transition-colors duration-1000">
         <PersonaSwitcher currentPersona="Thinker" currentStyle="text-foreground font-sans font-light tracking-wide opacity-60 hover:opacity-100 transition-all duration-700" />
         <div className="flex items-center gap-1 md:gap-2 text-primary">
           <DesktopNav persona="thinker" />
