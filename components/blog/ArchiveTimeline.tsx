@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { motion } from 'motion/react';
 import { Post } from '@/lib/types';
 import { PERSONA_BLOG_THEMES } from './themes';
+import { formatDate } from '@/lib/utils';
 
 export interface ArchiveTimelineProps {
   posts: Post[];
@@ -127,7 +128,7 @@ export function ArchiveTimeline({ posts, persona }: ArchiveTimelineProps) {
                             <div className="flex-1 space-y-2">
                               {/* Metadata line with date, reading time, optional location & optional persona tag */}
                               <div className="text-[10.5px] font-mono uppercase tracking-wider text-muted-text flex flex-wrap items-center gap-1.5">
-                                <span>{post.publishedAt?.split('T')[0] || post.createdAt?.split('T')[0] || ''}</span>
+                                <span>{formatDate(post.publishedAt || post.createdAt)}</span>
                                 <span>•</span>
                                 <span className={theme.accentColor}>{post.tags?.[0] || 'Uncategorized'}</span>
                                 {post.coverImageLocation && (

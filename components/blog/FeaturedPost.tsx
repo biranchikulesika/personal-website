@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { motion } from 'motion/react';
 import { Post } from '@/lib/types';
 import { PERSONA_BLOG_THEMES } from './themes';
+import { formatDate } from '@/lib/utils';
 
 export interface FeaturedPostProps {
   post: Post;
@@ -118,7 +119,7 @@ export function FeaturedPost({ post, persona }: FeaturedPostProps) {
           </Link>
 
           <span className="font-mono text-[9px] sm:text-[9.5px] uppercase tracking-wider text-primary/60">
-            {post.publishedAt?.split('T')[0] || post.createdAt?.split('T')[0] || ''}
+            {formatDate(post.publishedAt || post.createdAt)}
           </span>
         </div>
       </div>

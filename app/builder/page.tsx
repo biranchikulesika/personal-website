@@ -9,6 +9,7 @@ import {
 } from '@/lib/queries';
 import { BuildLogFeedItem } from '@/components/builder/build-log-item';
 import { ScrollToSectionButton } from '@/components/builder/scroll-to-section';
+import { formatDate } from '@/lib/utils';
 
 // --- TYPE DEFINITIONS ---
 export type SystemStatus = 'stable' | 'active' | 'lab';
@@ -322,7 +323,7 @@ export default async function BuilderPage() {
                       {featuredPost.title}
                     </h3>
                     <span className="text-[11px] font-mono text-primary/70 block group-hover:text-primary transition-colors">
-                      {featuredPost.publishedAt || 'Unknown'}
+                      {formatDate(featuredPost.publishedAt) || 'Unknown'}
                     </span>
                     <p className="text-sm text-primary/90 leading-relaxed max-w-xl group-hover:text-primary transition-colors">
                       {featuredPost.excerpt || 'Read reflection.'}
@@ -338,7 +339,7 @@ export default async function BuilderPage() {
                       {secondaryPost.title}
                     </h4>
                     <span className="text-[10px] font-mono text-primary/70 block group-hover:text-primary transition-colors">
-                      {secondaryPost.publishedAt || 'Unknown'}
+                      {formatDate(secondaryPost.publishedAt) || 'Unknown'}
                     </span>
                     <p className="text-xs text-primary/90 leading-relaxed max-w-lg group-hover:text-primary transition-colors">
                       {secondaryPost.excerpt || 'Read reflection.'}
@@ -365,7 +366,7 @@ export default async function BuilderPage() {
                         </h4>
                         <div className="flex justify-between items-center mt-1.5 text-[9px] font-mono text-primary/70">
                           <span>{(p.tags && p.tags[0]) || 'Reflection'}</span>
-                          <span>{p.publishedAt || 'Unknown'}</span>
+                          <span>{formatDate(p.publishedAt) || 'Unknown'}</span>
                         </div>
                       </Link>
                     ))}

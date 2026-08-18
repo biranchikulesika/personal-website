@@ -3,7 +3,7 @@ export const dynamic = 'force-static';
 export const revalidate = 3600;
 import Image from 'next/image';
 import { getFragments, getPostsMeta } from '@/lib/queries';
-import { getPersonaUrl } from '@/lib/utils';
+import { getPersonaUrl, formatDate } from '@/lib/utils';
 import { FragmentCycler } from '@/components/wanderer/fragment-cycler';
 import { LettersForm, LettersFormMobile } from '@/components/wanderer/letters-form';
 
@@ -29,7 +29,7 @@ export default async function WandererPage() {
 
   const latestPosts = allPosts.slice(0, 3).map((p: any) => ({
     slug: p.slug || p.id,
-    date: p.publishedAt || 'Unknown',
+    date: formatDate(p.publishedAt) || 'Unknown',
     publishedAt: p.publishedAt,
     createdAt: p.createdAt,
     title: p.title,
@@ -40,7 +40,7 @@ export default async function WandererPage() {
 
   const archiveEntries = allPosts.slice(3).map((p: any) => ({
     title: p.title,
-    date: p.publishedAt || 'Unknown',
+    date: formatDate(p.publishedAt) || 'Unknown',
     slug: p.slug || p.id,
   }));
 
@@ -115,7 +115,7 @@ export default async function WandererPage() {
                       {post.excerpt}
                     </p>
                     <div className="text-[9.5px] font-mono tracking-normal text-body/60 uppercase pt-1">
-                      {post.publishedAt || post.createdAt}
+                      {post.date}
                     </div>
                   </div>
 
@@ -133,7 +133,7 @@ export default async function WandererPage() {
                           </div>
                         </div>
                         <div className="lg:col-span-7 flex flex-col justify-center">
-                          <div className="text-[9.5px] font-mono tracking-normal text-body/60 mb-2.5">{post.publishedAt || post.createdAt}</div>
+                          <div className="text-[9.5px] font-mono tracking-normal text-body/60 mb-2.5">{post.date}</div>
                           <Link href={`/p/${post.slug}`}>
                             <h3 className="font-cormorant italic text-[22.5px] font-normal leading-tight text-heading hover:text-accent-text duration-500 transition-colors mb-3.5">{post.title}</h3>
                           </Link>
@@ -145,7 +145,7 @@ export default async function WandererPage() {
                     {index === 1 && (
                       <>
                         <div className="lg:col-span-7 flex flex-col justify-center pr-6">
-                          <div className="text-[9.5px] font-mono tracking-normal text-body/60 mb-2.5">{post.publishedAt || post.createdAt}</div>
+                          <div className="text-[9.5px] font-mono tracking-normal text-body/60 mb-2.5">{post.date}</div>
                           <Link href={`/p/${post.slug}`}>
                             <h3 className="font-cormorant italic text-[22.5px] font-normal leading-tight text-heading hover:text-accent-text duration-500 transition-colors mb-3.5">{post.title}</h3>
                           </Link>
@@ -177,7 +177,7 @@ export default async function WandererPage() {
                         </div>
                         <div className="lg:col-span-1" />
                         <div className="lg:col-span-7 flex flex-col justify-center">
-                          <div className="text-[9.5px] font-mono tracking-normal text-body/60 mb-2.5">{post.publishedAt || post.createdAt}</div>
+                          <div className="text-[9.5px] font-mono tracking-normal text-body/60 mb-2.5">{post.date}</div>
                           <Link href={`/p/${post.slug}`}>
                             <h3 className="font-cormorant italic text-[22.5px] font-normal leading-tight text-heading hover:text-accent-text duration-500 transition-colors mb-3.5">{post.title}</h3>
                           </Link>

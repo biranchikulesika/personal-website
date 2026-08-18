@@ -10,7 +10,7 @@ import { Post } from '@/lib/types';
 import { PERSONA_BLOG_THEMES } from './themes';
 import { FeaturedPost } from './FeaturedPost';
 import { Search } from './Search';
-import { getPersonaUrl } from '@/lib/utils';
+import { getPersonaUrl, formatDate } from '@/lib/utils';
 
 export interface BlogHomepageProps {
   persona: 'main' | 'wanderer' | 'thinker' | 'builder' | 'operator';
@@ -158,7 +158,7 @@ export function BlogHomepage({ persona, databasePosts }: BlogHomepageProps) {
                             </h3>
                           </Link>
                           <div className="text-[9.5px] font-mono uppercase tracking-wider opacity-50">
-                            {post.publishedAt || post.createdAt}
+                            {formatDate(post.publishedAt || post.createdAt)}
                           </div>
                         </div>                          {!brokenImages[post.slug] && postImage && (
                             <div className={`w-14 h-14 relative rounded-md overflow-hidden shrink-0 bg-muted border ${theme.borderColor}`}>
@@ -332,7 +332,7 @@ export function BlogHomepage({ persona, databasePosts }: BlogHomepageProps) {
                         <div className="space-y-2">
                           {/* Metadata */}
                           <div className="text-[10px] font-mono uppercase tracking-wider text-muted-text flex flex-wrap items-center gap-1.5">
-                            <span>{post.publishedAt || post.createdAt}</span>
+                            <span>{formatDate(post.publishedAt || post.createdAt)}</span>
                             <span>•</span>
                             <span className={theme.accentColor}>{post.category}</span>
                             {persona === 'main' && (

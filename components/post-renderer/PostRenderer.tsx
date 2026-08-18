@@ -50,6 +50,7 @@ import { PersonaSearch } from '@/components/persona-search';
 import { DesktopNav, MobileNav } from '@/components/nav-links';
 import { FieldNoteDivider } from '@/components/field-note-divider';
 import { subscribeNewsletter } from '@/app/actions/public.actions';
+import { formatDate } from '@/lib/utils';
 
 const getEmojiForLocation = (location: string): string => {
   const loc = location.toLowerCase();
@@ -531,7 +532,7 @@ export default function PostRenderer({ post, slug, allPosts, fallbackPersona, co
           title: postItem.title,
           slug: postItem.slug,
           date: postItem.publishedAt 
-            ? new Intl.DateTimeFormat('en-US', {month:'short', day:'numeric', year:'numeric'}).format(new Date(postItem.publishedAt)) 
+            ? formatDate(postItem.publishedAt) 
             : postItem.date || 'Unknown Date'
         });
       }
@@ -601,7 +602,7 @@ export default function PostRenderer({ post, slug, allPosts, fallbackPersona, co
     </div>
   );
 
-  const displayDate = post?.date || (post?.publishedAt ? new Intl.DateTimeFormat('en-US', {month:'long', day:'numeric', year:'numeric'}).format(new Date(post.publishedAt)) : 'Unknown Date');
+  const displayDate = post?.date || (post?.publishedAt ? formatDate(post.publishedAt) : 'Unknown Date');
 
   const renderArticleHeader = () => (
     <>
@@ -1234,7 +1235,7 @@ export default function PostRenderer({ post, slug, allPosts, fallbackPersona, co
                       {notFoundResults.length > 0 ? notFoundResults.map((r, i) => (
                         <Link key={i} href={`/p/${r.slug}`} className={`block group`}>
                           <h4 className={`font-medium group-hover:opacity-70 transition-opacity ${theme.relatedTitleText}`}>{r.title}</h4>
-                          <p className={`text-xs mt-1 ${theme.relatedDate}`}>{new Date(r.publishedAt || r.date || r.createdAt).toLocaleDateString()}</p>
+                          <p className={`text-xs mt-1 ${theme.relatedDate}`}>{formatDate(r.publishedAt || r.date || r.createdAt)}</p>
                         </Link>
                       )) : (
                         <p className={`text-sm italic opacity-60 ${theme.paragraph}`}>No posts found matching your query.</p>
