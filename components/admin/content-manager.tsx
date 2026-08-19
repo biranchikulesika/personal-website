@@ -411,9 +411,6 @@ export function ContentManager({ initialPosts, initialNotes }: ContentManagerPro
           <h2 className="font-serif text-2xl font-normal text-ink md:text-3xl">
             Posts & Notes
           </h2>
-          <p className="mt-1 text-sm text-ink-soft">
-            Manage long-form essays and atomic notes ({posts.length} essays, {notes.length} notes).
-          </p>
         </div>
 
         <div className="flex items-center gap-2.5">
