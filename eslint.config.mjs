@@ -8,7 +8,7 @@ const __dirname = path.dirname(__filename);
 
 export default defineConfig([
     {
-        ignores: ["scripts/**", "**/scripts/**", "**/refactor3.js", "**/scaffold2.js"]
+        ignores: ["legacy/**", "scripts/**", "**/scripts/**", "**/refactor3.js", "**/scaffold2.js"]
     },
     {
         extends: [...next],

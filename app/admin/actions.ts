@@ -1,0 +1,196 @@
+'use server';
+
+import { ContentService } from '@/lib/services/content.service';
+import { revalidatePath } from 'next/cache';
+import type {
+  AdminProfile,
+  BlogPost,
+  BookItem,
+  MediaItem,
+  NoteItem,
+  Persona,
+} from '@/lib/types';
+
+const contentService = new ContentService();
+
+// Post Actions ----------------------------------------------------------------
+
+export async function getAllPostsAction(): Promise<BlogPost[]> {
+  return await contentService.getAllPosts();
+}
+
+export async function savePostAction(
+  post: BlogPost,
+  persona?: Persona,
+): Promise<{ success: boolean; post?: BlogPost; error?: string }> {
+  try {
+    const saved = await contentService.savePost(post, persona);
+    revalidatePath('/admin');
+    revalidatePath('/scribble');
+    revalidatePath('/writing');
+    revalidatePath(`/writing/${post.slug}`);
+    return { success: true, post: saved };
+  } catch (err: unknown) {
+    return { success: false, error: (err as Error).message || 'Failed to save post' };
+  }
+}
+
+export async function togglePostStatusAction(
+  slug: string,
+): Promise<{ success: boolean; post?: BlogPost; error?: string }> {
+  try {
+    const toggled = await contentService.togglePostStatus(slug);
+    if (!toggled) return { success: false, error: 'Post not found' };
+    revalidatePath('/admin');
+    revalidatePath('/scribble');
+    revalidatePath('/writing');
+    revalidatePath(`/writing/${slug}`);
+    return { success: true, post: toggled };
+  } catch (err: unknown) {
+    return { success: false, error: (err as Error).message || 'Failed to toggle status' };
+  }
+}
+
+export async function deletePostAction(
+  slug: string,
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const deleted = await contentService.deletePost(slug);
+    revalidatePath('/admin');
+    revalidatePath('/scribble');
+    revalidatePath('/writing');
+    return { success: deleted };
+  } catch (err: unknown) {
+    return { success: false, error: (err as Error).message || 'Failed to delete post' };
+  }
+}
+
+// Note Actions ----------------------------------------------------------------
+
+export async function getAllNotesAction(): Promise<NoteItem[]> {
+  return await contentService.getAllNotes();
+}
+
+export async function saveNoteAction(
+  note: NoteItem,
+): Promise<{ success: boolean; note?: NoteItem; error?: string }> {
+  try {
+    const saved = await contentService.saveNote(note);
+    revalidatePath('/admin');
+    revalidatePath('/scribble');
+    revalidatePath(`/notes/${note.slug}`);
+    return { success: true, note: saved };
+  } catch (err: unknown) {
+    return { success: false, error: (err as Error).message || 'Failed to save note' };
+  }
+}
+
+export async function toggleNoteStatusAction(
+  slug: string,
+): Promise<{ success: boolean; note?: NoteItem; error?: string }> {
+  try {
+    const toggled = await contentService.toggleNoteStatus(slug);
+    if (!toggled) return { success: false, error: 'Note not found' };
+    revalidatePath('/admin');
+    revalidatePath('/scribble');
+    revalidatePath(`/notes/${slug}`);
+    return { success: true, note: toggled };
+  } catch (err: unknown) {
+    return { success: false, error: (err as Error).message || 'Failed to toggle status' };
+  }
+}
+
+export async function deleteNoteAction(
+  slug: string,
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const deleted = await contentService.deleteNote(slug);
+    revalidatePath('/admin');
+    revalidatePath('/scribble');
+    return { success: deleted };
+  } catch (err: unknown) {
+    return { success: false, error: (err as Error).message || 'Failed to delete note' };
+  }
+}
+
+// Book / Library Actions ------------------------------------------------------
+
+export async function getAllBooksAction(): Promise<BookItem[]> {
+  return await contentService.getAllBooks();
+}
+
+export async function saveBookAction(
+  book: BookItem,
+): Promise<{ success: boolean; book?: BookItem; error?: string }> {
+  try {
+    const saved = await contentService.saveBook(book);
+    revalidatePath('/admin');
+    revalidatePath('/library');
+    revalidatePath('/scribble');
+    return { success: true, book: saved };
+  } catch (err: unknown) {
+    return { success: false, error: (err as Error).message || 'Failed to save book' };
+  }
+}
+
+export async function deleteBookAction(
+  slug: string,
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const deleted = await contentService.deleteBook(slug);
+    revalidatePath('/admin');
+    revalidatePath('/library');
+    revalidatePath('/scribble');
+    return { success: deleted };
+  } catch (err: unknown) {
+    return { success: false, error: (err as Error).message || 'Failed to delete book' };
+  }
+}
+
+// Media Actions ---------------------------------------------------------------
+
+export async function getMediaAction(): Promise<MediaItem[]> {
+  return await contentService.getMedia();
+}
+
+export async function addMediaAction(
+  item: MediaItem,
+): Promise<{ success: boolean; media?: MediaItem; error?: string }> {
+  try {
+    const added = await contentService.addMedia(item);
+    revalidatePath('/admin');
+    return { success: true, media: added };
+  } catch (err: unknown) {
+    return { success: false, error: (err as Error).message || 'Failed to add media' };
+  }
+}
+
+export async function deleteMediaAction(
+  id: string,
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const deleted = await contentService.deleteMedia(id);
+    revalidatePath('/admin');
+    return { success: deleted };
+  } catch (err: unknown) {
+    return { success: false, error: (err as Error).message || 'Failed to delete media' };
+  }
+}
+
+// Admin Profile Actions -------------------------------------------------------
+
+export async function getAdminProfileAction(): Promise<AdminProfile> {
+  return await contentService.getAdminProfile();
+}
+
+export async function updateAdminProfileAction(
+  profile: Partial<AdminProfile>,
+): Promise<{ success: boolean; profile?: AdminProfile; error?: string }> {
+  try {
+    const updated = await contentService.updateAdminProfile(profile);
+    revalidatePath('/admin');
+    return { success: true, profile: updated };
+  } catch (err: unknown) {
+    return { success: false, error: (err as Error).message || 'Failed to update profile' };
+  }
+}

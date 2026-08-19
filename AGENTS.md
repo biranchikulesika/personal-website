@@ -1,338 +1,218 @@
-# AGENTS.md
+# AGENTS.md — Experimental Rebuild Branch
 
-## Repository Branching and Production Rules
-
-These rules are mandatory for all development work in this repository.
-
-### Protected Branches
-
-The repository has two protected branches:
-
-* `develop`
-* `production`
-
-Both branches require a Pull Request for changes.
-
-**Direct commits and direct pushes to either protected branch are not allowed.**
-
-All changes must go through the appropriate Pull Request workflow.
+This file is the source of truth for agents working on this branch.
 
 ---
 
-## Branch Structure
+## 1. Branch Rules
 
-### `production`
+This branch is **experimental and isolated**.
 
-`production` is the final production state of the website.
+* Branch name: `experiment/rebuild-foundation`
+* It must **never** be merged into `develop`, `main`, or `production`.
+* It must **never** be pushed to remote unless the repository owner explicitly asks.
+* Never directly modify `develop`, `main`, or `production`.
+* Do not create accidental merge paths into protected branches.
+* Do not cherry-pick commits from this branch into protected branches.
+* This branch may eventually replace the existing implementation, but that
+  decision is made later — not now.
+
+The decision to promote anything from this branch is the repository owner's
+alone. Do not create Pull Requests targeting protected branches from this
+branch.
+
+---
+
+## 2. Product-Development Rules
+
+The product requirements for this website are **intentionally incomplete** and
+will be defined progressively by the repository owner.
+
+* Do **not** invent major product requirements.
+* Do **not** prematurely lock architecture around assumptions.
+* Prefer flexible, replaceable architecture over fixed decisions.
+* The owner will progressively define the product while development continues.
+* Existing product decisions from the previous implementation are **not**
+  authoritative. Do not reuse them unless the owner asks.
+
+### Technical reset
+
+This branch is a technical reset of the website implementation.
+
+The previous implementation (persona architecture, page structure, component
+hierarchy, database schema, service structure, authentication flow, UI design)
+is preserved under `legacy/` for reference but is **not** the source of truth.
+
+Do not assume any of the following is required:
+
+* the existing page structure
+* the existing persona system
+* the existing component hierarchy
+* the existing database schema
+* the existing service structure
+* the existing authentication flow
+* the existing UI design
+
+Reuse existing dependencies or infrastructure only when technically useful.
+
+---
+
+## 3. Database Rules
+
+This branch uses a **mock/local database only**.
+
+* Use the in-memory mock database (`lib/data/mock-db.ts`).
+* Do **not** connect to production data.
+* Do **not** modify the production database.
+* Do **not** treat the previous production schema as immutable.
+* The schema is expected to evolve while requirements become clearer.
+* Database changes must remain easy to modify or replace.
+
+### Mock database
+
+* Location: `lib/data/mock-db.ts`
+* Reseed: `npm run db:reset` (runs `scripts/reset-db.ts`)
+* The database is in-memory: it resets on process restart.
+* Schema is deliberately provisional. Change it freely; keep it small.
+
+---
+
+## 4. Authentication Rules
+
+Authentication is **disabled** on this branch.
+
+* Do not build a production authentication flow.
+* Do not add login/signup/auth middleware.
+* The application must be usable without authentication while UI and product
+  structure are developed.
+* `lib/config/env.ts` guards against enabling auth: setting `AUTH_ENABLED=true`
+  throws instead of enabling authentication.
+
+---
+
+## 5. Architecture Rules
+
+Keep clean separation between the application/UI and data access:
+
+```text
+UI (React / Next.js app)
+        ↓
+Application / service layer   →  lib/services/
+        ↓
+Data access / repository layer →  lib/repositories/
+        ↓
+Mock database                  →  lib/data/
+```
 
 Rules:
 
-* `production` must always remain production-ready.
-* Never use `production` as a development branch.
-* Never create feature branches from `production`.
-* Never commit directly to `production`.
-* Never push directly to `production`.
-* Changes reach `production` only through a Pull Request from `develop`.
-* Do not merge incomplete, experimental, or partially tested work into `production`.
+* UI components must **not** query the database directly.
+* UI components should call the service layer.
+* The service layer contains application/business operations.
+* The repository layer abstracts data access.
+* Replacing the mock database later must not require rewriting the UI.
+* Keep the architecture simple. Do not over-engineer.
 
-Treat `production` as the final and stable state of the project.
+Current structure (provisional):
 
-### `develop`
-
-`develop` is the primary development and integration branch.
-
-All ongoing development happens around `develop`.
-
-Rules:
-
-* Do not commit directly to `develop`.
-* Do not push directly to `develop`.
-* New development branches must be created from the latest `develop`.
-* Development branches must be merged back into `develop` through Pull Requests.
-* Multiple independent features or fixes should use separate branches.
-* Keep `develop` in a reasonably working state. Do not use it as a dumping ground for unfinished experiments.
+* `lib/types.ts` — provisional domain types
+* `lib/data/mock-db.ts` — mock database
+* `lib/repositories/` — data access layer
+* `lib/services/` — application layer
+* `lib/config/env.ts` — environment / safety guards
 
 ---
 
-## Initial Branch Migration
+## 6. Environment Rules
 
-The repository currently uses `main` as the development branch.
+The development environment must never silently fall back to production.
 
-The first step is to rename:
+* `DATA_SOURCE` must be `mock`. Any production value (`supabase`, `postgres`,
+  `production`) causes the app to throw.
+* `AUTH_ENABLED` must be `false`/unset.
+* Do not add production credentials (Supabase, payment, AI keys, etc.) to
+  `.env.example` or any committed file.
+* Do not connect to production services of any kind.
 
-`main` → `develop`
-
-After the rename:
-
-* `develop` becomes the primary development branch.
-* `production` remains the protected final production branch.
-* All future development follows the branching workflow described in this document.
-* Do not continue using `main` as the development branch after the migration.
-
-Verify the remote repository, local tracking branches, default branch configuration, and branch protection settings after the rename.
+The old `.env`/`.env.local` files from the previous implementation may still
+exist locally. They are gitignored and must not be loaded or referenced by new
+code on this branch.
 
 ---
 
-## Development Workflow
+## 7. Implementation Strategy — Desktop First
 
-The standard workflow is:
+The website is built in this order:
 
-```text
-production
-    ↑
-    │ Pull Request
-    │
-develop
-    ↑
-    │ Pull Request
-    │
-feature / fix / chore branch
-```
+* **Phase 1:** Desktop experience.
+* **Phase 2:** Mobile experience.
 
-### Step 1: Start from `develop`
+While building Phase 1:
 
-Always start new work from the latest `develop`.
-
-```bash
-git checkout develop
-git pull origin develop
-```
-
-### Step 2: Create a dedicated branch
-
-Create a new branch for the specific task.
-
-Examples:
-
-```text
-feature/article-editor
-feature/dark-mode-fixes
-fix/payment-confirmation
-fix/404-pages
-chore/update-dependencies
-refactor/auth-flow
-```
-
-Do not combine unrelated work into the same branch.
-
-### Step 3: Develop and test
-
-Make the required changes on the development branch.
-
-Before opening the Pull Request:
-
-* Test the changes.
-* Check for regressions.
-* Review the changed files.
-* Ensure unrelated files were not modified accidentally.
-* Run the project's relevant linting, type checking, tests, and build checks.
-* Confirm the implementation is actually complete.
-
-### Step 4: Merge into `develop` via Squash and Merge
-
-All development branches must be integrated into `develop` using **Squash and Merge**.
-
-```text
-feature/*  ──(Squash & Merge)──► develop
-fix/*      ──(Squash & Merge)──► develop
-chore/*    ──(Squash & Merge)──► develop
-refactor/* ──(Squash & Merge)──► develop
-```
-
-#### Mandatory Squash and Merge Rules:
-* **Always Squash and Merge into `develop`**: Combine all incremental development commits from the working branch into a single, cohesive, and descriptive commit.
-* **Never create messy merge bubbles**: Do not pollute `develop` with multiple micro-commits, WIP saves, or merge commit nodes.
-* **Keep `develop` History Linear and Clean**: Each commit on `develop` must represent a fully tested, complete feature, fix, or chore.
-* Do not merge directly from a feature branch into `production`.
+* Keep the layout technically responsive.
+* Use responsive primitives and sensible layout constraints.
+* Do not build desktop components in a way that makes mobile implementation
+  unnecessarily difficult.
+* Do **not** spend the current phase perfecting mobile UI.
 
 ---
 
-## Production Release Workflow
+## 8. Design System
 
-`production` is updated only when the development work is considered complete and ready for release.
+Do not finalize the design system yet.
 
-The release flow is:
+Do not lock:
 
-```text
-feature/fix/chore branch
-        ↓
-      develop
-        ↓
-   testing / review
-        ↓
-Pull Request
-        ↓
-   production
-```
+* colors
+* typography
+* spacing scale
+* persona themes
+* animation language
+* page hierarchy
+* navigation structure
+* content taxonomy
 
-### Important Rule
-
-**Do not create a Pull Request into `production` for every individual feature.**
-
-Individual development work goes into `develop`.
-
-Only when the accumulated work in `develop` is complete, tested, reviewed, and ready for production should a Pull Request be opened:
-
-```text
-develop → production
-```
-
-After that Pull Request is approved and merged, `production` becomes the new final production state.
+unless required by the current implementation. These decisions are discovered
+progressively. Build the technical foundation so these can change easily.
 
 ---
 
-## Branch Creation Rule
+## 9. Do Not Overbuild
 
-Always branch from the branch that will receive the Pull Request.
+At this stage, do **not**:
 
-For normal development:
-
-```text
-develop → new branch → develop
-```
-
-Do not create normal development branches from `production`.
-
-Do not use `production` as a source branch for development work.
-
----
-
-## Forbidden Actions
-
-The following actions are not allowed:
-
-### Never push directly to `production`
-
-```bash
-git push origin production
-```
-
-Do not bypass the Pull Request process.
-
-### Never commit PR description files
-
-PR description files (e.g. `PR_DESCRIPTION.md`, `release-notes.md`) are working
-notes used to draft the Pull Request body. They must **never** be committed to the
-repository.
-
-Rules:
-
-* Keep PR description files untracked and local-only.
-* Ensure they are listed in `.gitignore` so they cannot be staged or committed
-  accidentally.
-* Paste their contents into the Pull Request body and delete or leave them
-  untracked after the PR is created.
-* Never `git add` or commit these files, even unintentionally.
-* If one has already been committed, remove it from the index and add it to
-  `.gitignore` before continuing.
-
-### Never push directly to `develop`
-
-```bash
-git push origin develop
-```
-
-Development changes must go through a Pull Request.
-
-### Never merge feature branches directly into `production`
-
-Incorrect:
-
-```text
-feature/x → production
-```
-
-Correct:
-
-```text
-feature/x → develop → production
-```
-
-### Never develop directly on `production`
-
-Do not check out `production` and start implementing features there.
-
-### Never treat `production` as a testing branch
-
-Testing and integration happen before production.
+* build every page
+* invent missing features
+* create unnecessary APIs
+* create unnecessary database tables
+* implement authentication
+* connect production services
+* optimize prematurely
+* create complicated abstractions
+* preserve old product decisions just for compatibility
 
 ---
 
-## Agent Behavior
+## 10. Commands
 
-Any coding agent working in this repository must follow these rules automatically.
+* Dev server: `npm run dev`
+* Build: `npm run build`
+* Lint: `npm run lint`
+* Tests: `npm test`
+* Reset mock db: `npm run db:reset`
 
-Before making changes:
-
-1. Determine the current branch.
-2. Determine whether the requested work is development work, a production release, or repository maintenance.
-3. For normal development, work from `develop`.
-4. Create a dedicated branch from the latest `develop`.
-5. Make changes only on that branch.
-6. Never directly modify or push `develop`.
-7. Never directly modify or push `production`.
-8. Integrate into `develop` exclusively via **Squash and Merge** (`git merge --squash` / PR Squash & Merge) once approved.
-9. Only create a `develop → production` Pull Request when the user explicitly indicates that the completed development state is ready for production.
-
-If the current branch is `production`, do not begin normal feature development there.
-
-If the current branch is `develop`, do not make direct commits unless the repository owner explicitly changes these rules.
+Node version: `>=24.16.0` (use nvm: `nvm use 24.18.0`).
 
 ---
 
-## Production Safety Principle
+## 11. Dev Server Rule
 
-`production` is sacred.
+**Never kill or restart the dev server.** The dev server may be running in the
+background.
 
-It represents the final state that is intended to be deployed to users.
-
-Therefore:
-
-> Development happens around `develop`.
-> Integration happens through `develop`.
-> Production releases happen from `develop` into `production`.
-> `production` is never a playground.
-
-When in doubt, preserve `production` rather than modifying it.
-
----
-
-## Summary
-
-The repository follows this model:
-
-```text
-                    ┌──────────────┐
-                    │  production  │
-                    │ FINAL STATE  │
-                    └──────▲───────┘
-                           │
-                     Pull Request
-                           │
-                    ┌──────┴───────┐
-                    │    develop    │
-                    │ DEVELOPMENT  │
-                    └──────▲───────┘
-                           │
-                    Pull Request
-                           │
-              ┌────────────┴────────────┐
-              │                         │
-        feature branch             fix branch
-              │                         │
-        development                development
-```
-
-### Golden Rule
-
-**Never bypass the branch hierarchy.**
-
-```text
-New work:
-develop → feature/fix branch → develop
-
-Production release:
-develop → production
-```
-
-`production` is the final state. Keep it untouched until a deliberate production release is approved.
+* Do **not** kill any `next dev`, `next-server`, or related process.
+* Do **not** delete or clear the `.next` directory — doing so kills the server.
+* Do **not** run `npm run clean` or anything that removes build artifacts.
+* On change, the server reloads automatically (hot reload). Let it do its job.
+* Do nothing that would kill the server. If a restart is genuinely required,
+  stop and ask — only the repository owner starts and stops the dev server.
