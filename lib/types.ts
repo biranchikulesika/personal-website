@@ -85,13 +85,15 @@ export interface SiteContent {
 export type Persona = 'builder' | 'operator' | 'thinker' | 'wanderer';
 
 export interface WritingItem {
-  id: string;
+  id?: string;
   slug: string;
   title: string;
+  subtitle?: string;
   description: string;
   date: string;
   persona: Persona;
   tags: string[];
+  coverImage?: string;
   status?: 'published' | 'unpublished';
 }
 
@@ -104,6 +106,7 @@ export interface NoteItem {
   date: string;
   persona: Persona;
   tags: string[];
+  coverImage?: string;
   status?: 'published' | 'unpublished';
 }
 
@@ -178,6 +181,7 @@ export interface BookCard {
 export interface BlogPost {
   slug: string;
   title: string;
+  subtitle?: string;
   description: string;
   tags: string[];
   plantedAt: string;
@@ -186,6 +190,7 @@ export interface BlogPost {
   intro: string[];
   sections: PostSection[];
   books: BookCard[];
+  coverImage?: string;
   status?: 'published' | 'unpublished';
 }
 

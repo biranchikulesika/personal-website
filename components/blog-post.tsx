@@ -10,12 +10,13 @@ import { ArrowLeftIcon, ArrowRightIcon, ChevronDownIcon } from './icons';
  */
 function renderInline(
   text: string,
-  prefix: string,
-  footnotes: string[] | undefined,
+  _prefix: string,
+  _footnotes: string[] | undefined,
 ) {
-  if (!footnotes || footnotes.length === 0) return text;
-
   const parts = text.split(/(\^\[\d+\])/g);
+  const hasMarker = parts.some((p) => /^\^\[\d+\]$/.test(p));
+  if (!hasMarker) return text;
+
   return parts.map((part, index) => {
     const match = part.match(/^\^\[(\d+)\]$/);
     if (!match) return part;
@@ -23,11 +24,12 @@ function renderInline(
     return (
       <sup key={index}>
         <a
-          id={`fnref-${prefix}-${n}`}
-          href={`#fn-${prefix}-${n}`}
-          className="font-medium text-accent no-underline"
+          id={`fnref-${n}`}
+          href={`#fn-${n}`}
+          className="font-medium text-accent no-underline hover:underline"
+          title={`Footnote ${n}`}
         >
-          {n}
+          [{n}]
         </a>
       </sup>
     );
@@ -136,7 +138,7 @@ export function BlogPostView({ post }: { post: BlogPost }) {
           </p>
 
           <div className="mt-6 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-ink">
-            {post.tags.map((tag) => (
+            {post.tags.slice(0, 3).map((tag) => (
               <span
                 key={tag}
                 className="rounded-full border border-tinted px-3 py-1 text-xs text-ink-soft"
@@ -189,14 +191,6 @@ export function BlogPostView({ post }: { post: BlogPost }) {
             </details>
           )}
 
-          {/* Assumed audience */}
-          <div className="rounded-lg border border-tinted bg-cream p-6 lg:col-start-1">
-            <h2 className="font-serif text-xl text-ink">Assumed audience</h2>
-            <p className="mt-2 leading-relaxed text-ink-soft">
-              {post.assumedAudience}
-            </p>
-          </div>
-
           {/* Intro — the first paragraph gets a drop cap */}
           <div className="mt-8 space-y-5 lg:col-start-1">
             {post.intro.map((paragraph, index) => (
@@ -228,29 +222,25 @@ export function BlogPostView({ post }: { post: BlogPost }) {
 
                 {section.paragraphs.map((paragraph, paragraphIndex) => {
                   const refs = section.footnotes
-                    ? footnoteRefs(paragraph).filter((n) => !emitted.has(n))
+                    ? footnoteRefs(paragraph)
                     : [];
-                  refs.forEach((n) => emitted.add(n));
                   return (
                     <Fragment key={paragraphIndex}>
                       <p className="leading-[1.85] lg:col-start-1">
-                        {renderInline(
-                          paragraph,
-                          `sec-${sectionIndex}`,
-                          section.footnotes,
-                        )}
+                        {renderInline(paragraph, `sec-${sectionIndex}`, section.footnotes)}
                       </p>
                       {refs.length > 0 && (
                         <aside
-                          className="col-start-2 space-y-2 border-l-2 border-tinted pl-3 text-sm leading-relaxed text-ink-soft"
+                          className="hidden lg:block col-start-2 space-y-3 pt-1 border-l-2 border-tinted pl-3"
                           aria-label="Footnotes"
                         >
                           {refs.map((n) => (
-                            <p key={n} id={`fn-sec-${sectionIndex}-${n}`}>
-                              <sup className="mr-1 font-medium text-accent">
-                                {n}
-                              </sup>
+                            <p key={n} id={`fn-${n}`} className="text-[13px] leading-relaxed text-ink-soft">
+                              <sup className="mr-1 font-medium text-accent">{n}</sup>
                               {section.footnotes?.[n - 1]}
+                              <a href={`#fnref-${n}`} className="ml-1 text-accent hover:text-ink transition-colors" title="Back">
+                                ↩
+                              </a>
                             </p>
                           ))}
                         </aside>

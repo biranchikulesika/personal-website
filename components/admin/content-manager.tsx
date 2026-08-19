@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import Link from 'next/link';
-import type { BlogPost, NoteItem, Persona, PostSection } from '@/lib/types';
+import type { BlogPost, MediaItem, NoteItem, Persona, PostSection } from '@/lib/types';
 import {
   savePostAction,
   deletePostAction,
@@ -11,10 +11,12 @@ import {
   deleteNoteAction,
   toggleNoteStatusAction,
 } from '@/app/admin/actions';
+import { MDXEditor } from './mdx-editor/mdx-editor';
 
 interface ContentManagerProps {
   initialPosts: BlogPost[];
   initialNotes: NoteItem[];
+  mediaItems?: MediaItem[];
 }
 
 type ContentFilterType = 'all' | 'post' | 'note';
@@ -30,7 +32,87 @@ function slugify(text: string): string {
     .replace(/^-+|-+$/g, '');
 }
 
-export function ContentManager({ initialPosts, initialNotes }: ContentManagerProps) {
+/**
+ * Converts post sections and intro into an MDX markdown string.
+ */
+function sectionsToMarkdown(intro: string[], sections: PostSection[]): string {
+  const parts: string[] = [];
+  if (intro && intro.length > 0) {
+    parts.push(intro.join('\n\n'));
+  }
+  if (sections && sections.length > 0) {
+    sections.forEach((sec) => {
+      parts.push(`## ${sec.heading}`);
+      if (sec.paragraphs && sec.paragraphs.length > 0) {
+        parts.push(sec.paragraphs.join('\n\n'));
+      }
+      if (sec.figure) {
+        parts.push(`![${sec.figure.alt}](${sec.figure.src})\n*${sec.figure.caption}*`);
+      }
+      if (sec.quote) {
+        parts.push(`> ${sec.quote.text}\n> — ${sec.quote.attribution || ''}`);
+      }
+      if (sec.footnotes && sec.footnotes.length > 0) {
+        sec.footnotes.forEach((fn, idx) => {
+          parts.push(`[^${idx + 1}]: ${fn}`);
+        });
+      }
+    });
+  }
+  return parts.join('\n\n');
+}
+
+/**
+ * Converts MDX markdown string back into structured PostSections and intro.
+ */
+function markdownToPostSections(md: string): { intro: string[]; sections: PostSection[] } {
+  if (!md || !md.trim()) {
+    return { intro: [], sections: [] };
+  }
+
+  // Split by H2 headers (## Heading)
+  const parts = md.split(/^##\s+/m);
+  const introText = parts[0]?.trim() || '';
+  const intro = introText ? introText.split('\n\n').filter(Boolean) : [];
+
+  const sections: PostSection[] = [];
+  for (let i = 1; i < parts.length; i++) {
+    const chunk = parts[i];
+    const firstNewline = chunk.indexOf('\n');
+    const heading = (firstNewline > -1 ? chunk.slice(0, firstNewline) : chunk).trim();
+    const body = firstNewline > -1 ? chunk.slice(firstNewline).trim() : '';
+
+    // Extract footnote definitions: [^1]: text
+    const footnotes: string[] = [];
+    const bodyLines = body.split('\n');
+    const contentLines: string[] = [];
+    for (const line of bodyLines) {
+      const fnMatch = line.trim().match(/^\[\^(\d+)\]:\s*(.+)/);
+      if (fnMatch) {
+        footnotes[Number(fnMatch[1]) - 1] = fnMatch[2];
+      } else {
+        contentLines.push(line);
+      }
+    }
+
+    const paragraphs = contentLines.join('\n').split('\n\n').filter(Boolean);
+
+    sections.push({
+      id: slugify(heading) || `section-${i}`,
+      heading: heading || `Section ${i}`,
+      paragraphs: paragraphs.length > 0 ? paragraphs : [''],
+      ...(footnotes.length > 0 ? { footnotes } : {}),
+    });
+  }
+
+  return { intro, sections };
+}
+
+export function ContentManager({
+  initialPosts,
+  initialNotes,
+  mediaItems = [],
+}: ContentManagerProps) {
   const [posts, setPosts] = useState<BlogPost[]>(initialPosts);
   const [notes, setNotes] = useState<NoteItem[]>(initialNotes);
 
@@ -62,8 +144,7 @@ export function ContentManager({ initialPosts, initialNotes }: ContentManagerPro
   const [postPlantedAt, setPostPlantedAt] = useState('');
   const [postLastTendedAt, setPostLastTendedAt] = useState('');
   const [postAssumedAudience, setPostAssumedAudience] = useState('');
-  const [postIntroText, setPostIntroText] = useState('');
-  const [postSections, setPostSections] = useState<PostSection[]>([]);
+  const [postMdxContent, setPostMdxContent] = useState('');
 
   // Note Editor State
   const [isEditingNote, setIsEditingNote] = useState(false);
@@ -71,11 +152,11 @@ export function ContentManager({ initialPosts, initialNotes }: ContentManagerPro
   const [noteTitle, setNoteTitle] = useState('');
   const [noteSlug, setNoteSlug] = useState('');
   const [noteDescription, setNoteDescription] = useState('');
-  const [noteContentText, setNoteContentText] = useState('');
   const [noteDate, setNoteDate] = useState('');
   const [notePersona, setNotePersona] = useState<Persona>('thinker');
   const [noteStatus, setNoteStatus] = useState<'published' | 'unpublished'>('published');
   const [noteTagsInput, setNoteTagsInput] = useState('');
+  const [noteMdxContent, setNoteMdxContent] = useState('');
 
   function showToast(msg: string) {
     setToastMessage(msg);
@@ -90,21 +171,13 @@ export function ContentManager({ initialPosts, initialNotes }: ContentManagerPro
     setPostDescription('');
     setPostPersona('builder');
     setPostStatus('published');
-    setPostTagsInput('craft, web');
+    setPostTagsInput('craft, software, tools');
     setPostPlantedAt(new Date().toISOString().split('T')[0]);
     setPostLastTendedAt(new Date().toISOString().split('T')[0]);
     setPostAssumedAudience('Curious technologists and builders');
-    setPostIntroText('An essay exploring how we relate to modern digital tools.');
-    setPostSections([
-      {
-        id: 'section-1',
-        heading: 'The First Principle',
-        paragraphs: [
-          'We often build digital things quickly before understanding the long-term impact on our attention.',
-          'Taking the slower path usually yields more resilient systems.',
-        ],
-      },
-    ]);
+    setPostMdxContent(
+      'An opening reflection on tools, craft, and technology.\n\n## First Principle\n\nWe often build digital things quickly before understanding their long-term impact on our attention.\n\n> [!NOTE]\n> Taking the slower path usually yields more resilient systems.\n\n## The Architecture of Quiet Spaces\n\nSoftware should feel like an orderly workshop, not a crowded marketplace.'
+    );
     setIsEditingPost(true);
   }
 
@@ -119,44 +192,8 @@ export function ContentManager({ initialPosts, initialNotes }: ContentManagerPro
     setPostPlantedAt(post.plantedAt);
     setPostLastTendedAt(post.lastTendedAt);
     setPostAssumedAudience(post.assumedAudience || '');
-    setPostIntroText(post.intro.join('\n\n'));
-    setPostSections(post.sections.length > 0 ? post.sections : []);
+    setPostMdxContent(sectionsToMarkdown(post.intro, post.sections));
     setIsEditingPost(true);
-  }
-
-  function handleAddPostSection() {
-    const newId = `section-${postSections.length + 1}`;
-    setPostSections([
-      ...postSections,
-      {
-        id: newId,
-        heading: `Section ${postSections.length + 1}`,
-        paragraphs: ['Write paragraph content here...'],
-      },
-    ]);
-  }
-
-  function handleUpdatePostSectionHeading(index: number, val: string) {
-    const next = [...postSections];
-    next[index] = {
-      ...next[index],
-      heading: val,
-      id: slugify(val) || `section-${index + 1}`,
-    };
-    setPostSections(next);
-  }
-
-  function handleUpdatePostSectionParagraphs(index: number, val: string) {
-    const next = [...postSections];
-    next[index] = {
-      ...next[index],
-      paragraphs: val.split('\n\n').filter((p) => p.trim().length > 0),
-    };
-    setPostSections(next);
-  }
-
-  function handleDeletePostSection(index: number) {
-    setPostSections(postSections.filter((_, i) => i !== index));
   }
 
   function handleSavePost(e: React.FormEvent) {
@@ -168,21 +205,24 @@ export function ContentManager({ initialPosts, initialNotes }: ContentManagerPro
       .map((t) => t.trim())
       .filter(Boolean);
 
-    const parsedIntro = postIntroText
-      .split('\n\n')
-      .map((p) => p.trim())
-      .filter(Boolean);
+    const { intro, sections } = markdownToPostSections(postMdxContent);
 
     const postPayload: BlogPost = {
       title: postTitle,
       slug: slugify(postSlug),
-      description: postDescription,
+      description: postDescription || (intro[0] ? intro[0].slice(0, 150) : postTitle),
       tags: parsedTags.length > 0 ? parsedTags : ['essay'],
       plantedAt: postPlantedAt || new Date().toISOString().split('T')[0],
       lastTendedAt: postLastTendedAt || new Date().toISOString().split('T')[0],
       assumedAudience: postAssumedAudience,
-      intro: parsedIntro.length > 0 ? parsedIntro : [postDescription],
-      sections: postSections,
+      intro: intro.length > 0 ? intro : [postDescription],
+      sections: sections.length > 0 ? sections : [
+        {
+          id: 'section-1',
+          heading: 'Overview',
+          paragraphs: [postMdxContent || ''],
+        }
+      ],
       books: editingPost?.books || [],
       status: postStatus,
     };
@@ -200,7 +240,7 @@ export function ContentManager({ initialPosts, initialNotes }: ContentManagerPro
           return [postPayload, ...prev];
         });
         setIsEditingPost(false);
-        showToast(`Essay "${postTitle}" saved successfully!`);
+        showToast(`Essay "${postTitle}" saved successfully with MDX!`);
       } else {
         showToast(res.error || 'Failed to save post');
       }
@@ -231,11 +271,13 @@ export function ContentManager({ initialPosts, initialNotes }: ContentManagerPro
     setNoteTitle('');
     setNoteSlug('');
     setNoteDescription('');
-    setNoteContentText('');
     setNoteDate(new Date().toISOString().split('T')[0]);
     setNotePersona('thinker');
     setNoteStatus('published');
     setNoteTagsInput('notes, thoughts');
+    setNoteMdxContent(
+      'An atomic thought or brief observation.\n\n> [!TIP]\n> Keep notes focused on a single coherent idea.'
+    );
     setIsEditingNote(true);
   }
 
@@ -244,11 +286,11 @@ export function ContentManager({ initialPosts, initialNotes }: ContentManagerPro
     setNoteTitle(note.title);
     setNoteSlug(note.slug);
     setNoteDescription(note.description);
-    setNoteContentText(note.content.join('\n\n'));
     setNoteDate(note.date);
     setNotePersona(note.persona);
     setNoteStatus(note.status || 'published');
     setNoteTagsInput(note.tags.join(', '));
+    setNoteMdxContent(note.content.join('\n\n'));
     setIsEditingNote(true);
   }
 
@@ -261,7 +303,7 @@ export function ContentManager({ initialPosts, initialNotes }: ContentManagerPro
       .map((t) => t.trim())
       .filter(Boolean);
 
-    const parsedContent = noteContentText
+    const parsedParagraphs = noteMdxContent
       .split('\n\n')
       .map((p) => p.trim())
       .filter(Boolean);
@@ -270,8 +312,8 @@ export function ContentManager({ initialPosts, initialNotes }: ContentManagerPro
       id: editingNote ? editingNote.id : `note-${Date.now()}`,
       title: noteTitle,
       slug: slugify(noteSlug),
-      description: noteDescription,
-      content: parsedContent.length > 0 ? parsedContent : [noteDescription],
+      description: noteDescription || (parsedParagraphs[0] ? parsedParagraphs[0].slice(0, 120) : noteTitle),
+      content: parsedParagraphs.length > 0 ? parsedParagraphs : [noteDescription],
       date: noteDate || new Date().toISOString().split('T')[0],
       persona: notePersona,
       tags: parsedTags.length > 0 ? parsedTags : ['note'],
@@ -375,16 +417,10 @@ export function ContentManager({ initialPosts, initialNotes }: ContentManagerPro
 
   // Filter unified items
   const filteredItems = unifiedItems.filter((item) => {
-    // Type filter
     if (typeFilter !== 'all' && item.kind !== typeFilter) return false;
-
-    // Persona filter
     if (personaFilter !== 'all' && item.persona !== personaFilter) return false;
-
-    // Status filter
     if (statusFilter !== 'all' && item.status !== statusFilter) return false;
 
-    // Search query
     if (search.trim()) {
       const q = search.toLowerCase();
       const matchTitle = item.title.toLowerCase().includes(q);
@@ -414,21 +450,19 @@ export function ContentManager({ initialPosts, initialNotes }: ContentManagerPro
         </div>
 
         <div className="flex items-center gap-2.5">
-          <button
-            type="button"
-            onClick={handleOpenCreateNote}
+          <Link
+            href="/admin/compose?type=note"
             className="inline-flex items-center gap-1.5 rounded-full border border-tinted bg-cream px-4 py-2 text-xs font-semibold text-ink shadow-2xs transition-colors hover:bg-paper"
           >
             <span>+ New Note</span>
-          </button>
+          </Link>
 
-          <button
-            type="button"
-            onClick={handleOpenCreatePost}
+          <Link
+            href="/admin/compose?type=post"
             className="inline-flex items-center gap-1.5 rounded-full bg-ink px-5 py-2 text-xs font-semibold text-cream shadow-sm transition-colors hover:bg-accent"
           >
-            <span>+ New Essay</span>
-          </button>
+            <span>+ Full Page Composer (MDX)</span>
+          </Link>
         </div>
       </div>
 
@@ -499,8 +533,8 @@ export function ContentManager({ initialPosts, initialNotes }: ContentManagerPro
                 const isPublished = item.status !== 'unpublished';
                 const linkHref =
                   item.kind === 'post'
-                    ? `/writing/${item.slug}`
-                    : `/notes/${item.slug}`;
+                    ? `/p/${item.slug}`
+                    : `/n/${item.slug}`;
 
                 return (
                   <tr key={item.id} className="transition-colors hover:bg-paper/40">
@@ -566,19 +600,12 @@ export function ContentManager({ initialPosts, initialNotes }: ContentManagerPro
                             >
                               View ↗
                             </Link>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                if (item.kind === 'post' && item.rawPost) {
-                                  handleOpenEditPost(item.rawPost);
-                                } else if (item.kind === 'note' && item.rawNote) {
-                                  handleOpenEditNote(item.rawNote);
-                                }
-                              }}
+                            <Link
+                              href={`/admin/compose?slug=${item.slug}&type=${item.kind}`}
                               className="rounded-full bg-paper px-3 py-1 text-xs font-semibold text-ink shadow-xs ring-1 ring-tinted transition-colors hover:bg-ink hover:text-cream"
                             >
-                              Edit
-                            </button>
+                              Edit (MDX)
+                            </Link>
                             <button
                               type="button"
                               disabled={isPending}
@@ -616,19 +643,12 @@ export function ContentManager({ initialPosts, initialNotes }: ContentManagerPro
                             >
                               Preview ↗
                             </Link>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                if (item.kind === 'post' && item.rawPost) {
-                                  handleOpenEditPost(item.rawPost);
-                                } else if (item.kind === 'note' && item.rawNote) {
-                                  handleOpenEditNote(item.rawNote);
-                                }
-                              }}
+                            <Link
+                              href={`/admin/compose?slug=${item.slug}&type=${item.kind}`}
                               className="rounded-full bg-paper px-3 py-1 text-xs font-semibold text-ink shadow-xs ring-1 ring-tinted transition-colors hover:bg-ink hover:text-cream"
                             >
-                              Edit
-                            </button>
+                              Edit (MDX)
+                            </Link>
                             <button
                               type="button"
                               disabled={isPending}
@@ -706,17 +726,17 @@ export function ContentManager({ initialPosts, initialNotes }: ContentManagerPro
         </div>
       )}
 
-      {/* Full Essay Composer Modal */}
+      {/* Full Essay Composer Modal with MDX Editor */}
       {isEditingPost && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/40 p-4 backdrop-blur-xs sm:p-6">
-          <div className="relative my-8 max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-3xl border border-tinted bg-paper p-6 shadow-2xl sm:p-8">
+        <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/50 p-3 sm:p-6 backdrop-blur-xs">
+          <div className="relative my-4 max-h-[96vh] w-full max-w-6xl overflow-y-auto rounded-3xl border border-tinted bg-paper p-6 shadow-2xl sm:p-8">
             <div className="flex items-center justify-between border-b border-tinted pb-4">
               <div>
                 <h3 className="font-serif text-2xl font-normal text-ink">
-                  {editingPost ? 'Edit Essay' : 'Compose New Essay'}
+                  {editingPost ? 'Edit Essay (MDX)' : 'Compose New Essay (MDX)'}
                 </h3>
                 <p className="mt-0.5 text-xs text-ink-soft">
-                  Fill in metadata, intro, and dynamic body sections.
+                  Author long-form essays with live split-view markdown and rich component insertions.
                 </p>
               </div>
               <button
@@ -729,7 +749,7 @@ export function ContentManager({ initialPosts, initialNotes }: ContentManagerPro
             </div>
 
             <form onSubmit={handleSavePost} className="mt-6 space-y-6">
-              {/* Title & Slug */}
+              {/* Metadata row: Title & Slug */}
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
                   <label className="block text-xs font-semibold uppercase tracking-wider text-ink-soft">
@@ -764,23 +784,8 @@ export function ContentManager({ initialPosts, initialNotes }: ContentManagerPro
                 </div>
               </div>
 
-              {/* Description */}
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-ink-soft">
-                  Summary / Excerpt
-                </label>
-                <textarea
-                  rows={2}
-                  required
-                  placeholder="Short description shown on listing cards..."
-                  value={postDescription}
-                  onChange={(e) => setPostDescription(e.target.value)}
-                  className="mt-1.5 w-full resize-none rounded-xl border border-tinted bg-cream px-3.5 py-2 text-sm text-ink focus:border-ink focus:outline-none"
-                />
-              </div>
-
-              {/* Persona, Status & Tags */}
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              {/* Persona, Status, Dates & Tags row */}
+              <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
                 <div>
                   <label className="block text-xs font-semibold uppercase tracking-wider text-ink-soft">
                     Status
@@ -788,7 +793,7 @@ export function ContentManager({ initialPosts, initialNotes }: ContentManagerPro
                   <select
                     value={postStatus}
                     onChange={(e) => setPostStatus(e.target.value as 'published' | 'unpublished')}
-                    className="mt-1.5 w-full rounded-xl border border-tinted bg-cream px-3.5 py-2 text-sm text-ink focus:border-ink focus:outline-none"
+                    className="mt-1.5 w-full rounded-xl border border-tinted bg-cream px-3.5 py-2 text-xs text-ink focus:border-ink focus:outline-none"
                   >
                     <option value="published">Published</option>
                     <option value="unpublished">Unpublished (Draft)</option>
@@ -801,7 +806,7 @@ export function ContentManager({ initialPosts, initialNotes }: ContentManagerPro
                   <select
                     value={postPersona}
                     onChange={(e) => setPostPersona(e.target.value as Persona)}
-                    className="mt-1.5 w-full rounded-xl border border-tinted bg-cream px-3.5 py-2 text-sm text-ink focus:border-ink focus:outline-none"
+                    className="mt-1.5 w-full rounded-xl border border-tinted bg-cream px-3.5 py-2 text-xs text-ink focus:border-ink focus:outline-none"
                   >
                     <option value="builder">Builder</option>
                     <option value="operator">Operator</option>
@@ -811,120 +816,58 @@ export function ContentManager({ initialPosts, initialNotes }: ContentManagerPro
                 </div>
                 <div>
                   <label className="block text-xs font-semibold uppercase tracking-wider text-ink-soft">
-                    Tags (Comma separated)
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="craft, software, tools"
-                    value={postTagsInput}
-                    onChange={(e) => setPostTagsInput(e.target.value)}
-                    className="mt-1.5 w-full rounded-xl border border-tinted bg-cream px-3.5 py-2 text-sm text-ink focus:border-ink focus:outline-none"
-                  />
-                </div>
-              </div>
-
-              {/* Dates & Audience */}
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-                <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-ink-soft">
                     Planted Date
                   </label>
                   <input
                     type="date"
                     value={postPlantedAt}
                     onChange={(e) => setPostPlantedAt(e.target.value)}
-                    className="mt-1.5 w-full rounded-xl border border-tinted bg-cream px-3.5 py-2 text-sm text-ink focus:border-ink focus:outline-none"
+                    className="mt-1.5 w-full rounded-xl border border-tinted bg-cream px-3.5 py-2 text-xs text-ink focus:border-ink focus:outline-none"
                   />
                 </div>
                 <div>
                   <label className="block text-xs font-semibold uppercase tracking-wider text-ink-soft">
-                    Last Tended Date
-                  </label>
-                  <input
-                    type="date"
-                    value={postLastTendedAt}
-                    onChange={(e) => setPostLastTendedAt(e.target.value)}
-                    className="mt-1.5 w-full rounded-xl border border-tinted bg-cream px-3.5 py-2 text-sm text-ink focus:border-ink focus:outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-ink-soft">
-                    Assumed Audience
+                    Tags
                   </label>
                   <input
                     type="text"
-                    placeholder="e.g. Curious developers"
-                    value={postAssumedAudience}
-                    onChange={(e) => setPostAssumedAudience(e.target.value)}
-                    className="mt-1.5 w-full rounded-xl border border-tinted bg-cream px-3.5 py-2 text-sm text-ink focus:border-ink focus:outline-none"
+                    placeholder="craft, tools, web"
+                    value={postTagsInput}
+                    onChange={(e) => setPostTagsInput(e.target.value)}
+                    className="mt-1.5 w-full rounded-xl border border-tinted bg-cream px-3.5 py-2 text-xs text-ink focus:border-ink focus:outline-none"
                   />
                 </div>
               </div>
 
-              {/* Intro paragraphs */}
+              {/* Summary / Excerpt */}
               <div>
                 <label className="block text-xs font-semibold uppercase tracking-wider text-ink-soft">
-                  Intro Paragraphs (Separated by blank line)
+                  Summary / Excerpt
                 </label>
-                <textarea
-                  rows={4}
-                  placeholder="Introductory text before the first section..."
-                  value={postIntroText}
-                  onChange={(e) => setPostIntroText(e.target.value)}
-                  className="mt-1.5 w-full resize-none rounded-xl border border-tinted bg-cream px-3.5 py-2 text-sm text-ink focus:border-ink focus:outline-none"
+                <input
+                  type="text"
+                  placeholder="Short one-line synopsis for cards..."
+                  value={postDescription}
+                  onChange={(e) => setPostDescription(e.target.value)}
+                  className="mt-1.5 w-full rounded-xl border border-tinted bg-cream px-3.5 py-2 text-sm text-ink focus:border-ink focus:outline-none"
                 />
               </div>
 
-              {/* Sections Builder */}
-              <div className="space-y-4 rounded-2xl border border-tinted bg-cream/60 p-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold uppercase tracking-wider text-ink-soft">
-                    Article Sections ({postSections.length})
-                  </span>
-                  <button
-                    type="button"
-                    onClick={handleAddPostSection}
-                    className="rounded-full bg-paper px-3 py-1 text-xs font-semibold text-ink ring-1 ring-tinted hover:bg-cream"
-                  >
-                    + Add Section
-                  </button>
-                </div>
-
-                {postSections.map((section, idx) => (
-                  <div
-                    key={section.id || idx}
-                    className="space-y-3 rounded-xl border border-tinted bg-cream p-4 shadow-2xs"
-                  >
-                    <div className="flex items-center justify-between gap-3">
-                      <input
-                        type="text"
-                        placeholder={`Section ${idx + 1} Heading...`}
-                        value={section.heading}
-                        onChange={(e) =>
-                          handleUpdatePostSectionHeading(idx, e.target.value)
-                        }
-                        className="w-full rounded-lg border border-tinted bg-paper px-3 py-1.5 text-sm font-medium text-ink focus:border-ink focus:outline-none"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => handleDeletePostSection(idx)}
-                        className="text-xs font-medium text-red-700 hover:text-red-900"
-                      >
-                        Remove
-                      </button>
-                    </div>
-
-                    <textarea
-                      rows={3}
-                      placeholder="Paragraphs (separated by double newlines)..."
-                      value={section.paragraphs.join('\n\n')}
-                      onChange={(e) =>
-                        handleUpdatePostSectionParagraphs(idx, e.target.value)
-                      }
-                      className="w-full resize-none rounded-lg border border-tinted bg-paper px-3 py-1.5 text-xs text-ink focus:border-ink focus:outline-none"
-                    />
-                  </div>
-                ))}
+              {/* Rich MDX Editor */}
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-ink-soft mb-1.5">
+                  Essay Body (Markdown & MDX)
+                </label>
+                <MDXEditor
+                  initialContent={postMdxContent}
+                  title={postTitle}
+                  subtitle={postDescription}
+                  persona={postPersona}
+                  date={postPlantedAt}
+                  mediaItems={mediaItems}
+                  onChange={(val) => setPostMdxContent(val)}
+                  className="h-[520px]"
+                />
               </div>
 
               {/* Form Footer Buttons */}
@@ -939,9 +882,9 @@ export function ContentManager({ initialPosts, initialNotes }: ContentManagerPro
                 <button
                   type="submit"
                   disabled={isPending}
-                  className="rounded-full bg-ink px-6 py-2 text-xs font-semibold text-cream shadow-sm hover:bg-accent disabled:opacity-50"
+                  className="rounded-full bg-ink px-6 py-2.5 text-xs font-semibold text-cream shadow-sm hover:bg-accent disabled:opacity-50"
                 >
-                  {isPending ? 'Saving...' : 'Save Essay'}
+                  {isPending ? 'Saving Essay...' : 'Save Essay'}
                 </button>
               </div>
             </form>
@@ -949,17 +892,17 @@ export function ContentManager({ initialPosts, initialNotes }: ContentManagerPro
         </div>
       )}
 
-      {/* Note Composer Modal */}
+      {/* Note Composer Modal with MDX Editor */}
       {isEditingNote && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/40 p-4 backdrop-blur-xs sm:p-6">
-          <div className="relative my-8 max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-3xl border border-tinted bg-paper p-6 shadow-2xl sm:p-8">
+        <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/50 p-3 sm:p-6 backdrop-blur-xs">
+          <div className="relative my-4 max-h-[96vh] w-full max-w-5xl overflow-y-auto rounded-3xl border border-tinted bg-paper p-6 shadow-2xl sm:p-8">
             <div className="flex items-center justify-between border-b border-tinted pb-4">
               <div>
                 <h3 className="font-serif text-2xl font-normal text-ink">
-                  {editingNote ? 'Edit Note' : 'Create New Note'}
+                  {editingNote ? 'Edit Note (MDX)' : 'Create New Note (MDX)'}
                 </h3>
                 <p className="mt-0.5 text-xs text-ink-soft">
-                  Capture an atomic thought, observation, or reading log.
+                  Capture an atomic thought or observation with live MDX preview.
                 </p>
               </div>
               <button
@@ -971,7 +914,8 @@ export function ContentManager({ initialPosts, initialNotes }: ContentManagerPro
               </button>
             </div>
 
-            <form onSubmit={handleSaveNote} className="mt-6 space-y-5">
+            <form onSubmit={handleSaveNote} className="mt-6 space-y-6">
+              {/* Metadata: Title, Slug, Status, Persona */}
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
                   <label className="block text-xs font-semibold uppercase tracking-wider text-ink-soft">
@@ -1006,35 +950,7 @@ export function ContentManager({ initialPosts, initialNotes }: ContentManagerPro
                 </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-ink-soft">
-                  Summary / Short Preview
-                </label>
-                <textarea
-                  rows={2}
-                  required
-                  placeholder="One sentence summary of this note..."
-                  value={noteDescription}
-                  onChange={(e) => setNoteDescription(e.target.value)}
-                  className="mt-1.5 w-full resize-none rounded-xl border border-tinted bg-cream px-3.5 py-2 text-sm text-ink focus:border-ink focus:outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-ink-soft">
-                  Note Content (Separate paragraphs by blank line)
-                </label>
-                <textarea
-                  rows={5}
-                  required
-                  placeholder="Full text of the note..."
-                  value={noteContentText}
-                  onChange={(e) => setNoteContentText(e.target.value)}
-                  className="mt-1.5 w-full resize-none rounded-xl border border-tinted bg-cream px-3.5 py-2 text-sm text-ink focus:border-ink focus:outline-none"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
+              <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
                 <div>
                   <label className="block text-xs font-semibold uppercase tracking-wider text-ink-soft">
                     Status
@@ -1042,10 +958,25 @@ export function ContentManager({ initialPosts, initialNotes }: ContentManagerPro
                   <select
                     value={noteStatus}
                     onChange={(e) => setNoteStatus(e.target.value as 'published' | 'unpublished')}
-                    className="mt-1.5 w-full rounded-xl border border-tinted bg-cream px-3.5 py-2 text-sm text-ink focus:border-ink focus:outline-none"
+                    className="mt-1.5 w-full rounded-xl border border-tinted bg-cream px-3.5 py-2 text-xs text-ink focus:border-ink focus:outline-none"
                   >
                     <option value="published">Published</option>
                     <option value="unpublished">Unpublished (Draft)</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-ink-soft">
+                    Persona Theme
+                  </label>
+                  <select
+                    value={notePersona}
+                    onChange={(e) => setNotePersona(e.target.value as Persona)}
+                    className="mt-1.5 w-full rounded-xl border border-tinted bg-cream px-3.5 py-2 text-xs text-ink focus:border-ink focus:outline-none"
+                  >
+                    <option value="builder">Builder</option>
+                    <option value="operator">Operator</option>
+                    <option value="thinker">Thinker</option>
+                    <option value="wanderer">Wanderer</option>
                   </select>
                 </div>
                 <div>
@@ -1056,36 +987,38 @@ export function ContentManager({ initialPosts, initialNotes }: ContentManagerPro
                     type="date"
                     value={noteDate}
                     onChange={(e) => setNoteDate(e.target.value)}
-                    className="mt-1.5 w-full rounded-xl border border-tinted bg-cream px-3.5 py-2 text-sm text-ink focus:border-ink focus:outline-none"
+                    className="mt-1.5 w-full rounded-xl border border-tinted bg-cream px-3.5 py-2 text-xs text-ink focus:border-ink focus:outline-none"
                   />
                 </div>
                 <div>
                   <label className="block text-xs font-semibold uppercase tracking-wider text-ink-soft">
-                    Persona Theme
-                  </label>
-                  <select
-                    value={notePersona}
-                    onChange={(e) => setNotePersona(e.target.value as Persona)}
-                    className="mt-1.5 w-full rounded-xl border border-tinted bg-cream px-3.5 py-2 text-sm text-ink focus:border-ink focus:outline-none"
-                  >
-                    <option value="builder">Builder</option>
-                    <option value="operator">Operator</option>
-                    <option value="thinker">Thinker</option>
-                    <option value="wanderer">Wanderer</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-ink-soft">
-                    Tags (Comma separated)
+                    Tags
                   </label>
                   <input
                     type="text"
                     placeholder="philosophy, web"
                     value={noteTagsInput}
                     onChange={(e) => setNoteTagsInput(e.target.value)}
-                    className="mt-1.5 w-full rounded-xl border border-tinted bg-cream px-3.5 py-2 text-sm text-ink focus:border-ink focus:outline-none"
+                    className="mt-1.5 w-full rounded-xl border border-tinted bg-cream px-3.5 py-2 text-xs text-ink focus:border-ink focus:outline-none"
                   />
                 </div>
+              </div>
+
+              {/* MDX Note Editor */}
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-ink-soft mb-1.5">
+                  Note Content (Markdown & MDX)
+                </label>
+                <MDXEditor
+                  initialContent={noteMdxContent}
+                  title={noteTitle}
+                  subtitle={noteDescription}
+                  persona={notePersona}
+                  date={noteDate}
+                  mediaItems={mediaItems}
+                  onChange={(val) => setNoteMdxContent(val)}
+                  className="h-[440px]"
+                />
               </div>
 
               <div className="flex items-center justify-end gap-3 pt-4 border-t border-tinted">
@@ -1099,9 +1032,9 @@ export function ContentManager({ initialPosts, initialNotes }: ContentManagerPro
                 <button
                   type="submit"
                   disabled={isPending}
-                  className="rounded-full bg-ink px-6 py-2 text-xs font-semibold text-cream shadow-sm hover:bg-accent disabled:opacity-50"
+                  className="rounded-full bg-ink px-6 py-2.5 text-xs font-semibold text-cream shadow-sm hover:bg-accent disabled:opacity-50"
                 >
-                  {isPending ? 'Saving...' : 'Save Note'}
+                  {isPending ? 'Saving Note...' : 'Save Note'}
                 </button>
               </div>
             </form>

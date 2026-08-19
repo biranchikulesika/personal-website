@@ -501,6 +501,61 @@ function featuredPost(): BlogPost {
   };
 }
 
+function attentionPost(): BlogPost {
+  return {
+    slug: 'attention-as-a-material',
+    title: 'Attention as a material',
+    description:
+      'Treating focus the way a craftsperson treats their material — with care, patience, and respect for its limits.',
+    tags: ['Attention', 'Craft'],
+    plantedAt: 'Feb 12, 2026',
+    lastTendedAt: 'Aug 20, 2026',
+    assumedAudience:
+      'People who work with their minds and want to protect the quality of their focus.',
+    intro: [
+      'A craftsperson treats their material with care: they learn its grain, its limits, and the conditions under which it works best. Wood has a grain. Metal has a temper. Attention has a texture too — it thickens, thins, and breaks under the wrong kind of pressure.',
+      'This essay is about learning to treat attention the way a craftsperson treats their material: not as an infinite resource to be spent, but as a finite one to be shaped.',
+    ],
+    sections: [
+      {
+        id: 'the-grain-of-attention',
+        heading: 'The grain of attention',
+        paragraphs: [
+          'Every material has a grain — a direction in which it works best. Attention is no different. There are hours when focus comes easily, and hours when it resists. The craftsperson does not fight the grain; they work with it.^[1]',
+          'The practical implication is simple: schedule demanding work when attention is sharpest, and save routine tasks for when it dulls. This is not productivity advice. It is a form of respect for the material you are working with.',
+        ],
+        footnotes: [
+          'Attention, like wood, has a direction. Working against it produces splintered results; working with it produces clean ones.',
+        ],
+      },
+      {
+        id: 'the-cost-of-context-switching',
+        heading: 'The cost of context switching',
+        paragraphs: [
+          'Every time you switch tasks, you pay a tax. The research is consistent: it takes roughly twenty minutes to fully re-engage with deep work after an interruption.^[2] The cost is not just time — it is quality. The mind that returns to a task after interruption is a different mind than the one that left it.',
+          'This is why protecting attention is not a luxury. It is a structural requirement for work that matters. You cannot make good things with fractured focus, any more than you can make a clean cut with a dull blade.',
+        ],
+        footnotes: [
+          'Gloria Mark, "Attention Span: A Groundbreaking Way to Restore Balance, Happiness and Productivity" (2023). The twenty-minute figure is a commonly cited average; the actual recovery time varies by task complexity.',
+        ],
+      },
+      {
+        id: 'practical-protections',
+        heading: 'Practical protections',
+        paragraphs: [
+          'The protections are mundane but effective: close the tabs, silence the notifications, set a timer, and work on one thing at a time. None of this is revolutionary. The hard part is not knowing what to do — it is doing it consistently.',
+          'I have found that the most useful habit is treating attention as something you lend, not something you own. You lend it to the task at hand, and you take it back when the task is done. The discipline is in not lending it to things that do not deserve it.',
+        ],
+        quote: {
+          text: 'Attention is the rarest form of generosity.',
+          attribution: 'Simone Weil',
+        },
+      },
+    ],
+    books: [],
+  };
+}
+
 function fallbackPost(item: WritingItem): BlogPost {
   return {
     slug: item.slug,
@@ -518,10 +573,12 @@ function fallbackPost(item: WritingItem): BlogPost {
 
 export function seedPosts(): BlogPost[] {
   const featured = featuredPost();
+  const attention = attentionPost();
   const bySlug = new Map<string, BlogPost>(
     seedWriting().items.map((item) => [item.slug, fallbackPost(item)]),
   );
   bySlug.set(featured.slug, featured);
+  bySlug.set(attention.slug, attention);
   return seedWriting().items.map((item) => bySlug.get(item.slug)!);
 }
 

@@ -147,7 +147,7 @@ export function AboutPageView({ site, featuredWriting }: AboutPageProps) {
           {featuredWriting.slice(0, 3).map((item) => (
             <Link
               key={item.slug}
-              href={`/writing/${item.slug}`}
+              href={`/p/${item.slug}`}
               className="group flex flex-col rounded-2xl border border-tinted bg-cream p-4 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md"
             >
               <div className="flex aspect-[16/10] items-center justify-center overflow-hidden rounded-xl bg-[radial-gradient(ellipse_at_center,var(--color-paper)_15%,transparent_75%)]">

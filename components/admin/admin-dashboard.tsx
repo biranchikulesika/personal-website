@@ -290,7 +290,7 @@ export function AdminDashboard({
                             </p>
                           </div>
                           <Link
-                            href={`/writing/${post.slug}`}
+                            href={`/p/${post.slug}`}
                             target="_blank"
                             className="shrink-0 rounded-full bg-paper px-2 py-0.5 text-[10px] font-semibold text-ink ring-1 ring-tinted hover:bg-ink hover:text-cream"
                           >
@@ -330,7 +330,7 @@ export function AdminDashboard({
                             </p>
                           </div>
                           <Link
-                            href={`/notes/${note.slug}`}
+                            href={`/n/${note.slug}`}
                             target="_blank"
                             className="shrink-0 rounded-full bg-paper px-2 py-0.5 text-[10px] font-semibold text-ink ring-1 ring-tinted hover:bg-ink hover:text-cream"
                           >
@@ -386,7 +386,11 @@ export function AdminDashboard({
           )}
 
           {activeTab === 'content' && (
-            <ContentManager initialPosts={initialPosts} initialNotes={initialNotes} />
+            <ContentManager
+              initialPosts={initialPosts}
+              initialNotes={initialNotes}
+              mediaItems={initialMedia}
+            />
           )}
           {activeTab === 'library' && <LibraryManager initialBooks={initialBooks} />}
           {activeTab === 'media' && <MediaManager initialMedia={initialMedia} />}

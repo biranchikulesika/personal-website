@@ -18,7 +18,7 @@ export function NotesSection({ notes }: NotesSectionProps) {
       <ul className="space-y-6">
         {notes.items.map((item) => (
           <li key={item.slug} className="group">
-            <Link href={`/notes/${item.slug}`} className="block">
+            <Link href={`/n/${item.slug}`} className="block">
               <h4 className="font-serif text-lg font-normal leading-snug text-ink transition-colors duration-300 group-hover:text-accent">
                 {item.title}
               </h4>

@@ -36,7 +36,7 @@ export function WritingSection({ writing, limit }: WritingSectionProps) {
         {items.map((item) => (
           <article key={item.slug} className="group">
             <Link
-              href={`/writing/${item.slug}`}
+              href={`/p/${item.slug}`}
               className="block rounded-lg border border-tinted bg-cream p-2.5 shadow-sm transition-all duration-300 hover:shadow-md"
             >
               <EssayCover title={item.title} />

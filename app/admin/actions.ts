@@ -27,8 +27,7 @@ export async function savePostAction(
     const saved = await contentService.savePost(post, persona);
     revalidatePath('/admin');
     revalidatePath('/scribble');
-    revalidatePath('/writing');
-    revalidatePath(`/writing/${post.slug}`);
+    revalidatePath(`/p/${post.slug}`);
     return { success: true, post: saved };
   } catch (err: unknown) {
     return { success: false, error: (err as Error).message || 'Failed to save post' };
@@ -43,8 +42,7 @@ export async function togglePostStatusAction(
     if (!toggled) return { success: false, error: 'Post not found' };
     revalidatePath('/admin');
     revalidatePath('/scribble');
-    revalidatePath('/writing');
-    revalidatePath(`/writing/${slug}`);
+    revalidatePath(`/p/${slug}`);
     return { success: true, post: toggled };
   } catch (err: unknown) {
     return { success: false, error: (err as Error).message || 'Failed to toggle status' };
@@ -58,7 +56,6 @@ export async function deletePostAction(
     const deleted = await contentService.deletePost(slug);
     revalidatePath('/admin');
     revalidatePath('/scribble');
-    revalidatePath('/writing');
     return { success: deleted };
   } catch (err: unknown) {
     return { success: false, error: (err as Error).message || 'Failed to delete post' };
@@ -78,7 +75,7 @@ export async function saveNoteAction(
     const saved = await contentService.saveNote(note);
     revalidatePath('/admin');
     revalidatePath('/scribble');
-    revalidatePath(`/notes/${note.slug}`);
+    revalidatePath(`/n/${note.slug}`);
     return { success: true, note: saved };
   } catch (err: unknown) {
     return { success: false, error: (err as Error).message || 'Failed to save note' };
@@ -93,7 +90,7 @@ export async function toggleNoteStatusAction(
     if (!toggled) return { success: false, error: 'Note not found' };
     revalidatePath('/admin');
     revalidatePath('/scribble');
-    revalidatePath(`/notes/${slug}`);
+    revalidatePath(`/n/${slug}`);
     return { success: true, note: toggled };
   } catch (err: unknown) {
     return { success: false, error: (err as Error).message || 'Failed to toggle status' };
@@ -194,3 +191,24 @@ export async function updateAdminProfileAction(
     return { success: false, error: (err as Error).message || 'Failed to update profile' };
   }
 }
+
+// AI Metadata & Summarization Actions -----------------------------------------
+
+export async function generateAiMetadataAction(input: {
+  title: string;
+  content: string;
+  persona?: Persona;
+  docType?: 'post' | 'note';
+}) {
+  const { generateDocumentAiMetadata } = await import('@/lib/services/ai-metadata.service');
+  try {
+    const metadata = await generateDocumentAiMetadata(input);
+    return { success: true, metadata };
+  } catch (err: unknown) {
+    return {
+      success: false,
+      error: (err as Error).message || 'Failed to generate AI metadata',
+    };
+  }
+}
+

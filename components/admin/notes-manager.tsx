@@ -205,7 +205,7 @@ export function NotesManager({ initialNotes }: NotesManagerProps) {
                   <td className="px-5 py-4 text-right whitespace-nowrap">
                     <div className="inline-flex items-center gap-2">
                       <Link
-                        href={`/notes/${note.slug}`}
+                        href={`/n/${note.slug}`}
                         target="_blank"
                         className="rounded-full bg-paper px-3 py-1 text-xs font-medium text-ink-soft shadow-xs ring-1 ring-tinted transition-colors hover:text-ink hover:bg-cream"
                       >

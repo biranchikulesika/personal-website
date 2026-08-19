@@ -27,7 +27,7 @@ export function NotePageView({ note }: { note: NoteItem }) {
           </p>
 
           <div className="mt-6 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-ink">
-            {note.tags.map((tag) => (
+            {note.tags.slice(0, 3).map((tag) => (
               <span
                 key={tag}
                 className="rounded-full border border-tinted px-3 py-1 text-xs text-ink-soft"

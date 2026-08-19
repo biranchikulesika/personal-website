@@ -303,7 +303,7 @@ export function PostsManager({ initialPosts }: PostsManagerProps) {
                         {isPublished ? (
                           <>
                             <Link
-                              href={`/writing/${post.slug}`}
+                              href={`/p/${post.slug}`}
                               target="_blank"
                               className="rounded-full bg-paper px-3 py-1 text-xs font-medium text-ink-soft shadow-xs ring-1 ring-tinted transition-colors hover:text-ink hover:bg-cream"
                             >
@@ -335,7 +335,7 @@ export function PostsManager({ initialPosts }: PostsManagerProps) {
                         ) : (
                           <>
                             <Link
-                              href={`/writing/${post.slug}`}
+                              href={`/p/${post.slug}`}
                               target="_blank"
                               className="rounded-full bg-paper px-3 py-1 text-xs font-medium text-ink-soft shadow-xs ring-1 ring-tinted transition-colors hover:text-ink hover:bg-cream"
                             >
