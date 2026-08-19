@@ -2,7 +2,14 @@
 node_modules/
 .pnp
 .pnp.js
+.pnp.cjs
+.pnp.loader.mjs
 .yarn/install-state.gz
+.yarn/cache/
+.yarn/unplugged/
+.yarn/build-state.yml
+.yarn/plugins/
+.yarn/releases/
 
 # Next.js
 .next/
@@ -16,6 +23,8 @@ build/
 .env.production
 .env.test
 .env*.local
+.env*.keys
+.env.vault
 
 # Keep environment examples
 !.env.example
@@ -23,6 +32,7 @@ build/
 
 # Vercel
 .vercel
+.vercel/output/
 
 # TypeScript
 *.tsbuildinfo
@@ -30,9 +40,14 @@ next-env.d.ts
 
 # ESLint
 .eslintcache
+.eslintignore
+
+# Prettier
+.prettiercache
 
 # Supabase CLI
 supabase/.temp/
+supabase/.branches/
 
 # Testing
 coverage/
@@ -49,6 +64,13 @@ release-notes.md
 
 # Misc
 *.pem
+*.orig
+*.rej
+*.swp
+*.swo
+*~
+*.tmp
+*.temp
 
 # Editor directories and files
 .idea/
