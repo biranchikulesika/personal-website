@@ -1,6 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { LoadingState } from "@/components/ui/states";
 
 /**
  * Client-side dynamic loader for the ComposeWorkspace.
@@ -13,7 +14,7 @@ const ComposeWorkspace = dynamic(
   {
     loading: () => (
       <div className="flex min-h-screen items-center justify-center bg-night">
-        <div className="text-sm text-gray-mid">Loading composer…</div>
+        <LoadingState title="Loading composer…" />
       </div>
     ),
     ssr: false,

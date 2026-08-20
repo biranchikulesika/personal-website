@@ -11,7 +11,7 @@ export function Footer({ footer }: FooterProps) {
       <div className="container-site py-16 md:py-20">
         <div className="grid grid-cols-1 gap-12 md:grid-cols-12 md:gap-8">
           {/* Bio */}
-          <div className="md:col-span-6">
+          <div className="max-w-lg md:col-span-5">
             <p className="text-xl leading-relaxed">
               <strong className="font-semibold text-paper">{footer.bio.intro}</strong>
             </p>
@@ -26,7 +26,7 @@ export function Footer({ footer }: FooterProps) {
           </div>
 
           {/* Link columns — always side by side */}
-          <div className="grid grid-cols-3 gap-8 md:col-span-6">
+          <div className="grid grid-cols-3 gap-8 md:col-span-6 md:col-start-7">
             {footer.columns.map((column) => (
               <nav key={column.title} aria-label={column.title}>
                 <h2 className="text-xs font-semibold uppercase tracking-wider text-ink-soft/80">

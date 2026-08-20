@@ -109,16 +109,6 @@ export const MediaItemSchema = z.object({
   tag: z.enum(['profile', 'atmosphere', 'post', 'book']),
 });
 
-// Admin Profile schema — restricts which fields can be updated -----------------
-
-export const AdminProfileUpdateSchema = z.object({
-  name: z.string().min(1).max(200).optional(),
-  email: z.string().email().optional(),
-  avatarUrl: z.string().optional(),
-  role: z.string().max(200).optional(),
-  // authStatus is intentionally excluded — it must not be modified via the update action.
-});
-
 // Slug-only actions (delete, toggle) -------------------------------------------
 
 export const SlugParamSchema = z.object({

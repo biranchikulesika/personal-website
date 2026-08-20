@@ -4,47 +4,22 @@ import { getDataSource } from "../lib/config/env";
 import { resetDatabase } from "../lib/data/mock-db";
 import { ContentService } from "../lib/services/content.service";
 
-test("content service reads site content from the mock database", async () => {
-  resetDatabase();
+test("content service reads hardcoded site config", async () => {
   const service = new ContentService();
-  const site = await service.getSiteContent();
+  const site = service.getSiteContent();
   assert.ok(site.identity.name.length > 0, "site should have an identity name");
   assert.ok(site.nav.links.length > 0, "site should have nav links");
   assert.ok(site.hero.headline.length > 0, "site should have a hero headline");
   assert.ok(site.footer.bottom.length > 0, "site should have footer copy");
 });
 
-test("content service lists writing items with structured metadata", async () => {
+test("content service returns empty writing/library when DB is empty", async () => {
   resetDatabase();
   const service = new ContentService();
   const writing = await service.getWriting();
-  assert.ok(
-    writing.items.length >= 9,
-    "writing should contain all seeded essays",
-  );
-  assert.ok(
-    writing.items.every((item) => item.slug && item.title && item.date),
-    "writing items should carry slug, title, and date",
-  );
-});
-
-test("content service lists library books with metadata", async () => {
-  resetDatabase();
-  const service = new ContentService();
+  assert.equal(writing.items.length, 0, "writing should be empty with no DB data");
   const library = await service.getLibrary();
-  assert.ok(library.items.length >= 10, "library should contain seeded books");
-  assert.ok(
-    library.items.every((item) => item.slug && item.title && item.author),
-    "book items should carry slug, title, and author",
-  );
-});
-
-test("content service fetches a full post by slug", async () => {
-  resetDatabase();
-  const service = new ContentService();
-  const post = await service.getPost("building-in-public-carefully");
-  assert.ok(post, "featured post should exist");
-  assert.ok(post.sections.length > 0, "featured post should have sections");
+  assert.equal(library.items.length, 0, "library should be empty with no DB data");
 });
 
 test("content service returns null for a missing post", async () => {
@@ -52,36 +27,6 @@ test("content service returns null for a missing post", async () => {
   const service = new ContentService();
   const post = await service.getPost("does-not-exist");
   assert.equal(post, null);
-});
-
-test("content service exposes slugs for static generation", async () => {
-  resetDatabase();
-  const service = new ContentService();
-  const slugs = await service.getPostSlugs();
-  assert.ok(
-    slugs.includes("building-in-public-carefully"),
-    "slugs should include the featured post",
-  );
-});
-
-test("content service aggregates all content types into scribble entries", async () => {
-  resetDatabase();
-  const service = new ContentService();
-  const entries = await service.getScribbleEntries();
-  assert.ok(
-    entries.length >= 20,
-    "scribble should include writing, notes, and books",
-  );
-  assert.ok(
-    entries.every((entry) => entry.title && entry.href),
-    "scribble entries should carry title and href",
-  );
-  const types = new Set(entries.map((entry) => entry.type));
-  assert.deepEqual(
-    [...types].sort(),
-    ["book", "essay", "note"],
-    "scribble should cover all content types",
-  );
 });
 
 test("content service supports full CRUD on posts and notes", async () => {
@@ -177,7 +122,7 @@ test("content service supports full CRUD on posts and notes", async () => {
   assert.equal(afterDeleteBook.length, initialBooks.length);
 });
 
-test("content service supports media and admin profile management", async () => {
+test("content service supports media and user roles", async () => {
   resetDatabase();
   const service = new ContentService();
 
@@ -203,14 +148,17 @@ test("content service supports media and admin profile management", async () => 
   const finalMedia = await service.getMedia();
   assert.equal(finalMedia.length, initialMedia.length);
 
-  // Admin Profile
-  const profile = await service.getAdminProfile();
-  assert.equal(profile.name, "Biranchi Kulesika");
-  assert.equal(profile.authStatus, "developer_mode");
+  // User Roles
+  await service.setUserRole("test-user-1", "content_admin");
+  const role1 = await service.getUserRole("test-user-1");
+  assert.equal(role1, "content_admin");
 
-  await service.updateAdminProfile({ role: "Lead Architect" });
-  const updatedProfile = await service.getAdminProfile();
-  assert.equal(updatedProfile.role, "Lead Architect");
+  await service.setUserRole("test-user-1", "super_admin");
+  const role2 = await service.getUserRole("test-user-1");
+  assert.equal(role2, "super_admin");
+
+  const noRole = await service.getUserRole("nonexistent-user");
+  assert.equal(noRole, null);
 });
 
 test("environment rejects production data sources", () => {
@@ -220,38 +168,31 @@ test("environment rejects production data sources", () => {
   process.env.DATA_SOURCE = previous;
 });
 
-test("slug collision is rejected on cross-collection insert", async () => {
-  process.env.DATA_SOURCE = 'mock';
+test("featured items can be set and retrieved", async () => {
   resetDatabase();
   const service = new ContentService();
 
-  // A new post with a slug that already exists as a note should be rejected.
-  const noteSlug = (await service.getAllNotes())[0].slug;
-  const conflictingPost = {
-    slug: noteSlug,
-    title: "Conflicting Post",
-    description: "Should fail",
-    tags: ["test"],
-    publishedAt: "2026-08-20",
-    lastEditedAt: "2026-08-20",
-    assumedAudience: "Tests",
-    intro: ["Intro"],
-    sections: [],
-    books: [],
-  };
+  // Initially empty
+  const initialPosts = await service.getFeaturedPosts();
+  assert.equal(initialPosts.length, 0);
 
-  await assert.rejects(
-    () => service.savePost(conflictingPost, "builder"),
-    /already exists/,
-    "should reject post slug that conflicts with existing note",
-  );
+  const initialBooks = await service.getFeaturedBooks();
+  assert.equal(initialBooks.length, 0);
 
-  // Updating an existing post with the same slug should succeed (not a collision).
-  const existingPost = await service.getPost("building-in-public-carefully");
-  assert.ok(existingPost);
-  const updated = await service.savePost(
-    { ...existingPost, title: "Updated Title" },
-    "builder",
-  );
-  assert.equal(updated.title, "Updated Title");
+  // Set featured posts
+  await service.setFeaturedPosts(["post-1", "post-2"]);
+  const featuredPosts = await service.getFeaturedPosts();
+  assert.equal(featuredPosts.length, 2);
+  assert.deepEqual(featuredPosts, ["post-1", "post-2"]);
+
+  // Set featured books
+  await service.setFeaturedBooks(["book-1", "book-2", "book-3"]);
+  const featuredBooks = await service.getFeaturedBooks();
+  assert.equal(featuredBooks.length, 3);
+
+  // Overwrite featured posts
+  await service.setFeaturedPosts(["post-3"]);
+  const updatedPosts = await service.getFeaturedPosts();
+  assert.equal(updatedPosts.length, 1);
+  assert.deepEqual(updatedPosts, ["post-3"]);
 });

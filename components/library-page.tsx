@@ -4,6 +4,7 @@ import { useMemo, useRef, useState } from 'react';
 import type { BookItem, Persona } from '@/lib/types';
 import { ChevronLeftIcon, ChevronRightIcon, SearchIcon } from './icons';
 import { PERSONA_LABELS, ALL_PERSONAS } from '@/lib/constants';
+import { NoSearchResults, NoContentState } from './ui/states';
 
 interface LibraryPageProps {
   books: BookItem[];
@@ -153,8 +154,8 @@ export function LibraryPageView({ books, title, subheader }: LibraryPageProps) {
 
       {/* Filter bar */}
       <div className="mt-8 flex flex-wrap items-center gap-x-4 gap-y-3">
-        <div className="flex min-w-0 flex-1 items-center gap-3">
-          <div className="flex shrink-0 items-center gap-4">
+        <div className="flex min-w-0 flex-1 flex-col items-start gap-3 sm:flex-row sm:items-center">
+          <div className="no-scrollbar flex w-full shrink-0 items-center gap-4 overflow-x-auto sm:w-auto">
             <button
               type="button"
               onClick={() => {
@@ -181,18 +182,18 @@ export function LibraryPageView({ books, title, subheader }: LibraryPageProps) {
               ),
             )}
           </div>
-          <span className="h-4 w-[3px] shrink-0 rounded-full bg-sea-blue" aria-hidden />
+          <span className="hidden h-4 w-[3px] shrink-0 rounded-full bg-sea-blue sm:block" aria-hidden />
           <button
             type="button"
             onClick={() => scroll(-1)}
             aria-label="Scroll topics left"
-            className="shrink-0 rounded-full p-1 text-ink-soft transition-colors hover:bg-night-soft hover:text-paper"
+            className="hidden shrink-0 rounded-full p-1 text-ink-soft transition-colors hover:bg-night-soft hover:text-paper sm:inline-flex"
           >
             <ChevronLeftIcon className="h-4 w-4" />
           </button>
           <div
             ref={listRef}
-            className="no-scrollbar flex min-w-0 flex-1 items-center gap-4 overflow-x-auto"
+            className="no-scrollbar hidden min-w-0 flex-1 items-center gap-4 overflow-x-auto sm:flex"
           >
             <button
               type="button"
@@ -219,7 +220,7 @@ export function LibraryPageView({ books, title, subheader }: LibraryPageProps) {
             type="button"
             onClick={() => scroll(1)}
             aria-label="Scroll topics right"
-            className="shrink-0 rounded-full p-1 text-ink-soft transition-colors hover:bg-night-soft hover:text-paper"
+            className="hidden shrink-0 rounded-full p-1 text-ink-soft transition-colors hover:bg-night-soft hover:text-paper sm:inline-flex"
           >
             <ChevronRightIcon className="h-4 w-4" />
           </button>
@@ -256,11 +257,25 @@ export function LibraryPageView({ books, title, subheader }: LibraryPageProps) {
         ))}
       </div>
 
-      {filtered.length === 0 && (
-        <p className="mt-14 text-center text-sm text-ink-soft">
-          No books match that search. Clear the filters to browse the whole shelf.
-        </p>
-      )}
+      {books.length === 0 ? (
+        <NoContentState
+          title="No books yet"
+          description="The library shelf is currently empty."
+        />
+      ) : filtered.length === 0 ? (
+        <NoSearchResults
+          query={search || undefined}
+          onReset={
+            search || activePersona !== null
+              ? () => {
+                  setSearch('');
+                  setActivePersona(null);
+                }
+              : undefined
+          }
+          resetLabel="Reset filters"
+        />
+      ) : null}
 
       {/* Reading Philosophy Note */}
       <footer className="mx-auto mt-20 max-w-2xl border-t border-tinted/20 pt-12 text-center">

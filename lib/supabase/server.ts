@@ -50,7 +50,11 @@ export function getSupabasePublic() {
   }
 
   if (!publicClient) {
-    publicClient = createClient<Database>(supabaseUrl, supabasePublishableKey);
+    publicClient = createClient<Database>(supabaseUrl, supabasePublishableKey, {
+      auth: {
+        experimental: { passkey: true },
+      },
+    });
   }
 
   return publicClient;
@@ -71,6 +75,9 @@ export async function getSupabaseServer() {
   const cookieStore = await cookies();
 
   return createServerClient<Database>(supabaseUrl, supabasePublishableKey, {
+    auth: {
+      experimental: { passkey: true },
+    },
     cookies: {
       getAll() {
         return cookieStore.getAll();

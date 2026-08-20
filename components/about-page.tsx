@@ -121,16 +121,16 @@ export function AboutPageView({ site, featuredWriting }: AboutPageProps) {
 
       {/* 2. Newsletter Banner */}
       <div className="mb-20 rounded-3xl border border-tinted/20 bg-night-soft p-8 shadow-2xl md:p-12 lg:mb-28">
-        <div className="mx-auto flex max-w-4xl flex-col gap-8 md:flex-row md:items-center md:gap-12">
-          <div className="flex-1">
-            <h2 className="font-serif text-2xl font-normal text-paper md:text-3xl lg:text-4xl">
+        <div className="mx-auto flex max-w-5xl flex-col gap-8 md:flex-row md:items-center md:justify-between md:gap-12">
+          <div className="flex-1 md:min-w-[420px]">
+            <h2 className="font-serif text-2xl font-normal text-paper md:text-3xl lg:text-[34px] md:whitespace-nowrap">
               Things I Keep Thinking About
             </h2>
-            <p className="mt-3 text-base leading-relaxed text-ink-soft md:text-lg">
+            <p className="mt-3 max-w-xl text-base leading-relaxed text-ink-soft md:text-lg">
               {site.hero.newsletter.note}
             </p>
           </div>
-          <div className="w-full flex-1 md:max-w-md">
+          <div className="w-full flex-1 md:max-w-sm lg:max-w-md">
             <NewsletterForm
               newsletter={site.hero.newsletter}
               showNote={false}

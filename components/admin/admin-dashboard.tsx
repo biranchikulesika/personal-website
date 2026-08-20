@@ -1,7 +1,6 @@
 "use client";
 
 import type {
-  AdminProfile,
   BlogPost,
   BookItem,
   MediaItem,
@@ -14,6 +13,7 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import { useState } from "react";
 import { logoutAction } from "@/app/admin/login/actions";
+import { LoadingState } from "@/components/ui/states";
 
 // Lazy-load tab-specific managers. They are only needed when their tab is
 // active, so splitting them into separate chunks reduces the initial admin
@@ -21,31 +21,25 @@ import { logoutAction } from "@/app/admin/login/actions";
 const ContentManager = dynamic(
   () => import("./content-manager").then((m) => m.ContentManager),
   {
-    loading: () => (
-      <div className="flex items-center justify-center py-20 text-sm text-gray-mid">
-        Loading content…
-      </div>
-    ),
+    loading: () => <LoadingState title="Loading content…" />,
   },
 );
 const MediaManager = dynamic(
   () => import("./media-manager").then((m) => m.MediaManager),
   {
-    loading: () => (
-      <div className="flex items-center justify-center py-20 text-sm text-gray-mid">
-        Loading media…
-      </div>
-    ),
+    loading: () => <LoadingState title="Loading media…" />,
   },
 );
 const AccountManager = dynamic(
   () => import("./account-manager").then((m) => m.AccountManager),
   {
-    loading: () => (
-      <div className="flex items-center justify-center py-20 text-sm text-gray-mid">
-        Loading account…
-      </div>
-    ),
+    loading: () => <LoadingState title="Loading account…" />,
+  },
+);
+const FeaturedManager = dynamic(
+  () => import("./featured-manager").then((m) => m.FeaturedManager),
+  {
+    loading: () => <LoadingState title="Loading featured…" />,
   },
 );
 
@@ -55,11 +49,17 @@ interface AdminDashboardProps {
   initialBooks: BookItem[];
   initialMedia: MediaItem[];
   initialOrphanedMedia: MediaItem[];
-  initialProfile: AdminProfile;
   initialNowEntries: NowEntry[];
+  initialFeaturedPostSlugs: string[];
+  initialFeaturedBookSlugs: string[];
+  authEnabled: boolean;
+  userName: string;
+  userEmail: string;
+  userAvatarUrl: string | null;
+  userRole: string;
 }
 
-type SidepanelTab = "home" | "content" | "media" | "account";
+type SidepanelTab = "home" | "featured" | "content" | "media" | "account";
 
 export function AdminDashboard({
   initialPosts,
@@ -67,8 +67,14 @@ export function AdminDashboard({
   initialBooks,
   initialMedia,
   initialOrphanedMedia,
-  initialProfile,
   initialNowEntries,
+  initialFeaturedPostSlugs,
+  initialFeaturedBookSlugs,
+  authEnabled,
+  userName,
+  userEmail,
+  userAvatarUrl,
+  userRole,
 }: AdminDashboardProps) {
   const [activeTab, setActiveTab] = useState<SidepanelTab>("home");
 
@@ -92,6 +98,27 @@ export function AdminDashboard({
             strokeLinecap="round"
             strokeLinejoin="round"
             d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
+          />
+        </svg>
+      ),
+      count: undefined,
+    },
+    {
+      id: "featured" as const,
+      label: "Featured",
+      icon: (
+        <svg
+          className="h-4 w-4"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={2}
+          aria-hidden="true"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z"
           />
         </svg>
       ),
@@ -171,15 +198,18 @@ export function AdminDashboard({
           <div className="flex items-center gap-3 border-b border-tinted/20 pb-4">
             <div className="relative h-10 w-10 overflow-hidden rounded-full border border-tinted/20 bg-post-card shadow-xs">
               <Image
-                src={initialProfile.avatarUrl || "/biranchi.jpeg"}
-                alt={initialProfile.name}
+                src={userAvatarUrl || "/biranchi.jpeg"}
+                alt={userName}
                 fill
                 className="object-cover"
               />
             </div>
             <div className="min-w-0 flex-1">
               <div className="truncate font-serif text-base font-medium text-paper">
-                {initialProfile.name}
+                {userName}
+              </div>
+              <div className="truncate text-[10px] text-gray-mid capitalize">
+                {userRole.replace('_', ' ')}
               </div>
             </div>
           </div>
@@ -238,7 +268,7 @@ export function AdminDashboard({
             <span>View Public Site</span>
             <span>↗</span>
           </Link>
-          {process.env.AUTH_ENABLED === "true" && (
+          {authEnabled && (
             <button
               type="button"
               onClick={async () => {
@@ -262,7 +292,7 @@ export function AdminDashboard({
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-tinted/20 pb-6">
                 <div>
                   <h2 className="font-serif text-3xl font-normal text-paper md:text-4xl">
-                    Welcome back, {initialProfile.name.split(" ")[0]}
+                    Welcome back, {userName.split(" ")[0]}
                   </h2>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
@@ -484,6 +514,14 @@ export function AdminDashboard({
             </div>
           )}
 
+          {activeTab === "featured" && (
+            <FeaturedManager
+              posts={initialPosts}
+              books={initialBooks}
+              initialFeaturedPostSlugs={initialFeaturedPostSlugs}
+              initialFeaturedBookSlugs={initialFeaturedBookSlugs}
+            />
+          )}
           {activeTab === "content" && (
             <ContentManager
               initialPosts={initialPosts}
@@ -500,7 +538,11 @@ export function AdminDashboard({
             />
           )}
           {activeTab === "account" && (
-            <AccountManager initialProfile={initialProfile} />
+            <AccountManager
+              userName={userName}
+              userEmail={userEmail}
+              userRole={userRole}
+            />
           )}
         </div>
       </main>

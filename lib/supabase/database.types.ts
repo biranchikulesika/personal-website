@@ -200,52 +200,40 @@ export interface Database {
         };
         Relationships: [];
       };
-      site_config: {
+      user_roles: {
         Row: {
-          id: string;
-          config: unknown;
+          user_id: string;
+          role: string;
           created_at: string;
           updated_at: string;
         };
         Insert: {
-          id?: string;
-          config: unknown;
+          user_id: string;
+          role?: string;
         };
         Update: {
-          id?: string;
-          config?: unknown;
+          user_id?: string;
+          role?: string;
         };
         Relationships: [];
       };
-      admin_profile: {
+      featured_items: {
         Row: {
           id: string;
-          name: string;
-          email: string;
-          avatar_url: string;
-          role: string;
-          auth_status: string;
-          last_login: string | null;
+          item_type: string;
+          item_id: string;
+          position: number;
           created_at: string;
-          updated_at: string;
         };
         Insert: {
-          id?: string;
-          name?: string;
-          email?: string;
-          avatar_url?: string;
-          role?: string;
-          auth_status?: string;
-          last_login?: string | null;
+          item_type: string;
+          item_id: string;
+          position: number;
         };
         Update: {
-          id?: string;
-          name?: string;
-          email?: string;
-          avatar_url?: string;
-          role?: string;
-          auth_status?: string;
-          last_login?: string | null;
+          item_type?: string;
+          item_id?: string;
+          position?: number;
         };
         Relationships: [];
       };

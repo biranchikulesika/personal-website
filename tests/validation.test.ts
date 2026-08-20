@@ -6,7 +6,6 @@ import {
   BookItemSchema,
   NowEntrySchema,
   MediaItemSchema,
-  AdminProfileUpdateSchema,
   SlugParamSchema,
   IdParamSchema,
 } from "../lib/validation";
@@ -201,22 +200,6 @@ test("MediaItemSchema rejects invalid tag", () => {
 
   const result = MediaItemSchema.safeParse(invalid);
   assert.ok(!result.success, "invalid tag should fail");
-});
-
-// ── AdminProfileUpdateSchema ────────────────────────────────────────────────
-
-test("AdminProfileUpdateSchema accepts partial updates", () => {
-  const result = AdminProfileUpdateSchema.safeParse({ name: "New Name" });
-  assert.ok(result.success, "partial update should pass");
-});
-
-test("AdminProfileUpdateSchema strips authStatus", () => {
-  const result = AdminProfileUpdateSchema.safeParse({
-    name: "Test",
-    authStatus: "enabled",
-  });
-  assert.ok(result.success);
-  assert.equal((result.data as any).authStatus, undefined, "authStatus should be stripped");
 });
 
 // ── SlugParamSchema ─────────────────────────────────────────────────────────

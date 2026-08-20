@@ -56,6 +56,17 @@ html {
   color-scheme: dark;
 }
 
+/* Prevent SVG elements from intercepting pointer events and triggering Firefox
+   "Permission denied to access property correspondingUseElement" or "nodeType" errors */
+svg {
+  pointer-events: none;
+}
+
+svg.interactive,
+svg[role="button"] {
+  pointer-events: auto;
+}
+
 /* Reduced motion — respect user preference */
 @media (prefers-reduced-motion: reduce) {
   html {

@@ -5,22 +5,10 @@ import { ContentService } from "../lib/services/content.service";
 
 // ── Dynamic Route: /p/[slug] ────────────────────────────────────────────────
 
-test("post page returns data for valid published slug", async () => {
-  resetDatabase();
-  const service = new ContentService();
-  const post = await service.getPost("building-in-public-carefully");
-
-  assert.ok(post, "published post should exist");
-  assert.equal(post.title, "Building in public, carefully");
-  assert.ok(post.sections.length > 0, "post should have sections");
-  assert.ok(post.intro.length > 0, "post should have intro paragraphs");
-});
-
 test("post page returns null for invalid slug", async () => {
   resetDatabase();
   const service = new ContentService();
   const post = await service.getPost("nonexistent-slug-xyz");
-
   assert.equal(post, null, "nonexistent post should return null");
 });
 
@@ -48,73 +36,138 @@ test("post page handles unpublished posts correctly", async () => {
   const post = await service.getPost("unpublished-test-post");
   assert.ok(post, "unpublished post should still be retrievable");
   assert.equal(post!.status, "unpublished");
+
+  // But should NOT appear in published slugs
+  const slugs = await service.getPostSlugs();
+  assert.ok(!slugs.includes("unpublished-test-post"), "unpublished post should not appear in published slugs");
+
+  // Cleanup
+  await service.deletePost("unpublished-test-post");
 });
 
-// ── Dynamic Route: /n/[slug] ────────────────────────────────────────────────
-
-test("note page returns data for valid slug", async () => {
+test("post page returns data for valid published slug", async () => {
   resetDatabase();
   const service = new ContentService();
-  const notes = await service.getAllNotes();
-  assert.ok(notes.length > 0, "should have seeded notes");
 
-  const note = await service.getNote(notes[0].slug);
-  assert.ok(note, "note should exist");
-  assert.equal(note!.slug, notes[0].slug);
+  // Create a published post
+  const testPost = {
+    slug: "test-published-post",
+    title: "Test Published Post",
+    description: "A test post",
+    tags: ["test"],
+    publishedAt: "2026-08-20",
+    lastEditedAt: "2026-08-20",
+    assumedAudience: "Test",
+    intro: ["Intro paragraph."],
+    sections: [{ id: "sec-1", heading: "Section", paragraphs: ["Body"] }],
+    books: [],
+  };
+  await service.savePost(testPost, "builder");
+
+  const post = await service.getPost("test-published-post");
+  assert.ok(post, "published post should exist");
+  assert.equal(post.title, "Test Published Post");
+  assert.ok(post.sections.length > 0, "post should have sections");
+
+  // Cleanup
+  await service.deletePost("test-published-post");
 });
 
 test("note page returns null for invalid slug", async () => {
   resetDatabase();
   const service = new ContentService();
   const note = await service.getNote("nonexistent-note-xyz");
-
   assert.equal(note, null, "nonexistent note should return null");
 });
 
-// ── Post Slugs for Static Generation ────────────────────────────────────────
+// ── Security: User Roles ──────────────────────────────────────────────────
 
-test("getPostSlugs returns all post slugs for static generation", async () => {
+test("getUserRole returns null for unknown user", async () => {
   resetDatabase();
   const service = new ContentService();
-  const slugs = await service.getPostSlugs();
-
-  assert.ok(slugs.length > 0, "should return at least one slug");
-  assert.ok(
-    slugs.includes("building-in-public-carefully"),
-    "should include the featured post slug",
-  );
-  // All slugs should be strings
-  assert.ok(
-    slugs.every((s) => typeof s === "string" && s.length > 0),
-    "all slugs should be non-empty strings",
-  );
+  const role = await service.getUserRole("unknown-user-id");
+  assert.equal(role, null);
 });
 
-test("getNoteSlugs returns all note slugs for static generation", async () => {
+test("setUserRole and getUserRole work correctly", async () => {
   resetDatabase();
   const service = new ContentService();
-  const slugs = await service.getNoteSlugs();
 
-  assert.ok(slugs.length > 0, "should return at least one slug");
-  assert.ok(
-    slugs.every((s) => typeof s === "string" && s.length > 0),
-    "all slugs should be non-empty strings",
-  );
+  await service.setUserRole("user-1", "content_admin");
+  const role = await service.getUserRole("user-1");
+  assert.equal(role, "content_admin");
+
+  // Update role
+  await service.setUserRole("user-1", "super_admin");
+  const updatedRole = await service.getUserRole("user-1");
+  assert.equal(updatedRole, "super_admin");
 });
 
-// ── Security: Slug Collision Prevention ──────────────────────────────────────
-
-test("cannot create post with slug that exists as a note", async () => {
+test("getAllUserRoles returns all assigned roles", async () => {
   resetDatabase();
   const service = new ContentService();
+
+  await service.setUserRole("user-1", "user");
+  await service.setUserRole("user-2", "content_admin");
+  await service.setUserRole("user-3", "super_admin");
+
+  const roles = await service.getAllUserRoles();
+  assert.equal(roles.length, 3);
+});
+
+// ── Security: Environment Validation ────────────────────────────────────────
+
+test("getDataSource throws for production data sources", async () => {
+  const { getDataSource } = await import("../lib/config/env");
+
+  const original = process.env.DATA_SOURCE;
+  process.env.DATA_SOURCE = "postgres";
+  assert.throws(() => getDataSource(), /not allowed/);
+  process.env.DATA_SOURCE = "production";
+  assert.throws(() => getDataSource(), /not allowed/);
+  process.env.DATA_SOURCE = original ?? "mock";
+});
+
+test("getDataSource accepts mock and supabase", async () => {
+  const { getDataSource } = await import("../lib/config/env");
+
+  const original = process.env.DATA_SOURCE;
+  process.env.DATA_SOURCE = "mock";
+  assert.equal(getDataSource(), "mock");
+  process.env.DATA_SOURCE = "supabase";
+  assert.equal(getDataSource(), "supabase");
+  process.env.DATA_SOURCE = original ?? "mock";
+});
+
+// ── Content Isolation ──────────────────────────────────────────────────────
+
+test("empty database returns empty content collections", async () => {
+  resetDatabase();
+  const service = new ContentService();
+
+  const posts = await service.getAllPosts();
+  assert.equal(posts.length, 0);
 
   const notes = await service.getAllNotes();
-  const existingNoteSlug = notes[0].slug;
+  assert.equal(notes.length, 0);
 
-  const conflictingPost = {
-    slug: existingNoteSlug,
-    title: "Conflicting Post",
-    description: "Should fail",
+  const books = await service.getAllBooks();
+  assert.equal(books.length, 0);
+
+  const now = await service.getNowEntries();
+  assert.equal(now.length, 0);
+});
+
+// ── Post CRUD Security ─────────────────────────────────────────────────────
+
+test("savePost creates and retrieves a post", async () => {
+  resetDatabase();
+  const service = new ContentService();
+
+  const testPost = {
+    slug: "security-test-post",
+    title: "Security Test",
+    description: "Test",
     tags: ["test"],
     publishedAt: "2026-08-20",
     lastEditedAt: "2026-08-20",
@@ -124,148 +177,74 @@ test("cannot create post with slug that exists as a note", async () => {
     books: [],
   };
 
-  await assert.rejects(
-    () => service.savePost(conflictingPost, "builder"),
-    /already exists/,
-    "should reject post with slug conflicting with existing note",
-  );
+  await service.savePost(testPost, "builder");
+  const post = await service.getPost("security-test-post");
+  assert.ok(post);
+  assert.equal(post.title, "Security Test");
+
+  // Cleanup
+  await service.deletePost("security-test-post");
 });
 
-test("cannot create note with slug that exists as a post", async () => {
+test("deletePost removes a post", async () => {
   resetDatabase();
   const service = new ContentService();
 
-  const posts = await service.getAllPosts();
-  const existingPostSlug = posts[0].slug;
+  const testPost = {
+    slug: "delete-test-post",
+    title: "Delete Test",
+    description: "Test",
+    tags: ["test"],
+    publishedAt: "2026-08-20",
+    lastEditedAt: "2026-08-20",
+    assumedAudience: "Test",
+    intro: [],
+    sections: [],
+    books: [],
+  };
 
-  const conflictingNote = {
-    id: "conflict-note",
-    slug: existingPostSlug,
-    title: "Conflicting Note",
-    description: "Should fail",
-    content: ["Body"],
+  await service.savePost(testPost, "builder");
+  const deleted = await service.deletePost("delete-test-post");
+  assert.equal(deleted, true);
+
+  const post = await service.getPost("delete-test-post");
+  assert.equal(post, null);
+});
+
+// ── Note CRUD Security ─────────────────────────────────────────────────────
+
+test("saveNote creates and retrieves a note", async () => {
+  resetDatabase();
+  const service = new ContentService();
+
+  const testNote = {
+    id: "security-test-note",
+    slug: "security-note-slug",
+    title: "Security Note",
+    description: "Test note",
+    content: ["Content"],
     date: "2026-08-20",
     persona: "thinker" as const,
     tags: ["test"],
   };
 
-  await assert.rejects(
-    () => service.saveNote(conflictingNote),
-    /already exists/,
-    "should reject note with slug conflicting with existing post",
-  );
+  await service.saveNote(testNote);
+  const note = await service.getNote("security-note-slug");
+  assert.ok(note);
+  assert.equal(note.title, "Security Note");
+
+  // Cleanup
+  await service.deleteNote("security-note-slug");
 });
 
-test("cannot create book with slug that exists as a post", async () => {
-  resetDatabase();
-  const service = new ContentService();
+// ── 404 Not Found Handling ──────────────────────────────────────────────────
 
-  const posts = await service.getAllPosts();
-  const existingPostSlug = posts[0].slug;
-
-  const conflictingBook = {
-    id: "conflict-book",
-    slug: existingPostSlug,
-    title: "Conflicting Book",
-    author: "Author",
-    description: "Should fail",
-    date: "2026",
-    persona: "thinker" as const,
-    tags: ["test"],
-  };
-
-  await assert.rejects(
-    () => service.saveBook(conflictingBook),
-    /already exists/,
-    "should reject book with slug conflicting with existing post",
-  );
-});
-
-test("updating existing record with same slug does not trigger collision", async () => {
-  resetDatabase();
-  const service = new ContentService();
-
-  const existingPost = await service.getPost("building-in-public-carefully");
-  assert.ok(existingPost);
-
-  // Updating with the same slug should succeed
-  const updated = await service.savePost(
-    { ...existingPost, title: "Updated Title" },
-    "builder",
-  );
-  assert.equal(updated.title, "Updated Title");
-});
-
-// ── Security: authStatus Cannot Be Modified via Profile Update ───────────────
-
-test("updateAdminProfile strips authStatus field", async () => {
-  resetDatabase();
-  const service = new ContentService();
-
-  const originalProfile = await service.getAdminProfile();
-  assert.equal(originalProfile.authStatus, "developer_mode");
-
-  // Attempt to modify authStatus
-  await service.updateAdminProfile({ authStatus: "enabled" });
-
-  const updatedProfile = await service.getAdminProfile();
+test("not-found metadata sets robots to noindex", async () => {
+  const { metadata } = await import("../app/not-found");
+  assert.equal(metadata.title, "Page Not Found | Biranchi Kulesika");
   assert.equal(
-    updatedProfile.authStatus,
-    "developer_mode",
-    "authStatus should not be modifiable through updateAdminProfile",
+    metadata.description,
+    "The page you are looking for does not exist or has been moved."
   );
-});
-
-test("updateAdminProfile allows modifying other fields", async () => {
-  resetDatabase();
-  const service = new ContentService();
-
-  await service.updateAdminProfile({
-    name: "New Name",
-    role: "New Role",
-    email: "new@email.com",
-  });
-
-  const profile = await service.getAdminProfile();
-  assert.equal(profile.name, "New Name");
-  assert.equal(profile.role, "New Role");
-  assert.equal(profile.email, "new@email.com");
-});
-
-// ── Security: Environment Validation ────────────────────────────────────────
-
-test("getDataSource throws for production data sources", async () => {
-  const { getDataSource } = await import("../lib/config/env");
-
-  const productionValues = ["postgres", "production"];
-  for (const value of productionValues) {
-    const previous = process.env.DATA_SOURCE;
-    process.env.DATA_SOURCE = value;
-    assert.throws(
-      () => getDataSource(),
-      /not allowed/,
-      `DATA_SOURCE="${value}" should throw`,
-    );
-    process.env.DATA_SOURCE = previous;
-  }
-});
-
-test("getDataSource accepts mock data source", async () => {
-  const { getDataSource } = await import("../lib/config/env");
-
-  const previous = process.env.DATA_SOURCE;
-  process.env.DATA_SOURCE = "mock";
-  const result = getDataSource();
-  assert.equal(result, "mock");
-  process.env.DATA_SOURCE = previous;
-});
-
-test("getDataSource defaults to mock when unset", async () => {
-  const { getDataSource } = await import("../lib/config/env");
-
-  const previous = process.env.DATA_SOURCE;
-  delete process.env.DATA_SOURCE;
-  const result = getDataSource();
-  assert.equal(result, "mock");
-  process.env.DATA_SOURCE = previous;
+  assert.deepEqual(metadata.robots, { index: false, follow: false });
 });

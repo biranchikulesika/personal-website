@@ -10,6 +10,7 @@ import {
   deleteOrphanedMediaAction,
 } from '@/app/admin/actions';
 import { TrashIcon } from '@/components/icons';
+import { NoMediaState, NoSearchResults } from '@/components/ui/states';
 
 interface MediaManagerProps {
   initialMedia: MediaItem[];
@@ -345,10 +346,23 @@ export function MediaManager({
         })}
 
         {visibleMedia.length === 0 && (
-          <div className="col-span-full py-16 text-center text-sm text-gray-mid">
-            {showOrphanedOnly
-              ? 'No orphaned assets. Everything in the bucket is registered or referenced somewhere.'
-              : 'No media assets match your query.'}
+          <div className="col-span-full">
+            {mediaList.length === 0 ? (
+              <NoMediaState onUpload={() => setIsUploading(true)} />
+            ) : (
+              <NoSearchResults
+                query={search || undefined}
+                onReset={
+                  search || activeTag !== 'all'
+                    ? () => {
+                        setSearch('');
+                        setActiveTag('all');
+                      }
+                    : undefined
+                }
+                resetLabel="Reset filters"
+              />
+            )}
           </div>
         )}
       </div>

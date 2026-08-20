@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import type { MediaItem } from '@/lib/types';
+import { NoSearchResults, NoMediaState } from '@/components/ui/states';
 
 interface MediaInsertModalProps {
   isOpen: boolean;
@@ -97,9 +98,15 @@ export function MediaInsertModal({
           </div>
 
           {filtered.length === 0 && (
-            <div className="py-12 text-center text-xs text-gray-mid">
-              No media resources found matching &quot;{search}&quot;.
-            </div>
+            mediaItems.length === 0 ? (
+              <NoMediaState compact />
+            ) : (
+              <NoSearchResults
+                compact
+                query={search}
+                onReset={() => setSearch('')}
+              />
+            )
           )}
         </div>
 

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { ToastView } from '@/components/ui/toast-view';
-import type { AdminProfile } from '@/lib/types';
+
 import {
   EnvelopeIcon,
   FingerprintIcon,
@@ -12,9 +12,12 @@ import {
   GitHubIcon,
   GoogleIcon,
 } from '@/components/icons';
+import { NoContentState } from '@/components/ui/states';
 
 interface AccountManagerProps {
-  initialProfile: AdminProfile;
+  userName: string;
+  userEmail: string;
+  userRole: string;
 }
 
 interface Passkey {
@@ -78,7 +81,7 @@ function SectionHeading({ title }: { title: string }) {
   );
 }
 
-export function AccountManager({ initialProfile }: AccountManagerProps) {
+export function AccountManager({ userName, userEmail, userRole }: AccountManagerProps) {
   const [passkeys, setPasskeys] = useState<Passkey[]>([
     { id: 'pk-1', label: 'Linux Computer', lastUsedAt: 'Aug 14, 2026' },
   ]);
@@ -179,15 +182,18 @@ export function AccountManager({ initialProfile }: AccountManagerProps) {
               {/* Identity */}
               <div className="flex items-center gap-3 px-5 py-4">
                 <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-accent text-sm font-semibold text-paper">
-                  {getInitials(initialProfile.name)}
+                  {getInitials(userName)}
                 </span>
                 <div className="min-w-0">
                   <p className="truncate text-sm font-semibold text-paper">
-                    {initialProfile.name}
+                    {userName}
                   </p>
                   <p className="mt-0.5 flex items-center gap-1.5 truncate text-xs text-gray-mid">
                     <EnvelopeIcon className="h-3.5 w-3.5 shrink-0" />
-                    {initialProfile.email}
+                    {userEmail}
+                  </p>
+                  <p className="mt-0.5 text-[10px] text-gray-mid capitalize">
+                    {userRole.replace('_', ' ')}
                   </p>
                 </div>
               </div>
@@ -233,12 +239,11 @@ export function AccountManager({ initialProfile }: AccountManagerProps) {
               ))}
 
               {passkeys.length === 0 && (
-                <div className="px-5 py-3">
-                  <p className="text-xs text-gray-mid">
-                    Add a passkey to sign in with your device instead of using a
-                    password.
-                  </p>
-                </div>
+                <NoContentState
+                  compact
+                  title="No passkeys registered"
+                  description="Add a passkey to sign in with your device instead of a password."
+                />
               )}
 
               {/* Add passkey */}
@@ -366,11 +371,11 @@ export function AccountManager({ initialProfile }: AccountManagerProps) {
               </div>
             ))}
             {sessions.length === 0 && (
-              <div className="px-5 py-4">
-                <p className="text-xs text-gray-mid">
-                  No active sessions. Sign in to see your devices here.
-                </p>
-              </div>
+              <NoContentState
+                compact
+                title="No active sessions"
+                description="Sign in to see your active devices here."
+              />
             )}
           </div>
         </section>

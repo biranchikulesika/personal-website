@@ -1,5 +1,6 @@
 import type {
-  AdminProfile,
+  AppRole,
+  UserRole,
   BlogPost,
   BookItem,
   MediaItem,
@@ -14,6 +15,7 @@ import type {
 } from '@/lib/types';
 import { getContentRepository } from '@/lib/repositories';
 import type { ContentRepository } from '@/lib/repositories/content.repository';
+import { SITE_CONFIG } from '@/lib/config/site';
 
 // Application layer for site content. Components and pages ask for content
 // by intent (getSiteContent, getWriting, ...) and never import the mock
@@ -22,8 +24,8 @@ import type { ContentRepository } from '@/lib/repositories/content.repository';
 export class ContentService {
   constructor(private repo: ContentRepository = getContentRepository()) {}
 
-  getSiteContent(): Promise<SiteContent> {
-    return this.repo.getSiteContent();
+  getSiteContent(): SiteContent {
+    return SITE_CONFIG;
   }
 
   getHomeContent(): Promise<HomeContent> {
@@ -134,15 +136,31 @@ export class ContentService {
     return this.repo.deleteStorageAssets(srcs);
   }
 
-  getAdminProfile(): Promise<AdminProfile> {
-    return this.repo.getAdminProfile();
+  getUserRole(userId: string): Promise<AppRole | null> {
+    return this.repo.getUserRole(userId);
   }
 
-  updateAdminProfile(profile: Partial<AdminProfile>): Promise<AdminProfile> {
-    // Defense-in-depth: strip restricted fields at the service layer.
-    // authStatus must only be changed through dedicated auth flows, not
-    // through the generic profile update action.
-    const { authStatus: _restricted, ...safeProfile } = profile;
-    return this.repo.updateAdminProfile(safeProfile);
+  setUserRole(userId: string, role: AppRole): Promise<void> {
+    return this.repo.setUserRole(userId, role);
+  }
+
+  getAllUserRoles(): Promise<UserRole[]> {
+    return this.repo.getAllUserRoles();
+  }
+
+  getFeaturedPosts(): Promise<string[]> {
+    return this.repo.getFeaturedPosts();
+  }
+
+  getFeaturedBooks(): Promise<string[]> {
+    return this.repo.getFeaturedBooks();
+  }
+
+  setFeaturedPosts(slugs: string[]): Promise<void> {
+    return this.repo.setFeaturedPosts(slugs);
+  }
+
+  setFeaturedBooks(slugs: string[]): Promise<void> {
+    return this.repo.setFeaturedBooks(slugs);
   }
 }

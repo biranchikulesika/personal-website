@@ -10,6 +10,10 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootNotFound() {
-  return <NotFoundView />;
+export default function GlobalNotFound() {
+  return (
+    <main id="main-content" className="flex min-h-screen items-center justify-center bg-night text-paper">
+      <NotFoundView />
+    </main>
+  );
 }

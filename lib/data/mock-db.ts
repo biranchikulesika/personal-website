@@ -1,33 +1,16 @@
+// Mock database — minimal, used only for tests.
+// All content (posts, notes, books, now entries) lives in the live database.
+
 import type {
-  AdminProfile,
-  BlogPost,
-  BookItem,
+  AppRole,
+  UserRole,
   MediaItem,
-  NoteItem,
-  NowEntry,
-  SectionGroup,
-  SiteContent,
-  WritingItem,
 } from "@/lib/types";
-import {
-  seedBooks,
-  seedNotes,
-  seedNow,
-  seedPosts,
-  seedSiteContent,
-  seedWriting,
-} from "./seeds";
 
 export interface MockDatabase {
-  site: SiteContent;
-  writing: SectionGroup<WritingItem>;
-  notes: SectionGroup<NoteItem>;
-  books: SectionGroup<BookItem>;
-  posts: BlogPost[];
-  now: NowEntry[];
   media: MediaItem[];
   storage: string[];
-  admin: AdminProfile;
+  userRoles: UserRole[];
 }
 
 let db: MockDatabase | null = null;
@@ -41,15 +24,9 @@ export function getDatabase(): MockDatabase {
 
 export function createDatabase(): MockDatabase {
   return {
-    site: seedSiteContent(),
-    writing: seedWriting(),
-    notes: seedNotes(),
-    books: seedBooks(),
-    posts: seedPosts(),
-    now: seedNow(),
     media: seedMedia(),
     storage: seedStorage(),
-    admin: seedAdmin(),
+    userRoles: [],
   };
 }
 
@@ -58,15 +35,8 @@ export function resetDatabase(): MockDatabase {
   return db;
 }
 
-/**
- * Mock storage bucket listing — simulates the image files actually sitting in
- * the Supabase storage bucket. Includes a few files that were never registered
- * in the media library and are not referenced anywhere on the site; those are
- * the "orphaned" assets (images quietly sitting in the bucket).
- */
 function seedStorage(): string[] {
   return [
-    // Registered + referenced assets (known to the author).
     "/biranchi.jpeg",
     "/selfiewithmiku.jpeg",
     "/selfiewithblessie.jpeg",
@@ -74,26 +44,13 @@ function seedStorage(): string[] {
     "/selfiewithbhabani.jpeg",
     "/groupphotowithfriends.jpeg",
     "/melayingonsciencemuseum.jpeg",
-    // Book covers (external).
     "https://upload.wikimedia.org/wikipedia/en/5/5a/Thinking_in_Systems_cover.jpg",
     "https://upload.wikimedia.org/wikipedia/en/6/6d/Technopoly_cover.jpg",
-    // Unknown files quietly sitting in the bucket — orphaned.
     "/IMG_20240512_184302.jpeg",
     "/DSC_0217.png",
     "/old-header-banner.webp",
     "/testing.webp",
   ];
-}
-
-function seedAdmin(): AdminProfile {
-  return {
-    name: "Biranchi Kulesika",
-    email: "hello@biranchikulesika.com",
-    avatarUrl: "/biranchi.jpeg",
-    role: "Owner & Author",
-    authStatus: "developer_mode",
-    lastLogin: new Date().toISOString(),
-  };
 }
 
 function seedMedia(): MediaItem[] {
@@ -200,5 +157,3 @@ function seedMedia(): MediaItem[] {
     },
   ];
 }
-
-

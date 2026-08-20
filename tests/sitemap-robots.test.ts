@@ -22,20 +22,57 @@ test("sitemap includes all public static pages", async () => {
 
 test("sitemap includes published blog posts", async () => {
   resetDatabase();
+  const service = new ContentService();
+
+  // Create a published post
+  await service.savePost(
+    {
+      slug: "sitemap-test-post",
+      title: "Sitemap Test",
+      description: "Test",
+      tags: [],
+      publishedAt: "2026-08-20",
+      lastEditedAt: "2026-08-20",
+      assumedAudience: "Test",
+      intro: [],
+      sections: [],
+      books: [],
+    },
+    "builder",
+  );
+
   const { default: sitemap } = await import("../app/sitemap");
   const entries = await sitemap();
 
   const postUrls = entries.filter((e) => e.url.includes("/p/"));
   assert.ok(postUrls.length > 0, "should include at least one blog post");
+
+  await service.deletePost("sitemap-test-post");
 });
 
 test("sitemap includes published notes", async () => {
   resetDatabase();
+  const service = new ContentService();
+
+  // Create a published note
+  await service.saveNote({
+    id: "sitemap-test-note",
+    slug: "sitemap-test-note",
+    title: "Sitemap Test Note",
+    description: "Test",
+    content: ["Test"],
+    date: "2026-08-20",
+    persona: "thinker",
+    tags: [],
+  });
+
   const { default: sitemap } = await import("../app/sitemap");
   const entries = await sitemap();
 
   const noteUrls = entries.filter((e) => e.url.includes("/n/"));
   assert.ok(noteUrls.length > 0, "should include at least one note");
+
+  await service.deleteNote("sitemap-test-note");
 });
 
 test("sitemap excludes admin routes", async () => {

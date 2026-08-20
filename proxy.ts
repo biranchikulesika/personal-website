@@ -5,21 +5,23 @@
  *
  * When AUTH_ENABLED=true and DATA_SOURCE=supabase:
  *   - Admin routes require a valid Supabase session.
+ *   - The authenticated user must have content_admin or super_admin role.
  *   - Unauthenticated users are redirected to /admin/login.
+ *   - Users with 'user' role are denied access.
  *   - Authenticated users on the login page are redirected to /admin.
  *   - The OAuth callback route is allowed through for session exchange.
  *
  * When auth is disabled (default on this branch):
  *   - All admin routes are accessible without authentication.
  *   - This is intentional for UI development.
- *
- * Legacy reference: See `legacy/lib/supabase/middleware.ts` for the session
- * refresh pattern used in the previous implementation.
  */
 
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
+
+// Roles that can access the admin panel
+const ADMIN_ROLES = new Set(['content_admin', 'super_admin']);
 
 export default async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -36,14 +38,12 @@ export default async function proxy(request: NextRequest) {
   }
 
   // ── Supabase session verification ────────────────────────────────────────
-  // Create a response we can modify (to set/update auth cookies).
   let supabaseResponse = NextResponse.next({ request });
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabasePublishableKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 
   if (!supabaseUrl || !supabasePublishableKey) {
-    // Supabase not configured — deny access to admin routes.
     const url = request.nextUrl.clone();
     url.pathname = '/';
     return NextResponse.redirect(url);
@@ -55,13 +55,10 @@ export default async function proxy(request: NextRequest) {
         return request.cookies.getAll();
       },
       setAll(cookiesToSet) {
-        // Write cookies to the request (for downstream server components).
         cookiesToSet.forEach(({ name, value }) =>
           request.cookies.set(name, value),
         );
-        // Recreate the response so it carries the updated request.
         supabaseResponse = NextResponse.next({ request });
-        // Write cookies to the response (for the browser).
         cookiesToSet.forEach(({ name, value, options }) =>
           supabaseResponse.cookies.set(name, value, options),
         );
@@ -74,9 +71,7 @@ export default async function proxy(request: NextRequest) {
     return supabaseResponse;
   }
 
-  // ── Refresh the session (important for SSR cookie-based auth) ────────────
-  // This call ensures the session cookie is refreshed if the token is about
-  // to expire. Without this, sessions would silently expire.
+  // ── Refresh the session ──────────────────────────────────────────────────
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -97,12 +92,30 @@ export default async function proxy(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
+  // ── Role-based access control ────────────────────────────────────────────
+  // Users must have content_admin or super_admin role to access admin.
+  if (user) {
+    const { data: roleData } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id)
+      .single();
+
+    const userRole = roleData?.role;
+
+    if (!userRole || !ADMIN_ROLES.has(userRole)) {
+      // User exists but has no admin role — redirect to home.
+      const url = request.nextUrl.clone();
+      url.pathname = '/';
+      return NextResponse.redirect(url);
+    }
+  }
+
   return supabaseResponse;
 }
 
 export const config = {
   matcher: [
-    // Match admin routes but exclude static assets and Next.js internals.
     '/admin/:path*',
   ],
 };

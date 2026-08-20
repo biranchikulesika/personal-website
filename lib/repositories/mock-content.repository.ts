@@ -1,6 +1,7 @@
 import type { MockDatabase } from "@/lib/data/mock-db";
 import type {
-  AdminProfile,
+  AppRole,
+  UserRole,
   BlogPost,
   BookItem,
   HomeContent,
@@ -10,297 +11,223 @@ import type {
   Persona,
   ScribbleEntry,
   SectionGroup,
-  SiteContent,
   WritingItem,
 } from "@/lib/types";
 import type { ContentRepository } from "./content.repository";
 
+/**
+ * Mock in-memory repository for tests. Content collections start empty —
+ * tests create their own data via save/update/delete methods.
+ */
 export class MockContentRepository implements ContentRepository {
+  private posts: BlogPost[] = [];
+  private notes: NoteItem[] = [];
+  private books: BookItem[] = [];
+  private now: NowEntry[] = [];
+  private featuredPosts: string[] = [];
+  private featuredBooks: string[] = [];
+
   constructor(private db: MockDatabase) {}
 
-  /**
-   * Checks whether a slug already exists in any slug-based collection.
-   * Used to prevent silent overwrites on insert.
-   */
-  private slugExists(
-    slug: string,
-    excludeType?: "post" | "note" | "book",
-  ): boolean {
-    if (excludeType !== "post" && this.db.posts.some((p) => p.slug === slug))
-      return true;
-    if (
-      excludeType !== "note" &&
-      this.db.notes.items.some((n) => n.slug === slug)
-    )
-      return true;
-    if (
-      excludeType !== "book" &&
-      this.db.books.items.some((b) => b.slug === slug)
-    )
-      return true;
-    return false;
-  }
-
-  async getSiteContent(): Promise<SiteContent> {
-    return this.db.site;
-  }
+  // ── Site Content (hardcoded) ────────────────────────────────────────────
 
   async getHomeContent(): Promise<HomeContent> {
     return {
-      writing: this.db.writing,
-      notes: this.db.notes,
-      library: this.db.books,
+      writing: { title: "Writing", href: "/scribble", subheader: "", items: [] },
+      notes: { title: "Notes", href: "/scribble", subheader: "", items: [] },
+      library: { title: "Library", href: "/library", subheader: "", items: [] },
     };
   }
 
   async getWriting(): Promise<SectionGroup<WritingItem>> {
-    return this.db.writing;
+    return { title: "Writing", href: "/scribble", subheader: "", items: [] };
   }
 
   async getLibrary(): Promise<SectionGroup<BookItem>> {
-    return this.db.books;
+    return { title: "Library", href: "/library", subheader: "", items: [] };
   }
 
+  // ── Posts ───────────────────────────────────────────────────────────────
+
   async getPost(slug: string): Promise<BlogPost | null> {
-    return this.db.posts.find((post) => post.slug === slug) ?? null;
+    return this.posts.find((p) => p.slug === slug) ?? null;
   }
 
   async getPostSlugs(): Promise<string[]> {
-    return this.db.posts
-      .filter((post) => post.status !== 'unpublished')
-      .map((post) => post.slug);
+    return this.posts
+      .filter((p) => p.status !== "unpublished")
+      .map((p) => p.slug);
   }
 
   async getAllPosts(): Promise<BlogPost[]> {
-    return [...this.db.posts];
+    return [...this.posts];
   }
 
-  async savePost(
-    post: BlogPost,
-    persona: Persona = "builder",
-  ): Promise<BlogPost> {
-    const postWithStatus: BlogPost = {
-      ...post,
-      status: post.status || "published",
-    };
-    const existingIndex = this.db.posts.findIndex((p) => p.slug === post.slug);
-    if (existingIndex >= 0) {
-      this.db.posts[existingIndex] = { ...postWithStatus };
+  async savePost(post: BlogPost, _persona?: Persona): Promise<BlogPost> {
+    const saved = { ...post, status: post.status || ("published" as const) };
+    const idx = this.posts.findIndex((p) => p.slug === post.slug);
+    if (idx >= 0) {
+      this.posts[idx] = saved;
     } else {
-      // On insert: reject if slug already exists in another collection.
-      if (this.slugExists(post.slug, "post")) {
-        throw new Error(
-          `Slug "${post.slug}" already exists. Choose a unique slug.`,
-        );
-      }
-      this.db.posts.push({ ...postWithStatus });
+      this.posts.push(saved);
     }
-
-    // Keep writing items list in sync
-    const writingIndex = this.db.writing.items.findIndex(
-      (w) => w.slug === post.slug,
-    );
-    const writingEntry: WritingItem = {
-      id:
-        writingIndex >= 0
-          ? this.db.writing.items[writingIndex].id
-          : `writing-${Date.now()}`,
-      slug: post.slug,
-      title: post.title,
-      description: post.description,
-      date: post.publishedAt || new Date().toISOString().split("T")[0],
-      persona,
-      tags: post.tags,
-      status: postWithStatus.status,
-    };
-
-    if (writingIndex >= 0) {
-      this.db.writing.items[writingIndex] = writingEntry;
-    } else {
-      this.db.writing.items.unshift(writingEntry);
-    }
-
-    return postWithStatus;
+    return saved;
   }
 
   async togglePostStatus(slug: string): Promise<BlogPost | null> {
-    const post = this.db.posts.find((p) => p.slug === slug);
+    const post = this.posts.find((p) => p.slug === slug);
     if (!post) return null;
-    const nextStatus =
-      post.status === "unpublished" ? "published" : "unpublished";
-    post.status = nextStatus;
-
-    const writing = this.db.writing.items.find((w) => w.slug === slug);
-    if (writing) {
-      writing.status = nextStatus;
-    }
+    post.status = post.status === "unpublished" ? "published" : "unpublished";
     return { ...post };
   }
 
   async deletePost(slug: string): Promise<boolean> {
-    const postIndex = this.db.posts.findIndex((p) => p.slug === slug);
-    if (postIndex >= 0) {
-      this.db.posts.splice(postIndex, 1);
+    const idx = this.posts.findIndex((p) => p.slug === slug);
+    if (idx >= 0) {
+      this.posts.splice(idx, 1);
+      return true;
     }
-    const writingIndex = this.db.writing.items.findIndex(
-      (w) => w.slug === slug,
-    );
-    if (writingIndex >= 0) {
-      this.db.writing.items.splice(writingIndex, 1);
-    }
-    return postIndex >= 0;
+    return false;
   }
 
+  // ── Notes ───────────────────────────────────────────────────────────────
+
   async getNote(slug: string): Promise<NoteItem | null> {
-    return this.db.notes.items.find((item) => item.slug === slug) ?? null;
+    return this.notes.find((n) => n.slug === slug) ?? null;
   }
 
   async getNoteSlugs(): Promise<string[]> {
-    return this.db.notes.items
-      .filter((item) => item.status !== 'unpublished')
-      .map((item) => item.slug);
+    return this.notes
+      .filter((n) => n.status !== "unpublished")
+      .map((n) => n.slug);
   }
 
   async getAllNotes(): Promise<NoteItem[]> {
-    return [...this.db.notes.items];
+    return [...this.notes];
   }
 
   async saveNote(note: NoteItem): Promise<NoteItem> {
-    const noteWithStatus: NoteItem = {
-      ...note,
-      status: note.status || "published",
-    };
-    const existingIndex = this.db.notes.items.findIndex(
-      (n) => n.slug === note.slug,
-    );
-    if (existingIndex >= 0) {
-      this.db.notes.items[existingIndex] = { ...noteWithStatus };
+    const saved = { ...note, status: note.status || ("published" as const) };
+    const idx = this.notes.findIndex((n) => n.slug === note.slug);
+    if (idx >= 0) {
+      this.notes[idx] = saved;
     } else {
-      // On insert: reject if slug already exists in another collection.
-      if (this.slugExists(note.slug, "note")) {
-        throw new Error(
-          `Slug "${note.slug}" already exists. Choose a unique slug.`,
-        );
-      }
-      this.db.notes.items.unshift({ ...noteWithStatus });
+      this.notes.push(saved);
     }
-    return noteWithStatus;
+    return saved;
   }
 
   async toggleNoteStatus(slug: string): Promise<NoteItem | null> {
-    const note = this.db.notes.items.find((n) => n.slug === slug);
+    const note = this.notes.find((n) => n.slug === slug);
     if (!note) return null;
     note.status = note.status === "unpublished" ? "published" : "unpublished";
     return { ...note };
   }
 
   async deleteNote(slug: string): Promise<boolean> {
-    const index = this.db.notes.items.findIndex((n) => n.slug === slug);
-    if (index >= 0) {
-      this.db.notes.items.splice(index, 1);
+    const idx = this.notes.findIndex((n) => n.slug === slug);
+    if (idx >= 0) {
+      this.notes.splice(idx, 1);
       return true;
     }
     return false;
   }
 
+  // ── Books ───────────────────────────────────────────────────────────────
+
   async getAllBooks(): Promise<BookItem[]> {
-    return [...this.db.books.items];
+    return [...this.books];
   }
 
   async saveBook(book: BookItem): Promise<BookItem> {
-    const existingIndex = this.db.books.items.findIndex(
-      (b) => b.slug === book.slug,
-    );
-    if (existingIndex >= 0) {
-      this.db.books.items[existingIndex] = { ...book };
+    const idx = this.books.findIndex((b) => b.slug === book.slug);
+    if (idx >= 0) {
+      this.books[idx] = { ...book };
     } else {
-      // On insert: reject if slug already exists in another collection.
-      if (this.slugExists(book.slug, "book")) {
-        throw new Error(
-          `Slug "${book.slug}" already exists. Choose a unique slug.`,
-        );
-      }
-      this.db.books.items.unshift({ ...book });
+      this.books.push({ ...book });
     }
     return book;
   }
 
   async deleteBook(slug: string): Promise<boolean> {
-    const index = this.db.books.items.findIndex((b) => b.slug === slug);
-    if (index >= 0) {
-      this.db.books.items.splice(index, 1);
+    const idx = this.books.findIndex((b) => b.slug === slug);
+    if (idx >= 0) {
+      this.books.splice(idx, 1);
       return true;
     }
     return false;
   }
 
+  // ── Now Entries ─────────────────────────────────────────────────────────
+
   async getNowEntries(): Promise<NowEntry[]> {
-    return [...this.db.now];
+    return [...this.now];
   }
 
   async saveNowEntry(entry: NowEntry): Promise<NowEntry> {
-    const existingIndex = this.db.now.findIndex((e) => e.id === entry.id);
-    const saved: NowEntry = {
-      ...entry,
-      content: entry.content.trim(),
-    };
-    if (existingIndex >= 0) {
-      this.db.now[existingIndex] = { ...saved };
+    const saved = { ...entry, content: entry.content.trim() };
+    const idx = this.now.findIndex((e) => e.id === entry.id);
+    if (idx >= 0) {
+      this.now[idx] = saved;
     } else {
-      this.db.now.push({ ...saved });
+      this.now.push(saved);
     }
-    this.db.now.sort((a, b) => b.date.localeCompare(a.date));
+    this.now.sort((a, b) => b.date.localeCompare(a.date));
     return saved;
   }
 
   async deleteNowEntry(id: string): Promise<boolean> {
-    const index = this.db.now.findIndex((e) => e.id === id);
-    if (index >= 0) {
-      this.db.now.splice(index, 1);
+    const idx = this.now.findIndex((e) => e.id === id);
+    if (idx >= 0) {
+      this.now.splice(idx, 1);
       return true;
     }
     return false;
   }
 
+  // ── Scribble ────────────────────────────────────────────────────────────
+
   async getScribbleEntries(): Promise<ScribbleEntry[]> {
-    const essays: ScribbleEntry[] = this.db.writing.items.map((item) => ({
-      id: item.id,
-      type: "essay",
-      title: item.title,
-      description: item.description,
-      date: item.date,
-      persona: item.persona,
-      topics: item.tags,
-      href: `/p/${item.slug}`,
-      coverImage: item.coverImage,
+    const essays: ScribbleEntry[] = this.posts.map((p) => ({
+      id: p.slug,
+      type: "essay" as const,
+      title: p.title,
+      description: p.description,
+      date: p.publishedAt,
+      persona: p.persona ?? "builder",
+      topics: p.tags,
+      href: `/p/${p.slug}`,
+      coverImage: p.coverImage,
     }));
 
-    const notes: ScribbleEntry[] = this.db.notes.items.map((item) => ({
-      id: item.id,
-      type: "note",
-      title: item.title,
-      description: item.description,
-      date: item.date,
-      persona: item.persona,
-      topics: item.tags,
-      href: `/n/${item.slug}`,
-      coverImage: item.coverImage,
+    const noteEntries: ScribbleEntry[] = this.notes.map((n) => ({
+      id: n.id,
+      type: "note" as const,
+      title: n.title,
+      description: n.description,
+      date: n.date,
+      persona: n.persona,
+      topics: n.tags,
+      href: `/n/${n.slug}`,
+      coverImage: n.coverImage,
     }));
 
-    const books: ScribbleEntry[] = this.db.books.items.map((item) => ({
-      id: item.id,
-      type: "book",
-      title: item.title,
-      description: item.description,
-      date: item.date,
-      persona: item.persona,
-      topics: item.tags,
-      href: this.db.books.href,
-      author: item.author,
+    const bookEntries: ScribbleEntry[] = this.books.map((b) => ({
+      id: b.id,
+      type: "book" as const,
+      title: b.title,
+      description: b.description,
+      date: b.date,
+      persona: b.persona,
+      topics: b.tags,
+      href: "/library",
+      author: b.author,
     }));
 
-    return [...essays, ...notes, ...books];
+    return [...essays, ...noteEntries, ...bookEntries];
   }
+
+  // ── Media ───────────────────────────────────────────────────────────────
 
   async getMedia(): Promise<MediaItem[]> {
     return [...this.db.media];
@@ -312,9 +239,9 @@ export class MockContentRepository implements ContentRepository {
   }
 
   async deleteMedia(id: string): Promise<boolean> {
-    const index = this.db.media.findIndex((m) => m.id === id);
-    if (index >= 0) {
-      this.db.media.splice(index, 1);
+    const idx = this.db.media.findIndex((m) => m.id === id);
+    if (idx >= 0) {
+      this.db.media.splice(idx, 1);
       return true;
     }
     return false;
@@ -322,55 +249,21 @@ export class MockContentRepository implements ContentRepository {
 
   async getOrphanedMedia(): Promise<MediaItem[]> {
     const referenced = new Set<string>();
-
-    // Registered media library — the author knows these assets.
     for (const item of this.db.media) {
       referenced.add(item.src);
     }
+    referenced.add("/biranchi.jpeg");
 
-    // Structured image references.
-    if (this.db.site.hero.image.src) {
-      referenced.add(this.db.site.hero.image.src);
-    }
-    if (this.db.admin.avatarUrl) {
-      referenced.add(this.db.admin.avatarUrl);
-    }
-    for (const item of this.db.writing.items) {
-      if (item.coverImage) referenced.add(item.coverImage);
-    }
-    for (const item of this.db.notes.items) {
-      if (item.coverImage) referenced.add(item.coverImage);
-    }
-    for (const post of this.db.posts) {
+    // Also scan posts, notes for cover images
+    for (const post of this.posts) {
       if (post.coverImage) referenced.add(post.coverImage);
-      for (const section of post.sections) {
-        if (section.figure?.src) referenced.add(section.figure.src);
-      }
     }
-
-    // Scan free text for inline / markdown image references.
-    const textBlob: string[] = [];
-    for (const item of this.db.writing.items) {
-      textBlob.push(item.title, item.subtitle ?? "", item.description);
+    for (const note of this.notes) {
+      if (note.coverImage) referenced.add(note.coverImage);
     }
-    for (const item of this.db.notes.items) {
-      textBlob.push(item.title, item.description, ...item.content);
-    }
-    for (const item of this.db.books.items) {
-      textBlob.push(item.title, item.author, item.description);
-    }
-    for (const post of this.db.posts) {
-      textBlob.push(post.title, post.subtitle ?? "", post.description);
-      textBlob.push(...post.intro);
-      for (const section of post.sections) {
-        textBlob.push(section.heading, ...section.paragraphs);
-        if (section.footnotes) textBlob.push(...section.footnotes);
-      }
-    }
-    const body = textBlob.join(" ");
 
     return this.db.storage
-      .filter((src) => !referenced.has(src) && !body.includes(src))
+      .filter((src) => !referenced.has(src))
       .map((src) => ({
         id: `bucket-${src}`,
         name: src.split("/").pop() ?? src,
@@ -389,14 +282,41 @@ export class MockContentRepository implements ContentRepository {
     return before - this.db.storage.length;
   }
 
-  async getAdminProfile(): Promise<AdminProfile> {
-    return { ...this.db.admin };
+  // ── Featured Items ──────────────────────────────────────────────────────
+
+  async getFeaturedPosts(): Promise<string[]> {
+    return [...this.featuredPosts];
   }
 
-  async updateAdminProfile(
-    profile: Partial<AdminProfile>,
-  ): Promise<AdminProfile> {
-    this.db.admin = { ...this.db.admin, ...profile };
-    return this.db.admin;
+  async getFeaturedBooks(): Promise<string[]> {
+    return [...this.featuredBooks];
+  }
+
+  async setFeaturedPosts(slugs: string[]): Promise<void> {
+    this.featuredPosts = slugs.slice(0, 4);
+  }
+
+  async setFeaturedBooks(slugs: string[]): Promise<void> {
+    this.featuredBooks = slugs.slice(0, 4);
+  }
+
+  // ── User Roles ──────────────────────────────────────────────────────────
+
+  async getUserRole(userId: string): Promise<AppRole | null> {
+    const entry = this.db.userRoles.find((r) => r.userId === userId);
+    return entry?.role ?? null;
+  }
+
+  async setUserRole(userId: string, role: AppRole): Promise<void> {
+    const idx = this.db.userRoles.findIndex((r) => r.userId === userId);
+    if (idx >= 0) {
+      this.db.userRoles[idx].role = role;
+    } else {
+      this.db.userRoles.push({ userId, role });
+    }
+  }
+
+  async getAllUserRoles(): Promise<UserRole[]> {
+    return [...this.db.userRoles];
   }
 }

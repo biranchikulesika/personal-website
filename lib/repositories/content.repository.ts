@@ -1,5 +1,6 @@
 import type {
-  AdminProfile,
+  AppRole,
+  UserRole,
   BlogPost,
   BookItem,
   MediaItem,
@@ -9,7 +10,6 @@ import type {
   ScribbleEntry,
   HomeContent,
   SectionGroup,
-  SiteContent,
   WritingItem,
 } from '@/lib/types';
 
@@ -19,7 +19,6 @@ import type {
 // implementation, nothing else.
 
 export interface ContentRepository {
-  getSiteContent(): Promise<SiteContent>;
   getHomeContent(): Promise<HomeContent>;
   getWriting(): Promise<SectionGroup<WritingItem>>;
   getLibrary(): Promise<SectionGroup<BookItem>>;
@@ -53,6 +52,12 @@ export interface ContentRepository {
   getOrphanedMedia(): Promise<MediaItem[]>;
   deleteStorageAssets(srcs: string[]): Promise<number>;
 
-  getAdminProfile(): Promise<AdminProfile>;
-  updateAdminProfile(profile: Partial<AdminProfile>): Promise<AdminProfile>;
+  getUserRole(userId: string): Promise<AppRole | null>;
+  setUserRole(userId: string, role: AppRole): Promise<void>;
+  getAllUserRoles(): Promise<UserRole[]>;
+
+  getFeaturedPosts(): Promise<string[]>;
+  getFeaturedBooks(): Promise<string[]>;
+  setFeaturedPosts(slugs: string[]): Promise<void>;
+  setFeaturedBooks(slugs: string[]): Promise<void>;
 }

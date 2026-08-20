@@ -3,7 +3,6 @@
 import { ContentService } from '@/lib/services/content.service';
 import { revalidatePath } from 'next/cache';
 import type {
-  AdminProfile,
   BlogPost,
   BookItem,
   MediaItem,
@@ -17,7 +16,6 @@ import {
   BookItemSchema,
   NowEntrySchema,
   MediaItemSchema,
-  AdminProfileUpdateSchema,
   SlugParamSchema,
   IdParamSchema,
 } from '@/lib/validation';
@@ -253,26 +251,6 @@ export async function deleteOrphanedMediaAction(
   }
 }
 
-// Admin Profile Actions -------------------------------------------------------
-
-export async function getAdminProfileAction(): Promise<AdminProfile> {
-  return await contentService.getAdminProfile();
-}
-
-export async function updateAdminProfileAction(
-  profile: Partial<AdminProfile>,
-): Promise<{ success: boolean; profile?: AdminProfile; error?: string }> {
-  try {
-    // Strip restricted fields — authStatus must not be modifiable via this action.
-    const validated = validateInput(AdminProfileUpdateSchema, profile);
-    const updated = await contentService.updateAdminProfile(validated);
-    revalidatePath('/admin');
-    return { success: true, profile: updated };
-  } catch (err: unknown) {
-    return { success: false, error: (err as Error).message || 'Failed to update profile' };
-  }
-}
-
 // AI Metadata & Summarization Actions -----------------------------------------
 
 export async function generateAiMetadataAction(input: {
@@ -293,3 +271,39 @@ export async function generateAiMetadataAction(input: {
   }
 }
 
+
+// Featured Items Actions ------------------------------------------------------
+
+export async function getFeaturedPostsAction(): Promise<string[]> {
+  return await contentService.getFeaturedPosts();
+}
+
+export async function getFeaturedBooksAction(): Promise<string[]> {
+  return await contentService.getFeaturedBooks();
+}
+
+export async function setFeaturedPostsAction(
+  slugs: string[],
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    await contentService.setFeaturedPosts(slugs.slice(0, 4));
+    revalidatePath('/');
+    revalidatePath('/admin');
+    return { success: true };
+  } catch (err: unknown) {
+    return { success: false, error: (err as Error).message || 'Failed to set featured posts' };
+  }
+}
+
+export async function setFeaturedBooksAction(
+  slugs: string[],
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    await contentService.setFeaturedBooks(slugs.slice(0, 4));
+    revalidatePath('/');
+    revalidatePath('/admin');
+    return { success: true };
+  } catch (err: unknown) {
+    return { success: false, error: (err as Error).message || 'Failed to set featured books' };
+  }
+}

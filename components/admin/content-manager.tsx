@@ -33,6 +33,7 @@ import {
   slugify,
 } from "@/lib/utils";
 import Link from "next/link";
+import { EmptyTableState } from "@/components/ui/states";
 import { useState, useTransition } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { ToastView } from "@/components/ui/toast-view";
@@ -1013,14 +1014,11 @@ export function ContentManager({
                 );
               })}
               {filteredItems.length === 0 && (
-                <tr>
-                  <td
-                    colSpan={6}
-                    className="px-5 py-10 text-center text-ink-soft"
-                  >
-                    No entries match your search and filter criteria.
-                  </td>
-                </tr>
+                <EmptyTableState
+                  colSpan={6}
+                  title="No entries found"
+                  description="No entries match your search and filter criteria."
+                />
               )}
             </tbody>
           </table>

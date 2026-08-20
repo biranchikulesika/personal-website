@@ -223,11 +223,9 @@ export interface MediaItem {
 
 // Admin & Security ------------------------------------------------------------
 
-export interface AdminProfile {
-  name: string;
-  email: string;
-  avatarUrl: string;
-  role: string;
-  authStatus: "developer_mode" | "enabled";
-  lastLogin: string;
+export type AppRole = "user" | "content_admin" | "super_admin";
+
+export interface UserRole {
+  userId: string;
+  role: AppRole;
 }

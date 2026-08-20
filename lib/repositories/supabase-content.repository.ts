@@ -1,5 +1,6 @@
 import type {
-  AdminProfile,
+  AppRole,
+  UserRole,
   BlogPost,
   BookItem,
   MediaItem,
@@ -11,7 +12,6 @@ import type {
   PostSection,
   BookCard,
   SectionGroup,
-  SiteContent,
   WritingItem,
 } from "@/lib/types";
 import type { ContentRepository } from "./content.repository";
@@ -170,21 +170,7 @@ export class SupabaseContentRepository implements ContentRepository {
     return getSupabaseAdmin();
   }
 
-  // ── Site Content ───────────────────────────────────────────────────────
-
-  async getSiteContent(): Promise<SiteContent> {
-    const { data, error } = await this.db
-      .from("site_config")
-      .select("config")
-      .eq("id", "singleton")
-      .single();
-
-    if (error || !data) {
-      throw new Error(`Failed to load site config: ${error?.message ?? "not found"}`);
-    }
-
-    return data.config as SiteContent;
-  }
+  // ── Home Content ───────────────────────────────────────────────────────
 
   async getHomeContent(): Promise<HomeContent> {
     const [writing, notes, library] = await Promise.all([
@@ -674,45 +660,102 @@ export class SupabaseContentRepository implements ContentRepository {
     return count ?? 0;
   }
 
-  // ── Admin Profile ──────────────────────────────────────────────────────
+  // ── User Roles ─────────────────────────────────────────────────────────
 
-  async getAdminProfile(): Promise<AdminProfile> {
+  async getUserRole(userId: string): Promise<AppRole | null> {
     const { data, error } = await this.db
-      .from("admin_profile")
-      .select("*")
-      .eq("id", "singleton")
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId)
       .single();
 
-    if (error || !data) {
-      throw new Error(`Failed to load admin profile: ${error?.message ?? "not found"}`);
-    }
-
-    return {
-      name: data.name,
-      email: data.email,
-      avatarUrl: data.avatar_url,
-      role: data.role,
-      authStatus: data.auth_status as AdminProfile["authStatus"],
-      lastLogin: data.last_login ?? new Date().toISOString(),
-    };
+    if (error || !data) return null;
+    return data.role as AppRole;
   }
 
-  async updateAdminProfile(profile: Partial<AdminProfile>): Promise<AdminProfile> {
-    const update: Database["public"]["Tables"]["admin_profile"]["Update"] = {};
-
-    if (profile.name !== undefined) update.name = profile.name;
-    if (profile.email !== undefined) update.email = profile.email;
-    if (profile.avatarUrl !== undefined) update.avatar_url = profile.avatarUrl;
-    if (profile.role !== undefined) update.role = profile.role;
-    if (profile.authStatus !== undefined) update.auth_status = profile.authStatus;
-    if (profile.lastLogin !== undefined) update.last_login = profile.lastLogin;
-
+  async setUserRole(userId: string, role: AppRole): Promise<void> {
     const { error } = await this.db
-      .from("admin_profile")
-      .update(update)
-      .eq("id", "singleton");
+      .from("user_roles")
+      .upsert({ user_id: userId, role }, { onConflict: "user_id" });
 
-    if (error) throw new Error(`Failed to update admin profile: ${error.message}`);
-    return this.getAdminProfile();
+    if (error) throw new Error(`Failed to set user role: ${error.message}`);
+  }
+
+  async getAllUserRoles(): Promise<UserRole[]> {
+    const { data, error } = await this.db
+      .from("user_roles")
+      .select("*");
+
+    if (error) throw new Error(`Failed to load user roles: ${error.message}`);
+    return (data as { user_id: string; role: string }[]).map((row) => ({
+      userId: row.user_id,
+      role: row.role as AppRole,
+    }));
+  }
+
+  // ── Featured Items ─────────────────────────────────────────────────────
+
+  async getFeaturedPosts(): Promise<string[]> {
+    const { data, error } = await this.db
+      .from("featured_items")
+      .select("item_id")
+      .eq("item_type", "post")
+      .order("position");
+
+    if (error) throw new Error(`Failed to load featured posts: ${error.message}`);
+    return (data as { item_id: string }[]).map((r) => r.item_id);
+  }
+
+  async getFeaturedBooks(): Promise<string[]> {
+    const { data, error } = await this.db
+      .from("featured_items")
+      .select("item_id")
+      .eq("item_type", "book")
+      .order("position");
+
+    if (error) throw new Error(`Failed to load featured books: ${error.message}`);
+    return (data as { item_id: string }[]).map((r) => r.item_id);
+  }
+
+  async setFeaturedPosts(slugs: string[]): Promise<void> {
+    // Delete existing featured posts
+    await this.db
+      .from("featured_items")
+      .delete()
+      .eq("item_type", "post");
+
+    // Insert new featured posts
+    if (slugs.length > 0) {
+      const rows = slugs.map((slug, i) => ({
+        item_type: "post" as const,
+        item_id: slug,
+        position: i + 1,
+      }));
+      const { error } = await this.db
+        .from("featured_items")
+        .insert(rows);
+      if (error) throw new Error(`Failed to set featured posts: ${error.message}`);
+    }
+  }
+
+  async setFeaturedBooks(slugs: string[]): Promise<void> {
+    // Delete existing featured books
+    await this.db
+      .from("featured_items")
+      .delete()
+      .eq("item_type", "book");
+
+    // Insert new featured books
+    if (slugs.length > 0) {
+      const rows = slugs.map((slug, i) => ({
+        item_type: "book" as const,
+        item_id: slug,
+        position: i + 1,
+      }));
+      const { error } = await this.db
+        .from("featured_items")
+        .insert(rows);
+      if (error) throw new Error(`Failed to set featured books: ${error.message}`);
+    }
   }
 }

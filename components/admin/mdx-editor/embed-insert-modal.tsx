@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import type { BlogPost, BookItem, NoteItem } from '@/lib/types';
+import { NoSearchResults, NoContentState } from '@/components/ui/states';
 
 type EmbedSourceType = 'book' | 'post' | 'note';
 
@@ -169,10 +170,19 @@ export function EmbedInsertModal({
           </div>
 
           {currentItems.length === 0 && (
-            <div className="py-12 text-center text-xs text-gray-mid">
-              No {tabs.find((t) => t.type === activeType)?.label.toLowerCase()} found
-              {search ? ` matching "${search}"` : ''}.
-            </div>
+            search ? (
+              <NoSearchResults
+                compact
+                query={search}
+                onReset={() => setSearch('')}
+              />
+            ) : (
+              <NoContentState
+                compact
+                title={`No ${tabs.find((t) => t.type === activeType)?.label.toLowerCase()} available`}
+                description="No items exist in this category yet."
+              />
+            )
           )}
         </div>
 

@@ -17,14 +17,14 @@ test("content service supports full CRUD on now entries", async () => {
   const service = new ContentService();
 
   const initialEntries = await service.getNowEntries();
-  assert.ok(initialEntries.length >= 3, "should have seeded now entries");
+  assert.equal(initialEntries.length, 0, "should have no now entries initially");
 
   // Create
   const newEntry = createTestNowEntry({ id: "now-test-1", title: "Testing Now Entry" });
 
   await service.saveNowEntry(newEntry);
   const afterCreate = await service.getNowEntries();
-  assert.equal(afterCreate.length, initialEntries.length + 1);
+  assert.equal(afterCreate.length, 1);
 
   // Read
   const found = afterCreate.find((e) => e.id === "now-test-1");
@@ -37,13 +37,13 @@ test("content service supports full CRUD on now entries", async () => {
   const afterUpdate = await service.getNowEntries();
   const updatedFound = afterUpdate.find((e) => e.id === "now-test-1");
   assert.equal(updatedFound!.title, "Updated Now Entry");
-  assert.equal(afterUpdate.length, initialEntries.length + 1, "should not duplicate on update");
+  assert.equal(afterUpdate.length, 1, "should not duplicate on update");
 
   // Delete
   const deleted = await service.deleteNowEntry("now-test-1");
   assert.equal(deleted, true);
   const afterDelete = await service.getNowEntries();
-  assert.equal(afterDelete.length, initialEntries.length);
+  assert.equal(afterDelete.length, 0);
 
   // Delete non-existent
   const deletedNonExistent = await service.deleteNowEntry("does-not-exist");
@@ -126,18 +126,23 @@ test("deleteBook returns false for non-existent book", async () => {
   assert.equal(result, false);
 });
 
-// ── Admin Profile AuthStatus Stripping ──────────────────────────────────────
+// ── User Roles ────────────────────────────────────────────────────────────
 
-test("updateAdminProfile strips authStatus field", async () => {
+test("setUserRole persists and getUserRole retrieves", async () => {
   resetDatabase();
   const service = new ContentService();
 
-  // Try to set authStatus through the service
-  await service.updateAdminProfile({ authStatus: "enabled" });
-  const profile = await service.getAdminProfile();
+  await service.setUserRole("test-user", "content_admin");
+  const role = await service.getUserRole("test-user");
+  assert.equal(role, "content_admin");
+});
 
-  // authStatus should remain unchanged (service strips it)
-  assert.equal(profile.authStatus, "developer_mode", "authStatus should not be modified through updateAdminProfile");
+test("getUserRole returns null for nonexistent user", async () => {
+  resetDatabase();
+  const service = new ContentService();
+
+  const role = await service.getUserRole("nonexistent");
+  assert.equal(role, null);
 });
 
 // ── Note CRUD Edge Cases ────────────────────────────────────────────────────

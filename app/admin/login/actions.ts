@@ -35,39 +35,22 @@ function resetRateLimit(ip: string): void {
   attempts.delete(getRateLimitKey(ip));
 }
 
-// ── Login Action ───────────────────────────────────────────────────────────
+// ── Supabase Client Helper ────────────────────────────────────────────────
 
-export async function loginAction(
-  email: string,
-  password: string,
-): Promise<{ error?: string }> {
-  // Rate limiting
-  const headersList = await headers();
-  const ip =
-    headersList.get('x-forwarded-for')?.split(',')[0]?.trim() ||
-    headersList.get('x-real-ip') ||
-    'unknown';
-
-  if (!checkRateLimit(ip)) {
-    // Return the same generic error as a bad password — don't reveal rate limiting.
-    return { error: 'Invalid login credentials' };
-  }
-
-  // Validate input
-  if (!email || !password) {
-    return { error: 'Email and password are required' };
-  }
-
+async function createAuthClient() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabasePublishableKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 
   if (!supabaseUrl || !supabasePublishableKey) {
-    return { error: 'Authentication is not configured' };
+    return null;
   }
 
   const cookieStore = await cookies();
 
-  const supabase = createServerClient(supabaseUrl, supabasePublishableKey, {
+  return createServerClient(supabaseUrl, supabasePublishableKey, {
+    auth: {
+      experimental: { passkey: true },
+    },
     cookies: {
       getAll() {
         return cookieStore.getAll();
@@ -83,49 +66,13 @@ export async function loginAction(
       },
     },
   });
-
-  const { error } = await supabase.auth.signInWithPassword({
-    email,
-    password,
-  });
-
-  if (error) {
-    // Don't reveal whether the email exists or the password was wrong.
-    return { error: 'Invalid login credentials' };
-  }
-
-  // Successful login — reset rate limit for this IP.
-  resetRateLimit(ip);
-  return {};
 }
 
 // ── OAuth Actions ──────────────────────────────────────────────────────────
 
 export async function signInWithGoogle(): Promise<{ url?: string; error?: string }> {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabasePublishableKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
-
-  if (!supabaseUrl || !supabasePublishableKey) {
-    return { error: 'Authentication is not configured' };
-  }
-
-  const cookieStore = await cookies();
-  const supabase = createServerClient(supabaseUrl, supabasePublishableKey, {
-    cookies: {
-      getAll() {
-        return cookieStore.getAll();
-      },
-      setAll(cookiesToSet) {
-        try {
-          cookiesToSet.forEach(({ name, value, options }) =>
-            cookieStore.set(name, value, options),
-          );
-        } catch {
-          // Server Action — safe to ignore.
-        }
-      },
-    },
-  });
+  const supabase = await createAuthClient();
+  if (!supabase) return { error: 'Authentication is not configured' };
 
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
@@ -134,38 +81,13 @@ export async function signInWithGoogle(): Promise<{ url?: string; error?: string
     },
   });
 
-  if (error) {
-    return { error: error.message };
-  }
-
+  if (error) return { error: error.message };
   return { url: data.url };
 }
 
 export async function signInWithGitHub(): Promise<{ url?: string; error?: string }> {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabasePublishableKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
-
-  if (!supabaseUrl || !supabasePublishableKey) {
-    return { error: 'Authentication is not configured' };
-  }
-
-  const cookieStore = await cookies();
-  const supabase = createServerClient(supabaseUrl, supabasePublishableKey, {
-    cookies: {
-      getAll() {
-        return cookieStore.getAll();
-      },
-      setAll(cookiesToSet) {
-        try {
-          cookiesToSet.forEach(({ name, value, options }) =>
-            cookieStore.set(name, value, options),
-          );
-        } catch {
-          // Server Action — safe to ignore.
-        }
-      },
-    },
-  });
+  const supabase = await createAuthClient();
+  if (!supabase) return { error: 'Authentication is not configured' };
 
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'github',
@@ -174,46 +96,60 @@ export async function signInWithGitHub(): Promise<{ url?: string; error?: string
     },
   });
 
-  if (error) {
-    return { error: error.message };
+  if (error) return { error: error.message };
+  return { url: data.url };
+}
+
+// ── Passkey Actions ────────────────────────────────────────────────────────
+
+export async function signInWithPasskey(): Promise<{ error?: string }> {
+  const headersList = await headers();
+  const ip =
+    headersList.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+    headersList.get('x-real-ip') ||
+    'unknown';
+
+  if (!checkRateLimit(ip)) {
+    return { error: 'Too many attempts. Please try again later.' };
   }
 
-  return { url: data.url };
+  const supabase = await createAuthClient();
+  if (!supabase) return { error: 'Authentication is not configured' };
+
+  const { error } = await supabase.auth.signInWithPasskey();
+
+  if (error) {
+    return { error: 'Passkey authentication failed. Please try again.' };
+  }
+
+  resetRateLimit(ip);
+  return {};
+}
+
+export async function startPasskeyRegistration(): Promise<{
+  options?: string;
+  error?: string;
+}> {
+  const supabase = await createAuthClient();
+  if (!supabase) return { error: 'Authentication is not configured' };
+
+  // Get current user
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: 'You must be signed in to register a passkey.' };
+
+  const { data, error } = await supabase.auth.registerPasskey();
+
+  if (error) return { error: error.message };
+  return { options: JSON.stringify(data) };
 }
 
 // ── Logout Action ──────────────────────────────────────────────────────────
 
 export async function logoutAction(): Promise<{ error?: string }> {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabasePublishableKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
-
-  if (!supabaseUrl || !supabasePublishableKey) {
-    return { error: 'Authentication is not configured' };
-  }
-
-  const cookieStore = await cookies();
-  const supabase = createServerClient(supabaseUrl, supabasePublishableKey, {
-    cookies: {
-      getAll() {
-        return cookieStore.getAll();
-      },
-      setAll(cookiesToSet) {
-        try {
-          cookiesToSet.forEach(({ name, value, options }) =>
-            cookieStore.set(name, value, options),
-          );
-        } catch {
-          // Server Action — safe to ignore.
-        }
-      },
-    },
-  });
+  const supabase = await createAuthClient();
+  if (!supabase) return { error: 'Authentication is not configured' };
 
   const { error } = await supabase.auth.signOut();
-
-  if (error) {
-    return { error: error.message };
-  }
-
+  if (error) return { error: error.message };
   return {};
 }

@@ -5,6 +5,7 @@ import Image from 'next/image';
 import type { MediaItem } from '@/lib/types';
 import { addMediaAction } from '@/app/admin/actions';
 import { UploadIcon, LinkIcon, ImageIcon, CheckIcon } from '@/components/icons';
+import { NoMediaState, NoSearchResults } from '@/components/ui/states';
 
 interface BookCoverPickerProps {
   value: string;
@@ -297,9 +298,17 @@ export function BookCoverPicker({
                     );
                   })}
                   {filteredMedia.length === 0 && (
-                    <p className="col-span-full py-4 text-center text-[10px] text-gray-mid">
-                      No media resources found.
-                    </p>
+                    <div className="col-span-full">
+                      {mediaItems.length === 0 ? (
+                        <NoMediaState compact />
+                      ) : (
+                        <NoSearchResults
+                          compact
+                          query={search || undefined}
+                          onReset={search ? () => setSearch('') : undefined}
+                        />
+                      )}
+                    </div>
                   )}
                 </div>
               </div>

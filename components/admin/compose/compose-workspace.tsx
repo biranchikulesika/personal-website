@@ -23,6 +23,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { ToastView } from "@/components/ui/toast-view";
+import { NoSearchResults, NoContentState } from "@/components/ui/states";
 import { EmbedInsertModal } from "../mdx-editor/embed-insert-modal";
 import { MDXPreview } from "../mdx-editor/mdx-preview";
 import { MediaInsertModal } from "../mdx-editor/media-insert-modal";
@@ -1076,9 +1077,19 @@ export function ComposeWorkspace({
 
             <div className="flex-1 overflow-y-auto p-3 space-y-1.5">
               {allDraftItems.length === 0 ? (
-                <div className="p-8 text-center text-xs text-ink-soft italic">
-                  No matching drafts or notes found.
-                </div>
+                draftsSearchQuery ? (
+                  <NoSearchResults
+                    compact
+                    query={draftsSearchQuery}
+                    onReset={() => setDraftsSearchQuery('')}
+                  />
+                ) : (
+                  <NoContentState
+                    compact
+                    title="No drafts found"
+                    description="Create a new document to begin writing."
+                  />
+                )
               ) : (
                 allDraftItems.map((item) => (
                   <button

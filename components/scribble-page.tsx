@@ -16,6 +16,7 @@ import {
 import { formatDisplayDate } from '@/lib/utils';
 import { PERSONA_LABELS, ALL_PERSONAS } from '@/lib/constants';
 import { EssayCover } from './ui/essay-cover';
+import { NoSearchResults, NoContentState } from './ui/states';
 
 interface ScribblePageProps {
   entries: ScribbleEntry[];
@@ -343,11 +344,26 @@ export function ScribblePage({ entries }: ScribblePageProps) {
         })}
       </div>
 
-      {filtered.length === 0 && (
-        <p className="mt-10 text-center text-sm text-ink-soft">
-          Nothing matches those filters yet. Loosen a filter to keep browsing.
-        </p>
-      )}
+      {entries.length === 0 ? (
+        <NoContentState
+          title="No entries yet"
+          description="Nothing has been published to Scribble yet."
+        />
+      ) : filtered.length === 0 ? (
+        <NoSearchResults
+          query={search || undefined}
+          onReset={
+            search || activePersona || activeTopic
+              ? () => {
+                  setSearch('');
+                  setActivePersona(null);
+                  setActiveTopic(null);
+                }
+              : undefined
+          }
+          resetLabel="Reset filters"
+        />
+      ) : null}
     </section>
   );
 }

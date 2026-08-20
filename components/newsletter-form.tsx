@@ -29,10 +29,10 @@ export function NewsletterForm({
 
   return (
     <div className="max-w-xl">
-      {/* Mobile layout — underline input + full-width button */}
+      {/* Mobile layout — pill input on top with stacked pill button underneath */}
       <form
         onSubmit={handleSubmit}
-        className="rounded-2xl bg-night-soft p-4 shadow-lg ring-1 ring-tinted/20 sm:hidden"
+        className="flex flex-col gap-3 sm:hidden"
       >
         <input
           type="email"
@@ -40,11 +40,11 @@ export function NewsletterForm({
           required
           placeholder={newsletter.placeholder}
           aria-label="Email address"
-          className="w-full border-b border-tinted/20 bg-transparent pb-2 text-base text-paper placeholder:text-ink-soft/60 focus:border-accent focus:outline-none"
+          className="w-full rounded-full border border-tinted/20 bg-night-soft px-5 py-3.5 text-base text-paper placeholder:text-ink-soft/60 shadow-sm transition-colors focus:border-accent focus:outline-none focus:ring-0"
         />
         <button
           type="submit"
-          className="mt-4 w-full rounded-xl bg-accent px-5 py-3 text-base font-semibold text-paper transition-colors hover:bg-accent-hover"
+          className="w-full rounded-full bg-accent px-6 py-3.5 text-base font-semibold text-paper shadow-sm transition-colors hover:bg-accent-hover"
         >
           {subscribed ? 'Subscribed!' : newsletter.button}
         </button>
@@ -53,7 +53,7 @@ export function NewsletterForm({
       {/* Desktop layout — compact pill */}
       <form
         onSubmit={handleSubmit}
-        className="hidden flex-col gap-2 rounded-2xl bg-night-soft p-1.5 shadow-lg ring-1 ring-tinted/20 sm:flex sm:flex-row sm:items-center sm:rounded-full"
+        className="hidden flex-col gap-2 rounded-2xl border border-tinted/20 bg-night-soft p-1.5 shadow-lg transition-colors focus-within:border-accent sm:flex sm:flex-row sm:items-center sm:rounded-full"
       >
         <input
           type="email"
@@ -61,7 +61,7 @@ export function NewsletterForm({
           required
           placeholder={newsletter.placeholder}
           aria-label="Email address"
-          className="w-full flex-1 rounded-full bg-transparent px-5 py-3 text-base text-paper placeholder:text-ink-soft/60 focus:outline-none"
+          className="w-full flex-1 rounded-full border-none bg-transparent px-5 py-3 text-base text-paper placeholder:text-ink-soft/60 focus:outline-none focus:ring-0"
         />
         <button
           type="submit"
@@ -72,7 +72,7 @@ export function NewsletterForm({
       </form>
 
       {showNote && (
-        <p className="mt-3 text-xs font-medium uppercase tracking-wider text-ink-soft/80">
+        <p className="mt-2.5 px-1 text-xs sm:text-[13px] leading-relaxed text-gray-mid/75">
           {newsletter.note}
         </p>
       )}
