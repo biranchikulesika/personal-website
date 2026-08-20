@@ -142,6 +142,7 @@ export interface ScribbleEntry {
   topics: string[];
   href: string;
   author?: string;
+  coverImage?: string;
 }
 
 // Blog posts -----------------------------------------------------------------

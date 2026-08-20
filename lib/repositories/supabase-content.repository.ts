@@ -543,6 +543,7 @@ export class SupabaseContentRepository implements ContentRepository {
       persona: post.persona ?? "builder",
       topics: post.tags,
       href: `/p/${post.slug}`,
+      coverImage: post.coverImage,
     }));
 
     const noteEntries: ScribbleEntry[] = notes.map((note) => ({
@@ -554,6 +555,7 @@ export class SupabaseContentRepository implements ContentRepository {
       persona: note.persona,
       topics: note.tags,
       href: `/n/${note.slug}`,
+      coverImage: note.coverImage,
     }));
 
     const bookEntries: ScribbleEntry[] = books.map((book) => ({

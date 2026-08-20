@@ -1,5 +1,6 @@
 import { PERSONA_LABELS } from "@/lib/constants";
 import type { BlogPost, PostFigure, PostSection } from "@/lib/types";
+import { formatDisplayDate } from "@/lib/utils";
 import Link from "next/link";
 import { Fragment } from "react";
 import {
@@ -178,14 +179,14 @@ export function BlogPostView({ post }: { post: BlogPost }) {
               )}
 
               <span className="text-ink-soft">Pub.</span>
-              <span className="text-paper">{post.publishedAt}</span>
+              <span className="text-paper">{formatDisplayDate(post.publishedAt)}</span>
               {post.lastEditedAt !== post.publishedAt && (
                 <span className="hidden sm:inline-flex sm:items-center sm:gap-x-2">
                   <span className="text-ink-soft" aria-hidden>
                     ·
                   </span>
                   <span className="text-ink-soft">Ed.</span>
-                  <span className="text-paper">{post.lastEditedAt}</span>
+                  <span className="text-paper">{formatDisplayDate(post.lastEditedAt)}</span>
                 </span>
               )}
 

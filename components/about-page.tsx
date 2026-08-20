@@ -161,7 +161,7 @@ export function AboutPageView({ site, featuredWriting }: AboutPageProps) {
               href={`/p/${item.slug}`}
               className="group flex flex-col rounded-2xl border border-tinted/20 bg-post-card p-4 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md"
             >
-              <EssayCover title={item.title} />
+              <EssayCover title={item.title} coverImage={item.coverImage} />
               <h3 className="mt-4 font-serif text-lg font-normal leading-snug text-paper transition-colors duration-300 group-hover:text-accent">
                 {item.title}
               </h3>
@@ -263,7 +263,7 @@ export function AboutPageView({ site, featuredWriting }: AboutPageProps) {
             </Link>
             , or say hello via{" "}
             <a
-              href="mailto:hello@kulesika.in"
+              href="mailto:hello@biranchikulesika.com"
               className="text-paper underline decoration-tinted/40 underline-offset-4 transition-colors hover:text-accent hover:decoration-accent"
             >
               email

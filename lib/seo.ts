@@ -11,11 +11,13 @@ import {
  * Generate a dynamic OG image URL.
  * Falls back to a static endpoint that generates the image on the fly.
  */
-function ogImage(params: { title?: string; description?: string; type?: string } = {}) {
+function ogImage(params: { title?: string; description?: string; type?: string; persona?: string; cover?: string } = {}) {
   const searchParams = new URLSearchParams();
   if (params.title) searchParams.set('title', params.title);
   if (params.description) searchParams.set('description', params.description);
   if (params.type) searchParams.set('type', params.type);
+  if (params.persona) searchParams.set('persona', params.persona);
+  if (params.cover) searchParams.set('cover', params.cover);
   const qs = searchParams.toString();
   return `${SITE_URL}/api/og${qs ? `?${qs}` : ''}`;
 }
@@ -80,7 +82,8 @@ export function postMetadata(post: BlogPost): Metadata {
   const personaLabel = post.persona
     ? PERSONA_LABELS[post.persona]
     : undefined;
-  const ogUrl = ogImage({ title, description, type: 'post' });
+  // Use the dynamic OG route that resolves post data and generates a composed image
+  const ogUrl = `${SITE_URL}/api/og?slug=${encodeURIComponent(post.slug)}`;
 
   return {
     title,
@@ -96,16 +99,14 @@ export function postMetadata(post: BlogPost): Metadata {
       modifiedTime: post.lastEditedAt,
       authors: [SITE_NAME],
       tags: [...post.tags, ...(personaLabel ? [personaLabel] : [])],
-      images: post.coverImage
-        ? [{ url: post.coverImage, width: 1200, height: 630, alt: title }]
-        : [{ url: ogUrl, width: 1200, height: 630, alt: title }],
+      images: [{ url: ogUrl, width: 1200, height: 630, alt: title }],
     },
     twitter: {
       card: 'summary_large_image',
       creator: '@BKulesika',
       title,
       description,
-      images: post.coverImage ? [post.coverImage] : [ogUrl],
+      images: [ogUrl],
     },
   };
 }
@@ -118,7 +119,14 @@ export function noteMetadata(note: NoteItem): Metadata {
   const title = note.title;
   const description = note.description || '';
   const personaLabel = PERSONA_LABELS[note.persona];
-  const ogUrl = ogImage({ title, description, type: 'note' });
+  const noteOgParams: { title: string; description: string; type: string; persona?: string; cover?: string } = {
+    title,
+    description,
+    type: 'note',
+  };
+  if (personaLabel) noteOgParams.persona = personaLabel;
+  if (note.coverImage) noteOgParams.cover = note.coverImage;
+  const noteOgUrl = ogImage(noteOgParams);
 
   return {
     title,
@@ -132,16 +140,14 @@ export function noteMetadata(note: NoteItem): Metadata {
       siteName: SITE_NAME,
       authors: [SITE_NAME],
       tags: [...note.tags, personaLabel],
-      images: note.coverImage
-        ? [{ url: note.coverImage, width: 1200, height: 630, alt: title }]
-        : [{ url: ogUrl, width: 1200, height: 630, alt: title }],
+      images: [{ url: noteOgUrl, width: 1200, height: 630, alt: title }],
     },
     twitter: {
       card: 'summary_large_image',
       creator: '@BKulesika',
       title,
       description,
-      images: note.coverImage ? [note.coverImage] : [ogUrl],
+      images: [noteOgUrl],
     },
   };
 }

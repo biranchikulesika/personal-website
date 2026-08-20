@@ -81,6 +81,7 @@ function seedStorage(): string[] {
     "/IMG_20240512_184302.jpeg",
     "/DSC_0217.png",
     "/old-header-banner.webp",
+    "/testing.webp",
   ];
 }
 
@@ -186,6 +187,16 @@ function seedMedia(): MediaItem[] {
       dimensions: "256 × 402",
       uploadedAt: "2026-08-19",
       tag: "book",
+    },
+    {
+      id: "media-010",
+      name: "testing.webp",
+      src: "/testing.webp",
+      alt: "Cover artwork — transparent WebP test asset",
+      size: "14 KB",
+      dimensions: "399 × 399",
+      uploadedAt: "2026-08-20",
+      tag: "post",
     },
   ];
 }

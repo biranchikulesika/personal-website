@@ -272,6 +272,7 @@ export class MockContentRepository implements ContentRepository {
       persona: item.persona,
       topics: item.tags,
       href: `/p/${item.slug}`,
+      coverImage: item.coverImage,
     }));
 
     const notes: ScribbleEntry[] = this.db.notes.items.map((item) => ({
@@ -283,6 +284,7 @@ export class MockContentRepository implements ContentRepository {
       persona: item.persona,
       topics: item.tags,
       href: `/n/${item.slug}`,
+      coverImage: item.coverImage,
     }));
 
     const books: ScribbleEntry[] = this.db.books.items.map((item) => ({

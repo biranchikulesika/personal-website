@@ -17,7 +17,7 @@ function EssayCard({ item }: { item: WritingItem }) {
         className="flex h-full flex-col justify-between rounded-2xl border border-tinted/20 bg-post-card p-4 sm:p-5 shadow-xs transition-all duration-300 hover:scale-[1.02] hover:shadow-md"
       >
         <div>
-          <EssayCover title={item.title} />
+          <EssayCover title={item.title} coverImage={item.coverImage} />
           <h4 className="mt-4 font-serif text-lg font-normal leading-snug text-paper transition-colors duration-300 group-hover:text-accent">
             {item.title}
           </h4>

@@ -74,7 +74,7 @@ export function seedSiteContent(): SiteContent {
             { label: "Now", href: "/now" },
             { label: "About", href: "/about" },
             { label: "GitHub", href: "https://github.com/biranchikulesika" },
-            { label: "Email", href: "mailto:hello@kulesika.in" },
+            { label: "Email", href: "mailto:hello@biranchikulesika.com" },
           ],
         },
         {
@@ -102,6 +102,7 @@ function writingItems(): WritingItem[] {
       title: "Building in public, carefully",
       description:
         "What it looks like to share unfinished work without performing it.",
+      coverImage: "/testing.webp",
       date: "2026-03-03",
       tags: ["Craft", "Attention", "The web"],
     },
@@ -112,6 +113,7 @@ function writingItems(): WritingItem[] {
       title: "Attention as a material",
       description:
         "Treating focus the way a craftsperson treats their material.",
+      coverImage: "/testing.webp",
       date: "2026-02-12",
       tags: ["Attention", "Craft"],
     },
@@ -446,6 +448,7 @@ function featuredPost(): BlogPost {
       "What it looks like to share unfinished work without turning the process into a performance.",
     persona: "builder",
     tags: ["Craft", "Attention", "The web"],
+    coverImage: "/testing.webp",
     publishedAt: "2026-03-03",
     lastEditedAt: "2026-08-21",
     assumedAudience:
@@ -539,6 +542,7 @@ function attentionPost(): BlogPost {
       "Treating focus the way a craftsperson treats their material — with care, patience, and respect for its limits.",
     persona: "thinker",
     tags: ["Attention", "Craft"],
+    coverImage: "/testing.webp",
     publishedAt: "2026-02-12",
     lastEditedAt: "2026-08-20",
     assumedAudience:

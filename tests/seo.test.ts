@@ -87,7 +87,7 @@ test("postMetadata includes twitter:creator", () => {
   assert.equal(twitter.creator, "@BKulesika");
 });
 
-test("postMetadata uses coverImage when available", () => {
+test("postMetadata uses dedicated per-slug OG route", () => {
   const post: BlogPost = {
     slug: "test",
     title: "Test",
@@ -105,7 +105,11 @@ test("postMetadata uses coverImage when available", () => {
   const metadata = postMetadata(post);
   const og = metadata.openGraph as Record<string, unknown>;
   const images = og.images as Array<{ url: string }>;
-  assert.equal(images[0].url, "/custom-og.png");
+  // OG image uses the dynamic route with slug param that generates a composed image
+  assert.ok(
+    images[0].url.includes("/api/og?slug=test"),
+    "OG image should use the dynamic endpoint with slug param",
+  );
 });
 
 // ── noteMetadata ────────────────────────────────────────────────────────────
