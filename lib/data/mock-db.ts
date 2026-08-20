@@ -88,7 +88,7 @@ function seedStorage(): string[] {
 function seedAdmin(): AdminProfile {
   return {
     name: "Biranchi Kulesika",
-    email: "hello@kulesika.in",
+    email: "hello@biranchikulesika.com",
     avatarUrl: "/biranchi.jpeg",
     role: "Owner & Author",
     authStatus: "developer_mode",

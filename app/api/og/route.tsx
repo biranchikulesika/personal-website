@@ -128,6 +128,7 @@ function generatePostOG({
           color: '#FAF9F5',
           fontFamily: 'serif',
           overflow: 'hidden',
+          position: 'relative',
         }}
       >
         {/* Top accent line */}
@@ -148,53 +149,78 @@ function generatePostOG({
           style={{
             display: 'flex',
             flexDirection: 'column',
-            justifyContent: 'space-between',
-            padding: '60px',
             flex: hasCover ? '0 0 60%' : '1 1 100%',
             position: 'relative',
             zIndex: 1,
           }}
         >
-          {/* Content */}
+          {/* Top bar: Type + Persona */}
+          {(typeLabel || personaLabel) && (
+            <div
+              style={{
+                padding: '48px 72px 0',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+              }}
+            >
+              <span
+                style={{
+                  fontSize: '15px',
+                  fontFamily: 'sans-serif',
+                  color: '#D97757',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.15em',
+                  fontWeight: 600,
+                }}
+              >
+                {typeLabel}
+              </span>
+              {typeLabel && personaLabel && (
+                <span
+                  style={{
+                    fontSize: '12px',
+                    color: '#4a4a45',
+                  }}
+                >
+                  ✦
+                </span>
+              )}
+              {personaLabel && (
+                <span
+                  style={{
+                    fontSize: '15px',
+                    fontFamily: 'sans-serif',
+                    color: '#D97757',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.15em',
+                    fontWeight: 600,
+                  }}
+                >
+                  {personaLabel}
+                </span>
+              )}
+            </div>
+          )}
+
+          {/* Title + Description area */}
           <div
             style={{
               display: 'flex',
               flexDirection: 'column',
               flex: 1,
               justifyContent: 'center',
+              padding: '0 72px',
             }}
           >
-            {/* Type + Persona label */}
-            {(typeLabel || personaLabel) && (
-              <div
-                style={{
-                  fontSize: '16px',
-                  fontFamily: 'sans-serif',
-                  color: '#D97757',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.15em',
-                  marginBottom: '20px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '12px',
-                }}
-              >
-                <span>{typeLabel}</span>
-                {typeLabel && personaLabel && (
-                  <span style={{ color: '#4a4a45' }}>✦</span>
-                )}
-                {personaLabel && <span>{personaLabel}</span>}
-              </div>
-            )}
-
-            {/* Title */}
+            {/* Title — larger */}
             <div
               style={{
-                fontSize: isHome ? '72px' : '52px',
+                fontSize: isHome ? '80px' : '64px',
                 fontWeight: 400,
-                lineHeight: 1.1,
-                letterSpacing: '-0.02em',
-                maxWidth: hasCover ? '600px' : '900px',
+                lineHeight: 1.05,
+                letterSpacing: '-0.025em',
+                maxWidth: hasCover ? '580px' : '900px',
               }}
             >
               {displayTitle}
@@ -204,11 +230,11 @@ function generatePostOG({
             {displayDescription && (
               <div
                 style={{
-                  fontSize: '22px',
+                  fontSize: '21px',
                   fontFamily: 'sans-serif',
                   color: '#B0AEA5',
-                  marginTop: '20px',
-                  maxWidth: hasCover ? '500px' : '800px',
+                  marginTop: '24px',
+                  maxWidth: hasCover ? '480px' : '800px',
                   lineHeight: 1.4,
                 }}
               >
@@ -217,12 +243,12 @@ function generatePostOG({
             )}
           </div>
 
-          {/* Footer */}
+          {/* Bottom bar: site name + logo */}
           <div
             style={{
               display: 'flex',
-              justifyContent: 'space-between',
               alignItems: 'center',
+              padding: '0 72px 48px',
             }}
           >
             <div
@@ -235,23 +261,6 @@ function generatePostOG({
             >
               {SITE_DOMAIN}
             </div>
-            <div
-              style={{
-                width: '36px',
-                height: '36px',
-                borderRadius: '50%',
-                background: '#D97757',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '16px',
-                fontFamily: 'sans-serif',
-                fontWeight: 700,
-                color: '#141413',
-              }}
-            >
-              BK
-            </div>
           </div>
         </div>
 
@@ -262,8 +271,8 @@ function generatePostOG({
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              flex: '0 0 40%',
-              padding: '40px 40px 40px 0',
+              flex: '0 0 38%',
+              padding: '56px 64px 56px 0',
               position: 'relative',
             }}
           >
@@ -272,8 +281,8 @@ function generatePostOG({
               src={coverImageB64}
               alt=""
               style={{
-                maxWidth: '100%',
-                maxHeight: '100%',
+                maxWidth: '85%',
+                maxHeight: '80%',
                 objectFit: 'contain',
                 position: 'relative',
                 zIndex: 1,
@@ -300,11 +309,12 @@ function generateFallbackOG() {
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'space-between',
-          padding: '60px',
+          padding: '48px 72px',
           background: '#141413',
           color: '#FAF9F5',
           fontFamily: 'serif',
           overflow: 'hidden',
+          position: 'relative',
         }}
       >
         {/* Top accent line */}
@@ -330,10 +340,10 @@ function generateFallbackOG() {
         >
           <div
             style={{
-              fontSize: '72px',
+              fontSize: '80px',
               fontWeight: 400,
-              lineHeight: 1.1,
-              letterSpacing: '-0.02em',
+              lineHeight: 1.05,
+              letterSpacing: '-0.025em',
             }}
           >
             {SITE_NAME}
@@ -343,7 +353,6 @@ function generateFallbackOG() {
         <div
           style={{
             display: 'flex',
-            justifyContent: 'space-between',
             alignItems: 'center',
           }}
         >
@@ -354,24 +363,8 @@ function generateFallbackOG() {
               fontWeight: 600,
               color: '#FAF9F5',
             }}
-          >            {SITE_DOMAIN}
-            </div>
-          <div
-            style={{
-              width: '36px',
-              height: '36px',
-              borderRadius: '50%',
-              background: '#D97757',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '16px',
-              fontFamily: 'sans-serif',
-              fontWeight: 700,
-              color: '#141413',
-            }}
           >
-            BK
+            {SITE_DOMAIN}
           </div>
         </div>
       </div>

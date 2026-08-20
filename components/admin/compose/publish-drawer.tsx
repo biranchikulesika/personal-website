@@ -58,7 +58,7 @@ export function PublishDrawer({
 }: PublishDrawerProps) {
   const [tagInput, setTagInput] = useState('');
   const [isMediaModalOpen, setIsMediaModalOpen] = useState(false);
-  const [previewTab, setPreviewTab] = useState<'google' | 'og'>('google');
+  const [previewTab, setPreviewTab] = useState<'card' | 'og' | 'google'>('card');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Sync input from parent tags on open
@@ -97,6 +97,7 @@ export function PublishDrawer({
   }
 
   const liveUrlPrefix = isPost ? '/p/' : '/n/';
+  const typeLabel = docType === 'post' ? 'Essay' : 'Note';
 
   return (
     <div className="fixed inset-0 z-50 overflow-hidden bg-ink/60 backdrop-blur-xs flex justify-end animate-in fade-in">
@@ -252,37 +253,37 @@ export function PublishDrawer({
           {/* Tags */}
           {!isNow && (
             <div className="space-y-1.5">
-            <span className="text-[11px] font-medium text-ink-soft">Tags</span>
-            <input
-              type="text"
-              placeholder="craft, software, tools…"
-              value={tagInput}
-              onChange={(e) => {
-                setTagInput(e.target.value);
-                syncTagsFromInput(e.target.value);
-              }}
-              className="w-full rounded-lg border border-tinted/20 bg-night-soft px-2.5 py-1.5 text-[11px] text-paper focus:border-accent focus:outline-none"
-            />
-            {tags.length > 0 && (
-              <div className="flex flex-wrap gap-1">
-                {tags.map((t) => (
-                  <span
-                    key={t}
-                    className="inline-flex items-center gap-0.5 rounded bg-night-soft border border-tinted/20 px-1.5 py-0.5 text-[10px] text-ink-soft"
-                  >
-                    #{t}
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveTag(t)}
-                      className="text-ink-soft/60 hover:text-accent ml-0.5"
+              <span className="text-[11px] font-medium text-ink-soft">Tags</span>
+              <input
+                type="text"
+                placeholder="craft, software, tools…"
+                value={tagInput}
+                onChange={(e) => {
+                  setTagInput(e.target.value);
+                  syncTagsFromInput(e.target.value);
+                }}
+                className="w-full rounded-lg border border-tinted/20 bg-night-soft px-2.5 py-1.5 text-[11px] text-paper focus:border-accent focus:outline-none"
+              />
+              {tags.length > 0 && (
+                <div className="flex flex-wrap gap-1">
+                  {tags.map((t) => (
+                    <span
+                      key={t}
+                      className="inline-flex items-center gap-0.5 rounded bg-night-soft border border-tinted/20 px-1.5 py-0.5 text-[10px] text-ink-soft"
                     >
-                      ×
-                    </button>
-                  </span>
-                ))}
-              </div>
-            )}
-          </div>
+                      #{t}
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveTag(t)}
+                        className="text-ink-soft/60 hover:text-accent ml-0.5"
+                      >
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
           )}
         </div>
 
@@ -291,114 +292,139 @@ export function PublishDrawer({
           {/* Preview Tabs */}
           {!isNow && (
             <div className="px-5 pt-3 space-y-2">
-            <div className="flex items-center gap-0 border-b border-tinted/20">
-              <button
-                type="button"
-                onClick={() => setPreviewTab('google')}
-                className={`px-3 py-1.5 text-[10px] font-medium transition-colors border-b-2 -mb-px ${
-                  previewTab === 'google'
-                    ? 'border-accent text-paper'
-                    : 'border-transparent text-ink-soft hover:text-paper'
-                }`}
-              >
-                Google
-              </button>
-              <button
-                type="button"
-                onClick={() => setPreviewTab('og')}
-                className={`px-3 py-1.5 text-[10px] font-medium transition-colors border-b-2 -mb-px ${
-                  previewTab === 'og'
-                    ? 'border-accent text-paper'
-                    : 'border-transparent text-ink-soft hover:text-paper'
-                }`}
-              >
-                Social / OG
-              </button>
-            </div>
+              <div className="flex items-center gap-0 border-b border-tinted/20">
+                <button
+                  type="button"
+                  onClick={() => setPreviewTab('card')}
+                  className={`px-3 py-1.5 text-[10px] font-medium transition-colors border-b-2 -mb-px ${previewTab === 'card' ? 'border-accent text-paper' : 'border-transparent text-ink-soft hover:text-paper'}`}
+                >
+                  Card
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPreviewTab('og')}
+                  className={`px-3 py-1.5 text-[10px] font-medium transition-colors border-b-2 -mb-px ${previewTab === 'og' ? 'border-accent text-paper' : 'border-transparent text-ink-soft hover:text-paper'}`}
+                >
+                  Social
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPreviewTab('google')}
+                  className={`px-3 py-1.5 text-[10px] font-medium transition-colors border-b-2 -mb-px ${previewTab === 'google' ? 'border-accent text-paper' : 'border-transparent text-ink-soft hover:text-paper'}`}
+                >
+                  Google
+                </button>
+              </div>
 
-            {previewTab === 'google' ? (
-              <div className="rounded bg-night-soft px-0 py-0 border border-tinted/20">
-                {/* Breadcrumb */}
-                <div className="flex items-center gap-1.5 px-4 pt-3 pb-0.5">
-                  <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-accent text-[9px] font-bold text-paper">
-                    B
-                  </span>
-                  <div className="flex flex-col">
-                    <span className="text-[12px] leading-tight text-paper">
-                      {SITE_DOMAIN}
-                    </span>
-                    <span className="text-[12px] leading-tight text-gray-mid">
-                      {liveUrlPrefix}{slug || 'slug-name'}
-                    </span>
+              {/* Card Preview */}
+              {previewTab === 'card' && (
+                <div className="rounded-xl border border-tinted/20 bg-post-card overflow-hidden">
+                  {hasCoverImage ? (
+                    <div className="relative min-h-[140px] overflow-hidden">
+                      <Image
+                        src={coverImage || ''}
+                        alt="Card cover preview"
+                        fill
+                        className="object-contain"
+                        unoptimized
+                      />
+                    </div>
+                  ) : (
+                    <div className="flex min-h-[140px] items-center justify-center overflow-hidden bg-[radial-gradient(ellipse_at_center,rgba(250,249,245,0.08)_15%,transparent_75%)]">
+                      <span className="font-serif text-4xl italic text-paper/40">
+                        {(title || 'P').charAt(0)}
+                      </span>
+                    </div>
+                  )}
+                  <div className="px-4 pt-3 pb-4">
+                    <h3 className="font-serif text-[15px] font-normal leading-snug text-paper line-clamp-2">
+                      {title || 'Page Title'}
+                    </h3>
+                    {description && (
+                      <p className="mt-1.5 text-[11px] leading-relaxed text-ink-soft line-clamp-2">
+                        {description}
+                      </p>
+                    )}
+                    <div className="mt-3 text-[10px] text-ink-soft">
+                      <span>{typeLabel}{persona ? ` · ${persona}` : ''}</span>
+                    </div>
                   </div>
                 </div>
-                {/* Title */}
-                <h3 className="px-4 pt-0.5 pb-1 text-[20px] leading-[1.3] text-accent decoration-none line-clamp-1">
-                  {title || `Page Title — ${SITE_DOMAIN}`}
-                </h3>
-                {/* Description */}
-                <p className="px-4 pb-3 text-[14px] leading-[1.58] text-gray-mid line-clamp-2">
-                  {description || 'No description set for this page. Google will auto-generate a snippet from your page content.'}
-                </p>
-              </div>
-            ) : (
-              /* Dynamic OG composition — matches /api/og layout */
-              <div className="rounded-lg border border-tinted/20 bg-[#141413] overflow-hidden" style={{ aspectRatio: '1200 / 630' }}>
-                <div className="flex h-full w-full flex-row">
-                  {/* Left: text column */}
-                  <div className="flex flex-col justify-between p-4" style={{ flex: hasCoverImage ? '0 0 60%' : '1 1 100%' }}>
-                    <div className="flex flex-1 flex-col justify-center">
-                      {/* Type + persona label */}
+              )}
+
+              {/* Social / OG Preview */}
+              {previewTab === 'og' && (
+                <div className="rounded-lg border border-tinted/20 bg-[#141413] overflow-hidden" style={{ aspectRatio: '1200 / 630' }}>
+                  <div className="flex h-full w-full flex-row relative">
+                    <div className="flex flex-col" style={{ flex: hasCoverImage ? '0 0 60%' : '1 1 100%' }}>
                       {(docType === 'post' || docType === 'note') && (
-                        <div className="mb-2 flex items-center gap-1.5 text-[9px] font-sans uppercase tracking-[0.15em] text-[#D97757]">
-                          <span>{docType === 'post' ? 'Essay' : 'Note'}</span>
+                        <div className="flex items-center gap-1.5 px-5 pt-4 text-[9px] font-sans uppercase tracking-[0.15em] font-semibold text-[#D97757]">
+                          <span>{typeLabel}</span>
                           {persona && (
                             <>
-                              <span className="text-[#4a4a45]">·</span>
+                              <span className="text-[#4a4a45]">✦</span>
                               <span className="capitalize">{persona}</span>
                             </>
                           )}
                         </div>
                       )}
-                      {/* Title */}
-                      <h3 className="font-serif text-[22px] font-normal leading-[1.1] tracking-[-0.02em] text-[#FAF9F5] line-clamp-3">
-                        {title || 'Page Title'}
-                      </h3>
-                      {/* Description */}
-                      {description && (
-                        <p className="mt-2 font-sans text-[11px] leading-[1.4] text-[#B0AEA5] line-clamp-2">
-                          {description}
-                        </p>
-                      )}
-                    </div>
-                    {/* Footer */}
-                    <div className="flex items-center justify-between">
-                      <span className="font-sans text-[10px] font-semibold text-[#FAF9F5]">
-                        {SITE_DOMAIN}
-                      </span>
-                      <div className="flex h-5 w-5 items-center justify-center rounded-full bg-[#D97757] font-sans text-[9px] font-bold text-[#141413]">
-                        BK
+                      <div className="flex flex-1 flex-col justify-center px-5">
+                        <h3 className="font-serif text-[28px] font-normal leading-[1.05] tracking-[-0.025em] text-[#FAF9F5] line-clamp-3">
+                          {title || 'Page Title'}
+                        </h3>
+                        {description && (
+                          <p className="mt-2 font-sans text-[11px] leading-[1.4] text-[#B0AEA5] line-clamp-2">
+                            {description}
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex items-center px-5 pb-4">
+                        <span className="font-sans text-[10px] font-semibold text-[#FAF9F5]">
+                          {SITE_DOMAIN}
+                        </span>
                       </div>
                     </div>
+                    {hasCoverImage && (
+                      <div className="relative flex flex-1 items-center justify-center p-2">
+                        <Image
+                          src={coverImage || ''}
+                          alt="OG artwork preview"
+                          fill
+                          className="object-contain"
+                          unoptimized
+                        />
+                      </div>
+                    )}
                   </div>
-
-                  {/* Right: artwork column */}
-                  {hasCoverImage && (
-                    <div className="relative flex flex-1 items-center justify-center p-2">
-                      <Image
-                        src={coverImage!}
-                        alt="OG artwork preview"
-                        fill
-                        className="object-contain"
-                        unoptimized={coverImage!.startsWith('blob:') || coverImage!.startsWith('http')}
-                      />
-                    </div>
-                  )}
                 </div>
-              </div>
-            )}
-          </div>
-            )}
+              )}
+
+              {/* Google SRP Preview */}
+              {previewTab === 'google' && (
+                <div className="rounded bg-night-soft border border-tinted/20">
+                  <div className="flex items-center gap-1.5 px-4 pt-3 pb-0.5">
+                    <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-accent text-[9px] font-bold text-paper">
+                      B
+                    </span>
+                    <div className="flex flex-col">
+                      <span className="text-[12px] leading-tight text-paper">
+                        {SITE_DOMAIN}
+                      </span>
+                      <span className="text-[12px] leading-tight text-gray-mid">
+                        {liveUrlPrefix}{slug || 'slug-name'}
+                      </span>
+                    </div>
+                  </div>
+                  <h3 className="px-4 pt-0.5 pb-1 text-[20px] leading-[1.3] text-accent line-clamp-1">
+                    {title || `Page Title — ${SITE_DOMAIN}`}
+                  </h3>
+                  <p className="px-4 pb-3 text-[14px] leading-[1.58] text-gray-mid line-clamp-2">
+                    {description || 'No description set for this page. Google will auto-generate a snippet from your page content.'}
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Action Buttons */}
           <div className="px-5 py-3 flex items-center gap-2">
