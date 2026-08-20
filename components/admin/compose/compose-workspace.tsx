@@ -21,6 +21,8 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
+import { useToast } from "@/hooks/use-toast";
+import { ToastView } from "@/components/ui/toast-view";
 import { EmbedInsertModal } from "../mdx-editor/embed-insert-modal";
 import { MDXPreview } from "../mdx-editor/mdx-preview";
 import { MediaInsertModal } from "../mdx-editor/media-insert-modal";
@@ -183,17 +185,14 @@ export function ComposeWorkspace({
   >("book");
   const [isDraftsModalOpen, setIsDraftsModalOpen] = useState(false);
   const [draftsSearchQuery, setDraftsSearchQuery] = useState("");
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const { message: toastMessage, showToast } = useToast();
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const isDraggingRef = useRef(false);
 
-  function showToast(msg: string) {
-    setToastMessage(msg);
-    setTimeout(() => setToastMessage(null), 3500);
-  }
+
 
   // Update active tab property helper
   const updateActiveTab = useCallback(
@@ -463,7 +462,7 @@ export function ComposeWorkspace({
             (paragraphs[0] ? paragraphs[0].slice(0, 120) : activeTab.title),
           content: paragraphs.length > 0 ? paragraphs : [activeTab.title],
           date: new Date().toISOString().split("T")[0],
-          persona: activeTab.persona,
+          persona: activeTab.persona || "builder",
           tags: activeTab.tags.length > 0 ? activeTab.tags : ["note"],
           coverImage: activeTab.coverImage,
           status: statusToSet,
@@ -507,11 +506,7 @@ export function ComposeWorkspace({
   return (
     <div className="flex h-screen w-full flex-col overflow-hidden bg-ink text-paper/80 font-sans">
       {/* Toast Notification */}
-      {toastMessage && (
-        <div className="fixed bottom-10 right-10 z-50 rounded-xl bg-night-soft border border-tinted/30 px-4 py-2.5 text-xs font-medium text-paper shadow-2xl animate-in fade-in slide-in-from-bottom-2">
-          {toastMessage}
-        </div>
-      )}
+      <ToastView message={toastMessage} />
 
       {/* 1. Multi-Tab Bar with + button and Folder Icon */}
       <div className="flex h-[35px] shrink-0 bg-ink border-b border-tinted/20 overflow-x-auto relative select-none">
@@ -955,7 +950,7 @@ export function ComposeWorkspace({
                   content={activeTab.content}
                   title={activeTab.title}
                   subtitle={activeTab.subtitle}
-                  persona={activeTab.persona}
+                  persona={activeTab.persona || "builder"}
                   tags={activeTab.tags}
                   books={activeTab.rawPost?.books}
                   assumedAudience={activeTab.rawPost?.assumedAudience}
@@ -1011,7 +1006,7 @@ export function ComposeWorkspace({
         onSlugChange={(newSlug) => updateActiveTab({ slug: newSlug })}
         description={activeTab.description}
         onDescriptionChange={(desc) => updateActiveTab({ description: desc })}
-        persona={activeTab.persona}
+        persona={activeTab.persona || "builder"}
         onPersonaChange={(p) => updateActiveTab({ persona: p })}
         status={activeTab.status}
         onStatusChange={(s) => updateActiveTab({ status: s })}

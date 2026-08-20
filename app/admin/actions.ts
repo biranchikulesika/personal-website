@@ -11,8 +11,27 @@ import type {
   NowEntry,
   Persona,
 } from '@/lib/types';
+import {
+  BlogPostSchema,
+  NoteItemSchema,
+  BookItemSchema,
+  NowEntrySchema,
+  MediaItemSchema,
+  AdminProfileUpdateSchema,
+  SlugParamSchema,
+  IdParamSchema,
+} from '@/lib/validation';
 
 const contentService = new ContentService();
+
+/**
+ * Validate input against a Zod schema. Returns the parsed data or throws
+ * a descriptive error. Server actions must validate all client-supplied
+ * data at the server boundary.
+ */
+function validateInput<T>(schema: { parse: (v: unknown) => T }, input: unknown): T {
+  return schema.parse(input);
+}
 
 // Post Actions ----------------------------------------------------------------
 
@@ -25,7 +44,8 @@ export async function savePostAction(
   persona?: Persona,
 ): Promise<{ success: boolean; post?: BlogPost; error?: string }> {
   try {
-    const saved = await contentService.savePost(post, persona);
+    const validated = validateInput(BlogPostSchema, post);
+    const saved = await contentService.savePost(validated, persona);
     revalidatePath('/admin');
     revalidatePath('/scribble');
     revalidatePath(`/p/${post.slug}`);
@@ -39,7 +59,8 @@ export async function togglePostStatusAction(
   slug: string,
 ): Promise<{ success: boolean; post?: BlogPost; error?: string }> {
   try {
-    const toggled = await contentService.togglePostStatus(slug);
+    const { slug: validSlug } = validateInput(SlugParamSchema, { slug });
+    const toggled = await contentService.togglePostStatus(validSlug);
     if (!toggled) return { success: false, error: 'Post not found' };
     revalidatePath('/admin');
     revalidatePath('/scribble');
@@ -54,7 +75,8 @@ export async function deletePostAction(
   slug: string,
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const deleted = await contentService.deletePost(slug);
+    const { slug: validSlug } = validateInput(SlugParamSchema, { slug });
+    const deleted = await contentService.deletePost(validSlug);
     revalidatePath('/admin');
     revalidatePath('/scribble');
     return { success: deleted };
@@ -73,7 +95,8 @@ export async function saveNoteAction(
   note: NoteItem,
 ): Promise<{ success: boolean; note?: NoteItem; error?: string }> {
   try {
-    const saved = await contentService.saveNote(note);
+    const validated = validateInput(NoteItemSchema, note);
+    const saved = await contentService.saveNote(validated);
     revalidatePath('/admin');
     revalidatePath('/scribble');
     revalidatePath(`/n/${note.slug}`);
@@ -87,7 +110,8 @@ export async function toggleNoteStatusAction(
   slug: string,
 ): Promise<{ success: boolean; note?: NoteItem; error?: string }> {
   try {
-    const toggled = await contentService.toggleNoteStatus(slug);
+    const { slug: validSlug } = validateInput(SlugParamSchema, { slug });
+    const toggled = await contentService.toggleNoteStatus(validSlug);
     if (!toggled) return { success: false, error: 'Note not found' };
     revalidatePath('/admin');
     revalidatePath('/scribble');
@@ -102,7 +126,8 @@ export async function deleteNoteAction(
   slug: string,
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const deleted = await contentService.deleteNote(slug);
+    const { slug: validSlug } = validateInput(SlugParamSchema, { slug });
+    const deleted = await contentService.deleteNote(validSlug);
     revalidatePath('/admin');
     revalidatePath('/scribble');
     return { success: deleted };
@@ -121,7 +146,8 @@ export async function saveBookAction(
   book: BookItem,
 ): Promise<{ success: boolean; book?: BookItem; error?: string }> {
   try {
-    const saved = await contentService.saveBook(book);
+    const validated = validateInput(BookItemSchema, book);
+    const saved = await contentService.saveBook(validated);
     revalidatePath('/admin');
     revalidatePath('/library');
     revalidatePath('/scribble');
@@ -135,7 +161,8 @@ export async function deleteBookAction(
   slug: string,
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const deleted = await contentService.deleteBook(slug);
+    const { slug: validSlug } = validateInput(SlugParamSchema, { slug });
+    const deleted = await contentService.deleteBook(validSlug);
     revalidatePath('/admin');
     revalidatePath('/library');
     revalidatePath('/scribble');
@@ -155,7 +182,8 @@ export async function saveNowEntryAction(
   entry: NowEntry,
 ): Promise<{ success: boolean; entry?: NowEntry; error?: string }> {
   try {
-    const saved = await contentService.saveNowEntry(entry);
+    const validated = validateInput(NowEntrySchema, entry);
+    const saved = await contentService.saveNowEntry(validated);
     revalidatePath('/admin');
     revalidatePath('/now');
     return { success: true, entry: saved };
@@ -168,7 +196,8 @@ export async function deleteNowEntryAction(
   id: string,
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const deleted = await contentService.deleteNowEntry(id);
+    const { id: validId } = validateInput(IdParamSchema, { id });
+    const deleted = await contentService.deleteNowEntry(validId);
     revalidatePath('/admin');
     revalidatePath('/now');
     return { success: deleted };
@@ -187,7 +216,8 @@ export async function addMediaAction(
   item: MediaItem,
 ): Promise<{ success: boolean; media?: MediaItem; error?: string }> {
   try {
-    const added = await contentService.addMedia(item);
+    const validated = validateInput(MediaItemSchema, item);
+    const added = await contentService.addMedia(validated);
     revalidatePath('/admin');
     return { success: true, media: added };
   } catch (err: unknown) {
@@ -199,7 +229,8 @@ export async function deleteMediaAction(
   id: string,
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const deleted = await contentService.deleteMedia(id);
+    const { id: validId } = validateInput(IdParamSchema, { id });
+    const deleted = await contentService.deleteMedia(validId);
     revalidatePath('/admin');
     return { success: deleted };
   } catch (err: unknown) {
@@ -232,7 +263,9 @@ export async function updateAdminProfileAction(
   profile: Partial<AdminProfile>,
 ): Promise<{ success: boolean; profile?: AdminProfile; error?: string }> {
   try {
-    const updated = await contentService.updateAdminProfile(profile);
+    // Strip restricted fields — authStatus must not be modifiable via this action.
+    const validated = validateInput(AdminProfileUpdateSchema, profile);
+    const updated = await contentService.updateAdminProfile(validated);
     revalidatePath('/admin');
     return { success: true, profile: updated };
   } catch (err: unknown) {

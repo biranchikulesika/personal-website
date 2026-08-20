@@ -14,9 +14,6 @@ import {
 const ESCAPE_ROUTES = [
   { label: 'Home', href: '/' },
   { label: 'Scribble', href: '/scribble' },
-  { label: 'Library', href: '/library' },
-  { label: 'Support', href: '/support' },
-  { label: 'About', href: '/about' },
 ];
 
 export function ErrorView({
@@ -115,7 +112,7 @@ export function ErrorView({
         </div>
 
         {/* Technical Details Accordion */}
-        {(isDev || reference || error.message) && (
+        {(isDev || reference) && (
           <div className="mt-10 border-t border-tinted/20 pt-6">
             <button
               type="button"
@@ -158,7 +155,7 @@ export function ErrorView({
                   </div>
                 )}
 
-                {error.message && (
+                {isDev && error.message && (
                   <div className="flex items-start justify-between gap-3 border-t border-tinted/20 pt-2.5">
                     <div className="min-w-0">
                       <span className="block text-[11px] font-semibold uppercase tracking-wider text-ink-soft">

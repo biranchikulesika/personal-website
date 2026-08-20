@@ -1,6 +1,8 @@
 'use client';
 
 import { useState } from 'react';
+import { useToast } from '@/hooks/use-toast';
+import { ToastView } from '@/components/ui/toast-view';
 import type { AdminProfile } from '@/lib/types';
 import {
   EnvelopeIcon,
@@ -93,12 +95,7 @@ export function AccountManager({ initialProfile }: AccountManagerProps) {
       startedAt: 'Just now',
     },
   ]);
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
-
-  function showToast(msg: string) {
-    setToastMessage(msg);
-    setTimeout(() => setToastMessage(null), 3500);
-  }
+  const { message: toastMessage, showToast } = useToast();
 
   function handleAddPasskey() {
     if (isRegistering) return;
@@ -164,11 +161,7 @@ export function AccountManager({ initialProfile }: AccountManagerProps) {
   return (
     <div className="space-y-8 font-sans">
       {/* Toast Notification */}
-      {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-50 rounded-2xl bg-night-soft border border-tinted/30 px-5 py-3 text-sm font-medium text-paper shadow-xl animate-in fade-in slide-in-from-bottom-3">
-          {toastMessage}
-        </div>
-      )}
+      <ToastView message={toastMessage} />
 
       {/* Header */}
       <div>

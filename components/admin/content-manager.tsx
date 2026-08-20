@@ -34,6 +34,8 @@ import {
 } from "@/lib/utils";
 import Link from "next/link";
 import { useState, useTransition } from "react";
+import { useToast } from "@/hooks/use-toast";
+import { ToastView } from "@/components/ui/toast-view";
 import { BookCoverPicker } from "./book-cover-picker";
 import { MDXEditor } from "./mdx-editor/mdx-editor";
 
@@ -68,7 +70,7 @@ export function ContentManager({
   const [statusFilter, setStatusFilter] = useState<StatusFilterType>("all");
 
   const [isPending, startTransition] = useTransition();
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const { message: toastMessage, showToast } = useToast();
 
   // Confirmation dialog state (publish / unpublish / delete)
   const [confirmAction, setConfirmAction] = useState<{
@@ -142,10 +144,7 @@ export function ContentManager({
     );
   }
 
-  function showToast(msg: string) {
-    setToastMessage(msg);
-    setTimeout(() => setToastMessage(null), 3500);
-  }
+
 
   // Post Handlers
   function handleOpenCreatePost() {
@@ -576,11 +575,7 @@ export function ContentManager({
   return (
     <div className="space-y-6">
       {/* Toast Notification */}
-      {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-50 rounded-2xl bg-night-soft border border-tinted/30 px-5 py-3 text-sm font-medium text-paper shadow-xl animate-in fade-in slide-in-from-bottom-3">
-          {toastMessage}
-        </div>
-      )}
+      <ToastView message={toastMessage} />
 
       {/* Header & Quick Action Buttons */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -704,14 +699,15 @@ export function ContentManager({
       <div className="overflow-hidden rounded-2xl border border-tinted/20 bg-post-card shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
+            <caption className="sr-only">Content management table</caption>
             <thead className="border-b border-tinted/20 bg-night-soft text-xs font-semibold uppercase tracking-wider text-gray-mid">
               <tr>
-                <th className="px-5 py-3.5">Title</th>
-                <th className="px-4 py-3.5">Type</th>
-                <th className="px-4 py-3.5">Persona</th>
-                <th className="px-4 py-3.5">Date</th>
-                <th className="px-4 py-3.5">Status</th>
-                <th className="px-5 py-3.5 text-right">Actions</th>
+                <th scope="col" className="px-5 py-3.5">Title</th>
+                <th scope="col" className="px-4 py-3.5">Type</th>
+                <th scope="col" className="px-4 py-3.5">Persona</th>
+                <th scope="col" className="px-4 py-3.5">Date</th>
+                <th scope="col" className="px-4 py-3.5">Status</th>
+                <th scope="col" className="px-5 py-3.5 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-tinted/20">
@@ -1150,10 +1146,11 @@ export function ContentManager({
               {/* Metadata row: Title & Slug */}
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-gray-mid">
+                  <label htmlFor="post-title" className="block text-xs font-semibold uppercase tracking-wider text-gray-mid">
                     Title
                   </label>
                   <input
+                    id="post-title"
                     type="text"
                     required
                     placeholder="Essay Title..."
@@ -1168,10 +1165,11 @@ export function ContentManager({
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-gray-mid">
+                  <label htmlFor="post-slug" className="block text-xs font-semibold uppercase tracking-wider text-gray-mid">
                     Slug
                   </label>
                   <input
+                    id="post-slug"
                     type="text"
                     required
                     placeholder="essay-slug-url"
@@ -1185,10 +1183,11 @@ export function ContentManager({
               {/* Persona, Status, Dates & Tags row */}
               <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
                 <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-gray-mid">
+                  <label htmlFor="post-status" className="block text-xs font-semibold uppercase tracking-wider text-gray-mid">
                     Status
                   </label>
                   <select
+                    id="post-status"
                     value={postStatus}
                     onChange={(e) =>
                       setPostStatus(
@@ -1206,10 +1205,11 @@ export function ContentManager({
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-gray-mid">
+                  <label htmlFor="post-persona" className="block text-xs font-semibold uppercase tracking-wider text-gray-mid">
                     Persona Theme
                   </label>
                   <select
+                    id="post-persona"
                     value={postPersona}
                     onChange={(e) => setPostPersona(e.target.value as Persona)}
                     className="mt-1.5 w-full rounded-xl border border-tinted/20 bg-night-soft px-3.5 py-2 text-xs text-paper focus:border-accent focus:outline-none"
@@ -1229,10 +1229,11 @@ export function ContentManager({
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-gray-mid">
+                  <label htmlFor="post-planted-date" className="block text-xs font-semibold uppercase tracking-wider text-gray-mid">
                     Planted Date
                   </label>
                   <input
+                    id="post-planted-date"
                     type="date"
                     value={postPlantedAt}
                     onChange={(e) => setPostPlantedAt(e.target.value)}
@@ -1240,10 +1241,11 @@ export function ContentManager({
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-gray-mid">
+                  <label htmlFor="post-tags" className="block text-xs font-semibold uppercase tracking-wider text-gray-mid">
                     Tags
                   </label>
                   <input
+                    id="post-tags"
                     type="text"
                     placeholder="craft, tools, web"
                     value={postTagsInput}
@@ -1335,10 +1337,11 @@ export function ContentManager({
               {/* Metadata: Title, Slug, Status, Persona */}
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-gray-mid">
+                  <label htmlFor="note-title" className="block text-xs font-semibold uppercase tracking-wider text-gray-mid">
                     Title
                   </label>
                   <input
+                    id="note-title"
                     type="text"
                     required
                     placeholder="Note title..."
@@ -1353,10 +1356,11 @@ export function ContentManager({
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-gray-mid">
+                  <label htmlFor="note-slug" className="block text-xs font-semibold uppercase tracking-wider text-gray-mid">
                     Slug
                   </label>
                   <input
+                    id="note-slug"
                     type="text"
                     required
                     placeholder="note-slug"

@@ -139,12 +139,15 @@ export function Navbar({ identity, links }: NavbarProps) {
         )}
       </header>
 
-      {/* Backdrop overlay */}
+      {/* Backdrop overlay — keyboard accessible via Escape (handled in useClickOutside) */}
       {menuOpen && (
         <div
           onClick={closeMenu}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') closeMenu();
+          }}
           className="fixed inset-0 z-40 bg-black/60 backdrop-blur-xs md:hidden"
-          aria-hidden
+          aria-hidden="true"
         />
       )}
     </>

@@ -11,8 +11,13 @@ export default async function SiteLayout({
 
   return (
     <div className="flex min-h-screen flex-col">
+      <a href="#main-content" className="skip-link">
+        Skip to main content
+      </a>
       <Navbar identity={site.identity} links={site.nav.links} />
-      <main className="flex-1">{children}</main>
+      <main id="main-content" className="flex-1" tabIndex={-1}>
+        {children}
+      </main>
       <Footer footer={site.footer} />
     </div>
   );

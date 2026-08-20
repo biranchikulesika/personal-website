@@ -66,7 +66,9 @@ export class MockContentRepository implements ContentRepository {
   }
 
   async getPostSlugs(): Promise<string[]> {
-    return this.db.posts.map((post) => post.slug);
+    return this.db.posts
+      .filter((post) => post.status !== 'unpublished')
+      .map((post) => post.slug);
   }
 
   async getAllPosts(): Promise<BlogPost[]> {
@@ -154,7 +156,9 @@ export class MockContentRepository implements ContentRepository {
   }
 
   async getNoteSlugs(): Promise<string[]> {
-    return this.db.notes.items.map((item) => item.slug);
+    return this.db.notes.items
+      .filter((item) => item.status !== 'unpublished')
+      .map((item) => item.slug);
   }
 
   async getAllNotes(): Promise<NoteItem[]> {

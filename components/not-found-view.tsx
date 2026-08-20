@@ -1,18 +1,9 @@
 import Link from 'next/link';
-import { Fragment } from 'react';
 
 const RECOVERY_ACTIONS = [
-  { href: '/', label: 'Home', description: 'Return to the start' },
-  { href: '/scribble', label: 'Scribble', description: 'Browse essays & notes' },
-  { href: '/library', label: 'Library', description: 'Explore bookshelf' },
+  { href: '/', label: 'Home' },
+  { href: '/scribble', label: 'Scribble' },
 ] as const;
-
-const POPULAR_DESTINATIONS = [
-  { href: '/about', label: 'About' },
-  { href: '/now', label: 'Now' },
-  { href: '/support', label: 'Support' },
-  { href: 'https://github.com/biranchikulesika', label: 'GitHub' },
-];
 
 export function NotFoundView() {
   return (
@@ -25,14 +16,11 @@ export function NotFoundView() {
 
       <div className="relative w-full max-w-xl text-center">
         {/* Large 404 Headline */}
-        <h1 className="flex flex-col items-center">
-          <span
-            aria-hidden
-            className="font-serif text-7xl font-normal leading-none tracking-tight text-paper sm:text-8xl"
-          >
+        <h1 className="font-serif text-2xl font-normal tracking-tight text-paper sm:text-3xl">
+          <span aria-hidden className="block font-serif text-7xl font-normal leading-none tracking-tight text-paper sm:text-8xl">
             404
           </span>
-          <span className="mt-4 font-serif text-2xl font-normal tracking-tight text-paper sm:text-3xl">
+          <span className="mt-4 block">
             Page Not Found
           </span>
         </h1>
@@ -41,51 +29,20 @@ export function NotFoundView() {
           The page you’re looking for doesn’t exist or may have been moved.
         </p>
 
-        {/* Primary Recovery Cards */}
-        <div className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-3">
+        {/* Primary Recovery Cards — Home & Scribble */}
+        <div className="mx-auto mt-10 grid max-w-sm grid-cols-1 gap-4 sm:grid-cols-2">
           {RECOVERY_ACTIONS.map((action) => (
             <Link
               key={action.href}
               href={action.href}
-              className="group flex flex-col items-center justify-center rounded-2xl border border-tinted/20 bg-night-soft p-5 shadow-sm transition-all hover:border-accent/40 hover:bg-post-card hover:shadow-md"
+              className="group flex items-center justify-center rounded-2xl border border-tinted/20 bg-night-soft py-4 px-6 shadow-sm transition-all hover:border-accent/40 hover:bg-post-card hover:shadow-md"
             >
-              <span className="font-serif text-lg font-medium text-paper group-hover:text-accent">
+              <span className="font-serif text-lg font-medium text-paper transition-colors group-hover:text-accent">
                 {action.label}
-              </span>
-              <span className="mt-1 text-xs text-ink-soft">
-                {action.description}
               </span>
             </Link>
           ))}
         </div>
-
-        {/* Quiet Tertiary Escape Routes */}
-        <nav aria-label="Other destinations" className="mt-10 border-t border-tinted/20 pt-6">
-          <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-2 text-xs">
-            {POPULAR_DESTINATIONS.map((dest, idx) => (
-              <Fragment key={dest.href}>
-                {idx > 0 && <span className="text-tinted/30">•</span>}
-                {dest.href.startsWith('http') ? (
-                  <a
-                    href={dest.href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="font-medium text-ink-soft transition-colors hover:text-paper"
-                  >
-                    {dest.label}
-                  </a>
-                ) : (
-                  <Link
-                    href={dest.href}
-                    className="font-medium text-ink-soft transition-colors hover:text-paper"
-                  >
-                    {dest.label}
-                  </Link>
-                )}
-              </Fragment>
-            ))}
-          </div>
-        </nav>
       </div>
     </div>
   );

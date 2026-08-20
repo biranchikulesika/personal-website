@@ -1,11 +1,13 @@
 import type { Metadata } from 'next';
 import { ScribblePage } from '@/components/scribble-page';
 import { ContentService } from '@/lib/services/content.service';
+import { SITE_URL } from '@/lib/constants';
 
 export const metadata: Metadata = {
-  title: 'Scribble — Biranchi Kulesika',
+  title: 'Scribble',
   description:
     'Essays, notes, and reading — writing and thinking, tended in the open.',
+  alternates: { canonical: `${SITE_URL}/scribble` },
 };
 
 export default async function ScribbleRoute() {

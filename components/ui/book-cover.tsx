@@ -15,7 +15,7 @@ export function BookCover({
 }) {
   if (cover) {
     return (
-      <div className="aspect-[2/3] overflow-hidden rounded-lg shadow-sm ring-1 ring-tinted/20 transition-all duration-300 group-hover:scale-[1.02] group-hover:shadow-md">
+      <div className="aspect-[2/3] overflow-hidden rounded-lg shadow-sm ring-1 ring-tinted/20 transition-all duration-300">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={cover}
@@ -26,7 +26,7 @@ export function BookCover({
     );
   }
   return (
-    <div className="flex aspect-[2/3] items-center justify-center overflow-hidden rounded-lg bg-night-soft p-3 shadow-sm ring-1 ring-tinted/20 transition-all duration-300 group-hover:scale-[1.02] group-hover:opacity-30 group-hover:shadow-md">
+    <div className="flex aspect-[2/3] items-center justify-center overflow-hidden rounded-lg bg-night-soft p-3 shadow-sm ring-1 ring-tinted/20 transition-all duration-300">
       <span className="text-center font-serif text-lg italic leading-snug text-paper/50">
         {title}
       </span>

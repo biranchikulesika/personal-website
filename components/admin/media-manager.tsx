@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useTransition } from 'react';
+import { useToast } from '@/hooks/use-toast';
+import { ToastView } from '@/components/ui/toast-view';
 import Image from 'next/image';
 import type { MediaItem } from '@/lib/types';
 import {
@@ -35,7 +37,7 @@ export function MediaManager({
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const [isUploading, setIsUploading] = useState(false);
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const { message: toastMessage, showToast } = useToast(3000);
 
   const orphanedSrcs = new Set(orphanedList.map((m) => m.src));
 
@@ -47,10 +49,7 @@ export function MediaManager({
   const [fileSize, setFileSize] = useState('250 KB');
   const [dimensions, setDimensions] = useState('1200 × 800');
 
-  function showToast(msg: string) {
-    setToastMessage(msg);
-    setTimeout(() => setToastMessage(null), 3000);
-  }
+
 
   function handleCopy(id: string, text: string) {
     if (typeof navigator !== 'undefined' && navigator.clipboard) {
@@ -154,11 +153,7 @@ export function MediaManager({
   return (
     <div className="space-y-6">
       {/* Toast Notification */}
-      {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-50 rounded-2xl bg-night-soft border border-tinted/30 px-5 py-3 text-sm font-medium text-paper shadow-xl animate-in fade-in slide-in-from-bottom-3">
-          {toastMessage}
-        </div>
-      )}
+      <ToastView message={toastMessage} />
 
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -389,8 +384,14 @@ export function MediaManager({
 
       {/* Delete Confirmation Modal */}
       {confirmDelete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-xs">
-          <div className="w-full max-w-md rounded-3xl border border-tinted/20 bg-night-soft p-6 shadow-2xl animate-in zoom-in-95">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-xs" aria-hidden="true">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label={`Delete ${confirmDelete.items.length > 1 ? `${confirmDelete.items.length} assets` : confirmDelete.items[0].name}`}
+            className="w-full max-w-md rounded-3xl border border-tinted/20 bg-night-soft p-6 shadow-2xl animate-in zoom-in-95"
+            tabIndex={-1}
+          >
             <h3 className="font-serif text-xl font-normal text-paper">
               Delete orphaned asset{confirmDelete.items.length > 1 ? 's' : ''}?
             </h3>
@@ -418,6 +419,7 @@ export function MediaManager({
               type="text"
               autoFocus
               placeholder="Type DELETE to confirm"
+              aria-label="Type DELETE to confirm deletion"
               value={confirmTypedText}
               onChange={(e) => setConfirmTypedText(e.target.value)}
               onKeyDown={(e) => {

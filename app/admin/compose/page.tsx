@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { ContentService } from '@/lib/services/content.service';
-import { ComposeWorkspace } from '@/components/admin/compose/compose-workspace';
+import { ComposeWorkspace } from './compose-workspace-loader';
 
 export const metadata: Metadata = {
   title: 'MDX Composer | Biranchi Admin',

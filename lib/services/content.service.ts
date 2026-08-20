@@ -139,6 +139,10 @@ export class ContentService {
   }
 
   updateAdminProfile(profile: Partial<AdminProfile>): Promise<AdminProfile> {
-    return this.repo.updateAdminProfile(profile);
+    // Defense-in-depth: strip restricted fields at the service layer.
+    // authStatus must only be changed through dedicated auth flows, not
+    // through the generic profile update action.
+    const { authStatus: _restricted, ...safeProfile } = profile;
+    return this.repo.updateAdminProfile(safeProfile);
   }
 }

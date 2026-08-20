@@ -215,7 +215,7 @@ test("content service supports media and admin profile management", async () => 
 
 test("environment rejects production data sources", () => {
   const previous = process.env.DATA_SOURCE;
-  process.env.DATA_SOURCE = "supabase";
+  process.env.DATA_SOURCE = "postgres";
   assert.throws(() => getDataSource(), /not allowed/);
   process.env.DATA_SOURCE = previous;
 });

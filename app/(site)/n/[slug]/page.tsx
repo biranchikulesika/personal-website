@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { NotePageView } from '@/components/note-page';
 import { ContentService } from '@/lib/services/content.service';
+import { noteMetadata } from '@/lib/seo';
 
 export async function generateStaticParams() {
   const service = new ContentService();
@@ -16,10 +17,8 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { slug } = await params;
   const note = await new ContentService().getNote(slug);
-  return {
-    title: note ? note.title : 'Note not found',
-    description: note?.description,
-  };
+  if (!note) return { title: 'Note not found' };
+  return noteMetadata(note);
 }
 
 export default async function NotePage({

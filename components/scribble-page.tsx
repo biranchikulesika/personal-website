@@ -54,7 +54,7 @@ function CardMeta({
 function BookCover({ title, author }: { title: string; author?: string }) {
   return (
     <div className="flex aspect-[16/10] w-full items-center justify-center overflow-hidden rounded-xl bg-[radial-gradient(ellipse_at_center,rgba(250,249,245,0.08)_15%,transparent_75%)] p-4">
-      <div className="flex aspect-[2/3] h-full max-h-32 flex-col justify-between rounded bg-night-soft border border-tinted/20 p-2.5 shadow-sm transition-transform duration-300 group-hover:scale-105">
+      <div className="flex aspect-[2/3] h-full max-h-32 flex-col justify-between rounded bg-night-soft border border-tinted/20 p-2.5 shadow-sm">
         <span className="text-center font-serif text-xs italic leading-tight text-paper line-clamp-3">
           {title}
         </span>
@@ -92,7 +92,7 @@ function EssayCard({ entry }: { entry: ScribbleEntry }) {
     <article>
       <Link
         href={entry.href}
-        className="group block rounded-2xl border border-tinted/20 bg-post-card p-4 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md hover:border-accent/40"
+        className="group block rounded-2xl border border-tinted/20 bg-post-card p-4 shadow-xs transition-all duration-300 hover:scale-[1.02] hover:shadow-md"
       >
         <EssayCover title={entry.title} />
         <div className="mt-3.5">
@@ -115,7 +115,7 @@ function BookCard({ entry }: { entry: ScribbleEntry }) {
     <article>
       <Link
         href={entry.href}
-        className="group block rounded-2xl border border-tinted/20 bg-post-card p-4 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md hover:border-accent/40"
+        className="group block rounded-2xl border border-tinted/20 bg-post-card p-4 shadow-xs transition-all duration-300 hover:scale-[1.02] hover:shadow-md"
       >
         <BookCover title={entry.title} author={entry.author} />
         <div className="mt-3.5">

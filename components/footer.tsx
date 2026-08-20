@@ -29,9 +29,9 @@ export function Footer({ footer }: FooterProps) {
           <div className="grid grid-cols-3 gap-8 md:col-span-6">
             {footer.columns.map((column) => (
               <nav key={column.title} aria-label={column.title}>
-                <h4 className="text-xs font-semibold uppercase tracking-wider text-ink-soft/80">
+                <h2 className="text-xs font-semibold uppercase tracking-wider text-ink-soft/80">
                   {column.title}
-                </h4>
+                </h2>
                 <ul className="mt-6 space-y-4">
                   {column.links.map((link) => (
                     <li key={link.href}>

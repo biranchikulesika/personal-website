@@ -1,0 +1,716 @@
+import type {
+  AdminProfile,
+  BlogPost,
+  BookItem,
+  MediaItem,
+  NoteItem,
+  NowEntry,
+  Persona,
+  ScribbleEntry,
+  HomeContent,
+  PostSection,
+  BookCard,
+  SectionGroup,
+  SiteContent,
+  WritingItem,
+} from "@/lib/types";
+import type { ContentRepository } from "./content.repository";
+import { getSupabaseAdmin } from "@/lib/supabase/server";
+import type { Database } from "@/lib/supabase/database.types";
+
+// ── Row types (Supabase → TypeScript) ──────────────────────────────────────
+// These represent the raw database row format. The repository maps between
+// these and the domain types used by the service layer.
+
+interface PostRow {
+  id: string;
+  slug: string;
+  title: string;
+  subtitle: string | null;
+  description: string;
+  persona: string | null;
+  tags: string[];
+  published_at: string | null;
+  last_edited_at: string | null;
+  assumed_audience: string;
+  intro: string[];
+  sections: PostSection[];
+  books: BookCard[];
+  cover_image: string | null;
+  status: "published" | "unpublished";
+}
+
+interface NoteRow {
+  id: string;
+  slug: string;
+  title: string;
+  description: string;
+  content: string[];
+  date: string | null;
+  persona: string | null;
+  tags: string[];
+  cover_image: string | null;
+  status: "published" | "unpublished";
+}
+
+interface BookRow {
+  id: string;
+  slug: string;
+  title: string;
+  author: string;
+  description: string;
+  date: string | null;
+  persona: string | null;
+  tags: string[];
+  cover: string | null;
+  link: string | null;
+}
+
+interface NowRow {
+  id: string;
+  title: string;
+  date: string;
+  content: string;
+}
+
+interface MediaRow {
+  id: string;
+  name: string;
+  src: string;
+  alt: string;
+  size: string;
+  dimensions: string | null;
+  uploaded_at: string | null;
+  tag: "profile" | "atmosphere" | "post" | "book";
+}
+
+// ── Mappers ────────────────────────────────────────────────────────────────
+
+function postRowToDomain(row: PostRow): BlogPost {
+  return {
+    slug: row.slug,
+    // id is available as row.id for production use
+    title: row.title,
+    subtitle: row.subtitle ?? undefined,
+    description: row.description,
+    persona: (row.persona as Persona) ?? undefined,
+    tags: row.tags ?? [],
+    publishedAt: row.published_at ?? "",
+    lastEditedAt: row.last_edited_at ?? "",
+    assumedAudience: row.assumed_audience ?? "",
+    intro: (row.intro as string[]) ?? [],
+    sections: (row.sections as unknown as PostSection[]) ?? [],
+    books: (row.books as unknown as BookCard[]) ?? [],
+    coverImage: row.cover_image ?? undefined,
+    status: row.status,
+  };
+}
+
+function noteRowToDomain(row: NoteRow): NoteItem {
+  return {
+    id: row.id,
+    slug: row.slug,
+    title: row.title,
+    description: row.description,
+    content: (row.content as string[]) ?? [],
+    date: row.date ?? "",
+    persona: (row.persona as Persona) ?? "thinker",
+    tags: row.tags ?? [],
+    coverImage: row.cover_image ?? undefined,
+    status: row.status,
+  };
+}
+
+function bookRowToDomain(row: BookRow): BookItem {
+  return {
+    id: row.id,
+    slug: row.slug,
+    title: row.title,
+    author: row.author,
+    description: row.description,
+    date: row.date ?? "",
+    persona: (row.persona as Persona) ?? "thinker",
+    tags: row.tags ?? [],
+    cover: row.cover ?? undefined,
+    link: row.link ?? undefined,
+  };
+}
+
+function nowRowToDomain(row: NowRow): NowEntry {
+  return {
+    id: row.id,
+    title: row.title,
+    date: row.date,
+    content: row.content,
+  };
+}
+
+function mediaRowToDomain(row: MediaRow): MediaItem {
+  return {
+    id: row.id,
+    name: row.name,
+    src: row.src,
+    alt: row.alt,
+    size: row.size,
+    dimensions: row.dimensions ?? undefined,
+    uploadedAt: row.uploaded_at ?? "",
+    tag: row.tag,
+  };
+}
+
+// ── Repository ─────────────────────────────────────────────────────────────
+// Production Supabase implementation of the ContentRepository interface.
+// Uses the service-role admin client to bypass RLS for admin operations.
+// Public read operations could use the publishable-key client with RLS,
+// but for simplicity we use the admin client for all queries since the
+// repository is only called from trusted server-side contexts.
+
+export class SupabaseContentRepository implements ContentRepository {
+  private get db() {
+    return getSupabaseAdmin();
+  }
+
+  // ── Site Content ───────────────────────────────────────────────────────
+
+  async getSiteContent(): Promise<SiteContent> {
+    const { data, error } = await this.db
+      .from("site_config")
+      .select("config")
+      .eq("id", "singleton")
+      .single();
+
+    if (error || !data) {
+      throw new Error(`Failed to load site config: ${error?.message ?? "not found"}`);
+    }
+
+    return data.config as SiteContent;
+  }
+
+  async getHomeContent(): Promise<HomeContent> {
+    const [writing, notes, library] = await Promise.all([
+      this.getWriting(),
+      this.getAllNotes(),
+      this.getLibrary(),
+    ]);
+
+    return {
+      writing,
+      notes: {
+        title: "Notes",
+        href: "/scribble",
+        subheader: "Short-form thinking",
+        items: notes,
+      },
+      library,
+    };
+  }
+
+  async getWriting(): Promise<SectionGroup<WritingItem>> {
+    const { data, error } = await this.db
+      .from("posts")
+      .select("*")
+      .order("published_at", { ascending: false });
+
+    if (error) throw new Error(`Failed to load writing: ${error.message}`);
+
+    const items: WritingItem[] = (data as PostRow[]).map((row) => ({
+      id: row.slug,
+      slug: row.slug,
+      title: row.title,
+      description: row.description,
+      date: row.published_at ?? "",
+      persona: (row.persona as Persona) ?? "builder",
+      tags: row.tags ?? [],
+      status: row.status,
+    }));
+
+    return {
+      title: "Writing",
+      href: "/scribble",
+      subheader: "Essays on craft, systems, and observation",
+      items,
+    };
+  }
+
+  async getLibrary(): Promise<SectionGroup<BookItem>> {
+    const { data, error } = await this.db
+      .from("books")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (error) throw new Error(`Failed to load library: ${error.message}`);
+
+    return {
+      title: "Library",
+      href: "/library",
+      subheader: "Books that shaped my thinking",
+      items: (data as BookRow[]).map(bookRowToDomain) as BookItem[],
+    };
+  }
+
+  // ── Posts ──────────────────────────────────────────────────────────────
+
+  async getPost(slug: string): Promise<BlogPost | null> {
+    const { data, error } = await this.db
+      .from("posts")
+      .select("*")
+      .eq("slug", slug)
+      .single();
+
+    if (error || !data) return null;
+    return postRowToDomain(data as PostRow);
+  }
+
+  async getPostSlugs(): Promise<string[]> {
+    const { data, error } = await this.db
+      .from("posts")
+      .select("slug")
+      .eq("status", "published");
+
+    if (error) throw new Error(`Failed to load post slugs: ${error.message}`);
+    return (data as { slug: string }[]).map((r) => r.slug);
+  }
+
+  async getAllPosts(): Promise<BlogPost[]> {
+    const { data, error } = await this.db
+      .from("posts")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (error) throw new Error(`Failed to load posts: ${error.message}`);
+    return (data as PostRow[]).map(postRowToDomain);
+  }
+
+  async savePost(post: BlogPost, persona: Persona = "builder"): Promise<BlogPost> {
+    const status = post.status || "published";
+
+    // Check for slug collision in other collections on insert
+    const { data: existing } = await this.db
+      .from("notes")
+      .select("slug")
+      .eq("slug", post.slug)
+      .limit(1);
+
+    if (existing && existing.length > 0) {
+      throw new Error(`Slug "${post.slug}" already exists. Choose a unique slug.`);
+    }
+
+    const { data: existingBook } = await this.db
+      .from("books")
+      .select("slug")
+      .eq("slug", post.slug)
+      .limit(1);
+
+    if (existingBook && existingBook.length > 0) {
+      throw new Error(`Slug "${post.slug}" already exists. Choose a unique slug.`);
+    }
+
+    const row = {
+      id: (post as unknown as { id?: string }).id,
+      slug: post.slug,
+      title: post.title,
+      subtitle: post.subtitle ?? null,
+      description: post.description,
+      persona: persona,
+      tags: post.tags,
+      published_at: post.publishedAt || null,
+      last_edited_at: post.lastEditedAt || null,
+      assumed_audience: post.assumedAudience,
+      intro: post.intro,
+      sections: post.sections,
+      books: post.books,
+      cover_image: post.coverImage ?? null,
+      status,
+    };
+
+    const { error } = await this.db
+      .from("posts")
+      .upsert(row, { onConflict: "slug" });
+
+    if (error) throw new Error(`Failed to save post: ${error.message}`);
+
+    return { ...post, status };
+  }
+
+  async togglePostStatus(slug: string): Promise<BlogPost | null> {
+    const post = await this.getPost(slug);
+    if (!post) return null;
+
+    const nextStatus = post.status === "unpublished" ? "published" : "unpublished";
+
+    const { error } = await this.db
+      .from("posts")
+      .update({ status: nextStatus })
+      .eq("slug", slug);
+
+    if (error) throw new Error(`Failed to toggle post status: ${error.message}`);
+    return { ...post, status: nextStatus };
+  }
+
+  async deletePost(slug: string): Promise<boolean> {
+    const { error, count } = await this.db
+      .from("posts")
+      .delete()
+      .eq("slug", slug);
+
+    if (error) throw new Error(`Failed to delete post: ${error.message}`);
+    return (count ?? 0) > 0;
+  }
+
+  // ── Notes ──────────────────────────────────────────────────────────────
+
+  async getNote(slug: string): Promise<NoteItem | null> {
+    const { data, error } = await this.db
+      .from("notes")
+      .select("*")
+      .eq("slug", slug)
+      .single();
+
+    if (error || !data) return null;
+    return noteRowToDomain(data as NoteRow);
+  }
+
+  async getNoteSlugs(): Promise<string[]> {
+    const { data, error } = await this.db
+      .from("notes")
+      .select("slug")
+      .eq("status", "published");
+
+    if (error) throw new Error(`Failed to load note slugs: ${error.message}`);
+    return (data as { slug: string }[]).map((r) => r.slug);
+  }
+
+  async getAllNotes(): Promise<NoteItem[]> {
+    const { data, error } = await this.db
+      .from("notes")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (error) throw new Error(`Failed to load notes: ${error.message}`);
+    return (data as NoteRow[]).map(noteRowToDomain);
+  }
+
+  async saveNote(note: NoteItem): Promise<NoteItem> {
+    const status = note.status || "published";
+
+    // Check for slug collision in other collections on insert
+    const { data: existing } = await this.db
+      .from("posts")
+      .select("slug")
+      .eq("slug", note.slug)
+      .limit(1);
+
+    if (existing && existing.length > 0) {
+      throw new Error(`Slug "${note.slug}" already exists. Choose a unique slug.`);
+    }
+
+    const { data: existingBook } = await this.db
+      .from("books")
+      .select("slug")
+      .eq("slug", note.slug)
+      .limit(1);
+
+    if (existingBook && existingBook.length > 0) {
+      throw new Error(`Slug "${note.slug}" already exists. Choose a unique slug.`);
+    }
+
+    const row = {
+      id: note.id,
+      slug: note.slug,
+      title: note.title,
+      description: note.description,
+      content: note.content,
+      date: note.date || null,
+      persona: note.persona,
+      tags: note.tags,
+      cover_image: note.coverImage ?? null,
+      status,
+    };
+
+    const { error } = await this.db
+      .from("notes")
+      .upsert(row, { onConflict: "slug" });
+
+    if (error) throw new Error(`Failed to save note: ${error.message}`);
+    return { ...note, status };
+  }
+
+  async toggleNoteStatus(slug: string): Promise<NoteItem | null> {
+    const note = await this.getNote(slug);
+    if (!note) return null;
+
+    const nextStatus = note.status === "unpublished" ? "published" : "unpublished";
+
+    const { error } = await this.db
+      .from("notes")
+      .update({ status: nextStatus })
+      .eq("slug", slug);
+
+    if (error) throw new Error(`Failed to toggle note status: ${error.message}`);
+    return { ...note, status: nextStatus };
+  }
+
+  async deleteNote(slug: string): Promise<boolean> {
+    const { error, count } = await this.db
+      .from("notes")
+      .delete()
+      .eq("slug", slug);
+
+    if (error) throw new Error(`Failed to delete note: ${error.message}`);
+    return (count ?? 0) > 0;
+  }
+
+  // ── Books ──────────────────────────────────────────────────────────────
+
+  async getAllBooks(): Promise<BookItem[]> {
+    const { data, error } = await this.db
+      .from("books")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (error) throw new Error(`Failed to load books: ${error.message}`);
+    return (data as BookRow[]).map(bookRowToDomain);
+  }
+
+  async saveBook(book: BookItem): Promise<BookItem> {
+    // Check for slug collision in other collections on insert
+    const { data: existingPost } = await this.db
+      .from("posts")
+      .select("slug")
+      .eq("slug", book.slug)
+      .limit(1);
+
+    if (existingPost && existingPost.length > 0) {
+      throw new Error(`Slug "${book.slug}" already exists. Choose a unique slug.`);
+    }
+
+    const { data: existingNote } = await this.db
+      .from("notes")
+      .select("slug")
+      .eq("slug", book.slug)
+      .limit(1);
+
+    if (existingNote && existingNote.length > 0) {
+      throw new Error(`Slug "${book.slug}" already exists. Choose a unique slug.`);
+    }
+
+    const row = {
+      id: book.id,
+      slug: book.slug,
+      title: book.title,
+      author: book.author,
+      description: book.description,
+      date: book.date || null,
+      persona: book.persona,
+      tags: book.tags,
+      cover: book.cover ?? null,
+      link: book.link ?? null,
+    };
+
+    const { error } = await this.db
+      .from("books")
+      .upsert(row, { onConflict: "id" });
+
+    if (error) throw new Error(`Failed to save book: ${error.message}`);
+    return book;
+  }
+
+  async deleteBook(slug: string): Promise<boolean> {
+    const { error, count } = await this.db
+      .from("books")
+      .delete()
+      .eq("slug", slug);
+
+    if (error) throw new Error(`Failed to delete book: ${error.message}`);
+    return (count ?? 0) > 0;
+  }
+
+  // ── Scribble ───────────────────────────────────────────────────────────
+
+  async getScribbleEntries(): Promise<ScribbleEntry[]> {
+    const [posts, notes, books] = await Promise.all([
+      this.getAllPosts(),
+      this.getAllNotes(),
+      this.getAllBooks(),
+    ]);
+
+    const essays: ScribbleEntry[] = posts.map((post) => ({
+      id: post.slug,
+      type: "essay" as const,
+      title: post.title,
+      description: post.description,
+      date: post.publishedAt,
+      persona: post.persona ?? "builder",
+      topics: post.tags,
+      href: `/p/${post.slug}`,
+    }));
+
+    const noteEntries: ScribbleEntry[] = notes.map((note) => ({
+      id: note.id,
+      type: "note" as const,
+      title: note.title,
+      description: note.description,
+      date: note.date,
+      persona: note.persona,
+      topics: note.tags,
+      href: `/n/${note.slug}`,
+    }));
+
+    const bookEntries: ScribbleEntry[] = books.map((book) => ({
+      id: book.id,
+      type: "book" as const,
+      title: book.title,
+      description: book.description,
+      date: book.date,
+      persona: book.persona,
+      topics: book.tags,
+      href: "/library",
+      author: book.author,
+    }));
+
+    return [...essays, ...noteEntries, ...bookEntries];
+  }
+
+  // ── Now ────────────────────────────────────────────────────────────────
+
+  async getNowEntries(): Promise<NowEntry[]> {
+    const { data, error } = await this.db
+      .from("now_entries")
+      .select("*")
+      .order("date", { ascending: false });
+
+    if (error) throw new Error(`Failed to load now entries: ${error.message}`);
+    return (data as NowRow[]).map(nowRowToDomain);
+  }
+
+  async saveNowEntry(entry: NowEntry): Promise<NowEntry> {
+    const row = {
+      id: entry.id,
+      title: entry.title,
+      date: entry.date,
+      content: entry.content.trim(),
+    };
+
+    const { error } = await this.db
+      .from("now_entries")
+      .upsert(row, { onConflict: "id" });
+
+    if (error) throw new Error(`Failed to save now entry: ${error.message}`);
+    return { ...entry, content: entry.content.trim() };
+  }
+
+  async deleteNowEntry(id: string): Promise<boolean> {
+    const { error, count } = await this.db
+      .from("now_entries")
+      .delete()
+      .eq("id", id);
+
+    if (error) throw new Error(`Failed to delete now entry: ${error.message}`);
+    return (count ?? 0) > 0;
+  }
+
+  // ── Media ──────────────────────────────────────────────────────────────
+
+  async getMedia(): Promise<MediaItem[]> {
+    const { data, error } = await this.db
+      .from("media")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (error) throw new Error(`Failed to load media: ${error.message}`);
+    return (data as MediaRow[]).map(mediaRowToDomain);
+  }
+
+  async addMedia(item: MediaItem): Promise<MediaItem> {
+    const row = {
+      id: item.id,
+      name: item.name,
+      src: item.src,
+      alt: item.alt,
+      size: item.size,
+      dimensions: item.dimensions ?? null,
+      uploaded_at: item.uploadedAt || null,
+      tag: item.tag,
+    };
+
+    const { error } = await this.db
+      .from("media")
+      .upsert(row, { onConflict: "id" });
+
+    if (error) throw new Error(`Failed to add media: ${error.message}`);
+    return item;
+  }
+
+  async deleteMedia(id: string): Promise<boolean> {
+    const { error, count } = await this.db
+      .from("media")
+      .delete()
+      .eq("id", id);
+
+    if (error) throw new Error(`Failed to delete media: ${error.message}`);
+    return (count ?? 0) > 0;
+  }
+
+  async getOrphanedMedia(): Promise<MediaItem[]> {
+    // In production, this would query the Supabase Storage bucket listing
+    // and cross-reference against all content references.
+    // For now, return empty — orphaned media detection requires the Storage API.
+    return [];
+  }
+
+  async deleteStorageAssets(srcs: string[]): Promise<number> {
+    if (srcs.length === 0) return 0;
+
+    // In production, delete from Supabase Storage bucket.
+    // For now, remove from the storage_files tracking table.
+    const { error, count } = await this.db
+      .from("storage_files")
+      .delete()
+      .in("path", srcs);
+
+    if (error) throw new Error(`Failed to delete storage assets: ${error.message}`);
+    return count ?? 0;
+  }
+
+  // ── Admin Profile ──────────────────────────────────────────────────────
+
+  async getAdminProfile(): Promise<AdminProfile> {
+    const { data, error } = await this.db
+      .from("admin_profile")
+      .select("*")
+      .eq("id", "singleton")
+      .single();
+
+    if (error || !data) {
+      throw new Error(`Failed to load admin profile: ${error?.message ?? "not found"}`);
+    }
+
+    return {
+      name: data.name,
+      email: data.email,
+      avatarUrl: data.avatar_url,
+      role: data.role,
+      authStatus: data.auth_status as AdminProfile["authStatus"],
+      lastLogin: data.last_login ?? new Date().toISOString(),
+    };
+  }
+
+  async updateAdminProfile(profile: Partial<AdminProfile>): Promise<AdminProfile> {
+    const update: Database["public"]["Tables"]["admin_profile"]["Update"] = {};
+
+    if (profile.name !== undefined) update.name = profile.name;
+    if (profile.email !== undefined) update.email = profile.email;
+    if (profile.avatarUrl !== undefined) update.avatar_url = profile.avatarUrl;
+    if (profile.role !== undefined) update.role = profile.role;
+    if (profile.authStatus !== undefined) update.auth_status = profile.authStatus;
+    if (profile.lastLogin !== undefined) update.last_login = profile.lastLogin;
+
+    const { error } = await this.db
+      .from("admin_profile")
+      .update(update)
+      .eq("id", "singleton");
+
+    if (error) throw new Error(`Failed to update admin profile: ${error.message}`);
+    return this.getAdminProfile();
+  }
+}

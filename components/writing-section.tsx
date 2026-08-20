@@ -14,7 +14,7 @@ function EssayCard({ item }: { item: WritingItem }) {
     <article className="group h-full">
       <Link
         href={`/p/${item.slug}`}
-        className="flex h-full flex-col justify-between rounded-2xl border border-tinted/20 bg-post-card p-4 sm:p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-accent/40 hover:shadow-lg"
+        className="flex h-full flex-col justify-between rounded-2xl border border-tinted/20 bg-post-card p-4 sm:p-5 shadow-xs transition-all duration-300 hover:scale-[1.02] hover:shadow-md"
       >
         <div>
           <EssayCover title={item.title} />

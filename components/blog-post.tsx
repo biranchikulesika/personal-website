@@ -57,8 +57,8 @@ function footnoteRefs(text: string): number[] {
 function Figure({ src, alt, caption }: PostFigure) {
   return (
     <figure className="mt-8 lg:col-start-1">
-      {/* eslint-disable-next-line @next/next/no-img-element -- remote placeholder photo, no next/image domain configured */}
-      <img src={src} alt={alt} className="w-full rounded-lg shadow-md" />
+      {/* eslint-disable-next-line @next/next/no-img-element -- user-authored content may reference arbitrary image hosts */}
+      <img src={src} alt={alt} className="w-full rounded-lg shadow-md" loading="lazy" />
       <figcaption className="mt-3 text-center text-sm text-ink-soft">
         {caption}
       </figcaption>
