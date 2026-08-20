@@ -1,53 +1,264 @@
-import Link from 'next/link';
+import { Fragment } from 'react';
+import type { NowEntry } from '@/lib/types';
+import {
+  parseBlockAttributes,
+  renderBlock,
+} from '@/components/blocks/library';
 
-interface NowBookCardProps {
-  title: string;
-  author: string;
-  description: string;
-  year?: string;
-}
-
-function InlineBookCard({ title, author, description, year }: NowBookCardProps) {
-  return (
-    <div className="my-8 flex flex-col items-center gap-6 rounded-2xl border border-tinted bg-cream p-5 shadow-sm transition-all duration-300 hover:shadow-md sm:flex-row sm:items-start md:p-6">
-      {/* Book Cover */}
-      <div className="relative flex aspect-[2/3] w-28 shrink-0 flex-col justify-between overflow-hidden rounded-lg border border-tinted bg-paper p-3 shadow-sm sm:w-32">
-        <span
-          aria-hidden
-          className="absolute bottom-0 left-0 top-0 w-2 border-r border-tinted/60 bg-cream/70"
+/**
+ * Inline markdown tokens: bold, italic, inline code, images, and links.
+ */
+function renderInlineTokens(text: string, keyBase: string): React.ReactNode[] {
+  const pattern =
+    /(\*\*[^*\n]+\*\*|\*[^*\n]+\*|`[^`\n]+`|!\[[^\]]*\]\([^)]+\)|\[[^\]]+\]\([^)]+\))/g;
+  return text.split(pattern).map((part, i) => {
+    const key = `${keyBase}-${i}`;
+    if (part.startsWith('**') && part.endsWith('**')) {
+      return <strong key={key}>{part.slice(2, -2)}</strong>;
+    }
+    if (part.startsWith('`') && part.endsWith('`')) {
+      return (
+        <code
+          key={key}
+          className="rounded bg-cream px-1.5 py-0.5 font-mono text-[0.9em] text-ink ring-1 ring-tinted"
+        >
+          {part.slice(1, -1)}
+        </code>
+      );
+    }
+    if (part.startsWith('*') && part.endsWith('*') && part.length > 2) {
+      return <em key={key}>{part.slice(1, -1)}</em>;
+    }
+    const img = part.match(/^!\[([^\]]*)\]\(([^)]+)\)$/);
+    if (img) {
+      return (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          key={key}
+          src={img[2]}
+          alt={img[1]}
+          className="my-2 w-full rounded-xl border border-tinted shadow-sm"
         />
-        <div className="pl-1">
-          <span className="font-serif text-xs italic leading-tight text-ink line-clamp-3">
-            {title}
-          </span>
-        </div>
-        <div className="border-t border-tinted/40 pl-1 pt-1.5 text-[10px] text-ink-soft truncate">
-          {author}
-        </div>
-      </div>
-
-      {/* Book Metadata */}
-      <div className="flex min-w-0 flex-1 flex-col justify-center text-left">
-        <h4 className="font-serif text-lg font-normal leading-snug text-ink md:text-xl">
-          {title}
-        </h4>
-        <div className="mt-0.5 flex items-center gap-2 text-xs text-ink-soft">
-          <span>{author}</span>
-          {year && (
-            <>
-              <span className="text-ink-soft/40">·</span>
-              <span>{year}</span>
-            </>
-          )}
-        </div>
-        <div className="my-2.5 h-0.5 w-10 bg-tinted" aria-hidden />
-        <p className="text-sm leading-relaxed text-ink-soft">{description}</p>
-      </div>
-    </div>
-  );
+      );
+    }
+    const link = part.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
+    if (link) {
+      return (
+        <a
+          key={key}
+          href={link[2]}
+          target={link[2].startsWith('http') ? '_blank' : undefined}
+          rel={link[2].startsWith('http') ? 'noopener noreferrer' : undefined}
+          className="text-ink underline decoration-tinted underline-offset-4 transition-colors hover:text-accent hover:decoration-accent"
+        >
+          {link[1]}
+        </a>
+      );
+    }
+    return <Fragment key={key}>{part}</Fragment>;
+  });
 }
 
-export function NowPageView() {
+/**
+ * Block-level markdown renderer for Now entry content. Handles paragraphs,
+ * blockquotes, headings, lists, horizontal rules, code fences, images, and
+ * library blocks (e.g. `<Book ... />`).
+ */
+function renderBlocks(content: string): React.ReactNode[] {
+  const lines = content.split('\n');
+  const nodes: React.ReactNode[] = [];
+  let key = 0;
+
+  let para: string[] = [];
+  let quote: string[] = [];
+  let list: { ordered: boolean; items: string[] } | null = null;
+  let inCode = false;
+  let codeLang = '';
+  let codeLines: string[] = [];
+
+  const flushPara = () => {
+    if (para.length > 0) {
+      nodes.push(
+        <p key={`p-${key++}`}>{renderInlineTokens(para.join(' '), `p-${key}`)}</p>
+      );
+      para = [];
+    }
+  };
+  const flushQuote = () => {
+    if (quote.length > 0) {
+      nodes.push(
+        <blockquote
+          key={`q-${key++}`}
+          className="my-8 border-y border-tinted py-6 text-center font-serif text-lg italic text-ink md:text-xl"
+        >
+          {quote.map((q, i) => (
+            <span key={i}>{renderInlineTokens(q, `q-${key}-${i}`)}</span>
+          ))}
+        </blockquote>
+      );
+      quote = [];
+    }
+  };
+  const flushList = () => {
+    if (list) {
+      const items = list.items;
+      if (list.ordered) {
+        nodes.push(
+          <ol key={`ol-${key++}`} className="my-4 list-decimal space-y-1.5 pl-6">
+            {items.map((it, i) => (
+              <li key={i}>{renderInlineTokens(it, `li-${key}-${i}`)}</li>
+            ))}
+          </ol>
+        );
+      } else {
+        nodes.push(
+          <ul key={`ul-${key++}`} className="my-4 list-disc space-y-1.5 pl-6">
+            {items.map((it, i) => (
+              <li key={i}>{renderInlineTokens(it, `li-${key}-${i}`)}</li>
+            ))}
+          </ul>
+        );
+      }
+      list = null;
+    }
+  };
+
+  for (const line of lines) {
+    const t = line.trim();
+
+    if (inCode) {
+      if (t.startsWith('```')) {
+        inCode = false;
+        nodes.push(
+          <div
+            key={`code-${key++}`}
+            className="my-6 overflow-x-auto rounded-xl border border-tinted bg-[#1a1713] p-4 font-mono text-xs leading-relaxed text-[#f5efe3] shadow-sm"
+          >
+            {codeLang && (
+              <span className="mb-2 block text-[10px] font-semibold uppercase tracking-widest text-[#a09e99]">
+                {codeLang}
+              </span>
+            )}
+            <pre>
+              <code>{codeLines.join('\n')}</code>
+            </pre>
+          </div>
+        );
+        codeLines = [];
+        codeLang = '';
+      } else {
+        codeLines.push(line);
+      }
+      continue;
+    }
+
+    if (t.startsWith('```')) {
+      flushPara();
+      flushQuote();
+      flushList();
+      inCode = true;
+      codeLang = t.slice(3).trim();
+      continue;
+    }
+
+    if (!t) {
+      flushPara();
+      flushQuote();
+      flushList();
+      continue;
+    }
+
+    if (t.startsWith('>')) {
+      flushPara();
+      flushList();
+      quote.push(t.replace(/^>\s?/, ''));
+      continue;
+    }
+
+    if (/^#{2,3}\s/.test(t)) {
+      flushPara();
+      flushQuote();
+      flushList();
+      nodes.push(
+        <h3 key={`h-${key++}`} className="mt-8 mb-2 font-serif text-xl font-normal text-ink">
+          {renderInlineTokens(t.replace(/^#+\s/, ''), `h-${key}`)}
+        </h3>
+      );
+      continue;
+    }
+
+    if (/^[-*]\s/.test(t)) {
+      flushPara();
+      flushQuote();
+      if (!list) list = { ordered: false, items: [] };
+      list.items.push(t.replace(/^[-*]\s/, ''));
+      continue;
+    }
+
+    if (/^\d+\.\s/.test(t)) {
+      flushPara();
+      flushQuote();
+      if (!list || list.ordered === false) {
+        flushList();
+        list = { ordered: true, items: [] };
+      }
+      list.items.push(t.replace(/^\d+\.\s/, ''));
+      continue;
+    }
+
+    if (/^(---|___|\*\*\*)$/.test(t)) {
+      flushPara();
+      flushQuote();
+      flushList();
+      nodes.push(<hr key={`hr-${key++}`} className="my-8 border-t border-tinted" />);
+      continue;
+    }
+
+    const blockMatch = t.match(/^<([A-Z][A-Za-z]*)\s+([^>]*?)\/?>/);
+    if (blockMatch) {
+      flushPara();
+      flushQuote();
+      flushList();
+      const attrs = parseBlockAttributes(blockMatch[2]);
+      const rendered = renderBlock(blockMatch[1], attrs, `block-${key++}`);
+      if (rendered) {
+        nodes.push(rendered);
+        continue;
+      }
+    }
+
+    const imgMatch = t.match(/^!\[([^\]]*)\]\(([^)]+)\)/);
+    if (imgMatch) {
+      flushPara();
+      flushQuote();
+      flushList();
+      nodes.push(
+        <figure key={`img-${key++}`} className="my-8">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={imgMatch[2]}
+            alt={imgMatch[1]}
+            className="w-full rounded-xl border border-tinted shadow-sm"
+          />
+        </figure>
+      );
+      continue;
+    }
+
+    para.push(t);
+  }
+
+  flushPara();
+  flushQuote();
+  flushList();
+  return nodes;
+}
+
+interface NowPageViewProps {
+  entries: NowEntry[];
+}
+
+export function NowPageView({ entries }: NowPageViewProps) {
   return (
     <div className="container-site py-10 md:py-16">
       <main className="mx-auto max-w-[760px]">
@@ -63,145 +274,28 @@ export function NowPageView() {
 
         {/* Timeline Log Entries */}
         <div className="space-y-16">
-          {/* Entry: August 2026 */}
-          <section className="relative ml-2 border-l border-dashed border-tinted pl-8 md:ml-4 md:pl-12">
-            {/* Timeline node dot */}
-            <span
-              aria-hidden
-              className="absolute -left-[7px] top-2 h-3.5 w-3.5 rounded-full border-2 border-sea-blue bg-cream shadow-sm"
-            />
-
-            <article className="space-y-5 text-base leading-[1.85] text-ink-soft md:text-lg">
-              <h3 className="font-serif text-2xl font-normal text-ink md:text-3xl">
-                August 2026
-              </h3>
-
-              <p>
-                I’m writing this during a quiet evening in Odisha, India. The monsoon has settled into a gentle cadence, and the air is heavy with the smell of wet earth and night-blooming jasmine. I have a fresh cup of tea on the desk and a few uninterrupted hours to think clearly for the first time in weeks.
-              </p>
-
-              <p>
-                Lately, my mind has been consumed by a paradox: we are living through an unprecedented acceleration in software capabilities. AI agents write code, orchestrate workflows, and generate interfaces in seconds. And yet, the human side of software — the clarity of thought, the respect for attention, the patience to understand why something works — feels more endangered than ever.
-              </p>
-
-              <p>
-                It is easy to get caught up in the panic of continuous output. But when generation becomes cheap, discernment becomes priceless. I find myself returning to fundamental questions: What kind of digital spaces actually nurture deep thinking? How do we build tools that act as quiet bicycles for the mind rather than slot machines for our dopamine receptors?
-              </p>
-
-              <blockquote className="my-8 border-y border-tinted py-6 text-center font-serif text-lg italic text-ink md:text-xl">
-                “When software generation becomes effortless, the only real currency left is deliberate attention and genuine craft.”
-              </blockquote>
-
-              <p>
-                To ground these thoughts, I’ve been reading Nicholas Carr’s classic examination of how digital mediums alter neuroplasticity and reading depth:
-              </p>
-
-              <InlineBookCard
-                title="The Shallows"
-                author="Nicholas Carr"
-                year="2025"
-                description="How the internet reshapes our neural pathways, fracturing attention and trading contemplative depth for rapid, superficial information skimming."
+          {entries.map((entry, index) => (
+            <section
+              key={entry.id}
+              className="relative ml-2 border-l border-dashed border-tinted pl-8 md:ml-4 md:pl-12"
+            >
+              {/* Timeline node dot */}
+              <span
+                aria-hidden
+                className={`absolute -left-[7px] top-2 h-3.5 w-3.5 rounded-full border-2 ${
+                  index === 0 ? 'border-sea-blue' : 'border-tinted'
+                } bg-cream shadow-sm`}
               />
 
-              <p>
-                Alongside technology, I’ve also been trying to better understand the economic structures that govern human work and leisure. It feels irresponsible to watch automation reshape the labour market without understanding the fundamental mechanisms of value and distribution.
-              </p>
+              <article className="space-y-5 text-base leading-[1.85] text-ink-soft md:text-lg">
+                <h3 className="font-serif text-2xl font-normal text-ink md:text-3xl">
+                  {entry.title}
+                </h3>
 
-              <InlineBookCard
-                title="Economics: The User’s Guide"
-                author="Ha-Joon Chang"
-                year="2025"
-                description="A lucid, pluralistic guide through classical, Keynesian, institutionalist, and Marxist economic schools, explaining how markets really work."
-              />
-
-              <p>
-                On this website, I’ve been rebuilding everything from first principles. Stripping away unnecessary frameworks, simplifying layouts, and making sure every component has breathing room and purpose.
-              </p>
-            </article>
-          </section>
-
-          {/* Entry: January 2026 */}
-          <section className="relative ml-2 border-l border-dashed border-tinted pl-8 md:ml-4 md:pl-12">
-            {/* Timeline node dot */}
-            <span
-              aria-hidden
-              className="absolute -left-[7px] top-2 h-3.5 w-3.5 rounded-full border-2 border-tinted bg-cream shadow-sm"
-            />
-
-            <article className="space-y-5 text-base leading-[1.85] text-ink-soft md:text-lg">
-              <h3 className="font-serif text-2xl font-normal text-ink md:text-3xl">
-                January 2026
-              </h3>
-
-              <p>
-                Entered the new year with a resolution to write more things down in public. For years, I kept notebooks filled with half-formed observations and architectural sketches that never saw the light of day because they weren’t “finished enough.”
-              </p>
-
-              <p>
-                I created{' '}
-                <Link
-                  href="/scribble"
-                  className="text-ink underline decoration-tinted underline-offset-4 transition-colors hover:text-accent hover:decoration-accent"
-                >
-                  Scribble
-                </Link>{' '}
-                as an antidote to that hesitation. It is designed not as a chronological feed of hot takes, but as a digital garden — a place where notes can start small, get tended slowly over time, and evolve alongside my own understanding.
-              </p>
-
-              <p>
-                During the winter break, I spent hours immersed in Donella Meadows’ masterpiece on systems theory. It has permanently altered how I view software architecture, teams, and feedback loops:
-              </p>
-
-              <InlineBookCard
-                title="Thinking in Systems"
-                author="Donella Meadows"
-                year="2023"
-                description="A primer on seeing wholes rather than isolated parts, understanding stocks and flows, and finding leverage points in complex systems."
-              />
-
-              <blockquote className="my-8 border-y border-tinted py-6 text-center font-serif text-lg italic text-ink md:text-xl">
-                “Quality is a trade: you give up speed and the comfort of ‘done,’ and in return you get work that can be revisited with pride.”
-              </blockquote>
-
-              <p>
-                I’m learning that the fastest way to build something durable is to slow down, protect morning hours for deep focus, and reject the temptation to optimize prematurely.
-              </p>
-            </article>
-          </section>
-
-          {/* Entry: August 2025 */}
-          <section className="relative ml-2 border-l border-dashed border-tinted pl-8 md:ml-4 md:pl-12">
-            {/* Timeline node dot */}
-            <span
-              aria-hidden
-              className="absolute -left-[7px] top-2 h-3.5 w-3.5 rounded-full border-2 border-tinted bg-cream shadow-sm"
-            />
-
-            <article className="space-y-5 text-base leading-[1.85] text-ink-soft md:text-lg">
-              <h3 className="font-serif text-2xl font-normal text-ink md:text-3xl">
-                August 2025
-              </h3>
-
-              <p>
-                A year ago, I began stepping back from mainstream social media platforms. The algorithmic feeds were taking more mental bandwidth than they gave back in genuine insight.
-              </p>
-
-              <p>
-                I started exploring the IndieWeb movement and reading about personal digital gardens. There is something deeply restorative about owning your own space on the web — choosing your own typography, crafting your own layouts, and sharing writing directly with people without intermediaries.
-              </p>
-
-              <InlineBookCard
-                title="Technopoly"
-                author="Neil Postman"
-                year="2024"
-                description="A prophetic inquiry into what happens when culture surrenders unconditionally to technology, efficiency, and invisible technological imperatives."
-              />
-
-              <p>
-                This space began as a quiet sketch. It remains a work in progress, and that is precisely the point.
-              </p>
-            </article>
-          </section>
+                <div className="space-y-5">{renderBlocks(entry.content)}</div>
+              </article>
+            </section>
+          ))}
         </div>
 
         {/* Footer info & Now Movement Note */}
@@ -218,9 +312,11 @@ export function NowPageView() {
             </a>{' '}
             started by Derek Sivers.
           </p>
-          <p className="mt-3 font-serif text-base italic text-ink-soft/70">
-            Odisha, India · Updated August 2026
-          </p>
+          {entries.length > 0 && (
+            <p className="mt-3 font-serif text-base italic text-ink-soft/70">
+              Odisha, India · Updated {entries[0].title}
+            </p>
+          )}
         </footer>
       </main>
     </div>

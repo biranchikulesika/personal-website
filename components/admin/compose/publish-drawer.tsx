@@ -27,7 +27,9 @@ interface PublishDrawerProps {
   mediaItems?: MediaItem[];
   onSave: (statusToSet: 'published' | 'unpublished') => Promise<void>;
   isSaving: boolean;
-  docType: 'post' | 'note';
+  docType: 'post' | 'note' | 'now';
+  date?: string;
+  onDateChange?: (date: string) => void;
 }
 
 export function PublishDrawer({
@@ -50,6 +52,8 @@ export function PublishDrawer({
   isSaving,
   docType,
   status,
+  date,
+  onDateChange,
 }: PublishDrawerProps) {
   const [tagInput, setTagInput] = useState('');
   const [isMediaModalOpen, setIsMediaModalOpen] = useState(false);
@@ -66,6 +70,7 @@ export function PublishDrawer({
   if (!isOpen) return null;
 
   const isPost = docType === 'post';
+  const isNow = docType === 'now';
   const hasCoverImage = Boolean(coverImage && coverImage.trim());
 
   function syncTagsFromInput(val: string) {
@@ -100,25 +105,27 @@ export function PublishDrawer({
           <div className="flex items-center gap-3">
             <h3 className="text-sm font-semibold text-white">Publish</h3>
             <span className="text-[10px] font-mono text-neutral-500">
-              {isPost ? 'essay' : 'note'} • {wordCount}w • {readingTime}m
+              {isNow ? 'now entry' : isPost ? 'essay' : 'note'} • {wordCount}w • {readingTime}m
             </span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="relative">
-              <select
-                value={persona}
-                onChange={(e) => onPersonaChange(e.target.value as Persona)}
-                className="appearance-none rounded-md border border-[#262626] bg-[#161616] px-2.5 py-1 text-[10px] font-medium capitalize text-neutral-300 focus:border-[#ff7700] focus:outline-none cursor-pointer pr-5"
-              >
-                <option value="builder" className="bg-[#1a1a1a]">Builder</option>
-                <option value="operator" className="bg-[#1a1a1a]">Operator</option>
-                <option value="thinker" className="bg-[#1a1a1a]">Thinker</option>
-                <option value="wanderer" className="bg-[#1a1a1a]">Wanderer</option>
-              </select>
-              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-1.5 text-neutral-600 text-[8px]">
-                ▼
+            {!isNow && (
+              <div className="relative">
+                <select
+                  value={persona}
+                  onChange={(e) => onPersonaChange(e.target.value as Persona)}
+                  className="appearance-none rounded-md border border-[#262626] bg-[#161616] px-2.5 py-1 text-[10px] font-medium capitalize text-neutral-300 focus:border-[#ff7700] focus:outline-none cursor-pointer pr-5"
+                >
+                  <option value="builder" className="bg-[#1a1a1a]">Builder</option>
+                  <option value="operator" className="bg-[#1a1a1a]">Operator</option>
+                  <option value="thinker" className="bg-[#1a1a1a]">Thinker</option>
+                  <option value="wanderer" className="bg-[#1a1a1a]">Wanderer</option>
+                </select>
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-1.5 text-neutral-600 text-[8px]">
+                  ▼
+                </div>
               </div>
-            </div>
+            )}
             <button
               type="button"
               onClick={onClose}
@@ -206,28 +213,44 @@ export function PublishDrawer({
             </div>
           )}
 
-          {/* URL Slug */}
-          <div className="space-y-1.5">
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-medium text-neutral-400">Permalink</span>
-              <span className="text-[10px] font-mono text-neutral-600 truncate max-w-[60%]">
-                {liveUrlPrefix}{slug || '…'}
-              </span>
-            </div>
-            <div className="flex items-center rounded-lg border border-[#262626] bg-[#161616] px-3 py-2 text-xs font-mono focus-within:border-[#ff7700]">
-              <span className="text-neutral-500 select-none shrink-0">{liveUrlPrefix}</span>
+          {/* URL Slug / Now Date */}
+          {isNow ? (
+            <div className="space-y-1.5">
+              <span className="text-[11px] font-medium text-neutral-400">Timeline Date</span>
               <input
-                type="text"
-                value={slug}
-                onChange={(e) => onSlugChange(e.target.value)}
-                className="w-full bg-transparent focus:outline-none ml-1 text-neutral-100"
-                placeholder="slug-name"
+                type="month"
+                value={date || ''}
+                onChange={(e) => onDateChange?.(e.target.value)}
+                className="w-full rounded-lg border border-[#262626] bg-[#161616] px-3 py-2 text-xs font-mono text-white focus:border-[#ff7700] focus:outline-none"
               />
+              <p className="text-[10px] text-neutral-500">
+                Month shown on the Now page timeline.
+              </p>
             </div>
-          </div>
+          ) : (
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-medium text-neutral-400">Permalink</span>
+                <span className="text-[10px] font-mono text-neutral-600 truncate max-w-[60%]">
+                  {liveUrlPrefix}{slug || '…'}
+                </span>
+              </div>
+              <div className="flex items-center rounded-lg border border-[#262626] bg-[#161616] px-3 py-2 text-xs font-mono focus-within:border-[#ff7700]">
+                <span className="text-neutral-500 select-none shrink-0">{liveUrlPrefix}</span>
+                <input
+                  type="text"
+                  value={slug}
+                  onChange={(e) => onSlugChange(e.target.value)}
+                  className="w-full bg-transparent focus:outline-none ml-1 text-neutral-100"
+                  placeholder="slug-name"
+                />
+              </div>
+            </div>
+          )}
 
           {/* Tags */}
-          <div className="space-y-1.5">
+          {!isNow && (
+            <div className="space-y-1.5">
             <span className="text-[11px] font-medium text-neutral-400">Tags</span>
             <input
               type="text"
@@ -259,12 +282,14 @@ export function PublishDrawer({
               </div>
             )}
           </div>
+          )}
         </div>
 
         {/* Previews + Footer */}
         <div className="border-t border-[#202020] bg-[#111111] shrink-0">
           {/* Preview Tabs */}
-          <div className="px-5 pt-3 space-y-2">
+          {!isNow && (
+            <div className="px-5 pt-3 space-y-2">
             <div className="flex items-center gap-0 border-b border-[#222]">
               <button
                 type="button"
@@ -349,17 +374,20 @@ export function PublishDrawer({
               </div>
             )}
           </div>
+            )}
 
           {/* Action Buttons */}
           <div className="px-5 py-3 flex items-center gap-2">
-            <button
-              type="button"
-              disabled={isSaving}
-              onClick={() => onSave('unpublished')}
-              className="rounded-lg border border-[#333] bg-[#1a1a1a] hover:bg-[#252525] text-neutral-300 px-4 py-2 text-[11px] font-medium transition-colors"
-            >
-              Save Draft
-            </button>
+            {!isNow && (
+              <button
+                type="button"
+                disabled={isSaving}
+                onClick={() => onSave('unpublished')}
+                className="rounded-lg border border-[#333] bg-[#1a1a1a] hover:bg-[#252525] text-neutral-300 px-4 py-2 text-[11px] font-medium transition-colors"
+              >
+                Save Draft
+              </button>
+            )}
             <button
               type="button"
               disabled={isSaving}
@@ -368,6 +396,8 @@ export function PublishDrawer({
             >
               {isSaving
                 ? 'Saving…'
+                : isNow
+                ? 'Save to Timeline'
                 : status === 'published'
                 ? 'Update'
                 : 'Publish'}

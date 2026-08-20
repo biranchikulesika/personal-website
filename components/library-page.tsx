@@ -18,11 +18,29 @@ const PERSONA_LABELS: Record<Persona, string> = {
 };
 
 /**
- * Aesthetic book cover card representing physical print texture.
+ * Aesthetic book cover card representing physical print texture, or the real
+ * cover image when one is set.
  */
-function BookCover({ title, author, year }: { title: string; author: string; year: string }) {
-  return (
-    <div className="relative flex aspect-[2/3] w-full flex-col justify-between overflow-hidden rounded-lg border border-tinted bg-cream p-4 shadow-sm transition-all duration-300 group-hover:-translate-y-1 group-hover:shadow-md">
+function BookCover({
+  title,
+  author,
+  cover,
+  link,
+}: {
+  title: string;
+  author: string;
+  cover?: string;
+  link?: string;
+}) {
+  const inner = cover ? (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={cover}
+      alt={`${title} cover`}
+      className="absolute inset-0 h-full w-full object-cover"
+    />
+  ) : (
+    <>
       {/* Subtle book spine accent */}
       <span
         aria-hidden
@@ -37,8 +55,25 @@ function BookCover({ title, author, year }: { title: string; author: string; yea
 
       <div className="flex items-baseline justify-between border-t border-tinted/40 pl-2 pt-2 text-[11px] text-ink-soft">
         <span className="truncate pr-1">{author}</span>
-        <span className="shrink-0 text-ink-soft/60">{year}</span>
       </div>
+    </>
+  );
+
+  return (
+    <div className="relative flex aspect-[2/3] w-full flex-col justify-between overflow-hidden rounded-lg border border-tinted bg-cream p-4 shadow-sm transition-all duration-300 group-hover:-translate-y-1 group-hover:shadow-md">
+      {link ? (
+        <a
+          href={link}
+          target={link.startsWith('http') ? '_blank' : undefined}
+          rel={link.startsWith('http') ? 'noopener noreferrer' : undefined}
+          className="absolute inset-0 block"
+          aria-label={`Open ${title}`}
+        >
+          {inner}
+        </a>
+      ) : (
+        inner
+      )}
     </div>
   );
 }
@@ -201,10 +236,25 @@ export function LibraryPageView({ books, title, subheader }: LibraryPageProps) {
       <div className="mt-10 grid grid-cols-2 gap-6 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
         {filtered.map((item) => (
           <article key={item.id} className="group">
-            <BookCover title={item.title} author={item.author} year={item.date} />
+            <BookCover
+              title={item.title}
+              author={item.author}
+              cover={item.cover}
+              link={item.link}
+            />
             <div className="mt-3">
               <h3 className="font-serif text-base font-normal leading-snug text-ink transition-colors duration-300 group-hover:text-accent">
-                {item.title}
+                {item.link ? (
+                  <a
+                    href={item.link}
+                    target={item.link.startsWith('http') ? '_blank' : undefined}
+                    rel={item.link.startsWith('http') ? 'noopener noreferrer' : undefined}
+                  >
+                    {item.title}
+                  </a>
+                ) : (
+                  item.title
+                )}
               </h3>
               <p className="mt-0.5 text-xs text-ink-soft">{item.author}</p>
             </div>

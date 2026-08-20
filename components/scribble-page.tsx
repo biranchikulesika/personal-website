@@ -13,6 +13,7 @@ import {
   ChevronRightIcon,
   SearchIcon,
 } from './icons';
+import { formatDisplayDate } from '@/lib/utils';
 
 interface ScribblePageProps {
   entries: ScribbleEntry[];
@@ -45,7 +46,7 @@ function CardMeta({
     <p className="mt-3 flex items-center gap-1.5 text-xs text-ink-soft">
       <span>{TYPE_LABELS[type]}</span>
       <span className="h-1 w-1 rounded-full bg-ink-soft" aria-hidden />
-      <span>{date}</span>
+      <span>{formatDisplayDate(date)}</span>
     </p>
   );
 }
@@ -193,8 +194,8 @@ function FilterBar({
     }`;
 
   return (
-    <div className="flex min-w-0 flex-1 items-center gap-3">
-      <div className="flex shrink-0 items-center gap-4">
+    <div className="flex min-w-0 flex-1 flex-col items-start gap-3 sm:flex-row sm:items-center">
+      <div className="no-scrollbar flex w-full shrink-0 items-center gap-4 overflow-x-auto sm:w-auto">
         <button
           type="button"
           onClick={() => onPersonaSelect(null)}
@@ -215,18 +216,18 @@ function FilterBar({
           ),
         )}
       </div>
-      <span className="h-4 w-[3px] shrink-0 rounded-full bg-sea-blue" aria-hidden />
+      <span className="hidden h-4 w-[3px] shrink-0 rounded-full bg-sea-blue sm:block" aria-hidden />
       <button
         type="button"
         onClick={() => scroll(-1)}
         aria-label="Scroll topics left"
-        className="shrink-0 rounded-full p-1 text-ink-soft transition-colors hover:bg-cream hover:text-ink"
+        className="hidden shrink-0 rounded-full p-1 text-ink-soft transition-colors hover:bg-cream hover:text-ink sm:inline-flex"
       >
         <ChevronLeftIcon className="h-4 w-4" />
       </button>
       <div
         ref={listRef}
-        className="no-scrollbar flex min-w-0 flex-1 items-center gap-4 overflow-x-auto"
+        className="no-scrollbar hidden min-w-0 flex-1 items-center gap-4 overflow-x-auto sm:flex"
       >
         <button
           type="button"
@@ -253,7 +254,7 @@ function FilterBar({
         type="button"
         onClick={() => scroll(1)}
         aria-label="Scroll topics right"
-        className="shrink-0 rounded-full p-1 text-ink-soft transition-colors hover:bg-cream hover:text-ink"
+        className="hidden shrink-0 rounded-full p-1 text-ink-soft transition-colors hover:bg-cream hover:text-ink sm:inline-flex"
       >
         <ChevronRightIcon className="h-4 w-4" />
       </button>

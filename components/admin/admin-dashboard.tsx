@@ -3,32 +3,44 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import type { AdminProfile, BlogPost, BookItem, MediaItem, NoteItem } from '@/lib/types';
+import type {
+  AdminProfile,
+  BlogPost,
+  BookItem,
+  MediaItem,
+  NoteItem,
+  NowEntry,
+} from '@/lib/types';
 import { ContentManager } from './content-manager';
-import { LibraryManager } from './library-manager';
 import { MediaManager } from './media-manager';
 import { AccountManager } from './account-manager';
+import { formatDisplayDate } from '@/lib/utils';
 
 interface AdminDashboardProps {
   initialPosts: BlogPost[];
   initialNotes: NoteItem[];
   initialBooks: BookItem[];
   initialMedia: MediaItem[];
+  initialOrphanedMedia: MediaItem[];
   initialProfile: AdminProfile;
+  initialNowEntries: NowEntry[];
 }
 
-type SidepanelTab = 'home' | 'content' | 'library' | 'media' | 'account';
+type SidepanelTab = 'home' | 'content' | 'media' | 'account';
 
 export function AdminDashboard({
   initialPosts,
   initialNotes,
   initialBooks,
   initialMedia,
+  initialOrphanedMedia,
   initialProfile,
+  initialNowEntries,
 }: AdminDashboardProps) {
   const [activeTab, setActiveTab] = useState<SidepanelTab>('home');
 
-  const totalContentCount = initialPosts.length + initialNotes.length;
+  const totalContentCount =
+    initialPosts.length + initialNotes.length + initialNowEntries.length;
 
   const navItems = [
     {
@@ -43,23 +55,13 @@ export function AdminDashboard({
     },
     {
       id: 'content' as const,
-      label: 'Posts & Notes',
+      label: 'Content',
       icon: (
         <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
         </svg>
       ),
       count: totalContentCount,
-    },
-    {
-      id: 'library' as const,
-      label: 'Library',
-      icon: (
-        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0118 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
-        </svg>
-      ),
-      count: initialBooks.length,
     },
     {
       id: 'media' as const,
@@ -101,10 +103,6 @@ export function AdminDashboard({
             <div className="min-w-0 flex-1">
               <div className="truncate font-serif text-base font-medium text-ink">
                 {initialProfile.name}
-              </div>
-              <div className="flex items-center gap-1.5 text-[11px] text-ink-soft">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-600"></span>
-                <span className="truncate">Admin Panel</span>
               </div>
             </div>
           </div>
@@ -171,9 +169,6 @@ export function AdminDashboard({
                   <h2 className="font-serif text-3xl font-normal text-ink md:text-4xl">
                     Welcome back, {initialProfile.name.split(' ')[0]}
                   </h2>
-                  <p className="mt-1 text-sm text-ink-soft">
-                    This is your quiet administrative dashboard for publishing essays, notes, bookshelf readings, and managing assets.
-                  </p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
                   <button
@@ -181,11 +176,11 @@ export function AdminDashboard({
                     onClick={() => setActiveTab('content')}
                     className="rounded-full bg-ink px-4 py-2 text-xs font-semibold text-cream shadow-sm hover:bg-accent"
                   >
-                    Manage Posts & Notes
+                    Manage Content
                   </button>
                   <button
                     type="button"
-                    onClick={() => setActiveTab('library')}
+                    onClick={() => setActiveTab('content')}
                     className="rounded-full bg-paper px-4 py-2 text-xs font-semibold text-ink ring-1 ring-tinted hover:bg-cream"
                   >
                     + Add Book
@@ -229,7 +224,7 @@ export function AdminDashboard({
 
                 <button
                   type="button"
-                  onClick={() => setActiveTab('library')}
+                  onClick={() => setActiveTab('content')}
                   className="flex flex-col items-start rounded-3xl border border-tinted bg-cream p-5 text-left shadow-sm transition-all hover:border-ink/40 hover:shadow-md"
                 >
                   <span className="text-xs font-semibold uppercase tracking-wider text-ink-soft">
@@ -326,7 +321,7 @@ export function AdminDashboard({
                               {note.title}
                             </h4>
                             <p className="text-[10px] text-ink-soft">
-                              {note.date}
+                              {formatDisplayDate(note.date)}
                             </p>
                           </div>
                           <Link
@@ -350,7 +345,7 @@ export function AdminDashboard({
                     </h3>
                     <button
                       type="button"
-                      onClick={() => setActiveTab('library')}
+                      onClick={() => setActiveTab('content')}
                       className="text-xs font-semibold text-ink-soft hover:text-ink"
                     >
                       View all ({initialBooks.length})
@@ -389,11 +384,17 @@ export function AdminDashboard({
             <ContentManager
               initialPosts={initialPosts}
               initialNotes={initialNotes}
+              initialBooks={initialBooks}
+              initialNowEntries={initialNowEntries}
               mediaItems={initialMedia}
             />
           )}
-          {activeTab === 'library' && <LibraryManager initialBooks={initialBooks} />}
-          {activeTab === 'media' && <MediaManager initialMedia={initialMedia} />}
+          {activeTab === 'media' && (
+            <MediaManager
+              initialMedia={initialMedia}
+              initialOrphanedMedia={initialOrphanedMedia}
+            />
+          )}
           {activeTab === 'account' && (
             <AccountManager initialProfile={initialProfile} />
           )}

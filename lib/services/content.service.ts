@@ -4,6 +4,7 @@ import type {
   BookItem,
   MediaItem,
   NoteItem,
+  NowEntry,
   Persona,
   ScribbleEntry,
   HomeContent,
@@ -102,6 +103,18 @@ export class ContentService {
     return this.repo.getPage(slug);
   }
 
+  getNowEntries(): Promise<NowEntry[]> {
+    return this.repo.getNowEntries();
+  }
+
+  saveNowEntry(entry: NowEntry): Promise<NowEntry> {
+    return this.repo.saveNowEntry(entry);
+  }
+
+  deleteNowEntry(id: string): Promise<boolean> {
+    return this.repo.deleteNowEntry(id);
+  }
+
   getScribbleEntries(): Promise<ScribbleEntry[]> {
     return this.repo.getScribbleEntries();
   }
@@ -116,6 +129,14 @@ export class ContentService {
 
   deleteMedia(id: string): Promise<boolean> {
     return this.repo.deleteMedia(id);
+  }
+
+  getOrphanedMedia(): Promise<MediaItem[]> {
+    return this.repo.getOrphanedMedia();
+  }
+
+  deleteStorageAssets(srcs: string[]): Promise<number> {
+    return this.repo.deleteStorageAssets(srcs);
   }
 
   getAdminProfile(): Promise<AdminProfile> {

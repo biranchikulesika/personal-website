@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react';
 import Link from 'next/link';
 import type { NoteItem, Persona } from '@/lib/types';
 import { saveNoteAction, deleteNoteAction } from '@/app/admin/actions';
+import { formatDisplayDate } from '@/lib/utils';
 
 interface NotesManagerProps {
   initialNotes: NoteItem[];
@@ -148,9 +149,6 @@ export function NotesManager({ initialNotes }: NotesManagerProps) {
           <h2 className="font-serif text-2xl font-normal text-ink md:text-3xl">
             Notes & Thoughts
           </h2>
-          <p className="mt-1 text-sm text-ink-soft">
-            Manage atomic notes, research logs, and observations ({notes.length} total).
-          </p>
         </div>
 
         <button
@@ -197,7 +195,7 @@ export function NotesManager({ initialNotes }: NotesManagerProps) {
                     </p>
                   </td>
                   <td className="px-4 py-4 text-xs text-ink-soft whitespace-nowrap">
-                    {note.date}
+                    {formatDisplayDate(note.date)}
                   </td>
                   <td className="px-4 py-4 text-xs text-ink-soft">
                     <span className="capitalize">{note.persona}</span>

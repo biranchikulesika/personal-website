@@ -7,12 +7,12 @@ export interface ComponentEntry {
   tag: string;
   snippet: string;
   description: string;
-  group: 'Embeds' | 'Structure' | 'Headings' | 'Lists' | 'Callouts';
+  group: 'Embeds' | 'Import' | 'Structure' | 'Headings' | 'Lists' | 'Callouts';
   icon: string;
 }
 
 export interface ComponentGroup {
-  label: 'Embeds' | 'Structure' | 'Headings' | 'Lists' | 'Callouts';
+  label: 'Embeds' | 'Import' | 'Structure' | 'Headings' | 'Lists' | 'Callouts';
   items: ComponentEntry[];
 }
 
@@ -43,6 +43,44 @@ export const COMPONENT_GROUPS: ComponentGroup[] = [
         description: 'Pick asset from media library',
         group: 'Embeds',
         icon: '📁',
+      },
+      {
+        name: 'Book Card',
+        tag: 'Book',
+        snippet:
+          '<Book title="The Shallows" author="Nicholas Carr" year="2025" description="A one-line note about the book." cover="/book-cover.jpg" link="https://example.com/book" />',
+        description: 'Book card with cover, link, and description',
+        group: 'Embeds',
+        icon: '📖',
+      },
+    ],
+  },
+  {
+    label: 'Import',
+    items: [
+      {
+        name: 'Import Book',
+        tag: 'Book',
+        snippet: '',
+        description: 'Pick a book from your library to embed',
+        group: 'Import',
+        icon: '📖',
+      },
+      {
+        name: 'Import Essay',
+        tag: 'Post',
+        snippet: '',
+        description: 'Pick an essay to embed as a card',
+        group: 'Import',
+        icon: '📄',
+      },
+      {
+        name: 'Import Note',
+        tag: 'Note',
+        snippet: '',
+        description: 'Pick a note to embed as a card',
+        group: 'Import',
+        icon: '📝',
       },
     ],
   },
@@ -185,6 +223,7 @@ interface ComponentLibrarySidebarProps {
   isCollapsed: boolean;
   onToggleCollapse: () => void;
   onOpenMediaPicker: () => void;
+  onOpenEmbedPicker: (kind: 'book' | 'post' | 'note') => void;
 }
 
 export function ComponentLibrarySidebar({
@@ -192,6 +231,7 @@ export function ComponentLibrarySidebar({
   isCollapsed,
   onToggleCollapse,
   onOpenMediaPicker,
+  onOpenEmbedPicker,
 }: ComponentLibrarySidebarProps) {
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -268,6 +308,12 @@ export function ComponentLibrarySidebar({
                     onClick={() => {
                       if (comp.name === 'Media Asset') {
                         onOpenMediaPicker();
+                      } else if (comp.name === 'Import Book') {
+                        onOpenEmbedPicker('book');
+                      } else if (comp.name === 'Import Essay') {
+                        onOpenEmbedPicker('post');
+                      } else if (comp.name === 'Import Note') {
+                        onOpenEmbedPicker('note');
                       } else {
                         onInsert(comp.snippet);
                       }

@@ -1,28 +1,98 @@
 'use client';
 
-import { useState, useTransition } from 'react';
-import Image from 'next/image';
+import { useState } from 'react';
 import type { AdminProfile } from '@/lib/types';
-import { updateAdminProfileAction } from '@/app/admin/actions';
+import {
+  EnvelopeIcon,
+  FingerprintIcon,
+  LaptopIcon,
+  TrashIcon,
+  GitHubIcon,
+  GoogleIcon,
+} from '@/components/icons';
 
 interface AccountManagerProps {
   initialProfile: AdminProfile;
 }
 
+interface Passkey {
+  id: string;
+  label: string;
+  lastUsedAt: string;
+}
+
+interface ConnectedAccount {
+  id: string;
+  label: string;
+  Icon: (props: { className?: string }) => React.JSX.Element;
+}
+
+interface Session {
+  id: string;
+  device: string;
+  location: string;
+  startedAt: string;
+}
+
+const CONNECTED_ACCOUNTS: ConnectedAccount[] = [
+  { id: 'google', label: 'Google', Icon: GoogleIcon },
+  { id: 'github', label: 'GitHub', Icon: GitHubIcon },
+];
+
+function getDeviceLabel(): string {
+  if (typeof navigator === 'undefined') return 'This device';
+  const ua = navigator.userAgent;
+  if (ua.includes('iPhone')) return 'iPhone';
+  if (ua.includes('iPad')) return 'iPad';
+  if (ua.includes('Mac')) return 'MacBook';
+  if (ua.includes('Windows')) return 'Windows PC';
+  if (ua.includes('Linux')) return 'Linux Computer';
+  return 'This device';
+}
+
+function getInitials(name: string): string {
+  return name
+    .split(' ')
+    .map((part) => part[0])
+    .filter(Boolean)
+    .slice(0, 2)
+    .join('')
+    .toUpperCase();
+}
+
+function IconChip({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-paper text-ink-soft ring-1 ring-tinted">
+      {children}
+    </span>
+  );
+}
+
+function SectionHeading({ title }: { title: string }) {
+  return (
+    <h3 className="text-xs font-semibold uppercase tracking-wider text-ink-soft">
+      {title}
+    </h3>
+  );
+}
+
 export function AccountManager({ initialProfile }: AccountManagerProps) {
-  const [profile, setProfile] = useState<AdminProfile>(initialProfile);
-  const [name, setName] = useState(initialProfile.name);
-  const [email, setEmail] = useState(initialProfile.email);
-  const [role, setRole] = useState(initialProfile.role);
-  const [avatarUrl, setAvatarUrl] = useState(initialProfile.avatarUrl);
-
-  // Security Form State
-  const [currentPassword, setCurrentPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
-
-  const [isPending, startTransition] = useTransition();
+  const [passkeys, setPasskeys] = useState<Passkey[]>([
+    { id: 'pk-1', label: 'Linux Computer', lastUsedAt: 'Aug 14, 2026' },
+  ]);
+  const [isRegistering, setIsRegistering] = useState(false);
+  const [connectedProviders, setConnectedProviders] = useState<string[]>([
+    'google',
+  ]);
+  const [pendingProvider, setPendingProvider] = useState<string | null>(null);
+  const [sessions, setSessions] = useState<Session[]>([
+    {
+      id: 's-1',
+      device: 'Linux / Chrome',
+      location: '127.0.0.1',
+      startedAt: 'Just now',
+    },
+  ]);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   function showToast(msg: string) {
@@ -30,34 +100,65 @@ export function AccountManager({ initialProfile }: AccountManagerProps) {
     setTimeout(() => setToastMessage(null), 3500);
   }
 
-  function handleSaveProfile(e: React.FormEvent) {
-    e.preventDefault();
-    startTransition(async () => {
-      const res = await updateAdminProfileAction({
-        name,
-        email,
-        role,
-        avatarUrl,
-      });
-      if (res.success && res.profile) {
-        setProfile(res.profile);
-        showToast('Admin profile updated successfully!');
-      } else {
-        showToast(res.error || 'Failed to update profile');
-      }
-    });
+  function handleAddPasskey() {
+    if (isRegistering) return;
+    setIsRegistering(true);
+    setTimeout(() => {
+      const label = getDeviceLabel();
+      setPasskeys((prev) => [
+        ...prev,
+        {
+          id: `pk-${Date.now()}`,
+          label,
+          lastUsedAt: new Date().toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+          }),
+        },
+      ]);
+      setIsRegistering(false);
+      showToast(`Passkey added for ${label}`);
+    }, 800);
   }
 
-  function handleUpdatePassword(e: React.FormEvent) {
-    e.preventDefault();
-    if (!newPassword || newPassword !== confirmPassword) {
-      showToast('New passwords do not match!');
-      return;
-    }
-    setCurrentPassword('');
-    setNewPassword('');
-    setConfirmPassword('');
-    showToast('Admin credentials updated (simulated for dev mode).');
+  function handleRemovePasskey(id: string) {
+    setPasskeys((prev) => prev.filter((p) => p.id !== id));
+    showToast('Passkey removed');
+  }
+
+  function handleConnect(providerId: string) {
+    if (pendingProvider) return;
+    setPendingProvider(providerId);
+    setTimeout(() => {
+      setConnectedProviders((prev) => [...prev, providerId]);
+      setPendingProvider(null);
+      showToast(
+        `${CONNECTED_ACCOUNTS.find((p) => p.id === providerId)?.label} connected`,
+      );
+    }, 800);
+  }
+
+  function handleDisconnect(providerId: string) {
+    if (pendingProvider) return;
+    setPendingProvider(providerId);
+    setTimeout(() => {
+      setConnectedProviders((prev) => prev.filter((id) => id !== providerId));
+      setPendingProvider(null);
+      showToast(
+        `${CONNECTED_ACCOUNTS.find((p) => p.id === providerId)?.label} disconnected`,
+      );
+    }, 800);
+  }
+
+  function handleSignOutSession(id: string) {
+    setSessions((prev) => prev.filter((s) => s.id !== id));
+    showToast('Session signed out');
+  }
+
+  function handleSignOutAll() {
+    setSessions([]);
+    showToast('Signed out of all sessions');
   }
 
   return (
@@ -72,225 +173,214 @@ export function AccountManager({ initialProfile }: AccountManagerProps) {
       {/* Header */}
       <div>
         <h2 className="font-serif text-2xl font-normal text-ink md:text-3xl">
-          Admin Account & Login Management
+          Account & Security
         </h2>
-        <p className="mt-1 text-sm text-ink-soft">
-          Manage your author identity, login credentials, and admin security settings.
-        </p>
       </div>
 
-      {/* Developer Mode Authentication Banner */}
-      <div className="rounded-2xl border border-tinted bg-cream p-5 md:p-6">
-        <div className="flex items-start gap-4">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-paper text-accent shadow-xs ring-1 ring-tinted">
-            <span className="font-mono text-base font-bold">⌘</span>
-          </div>
-          <div className="space-y-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <h3 className="font-serif text-lg font-medium text-ink">
-                Authentication Status: Developer Mode
-              </h3>
-              <span className="rounded-full bg-paper px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-accent ring-1 ring-tinted">
-                Auth Disabled (AGENTS.md)
-              </span>
-            </div>
-            <p className="text-xs leading-relaxed text-ink-soft md:text-sm">
-              Per branch architecture rules, production authentication middleware is disabled. All admin operations are unblocked in development mode. When ready for production promotion, auth guards will attach seamlessly.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 gap-8 lg:grid-cols-12">
-        {/* Left: Profile Form (7 cols) */}
-        <div className="lg:col-span-7 space-y-6">
-          <div className="rounded-3xl border border-tinted bg-cream p-6 sm:p-8 shadow-sm">
-            <h3 className="font-serif text-xl font-normal text-ink">
-              Author & Profile Identity
-            </h3>
-            <p className="mt-1 text-xs text-ink-soft">
-              This information is associated with published essays and notes.
-            </p>
-
-            <form onSubmit={handleSaveProfile} className="mt-6 space-y-5">
-              <div className="flex items-center gap-4">
-                <div className="relative h-16 w-16 overflow-hidden rounded-full border border-tinted bg-paper shadow-sm">
-                  <Image
-                    src={avatarUrl || '/biranchi.jpeg'}
-                    alt={name}
-                    fill
-                    className="object-cover"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-ink-soft">
-                    Avatar Image URL
-                  </label>
-                  <input
-                    type="text"
-                    value={avatarUrl}
-                    onChange={(e) => setAvatarUrl(e.target.value)}
-                    className="mt-1 w-full max-w-sm rounded-xl border border-tinted bg-paper px-3 py-1.5 font-mono text-xs text-ink focus:border-ink focus:outline-none"
-                  />
+      <div className="max-w-4xl space-y-8">
+        <div className="grid gap-8 md:grid-cols-2">
+          {/* ── Sign-in & Authentication ── */}
+          <section>
+            <SectionHeading title="Sign-in & Authentication" />
+            <div className="mt-3 divide-y divide-tinted/60 overflow-hidden rounded-2xl border border-tinted bg-cream shadow-sm">
+              {/* Identity */}
+              <div className="flex items-center gap-3 px-5 py-4">
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-ink text-sm font-semibold text-cream">
+                  {getInitials(initialProfile.name)}
+                </span>
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold text-ink">
+                    {initialProfile.name}
+                  </p>
+                  <p className="mt-0.5 flex items-center gap-1.5 truncate text-xs text-ink-soft">
+                    <EnvelopeIcon className="h-3.5 w-3.5 shrink-0" />
+                    {initialProfile.email}
+                  </p>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-ink-soft">
-                    Display Name
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className="mt-1.5 w-full rounded-xl border border-tinted bg-paper px-3.5 py-2 text-sm text-ink focus:border-ink focus:outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-ink-soft">
-                    Email Address
-                  </label>
-                  <input
-                    type="email"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="mt-1.5 w-full rounded-xl border border-tinted bg-paper px-3.5 py-2 text-sm text-ink focus:border-ink focus:outline-none"
-                  />
-                </div>
+              {/* Passkeys header */}
+              <div className="flex items-center justify-between px-5 py-3">
+                <p className="text-xs font-semibold uppercase tracking-wider text-ink-soft">
+                  Passkeys
+                </p>
+                <span className="rounded-full bg-paper px-2 py-0.5 text-[10px] font-semibold text-ink ring-1 ring-tinted">
+                  {passkeys.length}
+                </span>
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-ink-soft">
-                  Role / Description
-                </label>
-                <input
-                  type="text"
-                  value={role}
-                  onChange={(e) => setRole(e.target.value)}
-                  className="mt-1.5 w-full rounded-xl border border-tinted bg-paper px-3.5 py-2 text-sm text-ink focus:border-ink focus:outline-none"
-                />
-              </div>
-
-              <div className="flex justify-end pt-3">
-                <button
-                  type="submit"
-                  disabled={isPending}
-                  className="rounded-full bg-ink px-6 py-2.5 text-xs font-semibold text-cream shadow-sm transition-colors hover:bg-accent disabled:opacity-50"
+              {passkeys.map((passkey) => (
+                <div
+                  key={passkey.id}
+                  className="flex items-center justify-between gap-3 px-5 py-3"
                 >
-                  {isPending ? 'Saving...' : 'Save Profile Changes'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-
-        {/* Right: Security & Login Credentials (5 cols) */}
-        <div className="lg:col-span-5 space-y-6">
-          {/* Password Management */}
-          <div className="rounded-3xl border border-tinted bg-cream p-6 sm:p-8 shadow-sm">
-            <h3 className="font-serif text-xl font-normal text-ink">
-              Admin Password
-            </h3>
-            <p className="mt-1 text-xs text-ink-soft">
-              Update credentials for future authentication enforcement.
-            </p>
-
-            <form onSubmit={handleUpdatePassword} className="mt-5 space-y-4">
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-ink-soft">
-                  Current Password
-                </label>
-                <input
-                  type="password"
-                  placeholder="••••••••••••"
-                  value={currentPassword}
-                  onChange={(e) => setCurrentPassword(e.target.value)}
-                  className="mt-1.5 w-full rounded-xl border border-tinted bg-paper px-3.5 py-2 text-sm text-ink focus:border-ink focus:outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-ink-soft">
-                  New Password
-                </label>
-                <input
-                  type="password"
-                  placeholder="••••••••••••"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  className="mt-1.5 w-full rounded-xl border border-tinted bg-paper px-3.5 py-2 text-sm text-ink focus:border-ink focus:outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-ink-soft">
-                  Confirm Password
-                </label>
-                <input
-                  type="password"
-                  placeholder="••••••••••••"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="mt-1.5 w-full rounded-xl border border-tinted bg-paper px-3.5 py-2 text-sm text-ink focus:border-ink focus:outline-none"
-                />
-              </div>
-
-              <button
-                type="submit"
-                className="w-full rounded-full bg-paper py-2.5 text-xs font-semibold text-ink shadow-xs ring-1 ring-tinted transition-colors hover:bg-ink hover:text-cream"
-              >
-                Update Password
-              </button>
-            </form>
-          </div>
-
-          {/* Security & Active Session Preview */}
-          <div className="rounded-3xl border border-tinted bg-cream p-6 shadow-sm">
-            <h3 className="font-serif text-lg font-normal text-ink">
-              Security & Sessions
-            </h3>
-
-            <div className="mt-4 space-y-3">
-              <div className="flex items-center justify-between rounded-xl bg-paper p-3 ring-1 ring-tinted">
-                <div>
-                  <div className="text-xs font-medium text-ink">Two-Factor Authentication</div>
-                  <div className="text-[11px] text-ink-soft">App-based TOTP code</div>
+                  <div className="flex min-w-0 items-center gap-3">
+                    <IconChip>
+                      <FingerprintIcon className="h-4 w-4" />
+                    </IconChip>
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium text-ink">
+                        {passkey.label}
+                      </p>
+                      <p className="mt-0.5 text-xs text-ink-soft">
+                        Last used {passkey.lastUsedAt}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    title="Remove passkey"
+                    aria-label={`Remove ${passkey.label} passkey`}
+                    onClick={() => handleRemovePasskey(passkey.id)}
+                    className="shrink-0 rounded-full p-2 text-ink-soft transition-colors hover:bg-red-50 hover:text-red-700"
+                  >
+                    <TrashIcon className="h-4 w-4" />
+                  </button>
                 </div>
+              ))}
+
+              {passkeys.length === 0 && (
+                <div className="px-5 py-3">
+                  <p className="text-xs text-ink-soft">
+                    Add a passkey to sign in with your device instead of using a
+                    password.
+                  </p>
+                </div>
+              )}
+
+              {/* Add passkey */}
+              <div className="px-5 py-4">
                 <button
                   type="button"
-                  onClick={() => {
-                    setTwoFactorEnabled(!twoFactorEnabled);
-                    showToast(
-                      twoFactorEnabled
-                        ? '2FA disabled for local mode'
-                        : '2FA simulated enable for admin',
-                    );
-                  }}
-                  className={`rounded-full px-3 py-1 text-xs font-semibold transition-colors ${
-                    twoFactorEnabled
-                      ? 'bg-ink text-cream'
-                      : 'bg-paper text-ink-soft ring-1 ring-tinted hover:text-ink'
-                  }`}
+                  disabled={isRegistering}
+                  onClick={handleAddPasskey}
+                  className="flex w-full items-center justify-center gap-1.5 rounded-full bg-ink py-2.5 text-xs font-semibold text-cream shadow-sm transition-colors hover:bg-accent disabled:opacity-50"
                 >
-                  {twoFactorEnabled ? 'Enabled' : 'Disabled'}
+                  <FingerprintIcon className="h-3.5 w-3.5" />
+                  {isRegistering ? 'Creating passkey…' : 'Add passkey'}
                 </button>
               </div>
+            </div>
+          </section>
 
-              <div className="rounded-xl bg-paper p-3 text-xs ring-1 ring-tinted">
-                <div className="flex items-center justify-between font-medium text-ink">
-                  <span>Current Local Session</span>
-                  <span className="text-emerald-700">● Active</span>
+          {/* ── Connected Accounts ── */}
+          <section>
+            <SectionHeading title="Connected Accounts" />
+            <div className="mt-3 divide-y divide-tinted/60 overflow-hidden rounded-2xl border border-tinted bg-cream shadow-sm">
+              {CONNECTED_ACCOUNTS.map((provider) => {
+                const isConnected = connectedProviders.includes(provider.id);
+                const isPending = pendingProvider === provider.id;
+                const canDisconnect =
+                  isConnected && connectedProviders.length > 1;
+
+                return (
+                  <div
+                    key={provider.id}
+                    className="flex items-center justify-between gap-3 px-5 py-4"
+                  >
+                    <div className="flex min-w-0 items-center gap-3">
+                      <IconChip>
+                        <provider.Icon className="h-4 w-4" />
+                      </IconChip>
+                      <p className="text-sm font-medium text-ink">
+                        {provider.label}
+                      </p>
+                    </div>
+
+                    {isConnected ? (
+                      canDisconnect ? (
+                        <button
+                          type="button"
+                          disabled={isPending}
+                          onClick={() => handleDisconnect(provider.id)}
+                          className="shrink-0 text-xs font-semibold text-red-700 transition-colors hover:text-red-800 disabled:cursor-wait disabled:opacity-50"
+                        >
+                          {isPending ? 'Disconnecting…' : 'Disconnect'}
+                        </button>
+                      ) : (
+                        <span className="shrink-0 rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-semibold text-emerald-700 ring-1 ring-emerald-200">
+                          Connected
+                        </span>
+                      )
+                    ) : (
+                      <button
+                        type="button"
+                        disabled={isPending}
+                        onClick={() => handleConnect(provider.id)}
+                        className="shrink-0 rounded-full bg-paper px-3 py-1 text-xs font-semibold text-ink ring-1 ring-tinted transition-colors hover:bg-ink hover:text-cream disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {isPending ? 'Connecting…' : 'Connect'}
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        </div>
+
+        {/* ── Active Sessions ── */}
+        <section>
+          <div className="flex items-center justify-between gap-3">
+            <SectionHeading title="Active Sessions" />
+            {sessions.length > 0 && (
+              <button
+                type="button"
+                onClick={handleSignOutAll}
+                className="text-xs font-semibold text-ink-soft transition-colors hover:text-red-700"
+              >
+                Sign out all
+              </button>
+            )}
+          </div>
+          <div className="mt-3 divide-y divide-tinted/60 overflow-hidden rounded-2xl border border-tinted bg-cream shadow-sm">
+            {sessions.map((session) => (
+              <div
+                key={session.id}
+                className="flex items-center justify-between gap-3 px-5 py-4"
+              >
+                <div className="flex min-w-0 items-center gap-3">
+                  <IconChip>
+                    <LaptopIcon className="h-4 w-4" />
+                  </IconChip>
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                      <p className="text-sm font-medium text-ink">
+                        {session.device}
+                      </p>
+                      <span className="rounded-full bg-paper px-2 py-0.5 text-[10px] font-semibold text-ink ring-1 ring-tinted">
+                        This device
+                      </span>
+                    </div>
+                    <p className="mt-0.5 text-xs text-ink-soft">
+                      {session.location} · Started {session.startedAt}
+                    </p>
+                  </div>
                 </div>
-                <div className="mt-1 text-[11px] text-ink-soft">
-                  Linux / Chrome • 127.0.0.1 • Started just now
+                <div className="flex shrink-0 items-center gap-3">
+                  <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-600" />
+                    Active
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => handleSignOutSession(session.id)}
+                    className="text-xs font-semibold text-ink-soft transition-colors hover:text-red-700"
+                  >
+                    Sign out
+                  </button>
                 </div>
               </div>
-            </div>
+            ))}
+            {sessions.length === 0 && (
+              <div className="px-5 py-4">
+                <p className="text-xs text-ink-soft">
+                  No active sessions. Sign in to see your devices here.
+                </p>
+              </div>
+            )}
           </div>
-        </div>
+        </section>
       </div>
     </div>
   );

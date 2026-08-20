@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react';
 import Link from 'next/link';
 import type { BookItem, Persona } from '@/lib/types';
 import { saveBookAction, deleteBookAction } from '@/app/admin/actions';
+import { ExternalLinkIcon, PencilIcon, TrashIcon } from '@/components/icons';
 
 interface LibraryManagerProps {
   initialBooks: BookItem[];
@@ -24,8 +25,17 @@ export function LibraryManager({ initialBooks }: LibraryManagerProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editingBook, setEditingBook] = useState<BookItem | null>(null);
   const [isPending, startTransition] = useTransition();
-  const [deleteConfirmSlug, setDeleteConfirmSlug] = useState<string | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<{
+    slug: string;
+    title: string;
+  } | null>(null);
+  const [confirmTypedTitle, setConfirmTypedTitle] = useState('');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  function openDeleteConfirm(book: BookItem) {
+    setConfirmTypedTitle('');
+    setDeleteConfirm({ slug: book.slug, title: book.title });
+  }
 
   // Form State
   const [title, setTitle] = useState('');
@@ -105,13 +115,17 @@ export function LibraryManager({ initialBooks }: LibraryManagerProps) {
     });
   }
 
-  function handleDeleteBook(slugToDelete: string) {
+  function handleDeleteBook() {
+    if (!deleteConfirm) return;
+    const { slug, title } = deleteConfirm;
+    if (confirmTypedTitle !== title) return;
+
     startTransition(async () => {
-      const res = await deleteBookAction(slugToDelete);
+      const res = await deleteBookAction(slug);
       if (res.success) {
-        setBooks((prev) => prev.filter((b) => b.slug !== slugToDelete));
-        setDeleteConfirmSlug(null);
-        showToast('Book removed from library');
+        setBooks((prev) => prev.filter((b) => b.slug !== slug));
+        setDeleteConfirm(null);
+        showToast(`"${title}" removed from library`);
       } else {
         showToast(res.error || 'Failed to delete book');
       }
@@ -143,9 +157,6 @@ export function LibraryManager({ initialBooks }: LibraryManagerProps) {
           <h2 className="font-serif text-2xl font-normal text-ink md:text-3xl">
             Library & Bookshelf
           </h2>
-          <p className="mt-1 text-sm text-ink-soft">
-            Curate books, readings, author references, and marginalia ({books.length} total).
-          </p>
         </div>
 
         <button
@@ -198,27 +209,33 @@ export function LibraryManager({ initialBooks }: LibraryManagerProps) {
                     <span className="capitalize">{book.persona}</span>
                   </td>
                   <td className="px-5 py-4 text-right whitespace-nowrap">
-                    <div className="inline-flex items-center gap-2">
+                    <div className="inline-flex items-center gap-1">
                       <Link
                         href="/library"
                         target="_blank"
-                        className="rounded-full bg-paper px-3 py-1 text-xs font-medium text-ink-soft shadow-xs ring-1 ring-tinted transition-colors hover:text-ink hover:bg-cream"
+                        title="View on Shelf"
+                        aria-label={`View ${book.title} on shelf`}
+                        className="rounded-full p-2 text-ink-soft transition-colors hover:bg-paper hover:text-ink"
                       >
-                        Shelf ↗
+                        <ExternalLinkIcon className="h-4 w-4" />
                       </Link>
                       <button
                         type="button"
+                        title="Edit"
+                        aria-label={`Edit ${book.title}`}
                         onClick={() => handleOpenEdit(book)}
-                        className="rounded-full bg-paper px-3 py-1 text-xs font-semibold text-ink shadow-xs ring-1 ring-tinted transition-colors hover:bg-ink hover:text-cream"
+                        className="rounded-full p-2 text-ink transition-colors hover:bg-paper"
                       >
-                        Edit
+                        <PencilIcon className="h-4 w-4" />
                       </button>
                       <button
                         type="button"
-                        onClick={() => setDeleteConfirmSlug(book.slug)}
-                        className="rounded-full px-2.5 py-1 text-xs font-semibold text-red-700 transition-colors hover:bg-red-50"
+                        title="Remove"
+                        aria-label={`Remove ${book.title}`}
+                        onClick={() => openDeleteConfirm(book)}
+                        className="rounded-full p-2 text-red-700 transition-colors hover:bg-red-50"
                       >
-                        Delete
+                        <TrashIcon className="h-4 w-4" />
                       </button>
                     </div>
                   </td>
@@ -236,31 +253,45 @@ export function LibraryManager({ initialBooks }: LibraryManagerProps) {
         </div>
       </div>
 
-      {/* Delete Confirmation Modal */}
-      {deleteConfirmSlug && (
+      {/* Remove Confirmation Modal */}
+      {deleteConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-xs">
           <div className="w-full max-w-md rounded-3xl border border-tinted bg-paper p-6 shadow-2xl animate-in zoom-in-95">
             <h3 className="font-serif text-xl font-normal text-ink">
               Remove Book?
             </h3>
             <p className="mt-2 text-sm leading-relaxed text-ink-soft">
-              Are you sure you want to remove <b className="text-ink">{deleteConfirmSlug}</b> from the Library shelf?
+              Are you sure you want to remove <b className="text-ink">{deleteConfirm.title}</b> from the Library shelf? This action cannot be undone.
+              <span className="mt-3 block">Type the full title to confirm:</span>
             </p>
+            <input
+              type="text"
+              autoFocus
+              placeholder="Type the full title to confirm"
+              value={confirmTypedTitle}
+              onChange={(e) => setConfirmTypedTitle(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && confirmTypedTitle === deleteConfirm.title) {
+                  handleDeleteBook();
+                }
+              }}
+              className="mt-3 w-full rounded-xl border border-tinted bg-cream px-3.5 py-2 text-sm text-ink placeholder:text-ink-soft/60 focus:border-ink focus:outline-none"
+            />
             <div className="mt-6 flex justify-end gap-3">
               <button
                 type="button"
-                onClick={() => setDeleteConfirmSlug(null)}
+                onClick={() => setDeleteConfirm(null)}
                 className="rounded-full px-4 py-2 text-xs font-medium text-ink-soft hover:text-ink"
               >
                 Cancel
               </button>
               <button
                 type="button"
-                disabled={isPending}
-                onClick={() => handleDeleteBook(deleteConfirmSlug)}
+                disabled={isPending || confirmTypedTitle !== deleteConfirm.title}
+                onClick={handleDeleteBook}
                 className="rounded-full bg-red-700 px-5 py-2 text-xs font-semibold text-white shadow-sm hover:bg-red-800 disabled:opacity-50"
               >
-                {isPending ? 'Deleting...' : 'Confirm Delete'}
+                {isPending ? 'Removing...' : 'Confirm Remove'}
               </button>
             </div>
           </div>

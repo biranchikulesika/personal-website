@@ -1,7 +1,15 @@
 import Link from 'next/link';
 import { Fragment } from 'react';
 import type { BlogPost, PostFigure, PostSection } from '@/lib/types';
-import { ArrowLeftIcon, ArrowRightIcon, ChevronDownIcon } from './icons';
+import { ArrowRightIcon, ChevronDownIcon, ExternalLinkIcon } from './icons';
+import { ShareMenu } from './share-menu';
+
+const PERSONA_LABELS: Record<string, string> = {
+  builder: 'Builder',
+  operator: 'Operator',
+  thinker: 'Thinker',
+  wanderer: 'Wanderer',
+};
 
 /**
  * Inline rendering for post paragraphs. Handles `^[n]` footnote markers by
@@ -75,93 +83,131 @@ function TocList({ sections }: { sections: PostSection[] }) {
   );
 }
 
-const BOOK_SPINES = ['bg-sea-blue', 'bg-accent', 'bg-ink/60'];
+/**
+ * Placeholder book cover, or the real cover image when one is set.
+ */
+function BookCover({ title, cover }: { title: string; cover?: string }) {
+  if (cover) {
+    return (
+      <div className="aspect-[2/3] overflow-hidden rounded-lg shadow-sm ring-1 ring-tinted transition-all duration-300 group-hover:scale-[1.02] group-hover:shadow-md">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={cover}
+          alt={`${title} cover`}
+          className="h-full w-full object-cover"
+        />
+      </div>
+    );
+  }
+  return (
+    <div className="flex aspect-[2/3] items-center justify-center overflow-hidden rounded-lg bg-cream p-3 shadow-sm ring-1 ring-tinted transition-all duration-300 group-hover:scale-[1.02] group-hover:opacity-20 group-hover:shadow-md">
+      <span className="text-center font-serif text-lg italic leading-snug text-ink-soft/50">
+        {title}
+      </span>
+    </div>
+  );
+}
 
 function BookCardView({
   title,
   author,
-  note,
-  index,
+  cover,
+  link,
 }: {
   title: string;
   author: string;
-  note: string;
-  index: number;
+  note?: string;
+  cover?: string;
+  link?: string;
 }) {
+  const href = link || '/library';
+  const isExternal = href.startsWith('http');
+
   return (
-    <article className="group flex flex-col rounded-lg border border-tinted bg-cream p-4 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md">
-      <div className="relative flex aspect-[2/3] items-center justify-center overflow-hidden rounded-md bg-paper ring-1 ring-tinted">
-        <span className="px-4 text-center font-serif text-lg italic leading-snug text-ink-soft/60">
-          {title}
+    <article className="group relative w-[42%] shrink-0 snap-start sm:w-[30%] md:w-[22%] lg:w-[calc(25%-0.75rem)]">
+      <Link
+        href={href}
+        target={isExternal ? '_blank' : undefined}
+        rel={isExternal ? 'noopener noreferrer' : undefined}
+        className="block"
+      >
+        <span className="absolute left-1/2 top-[34%] z-10 -translate-x-1/2 -translate-y-1/2 rounded bg-paper px-3 py-1 text-sm font-medium text-ink shadow-lg opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+          View
+          <ExternalLinkIcon className="ml-1 inline h-[14px] w-[14px]" />
         </span>
-        <span
-          className={`absolute left-0 top-0 h-full w-1.5 ${
-            BOOK_SPINES[index % BOOK_SPINES.length]
-          }`}
-          aria-hidden
-        />
-      </div>
-      <h3 className="mt-3 font-sans text-base font-normal leading-snug text-ink transition-colors duration-300 group-hover:text-accent">
-        {title}
-      </h3>
-      <p className="mt-0.5 text-sm text-ink-soft">{author}</p>
-      <p className="mt-2 text-sm leading-relaxed text-ink-soft/80">{note}</p>
+        <BookCover title={title} cover={cover} />
+        <span className="mt-3 block transition-transform duration-300 group-hover:translate-y-1">
+          <p className="font-sans text-base font-normal leading-snug text-ink transition-colors duration-300 group-hover:text-accent">
+            {title}
+          </p>
+          <p className="mt-1 text-xs text-ink-soft">{author}</p>
+        </span>
+      </Link>
     </article>
   );
 }
 
 export function BlogPostView({ post }: { post: BlogPost }) {
   const showToc = post.sections.length > 2;
+  const personaLabel = post.persona
+    ? PERSONA_LABELS[post.persona] ?? post.persona
+    : null;
 
   return (
-    <article className="pb-16 md:pb-24">
+    <article className="pb-16 pt-8 md:pb-24 md:pt-12">
       <div className="container-site">
-        {/* Back-link header */}
-        <nav className="pt-8 md:pt-10" aria-label="Post navigation">
-          <Link
-            href="/scribble"
-            className="group inline-flex items-center text-sm text-ink-soft transition-colors hover:text-accent"
-          >
-            <span className="inline-flex w-0 -translate-x-2 items-center overflow-hidden opacity-0 transition-all duration-300 ease-out group-hover:w-5 group-hover:translate-x-0 group-hover:opacity-100">
-              <ArrowLeftIcon className="h-4 w-4 text-sea-blue" />
-            </span>
-            <span>Scribble</span>
-          </Link>
-        </nav>
-
-        <header className="mx-auto mt-6 max-w-3xl">
+        <header className="mx-auto max-w-3xl">
           <h1 className="font-serif text-4xl font-normal leading-tight text-ink md:text-5xl">
             {post.title}
           </h1>
           <p className="mt-4 text-lg leading-relaxed text-ink-soft md:text-xl">
-            {post.description}
+            {post.subtitle || post.description}
           </p>
 
-          <div className="mt-6 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-ink">
+          <hr className="my-6 border-t border-tinted" />
+
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-ink sm:text-sm">
+            {personaLabel && (
+              <span className="rounded-full border border-tinted px-2.5 py-0.5 text-[10px] leading-none text-ink-soft sm:px-3 sm:py-1 sm:text-xs">
+                {personaLabel}
+              </span>
+            )}
+
             {post.tags.slice(0, 3).map((tag) => (
               <span
                 key={tag}
-                className="rounded-full border border-tinted px-3 py-1 text-xs text-ink-soft"
+                className="hidden rounded-full border border-tinted px-2 py-0.5 text-[10px] leading-none text-ink-soft sm:inline-flex sm:px-3 sm:py-1 sm:text-xs"
               >
                 {tag}
               </span>
             ))}
 
-            <span className="text-ink-soft" aria-hidden>
-              ·
-            </span>
+            {(personaLabel || post.tags.length > 0) && (
+              <span className="text-ink-soft" aria-hidden>
+                ·
+              </span>
+            )}
 
             <span className="text-ink-soft">Published</span>
             <span>{post.plantedAt}</span>
             {post.lastTendedAt !== post.plantedAt && (
-              <>
+              <span className="hidden sm:inline-flex sm:items-center sm:gap-x-2">
                 <span className="text-ink-soft" aria-hidden>
                   ·
                 </span>
                 <span className="text-ink-soft">Last edited</span>
                 <span>{post.lastTendedAt}</span>
-              </>
+              </span>
             )}
+
+            <span className="text-ink-soft" aria-hidden>
+              ·
+            </span>
+
+            <ShareMenu
+              title={post.title}
+              description={post.subtitle || post.description}
+            />
           </div>
         </header>
       </div>
@@ -181,16 +227,6 @@ export function BlogPostView({ post }: { post: BlogPost }) {
         )}
 
         <div className="lg:col-start-2 lg:col-span-2 lg:grid lg:grid-cols-[minmax(0,72ch)_1fr] lg:items-start lg:gap-8">
-          {showToc && (
-            <details className="group mb-8 lg:hidden">
-              <summary className="inline-flex cursor-pointer list-none items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-ink-soft transition-colors hover:text-accent">
-                <span>Contents</span>
-                <ChevronDownIcon className="h-3.5 w-3.5 text-ink-soft transition-transform duration-200 group-open:rotate-180" />
-              </summary>
-              <TocList sections={post.sections} />
-            </details>
-          )}
-
           {/* Intro — the first paragraph gets a drop cap */}
           <div className="mt-8 space-y-5 lg:col-start-1">
             {post.intro.map((paragraph, index) => (
@@ -282,16 +318,35 @@ export function BlogPostView({ post }: { post: BlogPost }) {
                 </h2>
                 <Link
                   href="/library"
-                  className="group inline-flex items-center gap-1.5 text-sm text-ink-soft transition-colors hover:text-accent"
+                  className="group hidden items-center gap-1.5 text-sm text-ink-soft transition-colors hover:text-accent sm:inline-flex"
                 >
                   Browse the Library
                   <ArrowRightIcon className="h-4 w-4 text-sea-blue transition-transform duration-300 group-hover:translate-x-0.5" />
                 </Link>
               </div>
-              <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
-                {post.books.map((book, index) => (
-                  <BookCardView key={book.title} {...book} index={index} />
+              <div className="no-scrollbar -mx-4 mt-6 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-1 sm:-mx-0 sm:px-0">
+                {post.books.map((book) => (
+                  <BookCardView key={book.title} {...book} />
                 ))}
+
+                {/* Mobile "Browse the Library" end card */}
+                <article className="group relative w-[42%] shrink-0 snap-start sm:hidden">
+                  <Link href="/library" className="block h-full">
+                    <div className="flex aspect-[2/3] flex-col items-center justify-center rounded-lg border border-dashed border-tinted bg-cream/60 p-3 text-center transition-all duration-300 group-hover:border-ink/40 group-hover:bg-cream">
+                      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-paper ring-1 ring-tinted transition-transform duration-300 group-hover:scale-110">
+                        <ArrowRightIcon className="h-4 w-4 text-sea-blue transition-transform duration-300 group-hover:translate-x-0.5" />
+                      </div>
+                      <span className="mt-2.5 font-serif text-xs italic leading-tight text-ink-soft">
+                        Library
+                      </span>
+                    </div>
+                    <span className="mt-3 block transition-transform duration-300 group-hover:translate-y-1">
+                      <p className="font-sans text-base font-normal leading-snug text-ink transition-colors duration-300 group-hover:text-accent">
+                        Browse the Library
+                      </p>
+                    </span>
+                  </Link>
+                </article>
               </div>
             </section>
           )}

@@ -1,9 +1,11 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
-import type { BookCard, MediaItem, Persona } from '@/lib/types';
+import type { BlogPost, BookCard, BookItem, MediaItem, NoteItem, Persona } from '@/lib/types';
 import { MDXPreview } from './mdx-preview';
 import { MediaInsertModal } from './media-insert-modal';
+import { EmbedInsertModal } from './embed-insert-modal';
+import { MDX_BLOCK_LIBRARY, findBlock } from '@/components/blocks/library';
 
 interface MDXEditorProps {
   initialContent: string;
@@ -15,6 +17,9 @@ interface MDXEditorProps {
   assumedAudience?: string;
   books?: BookCard[];
   mediaItems?: MediaItem[];
+  embedBooks?: BookItem[];
+  embedPosts?: BlogPost[];
+  embedNotes?: NoteItem[];
   onChange: (newContent: string) => void;
   className?: string;
 }
@@ -31,6 +36,9 @@ export function MDXEditor({
   assumedAudience,
   books,
   mediaItems = [],
+  embedBooks = [],
+  embedPosts = [],
+  embedNotes = [],
   onChange,
   className = '',
 }: MDXEditorProps) {
@@ -38,6 +46,8 @@ export function MDXEditor({
   const [viewMode, setViewMode] = useState<ViewMode>('split');
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isMediaModalOpen, setIsMediaModalOpen] = useState(false);
+  const [isEmbedModalOpen, setIsEmbedModalOpen] = useState(false);
+  const [embedModalKind, setEmbedModalKind] = useState<'book' | 'post' | 'note'>('book');
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -295,11 +305,30 @@ export function MDXEditor({
           </button>
           <button
             type="button"
+            onClick={() => {
+              const block = findBlock('Book');
+              if (block) insertBlock(block.snippet);
+            }}
+            className="rounded-lg bg-paper px-2.5 py-1 text-xs font-semibold text-accent ring-1 ring-tinted hover:bg-ink hover:text-cream transition-colors"
+            title="Insert Book Block"
+          >
+            📖 Book
+          </button>
+          <button
+            type="button"
             onClick={() => setIsMediaModalOpen(true)}
             className="rounded-lg bg-paper px-2.5 py-1 text-xs font-semibold text-accent ring-1 ring-tinted hover:bg-ink hover:text-cream transition-colors"
             title="Insert from Media Resources"
           >
             🖼 Media
+          </button>
+          <button
+            type="button"
+            onClick={() => setIsEmbedModalOpen(true)}
+            className="rounded-lg bg-paper px-2.5 py-1 text-xs font-semibold text-accent ring-1 ring-tinted hover:bg-ink hover:text-cream transition-colors"
+            title="Embed a book, essay, or note"
+          >
+            🔗 Embed
           </button>
         </div>
 
@@ -422,6 +451,17 @@ export function MDXEditor({
         onClose={() => setIsMediaModalOpen(false)}
         mediaItems={mediaItems}
         onSelect={(imgMd) => insertBlock(imgMd)}
+      />
+
+      {/* Embed Content Modal */}
+      <EmbedInsertModal
+        isOpen={isEmbedModalOpen}
+        onClose={() => setIsEmbedModalOpen(false)}
+        books={embedBooks}
+        posts={embedPosts}
+        notes={embedNotes}
+        initialType={embedModalKind}
+        onSelect={(snippet) => insertBlock(snippet)}
       />
     </div>
   );

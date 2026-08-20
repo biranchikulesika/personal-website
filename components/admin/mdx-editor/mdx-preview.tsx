@@ -2,7 +2,10 @@
 
 import React, { useMemo, useState, Fragment } from 'react';
 import type { Persona, BookCard } from '@/lib/types';
-import { ArrowLeftIcon } from '@/components/icons';
+import {
+  parseBlockAttributes,
+  renderBlock,
+} from '@/components/blocks/library';
 
 interface MDXPreviewProps {
   content: string;
@@ -109,14 +112,6 @@ export function MDXPreview({
   return (
     <div className={`h-full overflow-y-auto bg-paper text-ink selection:bg-accent selection:text-white ${className}`}>
       <article className="mx-auto max-w-4xl px-6 py-10 sm:px-10 md:py-16">
-        {/* Back-link header matching real post navigation */}
-        <nav className="mb-6" aria-label="Post navigation">
-          <span className="inline-flex items-center gap-1.5 text-sm text-ink-soft">
-            <ArrowLeftIcon className="h-4 w-4 text-sea-blue" />
-            <span>Scribble</span>
-          </span>
-        </nav>
-
         {/* Real Post Header */}
         <header className="border-b border-tinted/60 pb-8">
           <h1 className="font-serif text-3xl font-normal leading-tight text-ink sm:text-4xl md:text-5xl">
@@ -392,6 +387,18 @@ function parseMdxLines(lines: string[], isIntro = false): React.ReactNode[] {
       continue;
     }
 
+    // Library blocks: <Book title="..." author="..." ... />
+    const libraryMatch = trimmed.match(/^<([A-Z][A-Za-z]*)\s+([^>]*?)\/?>/);
+    if (libraryMatch) {
+      const attrs = parseBlockAttributes(libraryMatch[2]);
+      const rendered = renderBlock(libraryMatch[1], attrs, `block-${i}`);
+      if (rendered) {
+        nodes.push(rendered);
+        i++;
+        continue;
+      }
+    }
+
     // Markdown Image: ![alt](src "caption") or ![alt](src)
     const mdImgMatch = trimmed.match(/^!\[(.*?)\]\((.*?)\)/);
     if (mdImgMatch) {
@@ -583,6 +590,7 @@ function parseMdxLines(lines: string[], isIntro = false): React.ReactNode[] {
       !lines[i].trim().startsWith('<img') &&
       !lines[i].trim().startsWith('<YouTube') &&
       !lines[i].trim().startsWith('![') &&
+      !/^<[A-Z][A-Za-z]*\s/.test(lines[i].trim()) &&
       !/^(\*|-|\+|\d+\.)\s/.test(lines[i].trim())
     ) {
       paragraphLines.push(lines[i].trim());

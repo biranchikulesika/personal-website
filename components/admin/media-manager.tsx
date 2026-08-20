@@ -3,20 +3,41 @@
 import { useState, useTransition } from 'react';
 import Image from 'next/image';
 import type { MediaItem } from '@/lib/types';
-import { addMediaAction, deleteMediaAction } from '@/app/admin/actions';
+import {
+  addMediaAction,
+  deleteOrphanedMediaAction,
+} from '@/app/admin/actions';
+import { TrashIcon } from '@/components/icons';
 
 interface MediaManagerProps {
   initialMedia: MediaItem[];
+  initialOrphanedMedia?: MediaItem[];
 }
 
-export function MediaManager({ initialMedia }: MediaManagerProps) {
+export function MediaManager({
+  initialMedia,
+  initialOrphanedMedia = [],
+}: MediaManagerProps) {
   const [mediaList, setMediaList] = useState<MediaItem[]>(initialMedia);
+  const [orphanedList, setOrphanedList] = useState<MediaItem[]>(
+    initialOrphanedMedia,
+  );
   const [search, setSearch] = useState('');
   const [activeTag, setActiveTag] = useState<string>('all');
+  const [showOrphanedOnly, setShowOrphanedOnly] = useState(false);
+  const [selectedOrphanedIds, setSelectedOrphanedIds] = useState<Set<string>>(
+    new Set(),
+  );
+  const [confirmDelete, setConfirmDelete] = useState<{
+    items: MediaItem[];
+  } | null>(null);
+  const [confirmTypedText, setConfirmTypedText] = useState('');
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const [isUploading, setIsUploading] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  const orphanedSrcs = new Set(orphanedList.map((m) => m.src));
 
   // New Media Form State
   const [fileName, setFileName] = useState('');
@@ -70,17 +91,44 @@ export function MediaManager({ initialMedia }: MediaManagerProps) {
     });
   }
 
-  function handleDeleteMedia(id: string) {
-    startTransition(async () => {
-      const res = await deleteMediaAction(id);
-      if (res.success) {
-        setMediaList((prev) => prev.filter((m) => m.id !== id));
-        showToast('Media asset removed');
+  function toggleOrphanedSelection(id: string) {
+    setSelectedOrphanedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
       } else {
-        showToast(res.error || 'Failed to delete asset');
+        next.add(id);
+      }
+      return next;
+    });
+  }
+
+  function requestDelete(items: MediaItem[]) {
+    setConfirmTypedText('');
+    setConfirmDelete({ items });
+  }
+
+  function handleConfirmDelete() {
+    if (!confirmDelete) return;
+    const srcs = confirmDelete.items.map((m) => m.src);
+    startTransition(async () => {
+      const res = await deleteOrphanedMediaAction(srcs);
+      if (res.success) {
+        const removed = new Set(srcs);
+        setOrphanedList((prev) => prev.filter((m) => !removed.has(m.src)));
+        setSelectedOrphanedIds(new Set());
+        setConfirmDelete(null);
+        setConfirmTypedText('');
+        showToast(
+          `Deleted ${srcs.length} orphaned asset${srcs.length > 1 ? 's' : ''}`,
+        );
+      } else {
+        showToast(res.error || 'Failed to delete assets');
       }
     });
   }
+
+  const confirmRequirement = 'DELETE';
 
   const filteredMedia = mediaList.filter((m) => {
     const q = search.toLowerCase();
@@ -91,6 +139,17 @@ export function MediaManager({ initialMedia }: MediaManagerProps) {
     const matchTag = activeTag === 'all' || m.tag === activeTag;
     return matchSearch && matchTag;
   });
+
+  const visibleMedia = showOrphanedOnly
+    ? orphanedList.filter((m) => {
+        const q = search.toLowerCase();
+        return (
+          m.name.toLowerCase().includes(q) ||
+          m.alt.toLowerCase().includes(q) ||
+          m.src.toLowerCase().includes(q)
+        );
+      })
+    : filteredMedia;
 
   return (
     <div className="space-y-6">
@@ -107,9 +166,6 @@ export function MediaManager({ initialMedia }: MediaManagerProps) {
           <h2 className="font-serif text-2xl font-normal text-ink md:text-3xl">
             Media & Asset Resources
           </h2>
-          <p className="mt-1 text-sm text-ink-soft">
-            Manage photos, portraits, book covers, and essay graphics ({mediaList.length} total).
-          </p>
         </div>
 
         <button
@@ -128,7 +184,10 @@ export function MediaManager({ initialMedia }: MediaManagerProps) {
             <button
               key={t}
               type="button"
-              onClick={() => setActiveTag(t)}
+              onClick={() => {
+                setActiveTag(t);
+                setShowOrphanedOnly(false);
+              }}
               className={`rounded-full px-3.5 py-1 text-xs font-semibold uppercase tracking-wider transition-all ${
                 activeTag === t
                   ? 'bg-ink text-cream shadow-xs'
@@ -138,6 +197,25 @@ export function MediaManager({ initialMedia }: MediaManagerProps) {
               {t}
             </button>
           ))}
+
+          {orphanedSrcs.size > 0 && (
+            <button
+              type="button"
+              onClick={() => {
+                setShowOrphanedOnly((v) => !v);
+                setActiveTag('all');
+              }}
+              title="Media assets in the storage bucket that are not used anywhere on the site"
+              aria-pressed={showOrphanedOnly}
+              className={`rounded-full px-3.5 py-1 text-xs font-semibold uppercase tracking-wider transition-all ${
+                showOrphanedOnly
+                  ? 'bg-amber-600 text-cream shadow-xs'
+                  : 'bg-amber-50 text-amber-800 ring-1 ring-amber-200 hover:bg-amber-100'
+              }`}
+            >
+              {orphanedSrcs.size} orphaned
+            </button>
+          )}
         </div>
 
         <input
@@ -151,23 +229,74 @@ export function MediaManager({ initialMedia }: MediaManagerProps) {
 
       {/* Media Grid */}
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {filteredMedia.map((media) => {
+        {visibleMedia.map((media) => {
           const markdownSnippet = `![${media.alt}](${media.src})`;
+          const isOrphaned = orphanedSrcs.has(media.src);
+          const isSelected = selectedOrphanedIds.has(media.id);
           return (
             <div
               key={media.id}
-              className="group flex flex-col overflow-hidden rounded-2xl border border-tinted bg-cream shadow-sm transition-all hover:border-ink/30 hover:shadow-md"
+              className={`group flex flex-col overflow-hidden rounded-2xl border bg-cream shadow-sm transition-all hover:shadow-md ${
+                isSelected
+                  ? 'border-amber-500 ring-1 ring-amber-400'
+                  : 'border-tinted hover:border-ink/30'
+              }`}
             >
               {/* Thumbnail Preview */}
               <div className="relative aspect-4/3 w-full overflow-hidden bg-paper">
-                <Image
-                  src={media.src}
-                  alt={media.alt}
-                  fill
-                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-                  className="object-cover transition-transform duration-300 group-hover:scale-105"
-                />
-                <span className="absolute top-2 left-2 rounded bg-ink/80 px-2 py-0.5 text-[10px] font-semibold tracking-wider text-cream uppercase backdrop-blur-xs">
+                {isOrphaned ? (
+                  <div className="flex h-full w-full flex-col items-center justify-center gap-2 bg-amber-50">
+                    <svg
+                      className="h-8 w-8 text-amber-500"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={1.5}
+                      aria-hidden
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z"
+                      />
+                    </svg>
+                    <span className="text-[10px] font-semibold uppercase tracking-wider text-amber-700">
+                      In bucket · unreferenced
+                    </span>
+                  </div>
+                ) : (
+                  <Image
+                    src={media.src}
+                    alt={media.alt}
+                    fill
+                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                    className="object-cover transition-transform duration-300 group-hover:scale-105"
+                  />
+                )}
+
+                {isOrphaned && (
+                  <button
+                    type="button"
+                    onClick={() => toggleOrphanedSelection(media.id)}
+                    aria-label={
+                      isSelected
+                        ? `Deselect ${media.name}`
+                        : `Select ${media.name}`
+                    }
+                    aria-pressed={isSelected}
+                    className={`absolute top-2 left-2 flex h-5 w-5 items-center justify-center rounded-full ring-1 transition-colors ${
+                      isSelected
+                        ? 'bg-amber-600 text-cream ring-amber-600'
+                        : 'bg-cream text-transparent ring-tinted hover:ring-amber-500'
+                    }`}
+                  >
+                    <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+                    </svg>
+                  </button>
+                )}
+
+                <span className="absolute top-2 right-2 rounded bg-ink/80 px-2 py-0.5 text-[10px] font-semibold tracking-wider text-cream uppercase backdrop-blur-xs">
                   {media.tag}
                 </span>
               </div>
@@ -188,6 +317,16 @@ export function MediaManager({ initialMedia }: MediaManagerProps) {
                 </div>
 
                 <div className="mt-4 flex flex-col gap-1.5 pt-3 border-t border-tinted">
+                  {isOrphaned && (
+                    <button
+                      type="button"
+                      onClick={() => requestDelete([media])}
+                      className="flex items-center justify-center gap-1.5 rounded-lg bg-red-50 py-1.5 text-[11px] font-semibold text-red-700 ring-1 ring-red-200 transition-colors hover:bg-red-100"
+                    >
+                      <TrashIcon className="h-3.5 w-3.5" />
+                      Delete from bucket
+                    </button>
+                  )}
                   <div className="grid grid-cols-2 gap-1.5">
                     <button
                       type="button"
@@ -204,25 +343,112 @@ export function MediaManager({ initialMedia }: MediaManagerProps) {
                       {copiedId === `md-${media.id}` ? '✓ Copied' : 'Copy MD'}
                     </button>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => handleDeleteMedia(media.id)}
-                    className="w-full rounded-lg py-1 text-center text-[11px] font-medium text-red-700 transition-colors hover:bg-red-50"
-                  >
-                    Delete Resource
-                  </button>
                 </div>
               </div>
             </div>
           );
         })}
 
-        {filteredMedia.length === 0 && (
+        {visibleMedia.length === 0 && (
           <div className="col-span-full py-16 text-center text-sm text-ink-soft">
-            No media assets match your query.
+            {showOrphanedOnly
+              ? 'No orphaned assets. Everything in the bucket is registered or referenced somewhere.'
+              : 'No media assets match your query.'}
           </div>
         )}
       </div>
+
+      {/* Bulk action bar for selected orphaned assets */}
+      {showOrphanedOnly && selectedOrphanedIds.size > 0 && (
+        <div className="sticky bottom-4 z-30 mx-auto flex max-w-xl items-center justify-between gap-3 rounded-full border border-tinted bg-ink px-5 py-2.5 shadow-xl">
+          <span className="text-xs font-semibold text-cream">
+            {selectedOrphanedIds.size} selected
+          </span>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setSelectedOrphanedIds(new Set())}
+              className="rounded-full px-3 py-1 text-xs font-semibold text-cream/70 hover:text-cream"
+            >
+              Clear
+            </button>
+            <button
+              type="button"
+              onClick={() =>
+                requestDelete(
+                  orphanedList.filter((m) => selectedOrphanedIds.has(m.id)),
+                )
+              }
+              className="rounded-full bg-red-600 px-4 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-red-700"
+            >
+              Delete selected
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {confirmDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-xs">
+          <div className="w-full max-w-md rounded-3xl border border-tinted bg-paper p-6 shadow-2xl animate-in zoom-in-95">
+            <h3 className="font-serif text-xl font-normal text-ink">
+              Delete orphaned asset{confirmDelete.items.length > 1 ? 's' : ''}?
+            </h3>
+            <p className="mt-2 text-sm leading-relaxed text-ink-soft">
+              {confirmDelete.items.length === 1 ? (
+                <>
+                  Are you sure you want to delete{' '}
+                  <b className="text-ink">{confirmDelete.items[0].name}</b> from
+                  the storage bucket? This action cannot be undone.
+                </>
+              ) : (
+                <>
+                  Are you sure you want to delete{' '}
+                  <b className="text-ink">
+                    {confirmDelete.items.length} assets
+                  </b>{' '}
+                  from the storage bucket? This action cannot be undone.
+                </>
+              )}
+              <span className="mt-3 block">
+                Type <b className="text-ink">DELETE</b> to confirm:
+              </span>
+            </p>
+            <input
+              type="text"
+              autoFocus
+              placeholder="Type DELETE to confirm"
+              value={confirmTypedText}
+              onChange={(e) => setConfirmTypedText(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && confirmTypedText === 'DELETE') {
+                  handleConfirmDelete();
+                }
+              }}
+              className="mt-3 w-full rounded-xl border border-tinted bg-cream px-3.5 py-2 text-sm text-ink placeholder:text-ink-soft/60 focus:border-ink focus:outline-none"
+            />
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setConfirmDelete(null)}
+                className="rounded-full px-4 py-2 text-xs font-medium text-ink-soft hover:text-ink"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={
+                  isPending || confirmTypedText !== confirmRequirement
+                }
+                onClick={handleConfirmDelete}
+                className="rounded-full bg-red-700 px-5 py-2 text-xs font-semibold text-white shadow-sm hover:brightness-110 disabled:opacity-50"
+              >
+                {isPending ? 'Deleting...' : 'Confirm Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Add Media Modal */}
       {isUploading && (

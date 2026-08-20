@@ -8,6 +8,7 @@ import type {
   BlogPost,
   BookItem,
   NoteItem,
+  NowEntry,
   PageContent,
   SectionGroup,
   SiteContent,
@@ -72,9 +73,16 @@ export function seedSiteContent(): SiteContent {
           links: [
             { label: 'Now', href: '/now' },
             { label: 'About', href: '/about' },
-            { label: 'Admin', href: '/admin' },
             { label: 'GitHub', href: 'https://github.com/biranchikulesika' },
             { label: 'Email', href: 'mailto:hello@biranchi.com' },
+          ],
+        },
+        {
+          title: 'Social',
+          links: [
+            { label: 'LinkedIn', href: 'https://www.linkedin.com' },
+            { label: 'Instagram', href: 'https://www.instagram.com' },
+            { label: 'Twitter', href: 'https://x.com' },
           ],
         },
       ],
@@ -193,7 +201,7 @@ function noteItems(): NoteItem[] {
         'Until it is written, an idea is mostly a feeling — an intuition that something is there. Writing forces that intuition to take shape, and shape is where the real thinking happens.',
         'This is why notes beat memory. Memory is a feeling. A note is evidence.',
       ],
-      date: 'Mar 2026',
+      date: 'Mar 12, 2026',
       tags: ['Craft', 'Attention'],
     },
     {
@@ -207,7 +215,7 @@ function noteItems(): NoteItem[] {
         'The Shallows, by Nicholas Carr. Stolen Focus, by Johann Hari. And a handful of essays about attention and craft that I keep coming back to.',
         'Reading in small, deliberate sessions has been more useful than trying to keep pace with everything.',
       ],
-      date: 'Feb 2026',
+      date: 'Feb 18, 2026',
       tags: ['Reading'],
     },
     {
@@ -221,7 +229,7 @@ function noteItems(): NoteItem[] {
         'The lesson is not that the work was bad. It is that time is a better editor than intention.',
         'Revisiting old work is a way of seeing how far the standard has moved — and whether you have actually moved it.',
       ],
-      date: 'Jan 2026',
+      date: 'Jan 24, 2026',
       tags: ['Craft'],
     },
     {
@@ -234,7 +242,7 @@ function noteItems(): NoteItem[] {
         'Feedback fails most often because it skips straight to judgment. The better order is attention first: say what the work is doing, then what it could do differently.',
         'When someone knows you actually read their work, the criticism lands as care rather than as correction.',
       ],
-      date: 'Dec 2025',
+      date: 'Dec 9, 2025',
       tags: ['Communication', 'Craft'],
     },
     {
@@ -248,7 +256,7 @@ function noteItems(): NoteItem[] {
         'The price is usually time, but the time is not wasted. It is the difference between finishing something and finishing something that can be revisited.',
         'Cheap work is expensive in the only currency that matters: the attention of the people you respect.',
       ],
-      date: 'Nov 2025',
+      date: 'Nov 14, 2025',
       tags: ['Craft', 'Attention'],
     },
   ];
@@ -265,6 +273,7 @@ function bookItems(): BookItem[] {
       description: 'How the internet reshapes the way we read, remember, and think.',
       date: '2025',
       tags: ['The web', 'Attention'],
+      link: 'https://en.wikipedia.org/wiki/The_Shallows_(book)',
     },
     {
       id: 'book-002',
@@ -285,6 +294,8 @@ function bookItems(): BookItem[] {
       description: 'On surrendering culture to technology, efficiency, and invisible ideology.',
       date: '2024',
       tags: ['The web', 'Tools'],
+      cover: 'https://upload.wikimedia.org/wikipedia/en/6/6d/Technopoly_cover.jpg',
+      link: 'https://en.wikipedia.org/wiki/Technopoly',
     },
     {
       id: 'book-004',
@@ -305,6 +316,8 @@ function bookItems(): BookItem[] {
       description: 'A classic primer on seeing loops, feedback, and the whole instead of isolated parts.',
       date: '2023',
       tags: ['Systems', 'Craft'],
+      cover: 'https://upload.wikimedia.org/wikipedia/en/5/5a/Thinking_in_Systems_cover.jpg',
+      link: 'https://en.wikipedia.org/wiki/Thinking_in_Systems',
     },
     {
       id: 'book-006',
@@ -415,6 +428,7 @@ function featuredPost(): BlogPost {
     title: 'Building in public, carefully',
     description:
       'What it looks like to share unfinished work without turning the process into a performance.',
+    persona: 'builder',
     tags: ['Craft', 'Attention', 'The web'],
     plantedAt: 'Mar 3, 2026',
     lastTendedAt: 'Aug 21, 2026',
@@ -507,6 +521,7 @@ function attentionPost(): BlogPost {
     title: 'Attention as a material',
     description:
       'Treating focus the way a craftsperson treats their material — with care, patience, and respect for its limits.',
+    persona: 'thinker',
     tags: ['Attention', 'Craft'],
     plantedAt: 'Feb 12, 2026',
     lastTendedAt: 'Aug 20, 2026',
@@ -561,6 +576,7 @@ function fallbackPost(item: WritingItem): BlogPost {
     slug: item.slug,
     title: item.title,
     description: item.description,
+    persona: item.persona,
     tags: item.tags,
     plantedAt: item.date,
     lastTendedAt: item.date,
@@ -606,6 +622,34 @@ export function seedPages(): PageContent[] {
       description: 'About page placeholder.',
       content:
         'This page will explain who Biranchi is, what he does, and how his work and interests connect.',
+    },
+  ];
+}
+
+// Now page timeline ----------------------------------------------------------
+
+export function seedNow(): NowEntry[] {
+  return [
+    {
+      id: 'now-003',
+      title: 'August 2026',
+      date: '2026-08',
+      content:
+        'I’m writing this during a quiet evening in Odisha, India. The monsoon has settled into a gentle cadence, and the air is heavy with the smell of wet earth and night-blooming jasmine. I have a fresh cup of tea on the desk and a few uninterrupted hours to think clearly for the first time in weeks.\n\nLately, my mind has been consumed by a paradox: we are living through an unprecedented acceleration in software capabilities. AI agents write code, orchestrate workflows, and generate interfaces in seconds. And yet, the human side of software — the clarity of thought, the respect for attention, the patience to understand why something works — feels more endangered than ever.\n\nIt is easy to get caught up in the panic of continuous output. But when generation becomes cheap, discernment becomes priceless. I find myself returning to fundamental questions: What kind of digital spaces actually nurture deep thinking? How do we build tools that act as quiet bicycles for the mind rather than slot machines for our dopamine receptors?\n\n> When software generation becomes effortless, the only real currency left is deliberate attention and genuine craft.\n\nTo ground these thoughts, I’ve been reading Nicholas Carr’s classic examination of how digital mediums alter neuroplasticity and reading depth.\n\n<Book title="The Shallows" author="Nicholas Carr" year="2025" description="How the internet reshapes our neural pathways, fracturing attention and trading contemplative depth for rapid, superficial information skimming." link="https://en.wikipedia.org/wiki/The_Shallows_(book)" />\n\n<Book title="Economics: The User’s Guide" author="Ha-Joon Chang" year="2025" description="A lucid, pluralistic guide through classical, Keynesian, institutionalist, and Marxist economic schools, explaining how markets really work." />\n\nAlongside technology, I’ve also been trying to better understand the economic structures that govern human work and leisure. It feels irresponsible to watch automation reshape the labour market without understanding the fundamental mechanisms of value and distribution.\n\nOn this website, I’ve been rebuilding everything from first principles. Stripping away unnecessary frameworks, simplifying layouts, and making sure every component has breathing room and purpose.',
+    },
+    {
+      id: 'now-002',
+      title: 'January 2026',
+      date: '2026-01',
+      content:
+        'Entered the new year with a resolution to write more things down in public. For years, I kept notebooks filled with half-formed observations and architectural sketches that never saw the light of day because they weren’t “finished enough.”\n\nI created Scribble as an antidote to that hesitation. It is designed not as a chronological feed of hot takes, but as a digital garden — a place where notes can start small, get tended slowly over time, and evolve alongside my own understanding.\n\nDuring the winter break, I spent hours immersed in Donella Meadows’ masterpiece on systems theory. It has permanently altered how I view software architecture, teams, and feedback loops.\n\n> Quality is a trade: you give up speed and the comfort of “done,” and in return you get work that can be revisited with pride.\n\n<Book title="Thinking in Systems" author="Donella Meadows" year="2023" description="A primer on seeing wholes rather than isolated parts, understanding stocks and flows, and finding leverage points in complex systems." cover="/thinking-in-systems.jpg" link="https://en.wikipedia.org/wiki/Thinking_in_Systems" />\n\nI’m learning that the fastest way to build something durable is to slow down, protect morning hours for deep focus, and reject the temptation to optimize prematurely.',
+    },
+    {
+      id: 'now-001',
+      title: 'August 2025',
+      date: '2025-08',
+      content:
+        'A year ago, I began stepping back from mainstream social media platforms. The algorithmic feeds were taking more mental bandwidth than they gave back in genuine insight.\n\nI started exploring the IndieWeb movement and reading about personal digital gardens. There is something deeply restorative about owning your own space on the web — choosing your own typography, crafting your own layouts, and sharing writing directly with people without intermediaries.\n\n<Book title="Technopoly" author="Neil Postman" year="2024" description="A prophetic inquiry into what happens when culture surrenders unconditionally to technology, efficiency, and invisible technological imperatives." link="https://en.wikipedia.org/wiki/Technopoly" />\n\nThis space began as a quiet sketch. It remains a work in progress, and that is precisely the point.',
     },
   ];
 }

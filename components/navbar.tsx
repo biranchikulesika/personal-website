@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import type { Identity, NavLink } from '@/lib/types';
@@ -11,44 +12,165 @@ interface NavbarProps {
 
 export function Navbar({ identity, links }: NavbarProps) {
   const pathname = usePathname();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const headerRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+
+    function handlePointerDown(event: PointerEvent) {
+      if (
+        headerRef.current &&
+        !headerRef.current.contains(event.target as Node)
+      ) {
+        setMenuOpen(false);
+      }
+    }
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') setMenuOpen(false);
+    }
+
+    document.addEventListener('pointerdown', handlePointerDown);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [menuOpen]);
+
+  // Lock body scroll when mobile menu is open
+  useEffect(() => {
+    if (menuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [menuOpen]);
 
   function isActive(href: string): boolean {
     if (href === '/') return pathname === '/';
     return pathname === href || pathname.startsWith(`${href}/`);
   }
 
-  return (
-    <header className="sticky top-0 z-50 border-b border-ink/10 bg-paper/90 backdrop-blur-sm">
-      <nav className="container-site flex flex-wrap items-center justify-between gap-x-6 gap-y-3 py-4">
-        <Link
-          href="/"
-          className="text-lg font-semibold tracking-tight text-ink"
-          aria-label={identity.name}
-        >
-          {identity.name}
-        </Link>
+  function closeMenu() {
+    setMenuOpen(false);
+  }
 
-        <ul className="flex flex-wrap items-center gap-6 md:gap-7">
-          {links.map((link) => {
-            const active = isActive(link.href);
-            return (
-              <li key={link.href}>
-                <Link
-                  href={link.href}
-                  aria-current={active ? 'page' : undefined}
-                  className={`text-sm transition-colors ${
-                    active
-                      ? 'font-medium text-ink'
-                      : 'text-ink-soft hover:text-ink'
-                  }`}
-                >
-                  {link.label}
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
-      </nav>
-    </header>
+  return (
+    <>
+      <header
+        ref={headerRef}
+        className="sticky top-0 z-50 border-b border-ink/10 bg-paper/90 backdrop-blur-sm"
+      >
+        <nav className="container-site flex items-center justify-between gap-x-6 py-2.5 md:py-4">
+          <Link
+            href="/"
+            onClick={closeMenu}
+            className={`text-lg font-semibold tracking-tight text-ink ${
+              menuOpen ? 'invisible md:visible' : 'visible'
+            }`}
+            aria-label={identity.name}
+          >
+            {identity.name}
+          </Link>
+
+          {/* Desktop links */}
+          <ul className="hidden items-center gap-6 md:flex md:gap-7">
+            {links.map((link) => {
+              const active = isActive(link.href);
+              return (
+                <li key={link.href}>
+                  <Link
+                    href={link.href}
+                    aria-current={active ? 'page' : undefined}
+                    className={`text-sm transition-colors ${
+                      active
+                        ? 'font-medium text-ink'
+                        : 'text-ink-soft hover:text-ink'
+                    }`}
+                  >
+                    {link.label}
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+
+          {/* Mobile hamburger */}
+          <button
+            type="button"
+            onClick={() => setMenuOpen((v) => !v)}
+            aria-expanded={menuOpen}
+            aria-controls="mobile-nav"
+            aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+            className="relative z-50 flex h-9 w-9 items-center justify-center rounded-full text-ink transition-colors hover:bg-cream md:hidden"
+          >
+            <div className="flex h-3.5 w-4.5 flex-col justify-between">
+              <span
+                className={`h-0.5 w-4.5 rounded-full bg-current transition-all duration-300 ${
+                  menuOpen ? 'translate-y-[6px] rotate-45' : ''
+                }`}
+                aria-hidden
+              />
+              <span
+                className={`h-0.5 w-4.5 rounded-full bg-current transition-all duration-200 ${
+                  menuOpen ? 'scale-x-0 opacity-0' : 'opacity-100'
+                }`}
+                aria-hidden
+              />
+              <span
+                className={`h-0.5 w-4.5 rounded-full bg-current transition-all duration-300 ${
+                  menuOpen ? '-translate-y-[6px] -rotate-45' : ''
+                }`}
+                aria-hidden
+              />
+            </div>
+          </button>
+        </nav>
+
+        {/* Mobile menu panel — floats above page content */}
+        {menuOpen && (
+          <div
+            id="mobile-nav"
+            className="absolute inset-x-0 top-full z-50 border-b border-tinted bg-paper/98 px-6 py-3 shadow-lg backdrop-blur-md md:hidden"
+          >
+            <ul className="flex flex-col">
+              {links.map((link) => {
+                const active = isActive(link.href);
+                return (
+                  <li key={link.href}>
+                    <Link
+                      href={link.href}
+                      onClick={closeMenu}
+                      aria-current={active ? 'page' : undefined}
+                      className={`block py-2.5 text-base transition-colors ${
+                        active
+                          ? 'font-medium text-ink'
+                          : 'text-ink-soft hover:text-ink'
+                      }`}
+                    >
+                      {link.label}
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        )}
+      </header>
+
+      {/* Backdrop overlay */}
+      {menuOpen && (
+        <div
+          onClick={closeMenu}
+          className="fixed inset-0 z-40 bg-ink/20 backdrop-blur-[2px] md:hidden"
+          aria-hidden
+        />
+      )}
+    </>
   );
 }

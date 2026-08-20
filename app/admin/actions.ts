@@ -8,6 +8,7 @@ import type {
   BookItem,
   MediaItem,
   NoteItem,
+  NowEntry,
   Persona,
 } from '@/lib/types';
 
@@ -144,6 +145,38 @@ export async function deleteBookAction(
   }
 }
 
+// Now Page Timeline Actions --------------------------------------------------
+
+export async function getNowEntriesAction(): Promise<NowEntry[]> {
+  return await contentService.getNowEntries();
+}
+
+export async function saveNowEntryAction(
+  entry: NowEntry,
+): Promise<{ success: boolean; entry?: NowEntry; error?: string }> {
+  try {
+    const saved = await contentService.saveNowEntry(entry);
+    revalidatePath('/admin');
+    revalidatePath('/now');
+    return { success: true, entry: saved };
+  } catch (err: unknown) {
+    return { success: false, error: (err as Error).message || 'Failed to save now entry' };
+  }
+}
+
+export async function deleteNowEntryAction(
+  id: string,
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const deleted = await contentService.deleteNowEntry(id);
+    revalidatePath('/admin');
+    revalidatePath('/now');
+    return { success: deleted };
+  } catch (err: unknown) {
+    return { success: false, error: (err as Error).message || 'Failed to delete now entry' };
+  }
+}
+
 // Media Actions ---------------------------------------------------------------
 
 export async function getMediaAction(): Promise<MediaItem[]> {
@@ -171,6 +204,21 @@ export async function deleteMediaAction(
     return { success: deleted };
   } catch (err: unknown) {
     return { success: false, error: (err as Error).message || 'Failed to delete media' };
+  }
+}
+
+export async function deleteOrphanedMediaAction(
+  srcs: string[],
+): Promise<{ success: boolean; deletedCount?: number; error?: string }> {
+  try {
+    const deletedCount = await contentService.deleteStorageAssets(srcs);
+    revalidatePath('/admin');
+    return { success: deletedCount > 0, deletedCount };
+  } catch (err: unknown) {
+    return {
+      success: false,
+      error: (err as Error).message || 'Failed to delete orphaned assets',
+    };
   }
 }
 

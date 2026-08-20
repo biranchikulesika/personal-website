@@ -14,12 +14,22 @@ export const metadata: Metadata = {
 export default async function AdminPage() {
   const contentService = new ContentService();
 
-  const [posts, notes, books, media, adminProfile] = await Promise.all([
+  const [
+    posts,
+    notes,
+    books,
+    media,
+    orphanedMedia,
+    adminProfile,
+    nowEntries,
+  ] = await Promise.all([
     contentService.getAllPosts(),
     contentService.getAllNotes(),
     contentService.getAllBooks(),
     contentService.getMedia(),
+    contentService.getOrphanedMedia(),
     contentService.getAdminProfile(),
+    contentService.getNowEntries(),
   ]);
 
   return (
@@ -28,7 +38,9 @@ export default async function AdminPage() {
       initialNotes={notes}
       initialBooks={books}
       initialMedia={media}
+      initialOrphanedMedia={orphanedMedia}
       initialProfile={adminProfile}
+      initialNowEntries={nowEntries}
     />
   );
 }

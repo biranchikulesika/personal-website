@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import Link from 'next/link';
-import type { BlogPost, MediaItem, NoteItem, Persona, PostSection } from '@/lib/types';
+import type { BlogPost, BookItem, MediaItem, NoteItem, NowEntry, Persona, PostSection } from '@/lib/types';
 import {
   savePostAction,
   deletePostAction,
@@ -10,16 +10,30 @@ import {
   saveNoteAction,
   deleteNoteAction,
   toggleNoteStatusAction,
+  saveBookAction,
+  deleteBookAction,
+  deleteNowEntryAction,
 } from '@/app/admin/actions';
 import { MDXEditor } from './mdx-editor/mdx-editor';
+import { BookCoverPicker } from './book-cover-picker';
+import { formatDisplayDate } from '@/lib/utils';
+import {
+  ExternalLinkIcon,
+  PencilIcon,
+  TrashIcon,
+  EyeIcon,
+  EyeSlashIcon,
+} from '@/components/icons';
 
 interface ContentManagerProps {
   initialPosts: BlogPost[];
   initialNotes: NoteItem[];
+  initialBooks?: BookItem[];
+  initialNowEntries?: NowEntry[];
   mediaItems?: MediaItem[];
 }
 
-type ContentFilterType = 'all' | 'post' | 'note';
+type ContentFilterType = 'all' | 'post' | 'note' | 'book' | 'now';
 type StatusFilterType = 'all' | 'published' | 'unpublished';
 type PersonaFilterType = 'all' | Persona;
 
@@ -111,10 +125,14 @@ function markdownToPostSections(md: string): { intro: string[]; sections: PostSe
 export function ContentManager({
   initialPosts,
   initialNotes,
+  initialBooks = [],
+  initialNowEntries = [],
   mediaItems = [],
 }: ContentManagerProps) {
   const [posts, setPosts] = useState<BlogPost[]>(initialPosts);
   const [notes, setNotes] = useState<NoteItem[]>(initialNotes);
+  const [books, setBooks] = useState<BookItem[]>(initialBooks);
+  const [nowEntries, setNowEntries] = useState<NowEntry[]>(initialNowEntries);
 
   // Filters
   const [search, setSearch] = useState('');
@@ -125,12 +143,26 @@ export function ContentManager({
   const [isPending, startTransition] = useTransition();
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  // Delete modal state
-  const [deleteConfirm, setDeleteConfirm] = useState<{
-    kind: 'post' | 'note';
+  // Confirmation dialog state (publish / unpublish / delete)
+  const [confirmAction, setConfirmAction] = useState<{
+    kind: 'post' | 'note' | 'book' | 'now';
+    action: 'publish' | 'unpublish' | 'delete';
     slug: string;
     title: string;
   } | null>(null);
+
+  // Type-to-confirm input for deletion
+  const [confirmTypedTitle, setConfirmTypedTitle] = useState('');
+
+  function openConfirmAction(confirm: {
+    kind: 'post' | 'note' | 'book' | 'now';
+    action: 'publish' | 'unpublish' | 'delete';
+    slug: string;
+    title: string;
+  }) {
+    setConfirmTypedTitle('');
+    setConfirmAction(confirm);
+  }
 
   // Post Editor State
   const [isEditingPost, setIsEditingPost] = useState(false);
@@ -157,6 +189,27 @@ export function ContentManager({
   const [noteStatus, setNoteStatus] = useState<'published' | 'unpublished'>('published');
   const [noteTagsInput, setNoteTagsInput] = useState('');
   const [noteMdxContent, setNoteMdxContent] = useState('');
+
+  // Book Editor State
+  const [isEditingBook, setIsEditingBook] = useState(false);
+  const [editingBook, setEditingBook] = useState<BookItem | null>(null);
+  const [bookTitle, setBookTitle] = useState('');
+  const [bookAuthor, setBookAuthor] = useState('');
+  const [bookDescription, setBookDescription] = useState('');
+  const [bookDate, setBookDate] = useState('');
+  const [bookPersona, setBookPersona] = useState<Persona>('thinker');
+  const [bookTagsInput, setBookTagsInput] = useState('');
+  const [bookCover, setBookCover] = useState('');
+  const [bookLink, setBookLink] = useState('');
+  const [uploadedMedia, setUploadedMedia] = useState<MediaItem[]>([]);
+
+  const availableMedia = [...uploadedMedia, ...mediaItems];
+
+  function handleBookCoverUploaded(media: MediaItem) {
+    setUploadedMedia((prev) =>
+      prev.some((m) => m.src === media.src) ? prev : [media, ...prev],
+    );
+  }
 
   function showToast(msg: string) {
     setToastMessage(msg);
@@ -247,25 +300,6 @@ export function ContentManager({
     });
   }
 
-  function handleTogglePostStatus(slug: string) {
-    startTransition(async () => {
-      const res = await togglePostStatusAction(slug);
-      if (res.success && res.post) {
-        setPosts((prev) =>
-          prev.map((p) => (p.slug === slug ? { ...p, status: res.post!.status } : p))
-        );
-        showToast(
-          `Essay is now ${
-            res.post.status === 'unpublished' ? 'Unpublished (Draft)' : 'Published'
-          }.`
-        );
-      } else {
-        showToast(res.error || 'Failed to toggle status');
-      }
-    });
-  }
-
-  // Note Handlers
   function handleOpenCreateNote() {
     setEditingNote(null);
     setNoteTitle('');
@@ -349,7 +383,7 @@ export function ContentManager({
         );
         showToast(
           `Note is now ${
-            res.note.status === 'unpublished' ? 'Unpublished (Draft)' : 'Published'
+            res.note.status === 'unpublished' ? 'Draft' : 'Published'
           }.`
         );
       } else {
@@ -358,29 +392,150 @@ export function ContentManager({
     });
   }
 
-  // Delete Action
-  function handleDeleteConfirm() {
-    if (!deleteConfirm) return;
-    const { kind, slug } = deleteConfirm;
+  // Book Handlers
+  function handleOpenCreateBook() {
+    setEditingBook(null);
+    setBookTitle('');
+    setBookAuthor('');
+    setBookDescription('');
+    setBookDate(new Date().toISOString().split('T')[0]);
+    setBookPersona('thinker');
+    setBookTagsInput('philosophy, craft');
+    setBookCover('');
+    setBookLink('');
+    setIsEditingBook(true);
+  }
+
+  function handleOpenEditBook(book: BookItem) {
+    setEditingBook(book);
+    setBookTitle(book.title);
+    setBookAuthor(book.author);
+    setBookDescription(book.description);
+    setBookDate(book.date);
+    setBookPersona(book.persona);
+    setBookTagsInput(book.tags.join(', '));
+    setBookCover(book.cover || '');
+    setBookLink(book.link || '');
+    setIsEditingBook(true);
+  }
+
+  function handleSaveBook(e: React.FormEvent) {
+    e.preventDefault();
+    if (!bookTitle.trim() || !bookAuthor.trim()) return;
+
+    const parsedTags = bookTagsInput
+      .split(',')
+      .map((t) => t.trim())
+      .filter(Boolean);
+
+    const bookPayload: BookItem = {
+      id: editingBook ? editingBook.id : `book-${Date.now()}`,
+      title: bookTitle,
+      author: bookAuthor,
+      slug: editingBook ? editingBook.slug : slugify(bookTitle || 'untitled-book'),
+      description: bookDescription,
+      date: bookDate || new Date().toISOString().split('T')[0],
+      persona: bookPersona,
+      tags: parsedTags.length > 0 ? parsedTags : ['book'],
+      cover: bookCover.trim() || undefined,
+      link: bookLink.trim() || undefined,
+    };
 
     startTransition(async () => {
-      if (kind === 'post') {
-        const res = await deletePostAction(slug);
-        if (res.success) {
-          setPosts((prev) => prev.filter((p) => p.slug !== slug));
-          setDeleteConfirm(null);
-          showToast('Essay deleted successfully');
+      const res = await saveBookAction(bookPayload);
+      if (res.success && res.book) {
+        setBooks((prev) => {
+          const idx = prev.findIndex((b) => b.slug === bookPayload.slug);
+          if (idx >= 0) {
+            const copy = [...prev];
+            copy[idx] = bookPayload;
+            return copy;
+          }
+          return [bookPayload, ...prev];
+        });
+        setIsEditingBook(false);
+        showToast(`Book "${bookTitle}" saved to library shelf!`);
+      } else {
+        showToast(res.error || 'Failed to save book');
+      }
+    });
+  }
+
+  // Confirmation action handler (publish / unpublish / delete)
+  function handleConfirmAction() {
+    if (!confirmAction) return;
+    const { kind, slug, action } = confirmAction;
+
+    startTransition(async () => {
+      if (action === 'delete') {
+        if (kind === 'post') {
+          const res = await deletePostAction(slug);
+          if (res.success) {
+            setPosts((prev) => prev.filter((p) => p.slug !== slug));
+            setConfirmAction(null);
+            showToast('Essay deleted successfully');
+          } else {
+            showToast(res.error || 'Failed to delete essay');
+          }
+        } else if (kind === 'note') {
+          const res = await deleteNoteAction(slug);
+          if (res.success) {
+            setNotes((prev) => prev.filter((n) => n.slug !== slug));
+            setConfirmAction(null);
+            showToast('Note deleted successfully');
+          } else {
+            showToast(res.error || 'Failed to delete note');
+          }
+        } else if (kind === 'now') {
+          const res = await deleteNowEntryAction(slug);
+          if (res.success) {
+            setNowEntries((prev) => prev.filter((e) => e.id !== slug));
+            setConfirmAction(null);
+            showToast('Now entry removed from the timeline');
+          } else {
+            showToast(res.error || 'Failed to delete now entry');
+          }
         } else {
-          showToast(res.error || 'Failed to delete essay');
+          const res = await deleteBookAction(slug);
+          if (res.success) {
+            setBooks((prev) => prev.filter((b) => b.slug !== slug));
+            setConfirmAction(null);
+            showToast('Book removed from library');
+          } else {
+            showToast(res.error || 'Failed to delete book');
+          }
         }
       } else {
-        const res = await deleteNoteAction(slug);
-        if (res.success) {
-          setNotes((prev) => prev.filter((n) => n.slug !== slug));
-          setDeleteConfirm(null);
-          showToast('Note deleted successfully');
+        if (kind === 'post') {
+          const res = await togglePostStatusAction(slug);
+          if (res.success && res.post) {
+            setPosts((prev) =>
+              prev.map((p) => (p.slug === slug ? { ...p, status: res.post!.status } : p))
+            );
+            setConfirmAction(null);
+            showToast(
+              `Essay is now ${
+                res.post.status === 'unpublished' ? 'Draft' : 'Published'
+              }.`
+            );
+          } else {
+            showToast(res.error || 'Failed to toggle status');
+          }
         } else {
-          showToast(res.error || 'Failed to delete note');
+          const res = await toggleNoteStatusAction(slug);
+          if (res.success && res.note) {
+            setNotes((prev) =>
+              prev.map((n) => (n.slug === slug ? { ...n, status: res.note!.status } : n))
+            );
+            setConfirmAction(null);
+            showToast(
+              `Note is now ${
+                res.note.status === 'unpublished' ? 'Draft' : 'Published'
+              }.`
+            );
+          } else {
+            showToast(res.error || 'Failed to toggle status');
+          }
         }
       }
     });
@@ -398,6 +553,8 @@ export function ContentManager({
       status: p.status || 'published',
       rawPost: p,
       rawNote: undefined,
+      rawBook: undefined,
+      rawNow: undefined,
     })),
     ...notes.map((n) => ({
       kind: 'note' as const,
@@ -409,6 +566,34 @@ export function ContentManager({
       status: n.status || 'published',
       rawPost: undefined,
       rawNote: n,
+      rawBook: undefined,
+      rawNow: undefined,
+    })),
+    ...books.map((b) => ({
+      kind: 'book' as const,
+      id: b.id || `book-${b.slug}`,
+      slug: b.slug,
+      title: b.title,
+      date: b.date,
+      persona: b.persona,
+      status: undefined,
+      rawPost: undefined,
+      rawNote: undefined,
+      rawBook: b,
+      rawNow: undefined,
+    })),
+    ...nowEntries.map((n) => ({
+      kind: 'now' as const,
+      id: n.id,
+      slug: n.id,
+      title: n.title,
+      date: n.date,
+      persona: undefined,
+      status: undefined,
+      rawPost: undefined,
+      rawNote: undefined,
+      rawBook: undefined,
+      rawNow: n,
     })),
   ];
 
@@ -419,15 +604,23 @@ export function ContentManager({
   const filteredItems = unifiedItems.filter((item) => {
     if (typeFilter !== 'all' && item.kind !== typeFilter) return false;
     if (personaFilter !== 'all' && item.persona !== personaFilter) return false;
-    if (statusFilter !== 'all' && item.status !== statusFilter) return false;
 
     if (search.trim()) {
       const q = search.toLowerCase();
       const matchTitle = item.title.toLowerCase().includes(q);
       const matchSlug = item.slug.toLowerCase().includes(q);
-      const matchPersona = item.persona.toLowerCase().includes(q);
-      return matchTitle || matchSlug || matchPersona;
+      const matchPersona = item.persona
+        ? item.persona.toLowerCase().includes(q)
+        : false;
+      const matchAuthor =
+        item.kind === 'book' && item.rawBook
+          ? item.rawBook.author.toLowerCase().includes(q)
+          : false;
+      if (!(matchTitle || matchSlug || matchPersona || matchAuthor)) return false;
     }
+
+    if (item.kind === 'book' || item.kind === 'now') return statusFilter === 'all';
+    if (statusFilter !== 'all' && item.status !== statusFilter) return false;
 
     return true;
   });
@@ -445,11 +638,18 @@ export function ContentManager({
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="font-serif text-2xl font-normal text-ink md:text-3xl">
-            Posts & Notes
+            Content
           </h2>
         </div>
 
         <div className="flex items-center gap-2.5">
+          <Link
+            href="/admin/compose?type=now"
+            className="inline-flex items-center gap-1.5 rounded-full bg-ink px-5 py-2 text-xs font-semibold text-cream shadow-sm transition-colors hover:bg-accent"
+          >
+            <span>+ New Now</span>
+          </Link>
+
           <Link
             href="/admin/compose?type=note"
             className="inline-flex items-center gap-1.5 rounded-full border border-tinted bg-cream px-4 py-2 text-xs font-semibold text-ink shadow-2xs transition-colors hover:bg-paper"
@@ -459,10 +659,18 @@ export function ContentManager({
 
           <Link
             href="/admin/compose?type=post"
-            className="inline-flex items-center gap-1.5 rounded-full bg-ink px-5 py-2 text-xs font-semibold text-cream shadow-sm transition-colors hover:bg-accent"
+            className="inline-flex items-center gap-1.5 rounded-full border border-tinted bg-cream px-4 py-2 text-xs font-semibold text-ink shadow-2xs transition-colors hover:bg-paper"
           >
-            <span>+ Full Page Composer (MDX)</span>
+            <span>+ New Post</span>
           </Link>
+
+          <button
+            type="button"
+            onClick={handleOpenCreateBook}
+            className="inline-flex items-center gap-1.5 rounded-full border border-tinted bg-cream px-4 py-2 text-xs font-semibold text-ink shadow-2xs transition-colors hover:bg-paper"
+          >
+            <span>+ Add Book</span>
+          </button>
         </div>
       </div>
 
@@ -487,6 +695,8 @@ export function ContentManager({
           <option value="all">All Types</option>
           <option value="post">Essays ({posts.length})</option>
           <option value="note">Notes ({notes.length})</option>
+          <option value="book">Books ({books.length})</option>
+          <option value="now">Now ({nowEntries.length})</option>
         </select>
 
         {/* Persona Filter */}
@@ -510,7 +720,7 @@ export function ContentManager({
         >
           <option value="all">All Status</option>
           <option value="published">Published</option>
-          <option value="unpublished">Unpublished</option>
+          <option value="unpublished">Draft</option>
         </select>
       </div>
 
@@ -529,12 +739,18 @@ export function ContentManager({
               </tr>
             </thead>
             <tbody className="divide-y divide-tinted/60">
-              {filteredItems.map((item) => {
-                const isPublished = item.status !== 'unpublished';
+              {filteredItems.map((item, rowIndex) => {
+                const isBook = item.kind === 'book';
+                const isNow = item.kind === 'now';
+                const isPublished = !isBook && !isNow && item.status !== 'unpublished';
                 const linkHref =
                   item.kind === 'post'
                     ? `/p/${item.slug}`
-                    : `/n/${item.slug}`;
+                    : item.kind === 'note'
+                      ? `/n/${item.slug}`
+                      : item.kind === 'now'
+                        ? '/now'
+                        : '/library';
 
                 return (
                   <tr key={item.id} className="transition-colors hover:bg-paper/40">
@@ -543,6 +759,11 @@ export function ContentManager({
                       <div className="font-serif text-base font-medium text-ink">
                         {item.title}
                       </div>
+                      {isBook && item.rawBook && (
+                        <p className="mt-0.5 text-xs text-ink-soft">
+                          by <span className="font-medium text-ink/90">{item.rawBook.author}</span>
+                        </p>
+                      )}
                     </td>
 
                     {/* Type */}
@@ -554,84 +775,199 @@ export function ContentManager({
                             : 'bg-paper text-ink-soft ring-1 ring-tinted'
                         }`}
                       >
-                        {item.kind === 'post' ? 'Essay' : 'Note'}
+                        {item.kind === 'post'
+                          ? 'Essay'
+                          : item.kind === 'note'
+                            ? 'Note'
+                            : item.kind === 'now'
+                              ? 'Now'
+                              : 'Book'}
                       </span>
                     </td>
 
                     {/* Persona */}
                     <td className="px-4 py-4 text-xs whitespace-nowrap">
-                      <span className="capitalize text-ink-soft font-medium">
-                        {item.persona}
-                      </span>
+                      {isNow ? (
+                        <span className="text-ink-soft/50">—</span>
+                      ) : (
+                        <span className="capitalize text-ink-soft font-medium">
+                          {item.persona}
+                        </span>
+                      )}
                     </td>
 
                     {/* Date */}
                     <td className="px-4 py-4 text-xs text-ink-soft whitespace-nowrap">
-                      {item.date}
+                      {item.kind === 'note' ? formatDisplayDate(item.date) : item.date}
                     </td>
 
                     {/* Status */}
                     <td className="px-4 py-4 text-xs whitespace-nowrap">
-                      <span
-                        className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                          isPublished
-                            ? 'bg-emerald-50 text-emerald-800 ring-1 ring-emerald-200'
-                            : 'bg-amber-50 text-amber-800 ring-1 ring-amber-200'
-                        }`}
-                      >
+                      {isBook ? (
+                        <span className="inline-flex items-center gap-1.5 rounded-full bg-paper px-2.5 py-0.5 text-xs font-semibold text-ink-soft ring-1 ring-tinted">
+                          <span className="h-1.5 w-1.5 rounded-full bg-ink/60" />
+                          On Shelf
+                        </span>
+                      ) : isNow ? (
                         <span
-                          className={`h-1.5 w-1.5 rounded-full ${
-                            isPublished ? 'bg-emerald-600' : 'bg-amber-600'
+                          className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                            rowIndex === 0
+                              ? 'bg-sea-blue/10 text-sea-blue ring-1 ring-sea-blue/30'
+                              : 'bg-paper text-ink-soft ring-1 ring-tinted'
                           }`}
-                        />
-                        {isPublished ? 'Published' : 'Unpublished'}
-                      </span>
+                        >
+                          <span
+                            className={`h-1.5 w-1.5 rounded-full ${
+                              rowIndex === 0 ? 'bg-sea-blue' : 'bg-ink/40'
+                            }`}
+                          />
+                          {rowIndex === 0 ? 'Current' : 'Past'}
+                        </span>
+                      ) : (
+                        <span
+                          className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                            isPublished
+                              ? 'bg-emerald-50 text-emerald-800 ring-1 ring-emerald-200'
+                              : 'bg-amber-50 text-amber-800 ring-1 ring-amber-200'
+                          }`}
+                        >
+                          <span
+                            className={`h-1.5 w-1.5 rounded-full ${
+                              isPublished ? 'bg-emerald-600' : 'bg-amber-600'
+                            }`}
+                          />
+                          {isPublished ? 'Published' : 'Draft'}
+                        </span>
+                      )}
                     </td>
 
                     {/* Actions */}
                     <td className="px-5 py-4 text-right whitespace-nowrap">
-                      <div className="inline-flex items-center gap-2">
-                        {isPublished ? (
+                      <div className="inline-flex items-center gap-1">
+                        {isBook ? (
                           <>
                             <Link
                               href={linkHref}
                               target="_blank"
-                              className="rounded-full bg-paper px-3 py-1 text-xs font-medium text-ink-soft shadow-xs ring-1 ring-tinted transition-colors hover:text-ink hover:bg-cream"
+                              title="View on Shelf"
+                              aria-label={`View ${item.title} on shelf`}
+                              className="rounded-full p-2 text-ink-soft transition-colors hover:bg-paper hover:text-ink"
                             >
-                              View ↗
-                            </Link>
-                            <Link
-                              href={`/admin/compose?slug=${item.slug}&type=${item.kind}`}
-                              className="rounded-full bg-paper px-3 py-1 text-xs font-semibold text-ink shadow-xs ring-1 ring-tinted transition-colors hover:bg-ink hover:text-cream"
-                            >
-                              Edit (MDX)
+                              <ExternalLinkIcon className="h-4 w-4" />
                             </Link>
                             <button
                               type="button"
-                              disabled={isPending}
-                              onClick={() => {
-                                if (item.kind === 'post') {
-                                  handleTogglePostStatus(item.slug);
-                                } else {
-                                  handleToggleNoteStatus(item.slug);
-                                }
-                              }}
-                              className="rounded-full bg-paper px-3 py-1 text-xs font-semibold text-amber-800 shadow-xs ring-1 ring-amber-200 transition-colors hover:bg-amber-100"
+                              title="Edit"
+                              aria-label={`Edit ${item.title}`}
+                              onClick={() => item.rawBook && handleOpenEditBook(item.rawBook)}
+                              className="rounded-full p-2 text-ink transition-colors hover:bg-paper"
                             >
-                              Unpublish
+                              <PencilIcon className="h-4 w-4" />
                             </button>
                             <button
                               type="button"
+                              title="Remove"
+                              aria-label={`Remove ${item.title}`}
                               onClick={() =>
-                                setDeleteConfirm({
-                                  kind: item.kind,
+                                openConfirmAction({
+                                  kind: 'book',
+                                  action: 'delete',
                                   slug: item.slug,
                                   title: item.title,
                                 })
                               }
-                              className="rounded-full px-2.5 py-1 text-xs font-semibold text-red-700 transition-colors hover:bg-red-50"
+                              className="rounded-full p-2 text-red-700 transition-colors hover:bg-red-50"
                             >
-                              Delete
+                              <TrashIcon className="h-4 w-4" />
+                            </button>
+                          </>
+                        ) : isNow ? (
+                          <>
+                            <Link
+                              href="/now"
+                              target="_blank"
+                              title="View Now page"
+                              aria-label={`View ${item.title} on the Now page`}
+                              className="rounded-full p-2 text-ink-soft transition-colors hover:bg-paper hover:text-ink"
+                            >
+                              <ExternalLinkIcon className="h-4 w-4" />
+                            </Link>
+                            <Link
+                              href={`/admin/compose?slug=${item.slug}&type=now`}
+                              title="Edit"
+                              aria-label={`Edit ${item.title}`}
+                              className="rounded-full p-2 text-ink transition-colors hover:bg-paper"
+                            >
+                              <PencilIcon className="h-4 w-4" />
+                            </Link>
+                            <button
+                              type="button"
+                              title="Delete"
+                              aria-label={`Delete ${item.title}`}
+                              onClick={() =>
+                                openConfirmAction({
+                                  kind: 'now',
+                                  action: 'delete',
+                                  slug: item.slug,
+                                  title: item.title,
+                                })
+                              }
+                              className="rounded-full p-2 text-red-700 transition-colors hover:bg-red-50"
+                            >
+                              <TrashIcon className="h-4 w-4" />
+                            </button>
+                          </>
+                        ) : isPublished ? (
+                          <>
+                            <Link
+                              href={linkHref}
+                              target="_blank"
+                              title="View"
+                              aria-label={`View ${item.title}`}
+                              className="rounded-full p-2 text-ink-soft transition-colors hover:bg-paper hover:text-ink"
+                            >
+                              <ExternalLinkIcon className="h-4 w-4" />
+                            </Link>
+                            <Link
+                              href={`/admin/compose?slug=${item.slug}&type=${item.kind}`}
+                              title="Edit"
+                              aria-label={`Edit ${item.title}`}
+                              className="rounded-full p-2 text-ink transition-colors hover:bg-paper"
+                            >
+                              <PencilIcon className="h-4 w-4" />
+                            </Link>
+                            <button
+                              type="button"
+                              title="Unpublish"
+                              aria-label={`Unpublish ${item.title}`}
+                              disabled={isPending}
+                              onClick={() =>
+                                openConfirmAction({
+                                  kind: item.kind,
+                                  action: 'unpublish',
+                                  slug: item.slug,
+                                  title: item.title,
+                                })
+                              }
+                              className="rounded-full p-2 text-amber-700 transition-colors hover:bg-amber-50"
+                            >
+                              <EyeSlashIcon className="h-4 w-4" />
+                            </button>
+                            <button
+                              type="button"
+                              title="Delete"
+                              aria-label={`Delete ${item.title}`}
+                              onClick={() =>
+                                openConfirmAction({
+                                  kind: item.kind,
+                                  action: 'delete',
+                                  slug: item.slug,
+                                  title: item.title,
+                                })
+                              }
+                              className="rounded-full p-2 text-red-700 transition-colors hover:bg-red-50"
+                            >
+                              <TrashIcon className="h-4 w-4" />
                             </button>
                           </>
                         ) : (
@@ -639,42 +975,52 @@ export function ContentManager({
                             <Link
                               href={linkHref}
                               target="_blank"
-                              className="rounded-full bg-paper px-3 py-1 text-xs font-medium text-ink-soft shadow-xs ring-1 ring-tinted transition-colors hover:text-ink hover:bg-cream"
+                              title="Preview"
+                              aria-label={`Preview ${item.title}`}
+                              className="rounded-full p-2 text-ink-soft transition-colors hover:bg-paper hover:text-ink"
                             >
-                              Preview ↗
+                              <ExternalLinkIcon className="h-4 w-4" />
                             </Link>
                             <Link
                               href={`/admin/compose?slug=${item.slug}&type=${item.kind}`}
-                              className="rounded-full bg-paper px-3 py-1 text-xs font-semibold text-ink shadow-xs ring-1 ring-tinted transition-colors hover:bg-ink hover:text-cream"
+                              title="Edit"
+                              aria-label={`Edit ${item.title}`}
+                              className="rounded-full p-2 text-ink transition-colors hover:bg-paper"
                             >
-                              Edit (MDX)
+                              <PencilIcon className="h-4 w-4" />
                             </Link>
                             <button
                               type="button"
+                              title="Publish"
+                              aria-label={`Publish ${item.title}`}
                               disabled={isPending}
-                              onClick={() => {
-                                if (item.kind === 'post') {
-                                  handleTogglePostStatus(item.slug);
-                                } else {
-                                  handleToggleNoteStatus(item.slug);
-                                }
-                              }}
-                              className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-800 shadow-xs ring-1 ring-emerald-200 transition-colors hover:bg-emerald-100"
-                            >
-                              Publish
-                            </button>
-                            <button
-                              type="button"
                               onClick={() =>
-                                setDeleteConfirm({
+                                openConfirmAction({
                                   kind: item.kind,
+                                  action: 'publish',
                                   slug: item.slug,
                                   title: item.title,
                                 })
                               }
-                              className="rounded-full px-2.5 py-1 text-xs font-semibold text-red-700 transition-colors hover:bg-red-50"
+                              className="rounded-full p-2 text-emerald-700 transition-colors hover:bg-emerald-50"
                             >
-                              Delete
+                              <EyeIcon className="h-4 w-4" />
+                            </button>
+                            <button
+                              type="button"
+                              title="Delete"
+                              aria-label={`Delete ${item.title}`}
+                              onClick={() =>
+                                openConfirmAction({
+                                  kind: item.kind,
+                                  action: 'delete',
+                                  slug: item.slug,
+                                  title: item.title,
+                                })
+                              }
+                              className="rounded-full p-2 text-red-700 transition-colors hover:bg-red-50"
+                            >
+                              <TrashIcon className="h-4 w-4" />
                             </button>
                           </>
                         )}
@@ -695,31 +1041,85 @@ export function ContentManager({
         </div>
       </div>
 
-      {/* Delete Confirmation Modal */}
-      {deleteConfirm && (
+      {/* Action Confirmation Modal (Publish / Unpublish / Delete) */}
+      {confirmAction && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-xs">
           <div className="w-full max-w-md rounded-3xl border border-tinted bg-paper p-6 shadow-2xl animate-in zoom-in-95">
             <h3 className="font-serif text-xl font-normal text-ink">
-              Delete {deleteConfirm.kind === 'post' ? 'Essay' : 'Note'}?
+              {confirmAction.action === 'delete'
+                ? `Delete ${
+                    confirmAction.kind === 'post'
+                      ? 'Essay'
+                      : confirmAction.kind === 'note'
+                        ? 'Note'
+                        : confirmAction.kind === 'now'
+                          ? 'Now Entry'
+                          : 'Book'
+                  }?`
+                : confirmAction.action === 'unpublish'
+                  ? 'Unpublish?'
+                  : 'Publish?'}
             </h3>
             <p className="mt-2 text-sm leading-relaxed text-ink-soft">
-              Are you sure you want to delete <b className="text-ink">{deleteConfirm.title}</b>? This action cannot be undone.
+              {confirmAction.action === 'delete' ? (
+                <>
+                  Are you sure you want to delete{' '}
+                  <b className="text-ink">{confirmAction.title}</b>? This action cannot be undone.
+                  {confirmAction.action === 'delete' && (
+                    <span className="mt-3 block">
+                      Type the full title to confirm:
+                    </span>
+                  )}
+                </>
+              ) : (
+                <>
+                  Are you sure you want to{' '}
+                  {confirmAction.action === 'unpublish' ? 'unpublish' : 'publish'}{' '}
+                  <b className="text-ink">{confirmAction.title}</b>?
+                </>
+              )}
             </p>
+            {confirmAction.action === 'delete' && (
+              <input
+                type="text"
+                autoFocus
+                placeholder="Type the full title to confirm"
+                value={confirmTypedTitle}
+                onChange={(e) => setConfirmTypedTitle(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && confirmTypedTitle === confirmAction.title) {
+                    handleConfirmAction();
+                  }
+                }}
+                className="mt-3 w-full rounded-xl border border-tinted bg-cream px-3.5 py-2 text-sm text-ink placeholder:text-ink-soft/60 focus:border-ink focus:outline-none"
+              />
+            )}
             <div className="mt-6 flex justify-end gap-3">
               <button
                 type="button"
-                onClick={() => setDeleteConfirm(null)}
+                onClick={() => setConfirmAction(null)}
                 className="rounded-full px-4 py-2 text-xs font-medium text-ink-soft hover:text-ink"
               >
                 Cancel
               </button>
               <button
                 type="button"
-                disabled={isPending}
-                onClick={handleDeleteConfirm}
-                className="rounded-full bg-red-700 px-5 py-2 text-xs font-semibold text-white shadow-sm hover:bg-red-800 disabled:opacity-50"
+                disabled={
+                  isPending ||
+                  (confirmAction.action === 'delete' && confirmTypedTitle !== confirmAction.title)
+                }
+                onClick={handleConfirmAction}
+                className={`rounded-full px-5 py-2 text-xs font-semibold text-white shadow-sm hover:brightness-110 disabled:opacity-50 ${
+                  confirmAction.action === 'delete' ? 'bg-red-700' : 'bg-ink'
+                }`}
               >
-                {isPending ? 'Deleting...' : 'Confirm Delete'}
+                {isPending
+                  ? 'Processing...'
+                  : confirmAction.action === 'delete'
+                    ? 'Confirm Delete'
+                    : confirmAction.action === 'unpublish'
+                      ? 'Unpublish'
+                      : 'Publish'}
               </button>
             </div>
           </div>
@@ -733,7 +1133,7 @@ export function ContentManager({
             <div className="flex items-center justify-between border-b border-tinted pb-4">
               <div>
                 <h3 className="font-serif text-2xl font-normal text-ink">
-                  {editingPost ? 'Edit Essay (MDX)' : 'Compose New Essay (MDX)'}
+                  {editingPost ? 'Edit Post' : 'New Post'}
                 </h3>
                 <p className="mt-0.5 text-xs text-ink-soft">
                   Author long-form essays with live split-view markdown and rich component insertions.
@@ -796,7 +1196,7 @@ export function ContentManager({
                     className="mt-1.5 w-full rounded-xl border border-tinted bg-cream px-3.5 py-2 text-xs text-ink focus:border-ink focus:outline-none"
                   >
                     <option value="published">Published</option>
-                    <option value="unpublished">Unpublished (Draft)</option>
+                    <option value="unpublished">Draft</option>
                   </select>
                 </div>
                 <div>
@@ -865,6 +1265,9 @@ export function ContentManager({
                   persona={postPersona}
                   date={postPlantedAt}
                   mediaItems={mediaItems}
+                  embedBooks={initialBooks}
+                  embedPosts={initialPosts}
+                  embedNotes={initialNotes}
                   onChange={(val) => setPostMdxContent(val)}
                   className="h-[520px]"
                 />
@@ -899,7 +1302,7 @@ export function ContentManager({
             <div className="flex items-center justify-between border-b border-tinted pb-4">
               <div>
                 <h3 className="font-serif text-2xl font-normal text-ink">
-                  {editingNote ? 'Edit Note (MDX)' : 'Create New Note (MDX)'}
+                  {editingNote ? 'Edit Note' : 'New Note'}
                 </h3>
                 <p className="mt-0.5 text-xs text-ink-soft">
                   Capture an atomic thought or observation with live MDX preview.
@@ -961,7 +1364,7 @@ export function ContentManager({
                     className="mt-1.5 w-full rounded-xl border border-tinted bg-cream px-3.5 py-2 text-xs text-ink focus:border-ink focus:outline-none"
                   >
                     <option value="published">Published</option>
-                    <option value="unpublished">Unpublished (Draft)</option>
+                    <option value="unpublished">Draft</option>
                   </select>
                 </div>
                 <div>
@@ -1016,6 +1419,9 @@ export function ContentManager({
                   persona={notePersona}
                   date={noteDate}
                   mediaItems={mediaItems}
+                  embedBooks={initialBooks}
+                  embedPosts={initialPosts}
+                  embedNotes={initialNotes}
                   onChange={(val) => setNoteMdxContent(val)}
                   className="h-[440px]"
                 />
@@ -1035,6 +1441,121 @@ export function ContentManager({
                   className="rounded-full bg-ink px-6 py-2.5 text-xs font-semibold text-cream shadow-sm hover:bg-accent disabled:opacity-50"
                 >
                   {isPending ? 'Saving Note...' : 'Save Note'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Book Editor Modal */}
+      {isEditingBook && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/40 p-4 backdrop-blur-xs sm:p-6">
+          <div className="relative my-8 max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-3xl border border-tinted bg-paper shadow-2xl sm:p-8">
+            {/* Header */}
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h3 className="font-serif text-2xl font-normal text-ink">
+                  {editingBook ? 'Edit Book' : 'Add Book to Library'}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsEditingBook(false)}
+                className="rounded-full p-2 text-ink-soft transition-colors hover:bg-cream hover:text-ink"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveBook} className="mt-8">
+              <div className="grid grid-cols-1 gap-8 lg:grid-cols-[220px_1fr]">
+                {/* Cover preview + sources panel */}
+                <div className="mx-auto w-full max-w-[200px] lg:mx-0">
+                  <BookCoverPicker
+                    value={bookCover}
+                    onChange={setBookCover}
+                    mediaItems={availableMedia}
+                    onMediaAdded={handleBookCoverUploaded}
+                    title={bookTitle}
+                    author={bookAuthor}
+                  />
+                </div>
+
+                {/* Form fields */}
+                <div className="space-y-6">
+                  <div className="space-y-4">
+                    <input
+                      type="text"
+                      required
+                      placeholder="Book Title"
+                      value={bookTitle}
+                      onChange={(e) => setBookTitle(e.target.value)}
+                      className="w-full rounded-xl border border-tinted bg-cream px-3.5 py-2 text-sm text-ink placeholder:text-ink-soft/60 focus:border-ink focus:outline-none"
+                    />
+                    <input
+                      type="text"
+                      required
+                      placeholder="Author Name"
+                      value={bookAuthor}
+                      onChange={(e) => setBookAuthor(e.target.value)}
+                      className="w-full rounded-xl border border-tinted bg-cream px-3.5 py-2 text-sm text-ink placeholder:text-ink-soft/60 focus:border-ink focus:outline-none"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <select
+                      value={bookPersona}
+                      onChange={(e) => setBookPersona(e.target.value as Persona)}
+                      className="w-full rounded-xl border border-tinted bg-cream px-3.5 py-2 text-sm text-ink focus:border-ink focus:outline-none"
+                    >
+                      <option value="builder">Builder</option>
+                      <option value="operator">Operator</option>
+                      <option value="thinker">Thinker</option>
+                      <option value="wanderer">Wanderer</option>
+                    </select>
+                    <input
+                      type="text"
+                      placeholder="Tags"
+                      value={bookTagsInput}
+                      onChange={(e) => setBookTagsInput(e.target.value)}
+                      className="w-full rounded-xl border border-tinted bg-cream px-3.5 py-2 text-sm text-ink placeholder:text-ink-soft/60 focus:border-ink focus:outline-none"
+                    />
+                  </div>
+
+                  <textarea
+                    rows={3}
+                    placeholder="Note / Summary"
+                    value={bookDescription}
+                    onChange={(e) => setBookDescription(e.target.value)}
+                    className="w-full resize-none rounded-xl border border-tinted bg-cream px-3.5 py-2 text-sm text-ink placeholder:text-ink-soft/60 focus:border-ink focus:outline-none"
+                  />
+
+                  <input
+                    type="url"
+                    placeholder="External Link"
+                    value={bookLink}
+                    onChange={(e) => setBookLink(e.target.value)}
+                    className="w-full rounded-xl border border-tinted bg-cream px-3.5 py-2 text-sm text-ink placeholder:text-ink-soft/60 focus:border-ink focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="mt-8 flex items-center justify-end gap-3 border-t border-tinted pt-5">
+                <button
+                  type="button"
+                  onClick={() => setIsEditingBook(false)}
+                  className="rounded-full px-5 py-2 text-xs font-semibold text-ink-soft transition-colors hover:text-ink"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isPending}
+                  className="inline-flex items-center gap-2 rounded-full bg-ink px-6 py-2 text-xs font-semibold text-cream shadow-sm transition-colors hover:bg-accent disabled:opacity-50"
+                >
+                  {isPending ? 'Saving...' : 'Save Book'}
                 </button>
               </div>
             </form>

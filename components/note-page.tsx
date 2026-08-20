@@ -1,24 +1,23 @@
-import Link from 'next/link';
 import type { NoteItem } from '@/lib/types';
-import { ArrowLeftIcon } from './icons';
+import { formatDisplayDate } from '@/lib/utils';
+import { ShareMenu } from './share-menu';
+
+const PERSONA_LABELS: Record<string, string> = {
+  builder: 'Builder',
+  operator: 'Operator',
+  thinker: 'Thinker',
+  wanderer: 'Wanderer',
+};
 
 export function NotePageView({ note }: { note: NoteItem }) {
-  return (
-    <article className="pb-16 md:pb-24">
-      <div className="container-site">
-        <nav className="pt-8 md:pt-10" aria-label="Note navigation">
-          <Link
-            href="/scribble"
-            className="group inline-flex items-center text-sm text-ink-soft transition-colors hover:text-accent"
-          >
-            <span className="inline-flex w-0 -translate-x-2 items-center overflow-hidden opacity-0 transition-all duration-300 ease-out group-hover:w-5 group-hover:translate-x-0 group-hover:opacity-100">
-              <ArrowLeftIcon className="h-4 w-4 text-sea-blue" />
-            </span>
-            <span>Scribble</span>
-          </Link>
-        </nav>
+  const personaLabel = note.persona
+    ? PERSONA_LABELS[note.persona] ?? note.persona
+    : null;
 
-        <header className="mx-auto mt-6 max-w-3xl">
+  return (
+    <article className="pb-16 pt-8 md:pb-24 md:pt-12">
+      <div className="container-site">
+        <header className="mx-auto max-w-3xl">
           <h1 className="font-serif text-4xl font-normal leading-tight text-ink md:text-5xl">
             {note.title}
           </h1>
@@ -26,22 +25,41 @@ export function NotePageView({ note }: { note: NoteItem }) {
             {note.description}
           </p>
 
-          <div className="mt-6 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-ink">
+          <hr className="my-6 border-t border-tinted" />
+
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-ink sm:text-sm">
+            {personaLabel && (
+              <span className="rounded-full border border-tinted px-2.5 py-0.5 text-[10px] leading-none text-ink-soft sm:px-3 sm:py-1 sm:text-xs">
+                {personaLabel}
+              </span>
+            )}
+
             {note.tags.slice(0, 3).map((tag) => (
               <span
                 key={tag}
-                className="rounded-full border border-tinted px-3 py-1 text-xs text-ink-soft"
+                className="hidden rounded-full border border-tinted px-2 py-0.5 text-[10px] leading-none text-ink-soft sm:inline-flex sm:px-3 sm:py-1 sm:text-xs"
               >
                 {tag}
               </span>
             ))}
 
+            {(personaLabel || note.tags.length > 0) && (
+              <span className="text-ink-soft" aria-hidden>
+                ·
+              </span>
+            )}
+
+            <span className="text-ink-soft">Published</span>
+            <span>{formatDisplayDate(note.date)}</span>
+
             <span className="text-ink-soft" aria-hidden>
               ·
             </span>
 
-            <span className="text-ink-soft">Published</span>
-            <span>{note.date}</span>
+            <ShareMenu
+              title={note.title}
+              description={note.description}
+            />
           </div>
         </header>
       </div>

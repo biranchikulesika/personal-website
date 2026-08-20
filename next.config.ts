@@ -9,6 +9,14 @@ const nextConfig: NextConfig = {
     root: process.cwd(),
   },
   output: 'standalone',
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: '**',
+      },
+    ],
+  },
 };
 
 export default nextConfig;

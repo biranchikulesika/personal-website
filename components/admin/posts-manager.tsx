@@ -229,9 +229,6 @@ export function PostsManager({ initialPosts }: PostsManagerProps) {
           <h2 className="font-serif text-2xl font-normal text-ink md:text-3xl">
             Posts & Long-form Essays
           </h2>
-          <p className="mt-1 text-sm text-ink-soft">
-            Manage long-form articles, publication status, and sections ({posts.length} total).
-          </p>
         </div>
 
         <button

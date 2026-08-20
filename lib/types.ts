@@ -119,6 +119,8 @@ export interface BookItem {
   date: string;
   persona: Persona;
   tags: string[];
+  cover?: string;
+  link?: string;
 }
 
 export interface SectionGroup<T> {
@@ -183,6 +185,7 @@ export interface BlogPost {
   title: string;
   subtitle?: string;
   description: string;
+  persona?: Persona;
   tags: string[];
   plantedAt: string;
   lastTendedAt: string;
@@ -200,6 +203,24 @@ export interface PageContent {
   slug: string;
   title: string;
   description: string;
+  content: string;
+}
+
+// Now page timeline ----------------------------------------------------------
+
+export interface NowBook {
+  title: string;
+  author: string;
+  description: string;
+  year?: string;
+  cover?: string;
+  link?: string;
+}
+
+export interface NowEntry {
+  id: string;
+  title: string;
+  date: string;
   content: string;
 }
 

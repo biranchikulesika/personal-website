@@ -3,21 +3,22 @@
 import { useState, useRef, useEffect, useCallback, useTransition } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import type { BlogPost, MediaItem, NoteItem, Persona, PostSection } from '@/lib/types';
-import { savePostAction, saveNoteAction } from '@/app/admin/actions';
+import type { BlogPost, BookItem, MediaItem, NoteItem, NowEntry, Persona, PostSection } from '@/lib/types';
+import { savePostAction, saveNoteAction, saveNowEntryAction } from '@/app/admin/actions';
 import { MDXPreview } from '../mdx-editor/mdx-preview';
 import { MediaInsertModal } from '../mdx-editor/media-insert-modal';
+import { EmbedInsertModal } from '../mdx-editor/embed-insert-modal';
 import { ComponentLibrarySidebar } from './component-library-sidebar';
 import { PublishDrawer } from './publish-drawer';
 
 interface DocumentTab {
   id: string;
-  docType: 'post' | 'note';
+  docType: 'post' | 'note' | 'now';
   slug: string;
   title: string;
   subtitle: string;
   description: string;
-  persona: Persona;
+  persona?: Persona;
   status: 'published' | 'unpublished';
   tags: string[];
   coverImage?: string;
@@ -25,17 +26,22 @@ interface DocumentTab {
   isDirty: boolean;
   rawPost?: BlogPost;
   rawNote?: NoteItem;
+  rawNow?: NowEntry;
+  date?: string;
 }
 
 interface ComposeWorkspaceProps {
   initialDocument?: {
-    docType: 'post' | 'note';
+    docType: 'post' | 'note' | 'now';
     slug?: string;
     post?: BlogPost;
     note?: NoteItem;
+    now?: NowEntry;
   };
   allPosts?: BlogPost[];
   allNotes?: NoteItem[];
+  allNow?: NowEntry[];
+  allBooks?: BookItem[];
   mediaItems: MediaItem[];
 }
 
@@ -117,6 +123,8 @@ export function ComposeWorkspace({
   initialDocument,
   allPosts = [],
   allNotes = [],
+  allNow = [],
+  allBooks = [],
   mediaItems,
 }: ComposeWorkspaceProps) {
   const router = useRouter();
@@ -160,8 +168,42 @@ export function ComposeWorkspace({
         rawNote: n,
       };
     }
+    if (initialDocument?.now) {
+      const e = initialDocument.now;
+      return {
+        id: `tab-now-${e.id}`,
+        docType: 'now',
+        slug: e.id,
+        title: e.title,
+        subtitle: '',
+        description: '',
+        status: 'published',
+        tags: [],
+        content: e.content,
+        isDirty: false,
+        rawNow: e,
+        date: e.date,
+      };
+    }
 
-    const isNote = initialDocument?.docType === 'note';
+    const docType = initialDocument?.docType || 'post';
+    if (docType === 'now') {
+      return {
+        id: `tab-new-now-${Date.now()}`,
+        docType: 'now',
+        slug: `now-${Date.now()}`,
+        title: '',
+        subtitle: '',
+        description: '',
+        status: 'published',
+        tags: [],
+        content: 'A short note on what you are reading, exploring, and thinking about this month.',
+        isDirty: true,
+        date: new Date().toISOString().slice(0, 7),
+      };
+    }
+
+    const isNote = docType === 'note';
     return {
       id: `tab-new-${Date.now()}`,
       docType: isNote ? 'note' : 'post',
@@ -192,6 +234,8 @@ export function ComposeWorkspace({
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isPublishDrawerOpen, setIsPublishDrawerOpen] = useState(false);
   const [isMediaModalOpen, setIsMediaModalOpen] = useState(false);
+  const [isEmbedModalOpen, setIsEmbedModalOpen] = useState(false);
+  const [embedModalKind, setEmbedModalKind] = useState<'book' | 'post' | 'note'>('book');
   const [isDraftsModalOpen, setIsDraftsModalOpen] = useState(false);
   const [draftsSearchQuery, setDraftsSearchQuery] = useState('');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -423,6 +467,26 @@ export function ComposeWorkspace({
         } else {
           showToast(res.error || 'Failed to save essay');
         }
+      } else if (activeTab.docType === 'now') {
+        const nowPayload: NowEntry = {
+          id: activeTab.rawNow?.id || activeTab.slug || `now-${Date.now()}`,
+          title: activeTab.title.trim(),
+          date: activeTab.date || new Date().toISOString().slice(0, 7),
+          content: activeTab.content.trim(),
+        };
+
+        const res = await saveNowEntryAction(nowPayload);
+        if (res.success && res.entry) {
+          updateActiveTab({
+            slug: res.entry.id,
+            isDirty: false,
+            rawNow: res.entry,
+          });
+          setIsPublishDrawerOpen(false);
+          showToast(`Now entry "${activeTab.title}" saved to the timeline!`);
+        } else {
+          showToast(res.error || 'Failed to save now entry');
+        }
       } else {
         const paragraphs = activeTab.content
           .split('\n\n')
@@ -516,7 +580,7 @@ export function ComposeWorkspace({
               }`}
             >
               <span className={`mr-2 shrink-0 text-xs ${isSelected ? 'text-[#ff7700]' : 'text-neutral-500'}`}>
-                {tab.docType === 'post' ? '📄' : '📝'}
+                {tab.docType === 'post' ? '📄' : tab.docType === 'note' ? '📝' : '⏰'}
               </span>
               <span className="truncate flex-1 font-mono text-[11px]">{displayTabName}</span>
 
@@ -767,7 +831,11 @@ export function ComposeWorkspace({
           {/* Publish Live Button */}
           <button
             type="button"
-            onClick={() => setIsPublishDrawerOpen(true)}
+            onClick={() =>
+              activeTab.docType === 'now'
+                ? handleSaveDocument('published')
+                : setIsPublishDrawerOpen(true)
+            }
             className="flex items-center gap-1.5 rounded-md bg-[#ff7700] hover:bg-[#e66a00] text-black px-3.5 py-1 text-xs font-bold transition-all shadow-sm"
           >
             <span>Publish</span>
@@ -780,17 +848,21 @@ export function ComposeWorkspace({
         <div className="flex-1 min-w-0 flex flex-col relative h-full">
           {/* Breadcrumbs Row: Persona + Title */}
           <div className="flex items-center min-h-[34px] bg-[#1e1e1e] px-4 text-[#cccccc] shrink-0 text-xs font-sans border-b border-[#242424] z-10">
-            <select
-              value={activeTab.persona}
-              onChange={(e) => updateActiveTab({ persona: e.target.value as Persona })}
-              className="bg-transparent text-neutral-400 hover:text-white capitalize font-mono text-[11px] focus:outline-none cursor-pointer"
-            >
-              <option value="builder" className="bg-[#1e1e1e] text-white">builder</option>
-              <option value="operator" className="bg-[#1e1e1e] text-white">operator</option>
-              <option value="thinker" className="bg-[#1e1e1e] text-white">thinker</option>
-              <option value="wanderer" className="bg-[#1e1e1e] text-white">wanderer</option>
-            </select>
-            <span className="mx-2 opacity-40">›</span>
+            {activeTab.docType !== 'now' && (
+              <>
+                <select
+                  value={activeTab.persona}
+                  onChange={(e) => updateActiveTab({ persona: e.target.value as Persona })}
+                  className="bg-transparent text-neutral-400 hover:text-white capitalize font-mono text-[11px] focus:outline-none cursor-pointer"
+                >
+                  <option value="builder" className="bg-[#1e1e1e] text-white">builder</option>
+                  <option value="operator" className="bg-[#1e1e1e] text-white">operator</option>
+                  <option value="thinker" className="bg-[#1e1e1e] text-white">thinker</option>
+                  <option value="wanderer" className="bg-[#1e1e1e] text-white">wanderer</option>
+                </select>
+                <span className="mx-2 opacity-40">›</span>
+              </>
+            )}
             <input
               type="text"
               value={activeTab.title}
@@ -801,28 +873,44 @@ export function ComposeWorkspace({
                   slug: activeTab.isDirty ? activeTab.slug : slugify(title),
                 });
               }}
-              placeholder="Post Title..."
+              placeholder={activeTab.docType === 'now' ? 'Now Entry Title...' : 'Post Title...'}
               className="flex-1 bg-transparent border-none outline-none text-white font-medium placeholder-[#555] py-1 text-xs"
             />
           </div>
 
           {/* Subtitle Row */}
           <div className="flex items-center min-h-[30px] bg-[#1a1a1a] px-4 text-[#cccccc] shrink-0 border-b border-[#222] justify-between">
-            <input
-              type="text"
-              value={activeTab.subtitle}
-              onChange={(e) => updateActiveTab({ subtitle: e.target.value })}
-              placeholder="Subtitle (optional)..."
-              className="flex-1 bg-transparent border-none outline-none text-[#a0a0a0] placeholder-[#555] py-1 text-xs italic"
-            />
-            <button
-              type="button"
-              onClick={() => setIsPublishDrawerOpen(true)}
-              className="text-sm text-amber-300 hover:text-amber-200 transition-colors ml-3 shrink-0 p-1 hover:bg-[#252525] rounded"
-              title="AI Summary"
-            >
-              ✨
-            </button>
+            {activeTab.docType === 'now' ? (
+              <div className="flex items-center gap-2 flex-1">
+                <span className="text-[10px] uppercase tracking-wider text-neutral-500 shrink-0">
+                  Date
+                </span>
+                <input
+                  type="month"
+                  value={activeTab.date || ''}
+                  onChange={(e) => updateActiveTab({ date: e.target.value })}
+                  className="bg-transparent border-none outline-none text-[#a0a0a0] placeholder-[#555] py-1 text-xs font-mono"
+                />
+              </div>
+            ) : (
+              <input
+                type="text"
+                value={activeTab.subtitle}
+                onChange={(e) => updateActiveTab({ subtitle: e.target.value })}
+                placeholder="Subtitle (optional)..."
+                className="flex-1 bg-transparent border-none outline-none text-[#a0a0a0] placeholder-[#555] py-1 text-xs italic"
+              />
+            )}
+            {activeTab.docType !== 'now' && (
+              <button
+                type="button"
+                onClick={() => setIsPublishDrawerOpen(true)}
+                className="text-sm text-amber-300 hover:text-amber-200 transition-colors ml-3 shrink-0 p-1 hover:bg-[#252525] rounded"
+                title="AI Summary"
+              >
+                ✨
+              </button>
+            )}
           </div>
 
           {/* Editor & Live Split View */}
@@ -883,6 +971,10 @@ export function ComposeWorkspace({
           isCollapsed={isSidebarCollapsed}
           onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
           onOpenMediaPicker={() => setIsMediaModalOpen(true)}
+          onOpenEmbedPicker={(kind) => {
+            setEmbedModalKind(kind);
+            setIsEmbedModalOpen(true);
+          }}
         />
       </div>
 
@@ -890,7 +982,9 @@ export function ComposeWorkspace({
       <div className="flex h-[26px] items-center justify-between border-t border-[#222] bg-[#111111] px-4 text-[11px] text-neutral-400 select-none">
         <div className="flex items-center gap-4 font-mono">
           <span className="capitalize text-neutral-300">
-            {activeTab.persona} • {activeTab.docType}
+            {activeTab.docType === 'now'
+              ? 'now • timeline entry'
+              : `${activeTab.persona} • ${activeTab.docType}`}
           </span>
           <span className="text-neutral-500">|</span>
           <span className={activeTab.isDirty ? 'text-amber-400' : 'text-emerald-400'}>
@@ -929,6 +1023,8 @@ export function ComposeWorkspace({
         onSave={handleSaveDocument}
         isSaving={isPending}
         docType={activeTab.docType}
+        date={activeTab.date}
+        onDateChange={(date) => updateActiveTab({ date })}
       />
 
       {/* Media Asset Picker Modal */}
@@ -937,6 +1033,17 @@ export function ComposeWorkspace({
         onClose={() => setIsMediaModalOpen(false)}
         mediaItems={mediaItems}
         onSelect={(imgMd) => insertBlock(imgMd)}
+      />
+
+      {/* Embed Content Picker Modal */}
+      <EmbedInsertModal
+        isOpen={isEmbedModalOpen}
+        onClose={() => setIsEmbedModalOpen(false)}
+        books={allBooks}
+        posts={allPosts}
+        notes={allNotes}
+        initialType={embedModalKind}
+        onSelect={(snippet) => insertBlock(snippet)}
       />
 
       {/* 5. Open Existing Drafts / Notes Modal (Triggered by Folder Icon) */}

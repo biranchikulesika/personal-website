@@ -4,6 +4,7 @@ import type {
   BookItem,
   MediaItem,
   NoteItem,
+  NowEntry,
   Persona,
   ScribbleEntry,
   HomeContent,
@@ -44,9 +45,15 @@ export interface ContentRepository {
   getPage(slug: string): Promise<PageContent | null>;
   getScribbleEntries(): Promise<ScribbleEntry[]>;
 
+  getNowEntries(): Promise<NowEntry[]>;
+  saveNowEntry(entry: NowEntry): Promise<NowEntry>;
+  deleteNowEntry(id: string): Promise<boolean>;
+
   getMedia(): Promise<MediaItem[]>;
   addMedia(item: MediaItem): Promise<MediaItem>;
   deleteMedia(id: string): Promise<boolean>;
+  getOrphanedMedia(): Promise<MediaItem[]>;
+  deleteStorageAssets(srcs: string[]): Promise<number>;
 
   getAdminProfile(): Promise<AdminProfile>;
   updateAdminProfile(profile: Partial<AdminProfile>): Promise<AdminProfile>;

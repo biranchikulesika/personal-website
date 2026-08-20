@@ -29,12 +29,16 @@ export function WritingSection({ writing, limit }: WritingSectionProps) {
       <SectionHeading
         id="home-writing-heading"
         title={writing.title}
+        href={writing.href}
         subheader={writing.subheader}
       />
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <div className="no-scrollbar -mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-1 sm:-mx-0 sm:px-0">
         {items.map((item) => (
-          <article key={item.slug} className="group">
+          <article
+            key={item.slug}
+            className="group w-[78%] shrink-0 snap-start sm:w-[46%] md:w-[31%] lg:w-[calc(33.333%-0.75rem)]"
+          >
             <Link
               href={`/p/${item.slug}`}
               className="block rounded-lg border border-tinted bg-cream p-2.5 shadow-sm transition-all duration-300 hover:shadow-md"
@@ -45,11 +49,6 @@ export function WritingSection({ writing, limit }: WritingSectionProps) {
               </h4>
               <p className="mt-1 text-xs leading-relaxed text-ink-soft">
                 {item.description}
-              </p>
-              <p className="mt-1.5 text-xs text-ink-soft/80">
-                <span>Essay</span>
-                <span aria-hidden className="mx-1.5">·</span>
-                <span>{item.date}</span>
               </p>
             </Link>
           </article>
