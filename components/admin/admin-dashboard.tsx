@@ -86,13 +86,13 @@ export function AdminDashboard({
   ];
 
   return (
-    <div className="flex min-h-screen w-full bg-paper">
+    <div className="flex min-h-screen w-full bg-night text-paper font-sans">
       {/* 1. Left Fixed / Sticky Sidebar */}
-      <aside className="sticky top-0 h-screen w-64 md:w-72 shrink-0 border-r border-tinted bg-cream flex flex-col justify-between p-5 overflow-y-auto">
+      <aside className="sticky top-0 h-screen w-64 md:w-72 shrink-0 border-r border-tinted/20 bg-night-soft flex flex-col justify-between p-5 overflow-y-auto">
         <div className="space-y-6">
           {/* Workspace Branding / User Header */}
-          <div className="flex items-center gap-3 border-b border-tinted pb-4">
-            <div className="relative h-10 w-10 overflow-hidden rounded-full border border-tinted bg-paper shadow-xs">
+          <div className="flex items-center gap-3 border-b border-tinted/20 pb-4">
+            <div className="relative h-10 w-10 overflow-hidden rounded-full border border-tinted/20 bg-post-card shadow-xs">
               <Image
                 src={initialProfile.avatarUrl || '/biranchi.jpeg'}
                 alt={initialProfile.name}
@@ -101,7 +101,7 @@ export function AdminDashboard({
               />
             </div>
             <div className="min-w-0 flex-1">
-              <div className="truncate font-serif text-base font-medium text-ink">
+              <div className="truncate font-serif text-base font-medium text-paper">
                 {initialProfile.name}
               </div>
             </div>
@@ -118,12 +118,12 @@ export function AdminDashboard({
                   onClick={() => setActiveTab(item.id)}
                   className={`group flex w-full items-center justify-between rounded-xl px-3.5 py-2.5 text-sm font-medium transition-all ${
                     isActive
-                      ? 'bg-ink text-cream shadow-xs'
-                      : 'text-ink-soft hover:bg-paper hover:text-ink'
+                      ? 'bg-post-card text-paper shadow-xs border border-tinted/30'
+                      : 'text-gray-mid hover:bg-post-card/60 hover:text-paper'
                   }`}
                 >
                   <div className="flex items-center gap-3">
-                    <span className={isActive ? 'text-cream' : 'text-ink-soft group-hover:text-ink'}>
+                    <span className={isActive ? 'text-accent' : 'text-gray-mid group-hover:text-paper'}>
                       {item.icon}
                     </span>
                     <span>{item.label}</span>
@@ -132,8 +132,8 @@ export function AdminDashboard({
                     <span
                       className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${
                         isActive
-                          ? 'bg-cream/20 text-cream'
-                          : 'bg-paper text-ink-soft ring-1 ring-tinted'
+                          ? 'bg-accent/20 text-accent'
+                          : 'bg-night text-gray-mid ring-1 ring-tinted/20'
                       }`}
                     >
                       {item.count}
@@ -146,11 +146,11 @@ export function AdminDashboard({
         </div>
 
         {/* Sidebar Bottom Footer */}
-        <div className="border-t border-tinted pt-4">
+        <div className="border-t border-tinted/20 pt-4">
           <Link
             href="/"
             target="_blank"
-            className="flex w-full items-center justify-center gap-1.5 rounded-full bg-paper py-2.5 text-xs font-semibold text-ink ring-1 ring-tinted transition-colors hover:bg-ink hover:text-cream"
+            className="flex w-full items-center justify-center gap-1.5 rounded-full bg-night-soft border border-tinted/20 py-2.5 text-xs font-semibold text-paper transition-colors hover:bg-post-card hover:border-accent/40"
           >
             <span>View Public Site</span>
             <span>↗</span>
@@ -159,14 +159,14 @@ export function AdminDashboard({
       </aside>
 
       {/* 2. Main Scrollable Workspace Area */}
-      <main className="flex-1 min-w-0 overflow-y-auto p-6 sm:p-10 lg:p-12">
+      <main className="flex-1 min-w-0 overflow-y-auto p-6 sm:p-10 lg:p-12 bg-night">
         <div className="mx-auto max-w-6xl">
           {activeTab === 'home' && (
             <div className="space-y-8">
               {/* Header */}
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-tinted pb-6">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-tinted/20 pb-6">
                 <div>
-                  <h2 className="font-serif text-3xl font-normal text-ink md:text-4xl">
+                  <h2 className="font-serif text-3xl font-normal text-paper md:text-4xl">
                     Welcome back, {initialProfile.name.split(' ')[0]}
                   </h2>
                 </div>
@@ -174,14 +174,14 @@ export function AdminDashboard({
                   <button
                     type="button"
                     onClick={() => setActiveTab('content')}
-                    className="rounded-full bg-ink px-4 py-2 text-xs font-semibold text-cream shadow-sm hover:bg-accent"
+                    className="rounded-full bg-accent px-4 py-2 text-xs font-semibold text-paper shadow-sm hover:bg-accent-hover transition-colors"
                   >
                     Manage Content
                   </button>
                   <button
                     type="button"
                     onClick={() => setActiveTab('content')}
-                    className="rounded-full bg-paper px-4 py-2 text-xs font-semibold text-ink ring-1 ring-tinted hover:bg-cream"
+                    className="rounded-full bg-post-card border border-tinted/20 px-4 py-2 text-xs font-semibold text-paper hover:bg-night-soft"
                   >
                     + Add Book
                   </button>
@@ -193,15 +193,15 @@ export function AdminDashboard({
                 <button
                   type="button"
                   onClick={() => setActiveTab('content')}
-                  className="flex flex-col items-start rounded-3xl border border-tinted bg-cream p-5 text-left shadow-sm transition-all hover:border-ink/40 hover:shadow-md"
+                  className="flex flex-col items-start rounded-3xl border border-tinted/20 bg-post-card p-5 text-left shadow-sm transition-all hover:border-accent/40 hover:shadow-md"
                 >
-                  <span className="text-xs font-semibold uppercase tracking-wider text-ink-soft">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-gray-mid">
                     Essays
                   </span>
-                  <span className="mt-2 font-serif text-3xl font-normal text-ink">
+                  <span className="mt-2 font-serif text-3xl font-normal text-paper">
                     {initialPosts.length}
                   </span>
-                  <span className="mt-2 text-xs text-ink-soft underline decoration-tinted underline-offset-4">
+                  <span className="mt-2 text-xs text-teal underline decoration-teal/40 underline-offset-4 hover:text-accent">
                     Manage Essays →
                   </span>
                 </button>
@@ -209,15 +209,15 @@ export function AdminDashboard({
                 <button
                   type="button"
                   onClick={() => setActiveTab('content')}
-                  className="flex flex-col items-start rounded-3xl border border-tinted bg-cream p-5 text-left shadow-sm transition-all hover:border-ink/40 hover:shadow-md"
+                  className="flex flex-col items-start rounded-3xl border border-tinted/20 bg-post-card p-5 text-left shadow-sm transition-all hover:border-accent/40 hover:shadow-md"
                 >
-                  <span className="text-xs font-semibold uppercase tracking-wider text-ink-soft">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-gray-mid">
                     Notes
                   </span>
-                  <span className="mt-2 font-serif text-3xl font-normal text-ink">
+                  <span className="mt-2 font-serif text-3xl font-normal text-paper">
                     {initialNotes.length}
                   </span>
-                  <span className="mt-2 text-xs text-ink-soft underline decoration-tinted underline-offset-4">
+                  <span className="mt-2 text-xs text-teal underline decoration-teal/40 underline-offset-4 hover:text-accent">
                     Manage Notes →
                   </span>
                 </button>
@@ -225,15 +225,15 @@ export function AdminDashboard({
                 <button
                   type="button"
                   onClick={() => setActiveTab('content')}
-                  className="flex flex-col items-start rounded-3xl border border-tinted bg-cream p-5 text-left shadow-sm transition-all hover:border-ink/40 hover:shadow-md"
+                  className="flex flex-col items-start rounded-3xl border border-tinted/20 bg-post-card p-5 text-left shadow-sm transition-all hover:border-accent/40 hover:shadow-md"
                 >
-                  <span className="text-xs font-semibold uppercase tracking-wider text-ink-soft">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-gray-mid">
                     Library Books
                   </span>
-                  <span className="mt-2 font-serif text-3xl font-normal text-ink">
+                  <span className="mt-2 font-serif text-3xl font-normal text-paper">
                     {initialBooks.length}
                   </span>
-                  <span className="mt-2 text-xs text-ink-soft underline decoration-tinted underline-offset-4">
+                  <span className="mt-2 text-xs text-teal underline decoration-teal/40 underline-offset-4 hover:text-accent">
                     Manage Shelf →
                   </span>
                 </button>
@@ -241,15 +241,15 @@ export function AdminDashboard({
                 <button
                   type="button"
                   onClick={() => setActiveTab('media')}
-                  className="flex flex-col items-start rounded-3xl border border-tinted bg-cream p-5 text-left shadow-sm transition-all hover:border-ink/40 hover:shadow-md"
+                  className="flex flex-col items-start rounded-3xl border border-tinted/20 bg-post-card p-5 text-left shadow-sm transition-all hover:border-accent/40 hover:shadow-md"
                 >
-                  <span className="text-xs font-semibold uppercase tracking-wider text-ink-soft">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-gray-mid">
                     Media Assets
                   </span>
-                  <span className="mt-2 font-serif text-3xl font-normal text-ink">
+                  <span className="mt-2 font-serif text-3xl font-normal text-paper">
                     {initialMedia.length}
                   </span>
-                  <span className="mt-2 text-xs text-ink-soft underline decoration-tinted underline-offset-4">
+                  <span className="mt-2 text-xs text-teal underline decoration-teal/40 underline-offset-4 hover:text-accent">
                     Browse Assets →
                   </span>
                 </button>
@@ -258,36 +258,36 @@ export function AdminDashboard({
               {/* Recent Content Lists */}
               <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
                 {/* Latest Essays */}
-                <div className="rounded-3xl border border-tinted bg-cream p-5 shadow-sm">
-                  <div className="flex items-center justify-between border-b border-tinted pb-3">
-                    <h3 className="font-serif text-base font-normal text-ink">
+                <div className="rounded-3xl border border-tinted/20 bg-post-card p-5 shadow-sm">
+                  <div className="flex items-center justify-between border-b border-tinted/20 pb-3">
+                    <h3 className="font-serif text-base font-normal text-paper">
                       Recent Essays
                     </h3>
                     <button
                       type="button"
                       onClick={() => setActiveTab('content')}
-                      className="text-xs font-semibold text-ink-soft hover:text-ink"
+                      className="text-xs font-semibold text-gray-mid hover:text-accent"
                     >
                       View all ({initialPosts.length})
                     </button>
                   </div>
 
-                  <ul className="mt-3 divide-y divide-tinted/60">
+                  <ul className="mt-3 divide-y divide-tinted/20">
                     {initialPosts.slice(0, 3).map((post) => (
                       <li key={post.slug} className="py-2.5 first:pt-0 last:pb-0">
                         <div className="flex items-center justify-between gap-2">
                           <div className="min-w-0">
-                            <h4 className="truncate text-xs font-medium text-ink">
+                            <h4 className="truncate text-xs font-medium text-paper">
                               {post.title}
                             </h4>
-                            <p className="text-[10px] text-ink-soft">
+                            <p className="text-[10px] text-gray-mid">
                               {post.plantedAt}
                             </p>
                           </div>
                           <Link
                             href={`/p/${post.slug}`}
                             target="_blank"
-                            className="shrink-0 rounded-full bg-paper px-2 py-0.5 text-[10px] font-semibold text-ink ring-1 ring-tinted hover:bg-ink hover:text-cream"
+                            className="shrink-0 rounded-full bg-night-soft border border-tinted/20 px-2 py-0.5 text-[10px] font-semibold text-paper hover:bg-accent hover:border-accent"
                           >
                             ↗
                           </Link>
@@ -298,36 +298,36 @@ export function AdminDashboard({
                 </div>
 
                 {/* Latest Notes */}
-                <div className="rounded-3xl border border-tinted bg-cream p-5 shadow-sm">
-                  <div className="flex items-center justify-between border-b border-tinted pb-3">
-                    <h3 className="font-serif text-base font-normal text-ink">
+                <div className="rounded-3xl border border-tinted/20 bg-post-card p-5 shadow-sm">
+                  <div className="flex items-center justify-between border-b border-tinted/20 pb-3">
+                    <h3 className="font-serif text-base font-normal text-paper">
                       Recent Notes
                     </h3>
                     <button
                       type="button"
                       onClick={() => setActiveTab('content')}
-                      className="text-xs font-semibold text-ink-soft hover:text-ink"
+                      className="text-xs font-semibold text-gray-mid hover:text-accent"
                     >
                       View all ({initialNotes.length})
                     </button>
                   </div>
 
-                  <ul className="mt-3 divide-y divide-tinted/60">
+                  <ul className="mt-3 divide-y divide-tinted/20">
                     {initialNotes.slice(0, 3).map((note) => (
                       <li key={note.slug} className="py-2.5 first:pt-0 last:pb-0">
                         <div className="flex items-center justify-between gap-2">
                           <div className="min-w-0">
-                            <h4 className="truncate text-xs font-medium text-ink">
+                            <h4 className="truncate text-xs font-medium text-paper">
                               {note.title}
                             </h4>
-                            <p className="text-[10px] text-ink-soft">
+                            <p className="text-[10px] text-gray-mid">
                               {formatDisplayDate(note.date)}
                             </p>
                           </div>
                           <Link
                             href={`/n/${note.slug}`}
                             target="_blank"
-                            className="shrink-0 rounded-full bg-paper px-2 py-0.5 text-[10px] font-semibold text-ink ring-1 ring-tinted hover:bg-ink hover:text-cream"
+                            className="shrink-0 rounded-full bg-night-soft border border-tinted/20 px-2 py-0.5 text-[10px] font-semibold text-paper hover:bg-accent hover:border-accent"
                           >
                             ↗
                           </Link>
@@ -338,36 +338,36 @@ export function AdminDashboard({
                 </div>
 
                 {/* Latest Books */}
-                <div className="rounded-3xl border border-tinted bg-cream p-5 shadow-sm">
-                  <div className="flex items-center justify-between border-b border-tinted pb-3">
-                    <h3 className="font-serif text-base font-normal text-ink">
+                <div className="rounded-3xl border border-tinted/20 bg-post-card p-5 shadow-sm">
+                  <div className="flex items-center justify-between border-b border-tinted/20 pb-3">
+                    <h3 className="font-serif text-base font-normal text-paper">
                       Library Shelf
                     </h3>
                     <button
                       type="button"
                       onClick={() => setActiveTab('content')}
-                      className="text-xs font-semibold text-ink-soft hover:text-ink"
+                      className="text-xs font-semibold text-gray-mid hover:text-accent"
                     >
                       View all ({initialBooks.length})
                     </button>
                   </div>
 
-                  <ul className="mt-3 divide-y divide-tinted/60">
+                  <ul className="mt-3 divide-y divide-tinted/20">
                     {initialBooks.slice(0, 3).map((book) => (
                       <li key={book.slug} className="py-2.5 first:pt-0 last:pb-0">
                         <div className="flex items-center justify-between gap-2">
                           <div className="min-w-0">
-                            <h4 className="truncate text-xs font-medium text-ink">
+                            <h4 className="truncate text-xs font-medium text-paper">
                               {book.title}
                             </h4>
-                            <p className="text-[10px] text-ink-soft truncate">
+                            <p className="text-[10px] text-gray-mid truncate">
                               by {book.author}
                             </p>
                           </div>
                           <Link
                             href="/library"
                             target="_blank"
-                            className="shrink-0 rounded-full bg-paper px-2 py-0.5 text-[10px] font-semibold text-ink ring-1 ring-tinted hover:bg-ink hover:text-cream"
+                            className="shrink-0 rounded-full bg-night-soft border border-tinted/20 px-2 py-0.5 text-[10px] font-semibold text-paper hover:bg-accent hover:border-accent"
                           >
                             ↗
                           </Link>

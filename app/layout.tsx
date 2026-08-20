@@ -30,7 +30,7 @@ export default function RootLayout({
       lang="en"
       className={`${spaceGrotesk.variable} ${newsreader.variable}`}
     >
-      <body className="min-h-screen bg-paper text-ink antialiased">
+      <body className="min-h-screen bg-night text-paper antialiased">
         {children}
       </body>
     </html>

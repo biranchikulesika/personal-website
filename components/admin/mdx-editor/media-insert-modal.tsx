@@ -28,35 +28,35 @@ export function MediaInsertModal({
   );
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-xs">
-      <div className="relative my-8 max-h-[85vh] w-full max-w-3xl overflow-hidden rounded-3xl border border-tinted bg-paper shadow-2xl flex flex-col animate-in zoom-in-95">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-xs font-sans">
+      <div className="relative my-8 max-h-[85vh] w-full max-w-3xl overflow-hidden rounded-3xl border border-tinted/20 bg-night text-paper shadow-2xl flex flex-col animate-in zoom-in-95">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-tinted px-6 py-4">
+        <div className="flex items-center justify-between border-b border-tinted/20 px-6 py-4">
           <div>
-            <h3 className="font-serif text-xl font-normal text-ink">
+            <h3 className="font-serif text-xl font-normal text-paper">
               Insert Media Asset
             </h3>
-            <p className="mt-0.5 text-xs text-ink-soft">
+            <p className="mt-0.5 text-xs text-gray-mid">
               Select an image from your resources library to insert markdown image markup.
             </p>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-full p-2 text-ink-soft hover:bg-cream hover:text-ink"
+            className="rounded-full p-2 text-gray-mid hover:bg-night-soft hover:text-paper"
           >
             ✕
           </button>
         </div>
 
         {/* Search */}
-        <div className="border-b border-tinted bg-cream/50 px-6 py-3">
+        <div className="border-b border-tinted/20 bg-night-soft px-6 py-3">
           <input
             type="text"
             placeholder="Search assets by name or alt text..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full max-w-md rounded-full border border-tinted bg-paper px-4 py-1.5 text-xs text-ink placeholder:text-ink-soft/60 focus:border-ink focus:outline-none"
+            className="w-full max-w-md rounded-full border border-tinted/20 bg-night px-4 py-1.5 text-xs text-paper placeholder:text-gray-mid/50 focus:border-accent focus:outline-none"
           />
         </div>
 
@@ -71,9 +71,9 @@ export function MediaInsertModal({
                   onSelect(`![${item.alt || item.name}](${item.src})`);
                   onClose();
                 }}
-                className="group flex flex-col overflow-hidden rounded-2xl border border-tinted bg-cream text-left shadow-2xs transition-all hover:border-ink hover:shadow-md focus:outline-none"
+                className="group flex flex-col overflow-hidden rounded-2xl border border-tinted/20 bg-post-card text-left shadow-2xs transition-all hover:border-accent/40 hover:shadow-md focus:outline-none"
               >
-                <div className="relative h-32 w-full bg-paper overflow-hidden">
+                <div className="relative h-32 w-full bg-night overflow-hidden">
                   <Image
                     src={item.src}
                     alt={item.alt}
@@ -82,10 +82,10 @@ export function MediaInsertModal({
                   />
                 </div>
                 <div className="p-3">
-                  <div className="truncate text-xs font-medium text-ink group-hover:text-accent">
+                  <div className="truncate text-xs font-medium text-paper group-hover:text-accent">
                     {item.name}
                   </div>
-                  <div className="mt-0.5 flex items-center justify-between text-[10px] text-ink-soft">
+                  <div className="mt-0.5 flex items-center justify-between text-[10px] text-gray-mid">
                     <span>{item.size}</span>
                     <span className="font-semibold text-accent opacity-0 group-hover:opacity-100 transition-opacity">
                       Insert ↵
@@ -97,18 +97,18 @@ export function MediaInsertModal({
           </div>
 
           {filtered.length === 0 && (
-            <div className="py-12 text-center text-xs text-ink-soft">
+            <div className="py-12 text-center text-xs text-gray-mid">
               No media resources found matching &quot;{search}&quot;.
             </div>
           )}
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end border-t border-tinted px-6 py-3">
+        <div className="flex items-center justify-end border-t border-tinted/20 px-6 py-3">
           <button
             type="button"
             onClick={onClose}
-            className="rounded-full px-4 py-1.5 text-xs font-semibold text-ink-soft hover:text-ink"
+            className="rounded-full px-4 py-1.5 text-xs font-semibold text-gray-mid hover:text-paper"
           >
             Cancel
           </button>

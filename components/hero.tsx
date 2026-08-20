@@ -19,7 +19,7 @@ export function Hero({ hero }: HeroProps) {
           {hero.greeting}
         </p>
 
-        <h1 className="mt-5 max-w-2xl font-serif text-3xl font-normal leading-[1.08] tracking-tight text-ink sm:text-4xl md:text-5xl lg:text-[3.75rem] xl:text-[4.25rem]">
+        <h1 className="mt-5 max-w-2xl font-serif text-3xl font-normal leading-[1.08] tracking-tight text-paper sm:text-4xl md:text-5xl lg:text-[3.75rem] xl:text-[4.25rem]">
           {hero.name ? <b>{hero.name}</b> : null}
           {hero.headline}
         </h1>
@@ -54,9 +54,9 @@ export function Hero({ hero }: HeroProps) {
           className="absolute left-1/2 top-1/2 h-[440px] w-[440px] -translate-x-1/2 -translate-y-1/2"
           viewBox="0 0 480 480"
         >
-          <circle cx="240" cy="240" r="240" fill="var(--color-cream)" />
+          <circle cx="240" cy="240" r="240" fill="var(--color-night-soft)" />
         </svg>
-        <div className="relative z-10 aspect-[4/5] w-full max-w-[360px] overflow-hidden rounded-2xl shadow-md ring-1 ring-tinted">
+        <div className="relative z-10 aspect-[4/5] w-full max-w-[360px] overflow-hidden rounded-2xl shadow-2xl ring-1 ring-tinted/20">
           {/* eslint-disable-next-line @next/next/no-img-element -- plain img for the local hero portrait */}
           <img
             src={hero.image.src}

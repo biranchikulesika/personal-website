@@ -5,31 +5,60 @@
   --font-sans: var(--font-space-grotesk), ui-sans-serif, system-ui, sans-serif;
   --font-serif: var(--font-newsreader), ui-serif, Georgia, serif;
 
-  /* Reference-inspired palette (provisional) */
-  --color-paper: #fbf9f4; /* page background — very light warm white */
-  --color-cream: #f5efe3; /* light-cream — card backgrounds */
-  --color-tinted: #e6ddca; /* tinted-cream — borders */
-  --color-ink: #22262d; /* gray-800 — primary text */
-  --color-ink-soft: #6b7280; /* gray-500 — metadata / secondary text */
-  --color-accent: #a52834; /* crimson — hover accent */
-  --color-sea-blue: #04a4ba; /* sea-blue — icons */
-  --color-night: #1a1713;
-  --color-night-soft: #241f19;
+  /* Core Palette */
+  --color-paper: #FAF9F5;
+  --color-cream: #1c1c1a;
+  --color-tinted: #363430;
+  --color-gray-mid: #B0AEA5;
+  --color-gray-secondary: #87867F;
+  --color-ink: #141413;
+  --color-ink-soft: #B0AEA5;
+  --color-night: #141413;
+  --color-night-soft: #1c1c1a;
 
-  /* Soft shadows matching the reference card system */
-  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-  --shadow-md: 0 4px 10px -2px rgb(0 0 0 / 0.1);
-  --shadow-lg: 0 10px 25px -5px rgb(0 0 0 / 0.15);
+  /* Accent Palette */
+  --color-accent: #D97757;
+  --color-accent-hover: #C96442;
+  --color-terracotta: #D97757;
+  --color-terracotta-dark: #C96442;
+  --color-sea-blue: #04A4BA;
+  --color-teal: #04A4BA;
+  --color-accent-blue: #04A4BA;
+  --color-accent-green: #788C5D;
+
+  /* Card Surfaces */
+  --color-post-card: #262522;
+  --color-card-post: #262522;
+
+  /* Coherent Semantic Tokens (Dark Digital Garden Mode) */
+  --color-background: #141413;
+  --color-background-muted: #1c1c1a;
+  --color-surface: #1c1c1a;
+  --color-surface-subtle: #262522;
+  --color-foreground: #FAF9F5;
+  --color-foreground-muted: #B0AEA5;
+  --color-border: #363430;
+  --color-border-muted: #2c2a26;
+  --color-accent-secondary: #04A4BA;
+  --color-accent-tertiary: #788C5D;
+
+  /* Soft warm shadows */
+  --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.3);
+  --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.4), 0 1px 2px -1px rgb(0 0 0 / 0.3);
+  --shadow-md: 0 4px 12px -2px rgb(0 0 0 / 0.5), 0 2px 4px -2px rgb(0 0 0 / 0.3);
+  --shadow-lg: 0 12px 24px -4px rgb(0 0 0 / 0.6), 0 4px 6px -4px rgb(0 0 0 / 0.4);
+  --shadow-xl: 0 20px 30px -5px rgb(0 0 0 / 0.7), 0 8px 10px -6px rgb(0 0 0 / 0.5);
 }
 
 /* Base */
 html {
   scroll-behavior: smooth;
+  color-scheme: dark;
 }
 
 body {
-  background-color: var(--color-paper);
-  color: var(--color-ink);
+  background-color: var(--color-background);
+  color: var(--color-foreground);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -37,7 +66,7 @@ body {
 
 ::selection {
   background-color: var(--color-accent);
-  color: #fff;
+  color: var(--color-paper);
 }
 
 /* Centered content container used across sections */

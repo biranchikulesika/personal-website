@@ -7,18 +7,18 @@ interface FooterProps {
 
 export function Footer({ footer }: FooterProps) {
   return (
-    <footer className="bg-night text-cream">
+    <footer className="border-t border-tinted/10 bg-[#0e0e0d] text-paper">
       <div className="container-site py-16 md:py-20">
         <div className="grid grid-cols-1 gap-12 md:grid-cols-12 md:gap-8">
           {/* Bio */}
           <div className="md:col-span-6">
             <p className="text-xl leading-relaxed">
-              <strong className="font-semibold">{footer.bio.intro}</strong>
+              <strong className="font-semibold text-paper">{footer.bio.intro}</strong>
             </p>
             {footer.bio.paragraphs.map((paragraph) => (
               <p
                 key={paragraph}
-                className="mt-4 text-base leading-relaxed text-cream/80"
+                className="mt-4 text-base leading-relaxed text-ink-soft"
               >
                 {paragraph}
               </p>
@@ -29,7 +29,7 @@ export function Footer({ footer }: FooterProps) {
           <div className="grid grid-cols-3 gap-8 md:col-span-6">
             {footer.columns.map((column) => (
               <nav key={column.title} aria-label={column.title}>
-                <h4 className="text-sm font-semibold uppercase tracking-wider text-cream/50">
+                <h4 className="text-xs font-semibold uppercase tracking-wider text-ink-soft/80">
                   {column.title}
                 </h4>
                 <ul className="mt-6 space-y-4">
@@ -37,7 +37,7 @@ export function Footer({ footer }: FooterProps) {
                     <li key={link.href}>
                       <Link
                         href={link.href}
-                        className="inline-flex items-center gap-1.5 text-lg transition-opacity hover:opacity-70"
+                        className="inline-flex items-center gap-1.5 text-base text-paper/90 transition-colors hover:text-accent"
                       >
                         {link.label}
                       </Link>
@@ -49,7 +49,7 @@ export function Footer({ footer }: FooterProps) {
           </div>
         </div>
 
-        <p className="mt-12 text-sm font-semibold text-cream/70">{footer.bottom}</p>
+        <p className="mt-12 text-sm font-semibold text-ink-soft/80">{footer.bottom}</p>
       </div>
     </footer>
   );

@@ -155,7 +155,7 @@ export function MediaManager({
     <div className="space-y-6">
       {/* Toast Notification */}
       {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-50 rounded-2xl bg-ink px-5 py-3 text-sm font-medium text-cream shadow-xl ring-1 ring-tinted animate-in fade-in slide-in-from-bottom-3">
+        <div className="fixed bottom-6 right-6 z-50 rounded-2xl bg-night-soft border border-tinted/30 px-5 py-3 text-sm font-medium text-paper shadow-xl animate-in fade-in slide-in-from-bottom-3">
           {toastMessage}
         </div>
       )}
@@ -163,7 +163,7 @@ export function MediaManager({
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="font-serif text-2xl font-normal text-ink md:text-3xl">
+          <h2 className="font-serif text-2xl font-normal text-paper md:text-3xl">
             Media & Asset Resources
           </h2>
         </div>
@@ -171,7 +171,7 @@ export function MediaManager({
         <button
           type="button"
           onClick={() => setIsUploading(true)}
-          className="inline-flex items-center gap-2 rounded-full bg-ink px-5 py-2.5 text-sm font-semibold text-cream shadow-sm transition-colors hover:bg-accent"
+          className="inline-flex items-center gap-2 rounded-full bg-accent px-5 py-2.5 text-sm font-semibold text-paper shadow-sm transition-colors hover:bg-accent-hover"
         >
           <span>+ Add Media Asset</span>
         </button>
@@ -190,8 +190,8 @@ export function MediaManager({
               }}
               className={`rounded-full px-3.5 py-1 text-xs font-semibold uppercase tracking-wider transition-all ${
                 activeTag === t
-                  ? 'bg-ink text-cream shadow-xs'
-                  : 'bg-paper text-ink-soft ring-1 ring-tinted hover:text-ink'
+                  ? 'bg-accent text-paper shadow-xs'
+                  : 'bg-night-soft text-gray-mid border border-tinted/20 hover:text-paper'
               }`}
             >
               {t}
@@ -209,8 +209,8 @@ export function MediaManager({
               aria-pressed={showOrphanedOnly}
               className={`rounded-full px-3.5 py-1 text-xs font-semibold uppercase tracking-wider transition-all ${
                 showOrphanedOnly
-                  ? 'bg-amber-600 text-cream shadow-xs'
-                  : 'bg-amber-50 text-amber-800 ring-1 ring-amber-200 hover:bg-amber-100'
+                  ? 'bg-amber-600 text-white shadow-xs'
+                  : 'bg-amber-950/40 text-amber-400 border border-amber-800/40 hover:bg-amber-950/60'
               }`}
             >
               {orphanedSrcs.size} orphaned
@@ -223,7 +223,7 @@ export function MediaManager({
           placeholder="Search assets by name or tag..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full max-w-xs rounded-full border border-tinted bg-cream px-4 py-1.5 text-xs text-ink placeholder:text-ink-soft/60 focus:border-ink focus:outline-none"
+          className="w-full max-w-xs rounded-full border border-tinted/20 bg-night-soft px-4 py-1.5 text-xs text-paper placeholder:text-gray-mid/50 focus:border-accent focus:outline-none"
         />
       </div>
 
@@ -236,16 +236,16 @@ export function MediaManager({
           return (
             <div
               key={media.id}
-              className={`group flex flex-col overflow-hidden rounded-2xl border bg-cream shadow-sm transition-all hover:shadow-md ${
+              className={`group flex flex-col overflow-hidden rounded-2xl border bg-post-card shadow-sm transition-all hover:shadow-md ${
                 isSelected
                   ? 'border-amber-500 ring-1 ring-amber-400'
-                  : 'border-tinted hover:border-ink/30'
+                  : 'border-tinted/20 hover:border-accent/40'
               }`}
             >
               {/* Thumbnail Preview */}
-              <div className="relative aspect-4/3 w-full overflow-hidden bg-paper">
+              <div className="relative aspect-4/3 w-full overflow-hidden bg-night">
                 {isOrphaned ? (
-                  <div className="flex h-full w-full flex-col items-center justify-center gap-2 bg-amber-50">
+                  <div className="flex h-full w-full flex-col items-center justify-center gap-2 bg-amber-950/20">
                     <svg
                       className="h-8 w-8 text-amber-500"
                       fill="none"
@@ -260,7 +260,7 @@ export function MediaManager({
                         d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z"
                       />
                     </svg>
-                    <span className="text-[10px] font-semibold uppercase tracking-wider text-amber-700">
+                    <span className="text-[10px] font-semibold uppercase tracking-wider text-amber-400">
                       In bucket · unreferenced
                     </span>
                   </div>
@@ -286,8 +286,8 @@ export function MediaManager({
                     aria-pressed={isSelected}
                     className={`absolute top-2 left-2 flex h-5 w-5 items-center justify-center rounded-full ring-1 transition-colors ${
                       isSelected
-                        ? 'bg-amber-600 text-cream ring-amber-600'
-                        : 'bg-cream text-transparent ring-tinted hover:ring-amber-500'
+                        ? 'bg-amber-600 text-white ring-amber-600'
+                        : 'bg-night text-transparent ring-tinted/40 hover:ring-amber-500'
                     }`}
                   >
                     <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
@@ -296,7 +296,7 @@ export function MediaManager({
                   </button>
                 )}
 
-                <span className="absolute top-2 right-2 rounded bg-ink/80 px-2 py-0.5 text-[10px] font-semibold tracking-wider text-cream uppercase backdrop-blur-xs">
+                <span className="absolute top-2 right-2 rounded bg-night/80 border border-tinted/20 px-2 py-0.5 text-[10px] font-semibold tracking-wider text-paper uppercase backdrop-blur-xs">
                   {media.tag}
                 </span>
               </div>
@@ -304,24 +304,24 @@ export function MediaManager({
               {/* Metadata & Actions */}
               <div className="flex flex-1 flex-col justify-between p-4">
                 <div>
-                  <h4 className="truncate font-mono text-xs font-semibold text-ink">
+                  <h4 className="truncate font-mono text-xs font-semibold text-paper">
                     {media.name}
                   </h4>
-                  <p className="mt-1 truncate text-xs text-ink-soft">
+                  <p className="mt-1 truncate text-xs text-gray-mid">
                     {media.alt}
                   </p>
-                  <div className="mt-2 flex items-center justify-between text-[11px] text-ink-soft/80">
+                  <div className="mt-2 flex items-center justify-between text-[11px] text-gray-mid/80">
                     <span>{media.dimensions || 'Image'}</span>
                     <span>{media.size}</span>
                   </div>
                 </div>
 
-                <div className="mt-4 flex flex-col gap-1.5 pt-3 border-t border-tinted">
+                <div className="mt-4 flex flex-col gap-1.5 pt-3 border-t border-tinted/20">
                   {isOrphaned && (
                     <button
                       type="button"
                       onClick={() => requestDelete([media])}
-                      className="flex items-center justify-center gap-1.5 rounded-lg bg-red-50 py-1.5 text-[11px] font-semibold text-red-700 ring-1 ring-red-200 transition-colors hover:bg-red-100"
+                      className="flex items-center justify-center gap-1.5 rounded-lg bg-red-950/40 py-1.5 text-[11px] font-semibold text-red-400 border border-red-800/40 transition-colors hover:bg-red-900/60"
                     >
                       <TrashIcon className="h-3.5 w-3.5" />
                       Delete from bucket
@@ -331,14 +331,14 @@ export function MediaManager({
                     <button
                       type="button"
                       onClick={() => handleCopy(`url-${media.id}`, media.src)}
-                      className="rounded-lg bg-paper py-1.5 text-[11px] font-medium text-ink-soft ring-1 ring-tinted transition-colors hover:bg-ink hover:text-cream"
+                      className="rounded-lg bg-night-soft border border-tinted/20 py-1.5 text-[11px] font-medium text-gray-mid transition-colors hover:bg-post-card hover:text-paper"
                     >
                       {copiedId === `url-${media.id}` ? '✓ Copied' : 'Copy URL'}
                     </button>
                     <button
                       type="button"
                       onClick={() => handleCopy(`md-${media.id}`, markdownSnippet)}
-                      className="rounded-lg bg-paper py-1.5 text-[11px] font-medium text-ink-soft ring-1 ring-tinted transition-colors hover:bg-ink hover:text-cream"
+                      className="rounded-lg bg-night-soft border border-tinted/20 py-1.5 text-[11px] font-medium text-gray-mid transition-colors hover:bg-post-card hover:text-paper"
                     >
                       {copiedId === `md-${media.id}` ? '✓ Copied' : 'Copy MD'}
                     </button>
@@ -350,7 +350,7 @@ export function MediaManager({
         })}
 
         {visibleMedia.length === 0 && (
-          <div className="col-span-full py-16 text-center text-sm text-ink-soft">
+          <div className="col-span-full py-16 text-center text-sm text-gray-mid">
             {showOrphanedOnly
               ? 'No orphaned assets. Everything in the bucket is registered or referenced somewhere.'
               : 'No media assets match your query.'}
@@ -360,15 +360,15 @@ export function MediaManager({
 
       {/* Bulk action bar for selected orphaned assets */}
       {showOrphanedOnly && selectedOrphanedIds.size > 0 && (
-        <div className="sticky bottom-4 z-30 mx-auto flex max-w-xl items-center justify-between gap-3 rounded-full border border-tinted bg-ink px-5 py-2.5 shadow-xl">
-          <span className="text-xs font-semibold text-cream">
+        <div className="sticky bottom-4 z-30 mx-auto flex max-w-xl items-center justify-between gap-3 rounded-full border border-tinted/20 bg-night-soft px-5 py-2.5 shadow-xl">
+          <span className="text-xs font-semibold text-paper">
             {selectedOrphanedIds.size} selected
           </span>
           <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={() => setSelectedOrphanedIds(new Set())}
-              className="rounded-full px-3 py-1 text-xs font-semibold text-cream/70 hover:text-cream"
+              className="rounded-full px-3 py-1 text-xs font-semibold text-gray-mid hover:text-paper"
             >
               Clear
             </button>
@@ -389,29 +389,29 @@ export function MediaManager({
 
       {/* Delete Confirmation Modal */}
       {confirmDelete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-xs">
-          <div className="w-full max-w-md rounded-3xl border border-tinted bg-paper p-6 shadow-2xl animate-in zoom-in-95">
-            <h3 className="font-serif text-xl font-normal text-ink">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-xs">
+          <div className="w-full max-w-md rounded-3xl border border-tinted/20 bg-night-soft p-6 shadow-2xl animate-in zoom-in-95">
+            <h3 className="font-serif text-xl font-normal text-paper">
               Delete orphaned asset{confirmDelete.items.length > 1 ? 's' : ''}?
             </h3>
-            <p className="mt-2 text-sm leading-relaxed text-ink-soft">
+            <p className="mt-2 text-sm leading-relaxed text-gray-mid">
               {confirmDelete.items.length === 1 ? (
                 <>
                   Are you sure you want to delete{' '}
-                  <b className="text-ink">{confirmDelete.items[0].name}</b> from
+                  <b className="text-paper">{confirmDelete.items[0].name}</b> from
                   the storage bucket? This action cannot be undone.
                 </>
               ) : (
                 <>
                   Are you sure you want to delete{' '}
-                  <b className="text-ink">
+                  <b className="text-paper">
                     {confirmDelete.items.length} assets
                   </b>{' '}
                   from the storage bucket? This action cannot be undone.
                 </>
               )}
               <span className="mt-3 block">
-                Type <b className="text-ink">DELETE</b> to confirm:
+                Type <b className="text-paper">DELETE</b> to confirm:
               </span>
             </p>
             <input
@@ -425,13 +425,13 @@ export function MediaManager({
                   handleConfirmDelete();
                 }
               }}
-              className="mt-3 w-full rounded-xl border border-tinted bg-cream px-3.5 py-2 text-sm text-ink placeholder:text-ink-soft/60 focus:border-ink focus:outline-none"
+              className="mt-3 w-full rounded-xl border border-tinted/20 bg-night px-3.5 py-2 text-sm text-paper placeholder:text-gray-mid/50 focus:border-accent focus:outline-none"
             />
             <div className="mt-6 flex justify-end gap-3">
               <button
                 type="button"
                 onClick={() => setConfirmDelete(null)}
-                className="rounded-full px-4 py-2 text-xs font-medium text-ink-soft hover:text-ink"
+                className="rounded-full px-4 py-2 text-xs font-medium text-gray-mid hover:text-paper"
               >
                 Cancel
               </button>
@@ -452,21 +452,21 @@ export function MediaManager({
 
       {/* Add Media Modal */}
       {isUploading && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/40 p-4 backdrop-blur-xs">
-          <div className="relative my-8 w-full max-w-lg rounded-3xl border border-tinted bg-paper p-6 shadow-2xl sm:p-8">
-            <div className="flex items-center justify-between border-b border-tinted pb-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/70 p-4 backdrop-blur-xs">
+          <div className="relative my-8 w-full max-w-lg rounded-3xl border border-tinted/20 bg-night p-6 shadow-2xl sm:p-8">
+            <div className="flex items-center justify-between border-b border-tinted/20 pb-4">
               <div>
-                <h3 className="font-serif text-2xl font-normal text-ink">
+                <h3 className="font-serif text-2xl font-normal text-paper">
                   Register Media Asset
                 </h3>
-                <p className="mt-0.5 text-xs text-ink-soft">
+                <p className="mt-0.5 text-xs text-gray-mid">
                   Add an image reference to the asset library.
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => setIsUploading(false)}
-                className="rounded-full p-2 text-ink-soft hover:bg-cream hover:text-ink"
+                className="rounded-full p-2 text-gray-mid hover:bg-night-soft hover:text-paper"
               >
                 ✕
               </button>
@@ -474,7 +474,7 @@ export function MediaManager({
 
             <form onSubmit={handleAddMedia} className="mt-6 space-y-4">
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-ink-soft">
+                <label className="block text-xs font-semibold uppercase tracking-wider text-gray-mid">
                   Filename
                 </label>
                 <input
@@ -483,12 +483,12 @@ export function MediaManager({
                   placeholder="e.g. project-diagram.jpeg"
                   value={fileName}
                   onChange={(e) => setFileName(e.target.value)}
-                  className="mt-1.5 w-full rounded-xl border border-tinted bg-cream px-3.5 py-2 text-sm text-ink focus:border-ink focus:outline-none"
+                  className="mt-1.5 w-full rounded-xl border border-tinted/20 bg-night-soft px-3.5 py-2 text-sm text-paper placeholder:text-gray-mid/50 focus:border-accent focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-ink-soft">
+                <label className="block text-xs font-semibold uppercase tracking-wider text-gray-mid">
                   Source Path or URL
                 </label>
                 <input
@@ -497,12 +497,12 @@ export function MediaManager({
                   placeholder="/biranchi.jpeg or https://..."
                   value={fileSrc}
                   onChange={(e) => setFileSrc(e.target.value)}
-                  className="mt-1.5 w-full rounded-xl border border-tinted bg-cream px-3.5 py-2 font-mono text-sm text-ink focus:border-ink focus:outline-none"
+                  className="mt-1.5 w-full rounded-xl border border-tinted/20 bg-night-soft px-3.5 py-2 font-mono text-sm text-paper placeholder:text-gray-mid/50 focus:border-accent focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-ink-soft">
+                <label className="block text-xs font-semibold uppercase tracking-wider text-gray-mid">
                   Alt Text Description
                 </label>
                 <input
@@ -510,28 +510,28 @@ export function MediaManager({
                   placeholder="Accessible description of the image"
                   value={altText}
                   onChange={(e) => setAltText(e.target.value)}
-                  className="mt-1.5 w-full rounded-xl border border-tinted bg-cream px-3.5 py-2 text-sm text-ink focus:border-ink focus:outline-none"
+                  className="mt-1.5 w-full rounded-xl border border-tinted/20 bg-night-soft px-3.5 py-2 text-sm text-paper placeholder:text-gray-mid/50 focus:border-accent focus:outline-none"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-ink-soft">
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-gray-mid">
                     Category Tag
                   </label>
                   <select
                     value={tag}
                     onChange={(e) => setTag(e.target.value as MediaItem['tag'])}
-                    className="mt-1.5 w-full rounded-xl border border-tinted bg-cream px-3.5 py-2 text-sm text-ink focus:border-ink focus:outline-none"
+                    className="mt-1.5 w-full rounded-xl border border-tinted/20 bg-night-soft px-3.5 py-2 text-sm text-paper focus:border-accent focus:outline-none"
                   >
-                    <option value="profile">Profile</option>
-                    <option value="atmosphere">Atmosphere</option>
-                    <option value="post">Post Asset</option>
-                    <option value="book">Book Cover</option>
+                    <option value="profile" className="bg-night text-paper">Profile</option>
+                    <option value="atmosphere" className="bg-night text-paper">Atmosphere</option>
+                    <option value="post" className="bg-night text-paper">Post Asset</option>
+                    <option value="book" className="bg-night text-paper">Book Cover</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-ink-soft">
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-gray-mid">
                     File Size Estimate
                   </label>
                   <input
@@ -539,23 +539,23 @@ export function MediaManager({
                     placeholder="e.g. 240 KB"
                     value={fileSize}
                     onChange={(e) => setFileSize(e.target.value)}
-                    className="mt-1.5 w-full rounded-xl border border-tinted bg-cream px-3.5 py-2 text-sm text-ink focus:border-ink focus:outline-none"
+                    className="mt-1.5 w-full rounded-xl border border-tinted/20 bg-night-soft px-3.5 py-2 text-sm text-paper placeholder:text-gray-mid/50 focus:border-accent focus:outline-none"
                   />
                 </div>
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-tinted">
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-tinted/20">
                 <button
                   type="button"
                   onClick={() => setIsUploading(false)}
-                  className="rounded-full px-5 py-2 text-xs font-semibold text-ink-soft hover:text-ink"
+                  className="rounded-full px-5 py-2 text-xs font-semibold text-gray-mid hover:text-paper"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isPending}
-                  className="rounded-full bg-ink px-6 py-2 text-xs font-semibold text-cream shadow-sm hover:bg-accent disabled:opacity-50"
+                  className="rounded-full bg-accent px-6 py-2 text-xs font-semibold text-paper shadow-sm hover:bg-accent-hover transition-colors disabled:opacity-50"
                 >
                   {isPending ? 'Saving...' : 'Add Asset'}
                 </button>

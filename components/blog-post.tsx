@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { Fragment } from 'react';
 import type { BlogPost, PostFigure, PostSection } from '@/lib/types';
-import { ArrowRightIcon, ChevronDownIcon, ExternalLinkIcon } from './icons';
+import { ArrowLeftIcon, ArrowRightIcon, ChevronDownIcon, ExternalLinkIcon } from './icons';
 import { ShareMenu } from './share-menu';
 
 const PERSONA_LABELS: Record<string, string> = {
@@ -89,7 +89,7 @@ function TocList({ sections }: { sections: PostSection[] }) {
 function BookCover({ title, cover }: { title: string; cover?: string }) {
   if (cover) {
     return (
-      <div className="aspect-[2/3] overflow-hidden rounded-lg shadow-sm ring-1 ring-tinted transition-all duration-300 group-hover:scale-[1.02] group-hover:shadow-md">
+      <div className="aspect-[2/3] overflow-hidden rounded-lg shadow-sm ring-1 ring-tinted/20 transition-all duration-300 group-hover:scale-[1.02] group-hover:shadow-md">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={cover}
@@ -100,8 +100,8 @@ function BookCover({ title, cover }: { title: string; cover?: string }) {
     );
   }
   return (
-    <div className="flex aspect-[2/3] items-center justify-center overflow-hidden rounded-lg bg-cream p-3 shadow-sm ring-1 ring-tinted transition-all duration-300 group-hover:scale-[1.02] group-hover:opacity-20 group-hover:shadow-md">
-      <span className="text-center font-serif text-lg italic leading-snug text-ink-soft/50">
+    <div className="flex aspect-[2/3] items-center justify-center overflow-hidden rounded-lg bg-night-soft p-3 shadow-sm ring-1 ring-tinted/20 transition-all duration-300 group-hover:scale-[1.02] group-hover:opacity-30 group-hover:shadow-md">
+      <span className="text-center font-serif text-lg italic leading-snug text-paper/50">
         {title}
       </span>
     </div>
@@ -131,13 +131,13 @@ function BookCardView({
         rel={isExternal ? 'noopener noreferrer' : undefined}
         className="block"
       >
-        <span className="absolute left-1/2 top-[34%] z-10 -translate-x-1/2 -translate-y-1/2 rounded bg-paper px-3 py-1 text-sm font-medium text-ink shadow-lg opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+        <span className="absolute left-1/2 top-[34%] z-10 -translate-x-1/2 -translate-y-1/2 rounded-full bg-accent px-3.5 py-1 text-xs font-semibold text-paper shadow-lg opacity-0 transition-opacity duration-300 group-hover:opacity-100">
           View
-          <ExternalLinkIcon className="ml-1 inline h-[14px] w-[14px]" />
+          <ExternalLinkIcon className="ml-1 inline h-[12px] w-[12px]" />
         </span>
         <BookCover title={title} cover={cover} />
         <span className="mt-3 block transition-transform duration-300 group-hover:translate-y-1">
-          <p className="font-sans text-base font-normal leading-snug text-ink transition-colors duration-300 group-hover:text-accent">
+          <p className="font-sans text-base font-normal leading-snug text-paper transition-colors duration-300 group-hover:text-accent">
             {title}
           </p>
           <p className="mt-1 text-xs text-ink-soft">{author}</p>
@@ -156,60 +156,75 @@ export function BlogPostView({ post }: { post: BlogPost }) {
   return (
     <article className="pb-16 pt-8 md:pb-24 md:pt-12">
       <div className="container-site">
-        <header className="mx-auto max-w-3xl">
-          <h1 className="font-serif text-4xl font-normal leading-tight text-ink md:text-5xl">
-            {post.title}
-          </h1>
-          <p className="mt-4 text-lg leading-relaxed text-ink-soft md:text-xl">
-            {post.subtitle || post.description}
-          </p>
-
-          <hr className="my-6 border-t border-tinted" />
-
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-ink sm:text-sm">
-            {personaLabel && (
-              <span className="rounded-full border border-tinted px-2.5 py-0.5 text-[10px] leading-none text-ink-soft sm:px-3 sm:py-1 sm:text-xs">
-                {personaLabel}
+        <div className="lg:grid lg:grid-cols-[1fr_minmax(0,72ch)_1fr] lg:gap-8">
+          {/* Top-left Scribble button — aligned with title on desktop */}
+          <div className="hidden lg:block pt-3">
+            <Link
+              href="/scribble"
+              className="group inline-flex items-center text-xs font-semibold uppercase tracking-wider text-ink-soft transition-colors hover:text-paper"
+            >
+              <span className="flex items-center overflow-hidden max-w-0 opacity-0 transition-all duration-300 ease-out group-hover:max-w-[20px] group-hover:opacity-100 group-hover:mr-1.5">
+                <ArrowLeftIcon className="h-3.5 w-3.5 text-accent shrink-0 -translate-x-1 transition-transform duration-300 group-hover:translate-x-0" />
               </span>
-            )}
+              <span>Scribble</span>
+            </Link>
+          </div>
 
-            {post.tags.slice(0, 3).map((tag) => (
-              <span
-                key={tag}
-                className="hidden rounded-full border border-tinted px-2 py-0.5 text-[10px] leading-none text-ink-soft sm:inline-flex sm:px-3 sm:py-1 sm:text-xs"
-              >
-                {tag}
-              </span>
-            ))}
+          <header className="lg:col-start-2 mx-auto w-full max-w-3xl lg:max-w-none">
+            <h1 className="font-serif text-4xl font-normal leading-tight text-paper md:text-5xl">
+              {post.title}
+            </h1>
+            <p className="mt-4 text-lg leading-relaxed text-ink-soft md:text-xl">
+              {post.subtitle || post.description}
+            </p>
 
-            {(personaLabel || post.tags.length > 0) && (
-              <span className="text-ink-soft" aria-hidden>
-                ·
-              </span>
-            )}
+            <hr className="my-6 border-t border-tinted/20" />
 
-            <span className="text-ink-soft">Published</span>
-            <span>{post.plantedAt}</span>
-            {post.lastTendedAt !== post.plantedAt && (
-              <span className="hidden sm:inline-flex sm:items-center sm:gap-x-2">
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-paper sm:text-sm">
+              {personaLabel && (
+                <span className="rounded-full border border-tinted/20 bg-night-soft/60 px-2.5 py-0.5 text-[10px] leading-none text-ink-soft sm:px-3 sm:py-1 sm:text-xs">
+                  {personaLabel}
+                </span>
+              )}
+
+              {post.tags.slice(0, 3).map((tag) => (
+                <span
+                  key={tag}
+                  className="hidden rounded-full border border-tinted/20 bg-night-soft/60 px-2 py-0.5 text-[10px] leading-none text-ink-soft sm:inline-flex sm:px-3 sm:py-1 sm:text-xs"
+                >
+                  {tag}
+                </span>
+              ))}
+
+              {(personaLabel || post.tags.length > 0) && (
                 <span className="text-ink-soft" aria-hidden>
                   ·
                 </span>
-                <span className="text-ink-soft">Last edited</span>
-                <span>{post.lastTendedAt}</span>
+              )}
+
+              <span className="text-ink-soft">Pub.</span>
+              <span className="text-paper">{post.plantedAt}</span>
+              {post.lastTendedAt !== post.plantedAt && (
+                <span className="hidden sm:inline-flex sm:items-center sm:gap-x-2">
+                  <span className="text-ink-soft" aria-hidden>
+                    ·
+                  </span>
+                  <span className="text-ink-soft">Ed.</span>
+                  <span className="text-paper">{post.lastTendedAt}</span>
+                </span>
+              )}
+
+              <span className="text-ink-soft" aria-hidden>
+                ·
               </span>
-            )}
 
-            <span className="text-ink-soft" aria-hidden>
-              ·
-            </span>
-
-            <ShareMenu
-              title={post.title}
-              description={post.subtitle || post.description}
-            />
-          </div>
-        </header>
+              <ShareMenu
+                title={post.title}
+                description={post.subtitle || post.description}
+              />
+            </div>
+          </header>
+        </div>
       </div>
 
       {/* Body — TOC in the left gutter, ~72ch centered prose */}
@@ -217,7 +232,7 @@ export function BlogPostView({ post }: { post: BlogPost }) {
         {showToc && (
           <aside className="hidden lg:block" aria-label="Table of contents">
             <details open className="group sticky top-24">
-              <summary className="inline-flex cursor-pointer list-none items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-ink-soft transition-colors hover:text-ink">
+              <summary className="inline-flex cursor-pointer list-none items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-ink-soft transition-colors hover:text-paper">
                 <span>Contents</span>
                 <ChevronDownIcon className="h-3.5 w-3.5 text-ink-soft transition-transform duration-200 group-open:rotate-180" />
               </summary>
@@ -228,13 +243,13 @@ export function BlogPostView({ post }: { post: BlogPost }) {
 
         <div className="lg:col-start-2 lg:col-span-2 lg:grid lg:grid-cols-[minmax(0,72ch)_1fr] lg:items-start lg:gap-8">
           {/* Intro — the first paragraph gets a drop cap */}
-          <div className="mt-8 space-y-5 lg:col-start-1">
+          <div className="mt-8 space-y-5 lg:col-start-1 text-paper/85">
             {post.intro.map((paragraph, index) => (
               <p
                 key={index}
                 className={
                   index === 0
-                    ? 'leading-[1.85] first-letter:float-left first-letter:mr-3 first-letter:mt-1 first-letter:font-serif first-letter:text-6xl first-letter:leading-[0.8] first-letter:text-ink'
+                    ? 'leading-[1.85] first-letter:float-left first-letter:mr-3 first-letter:mt-1 first-letter:font-serif first-letter:text-6xl first-letter:leading-[0.8] first-letter:text-paper'
                     : 'leading-[1.85]'
                 }
               >
@@ -250,9 +265,9 @@ export function BlogPostView({ post }: { post: BlogPost }) {
               <section
                 key={section.id}
                 id={section.id}
-                className="mt-12 lg:col-start-1 lg:col-span-2 lg:grid lg:grid-cols-[minmax(0,72ch)_1fr] lg:items-start lg:gap-8"
+                className="mt-12 lg:col-start-1 lg:col-span-2 lg:grid lg:grid-cols-[minmax(0,72ch)_1fr] lg:items-start lg:gap-8 text-paper/85"
               >
-                <h2 className="font-serif text-2xl text-ink md:text-3xl lg:col-start-1">
+                <h2 className="font-serif text-2xl text-paper md:text-3xl lg:col-start-1">
                   {section.heading}
                 </h2>
 
@@ -267,14 +282,14 @@ export function BlogPostView({ post }: { post: BlogPost }) {
                       </p>
                       {refs.length > 0 && (
                         <aside
-                          className="hidden lg:block col-start-2 space-y-3 pt-1 border-l-2 border-tinted pl-3"
+                          className="hidden lg:block col-start-2 space-y-3 pt-1 border-l-2 border-tinted/20 pl-3"
                           aria-label="Footnotes"
                         >
                           {refs.map((n) => (
                             <p key={n} id={`fn-${n}`} className="text-[13px] leading-relaxed text-ink-soft">
                               <sup className="mr-1 font-medium text-accent">{n}</sup>
                               {section.footnotes?.[n - 1]}
-                              <a href={`#fnref-${n}`} className="ml-1 text-accent hover:text-ink transition-colors" title="Back">
+                              <a href={`#fnref-${n}`} className="ml-1 text-accent hover:text-paper transition-colors" title="Back">
                                 ↩
                               </a>
                             </p>
@@ -288,8 +303,8 @@ export function BlogPostView({ post }: { post: BlogPost }) {
                 {section.figure && <Figure {...section.figure} />}
 
                 {section.quote && (
-                  <blockquote className="mt-8 border-l-4 border-sea-blue pl-6 lg:col-start-1">
-                    <p className="font-serif text-xl italic leading-relaxed text-ink md:text-2xl">
+                  <blockquote className="mt-8 rounded-2xl border-l-4 border-sea-blue bg-night-soft/60 p-6 lg:col-start-1">
+                    <p className="font-serif text-xl italic leading-relaxed text-paper md:text-2xl">
                       “{section.quote.text}”
                     </p>
                     {section.quote.attribution && (
@@ -312,7 +327,7 @@ export function BlogPostView({ post }: { post: BlogPost }) {
               <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2">
                 <h2
                   id="post-books-heading"
-                  className="font-serif text-2xl text-ink md:text-3xl"
+                  className="font-serif text-2xl text-paper md:text-3xl"
                 >
                   Recommended reading
                 </h2>
@@ -332,8 +347,8 @@ export function BlogPostView({ post }: { post: BlogPost }) {
                 {/* Mobile "Browse the Library" end card */}
                 <article className="group relative w-[42%] shrink-0 snap-start sm:hidden">
                   <Link href="/library" className="block h-full">
-                    <div className="flex aspect-[2/3] flex-col items-center justify-center rounded-lg border border-dashed border-tinted bg-cream/60 p-3 text-center transition-all duration-300 group-hover:border-ink/40 group-hover:bg-cream">
-                      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-paper ring-1 ring-tinted transition-transform duration-300 group-hover:scale-110">
+                    <div className="flex aspect-[2/3] flex-col items-center justify-center rounded-lg border border-dashed border-tinted/30 bg-night-soft/80 p-3 text-center transition-all duration-300 group-hover:border-accent group-hover:bg-night-soft">
+                      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-post-card ring-1 ring-tinted/20 transition-transform duration-300 group-hover:scale-110">
                         <ArrowRightIcon className="h-4 w-4 text-sea-blue transition-transform duration-300 group-hover:translate-x-0.5" />
                       </div>
                       <span className="mt-2.5 font-serif text-xs italic leading-tight text-ink-soft">
@@ -341,7 +356,7 @@ export function BlogPostView({ post }: { post: BlogPost }) {
                       </span>
                     </div>
                     <span className="mt-3 block transition-transform duration-300 group-hover:translate-y-1">
-                      <p className="font-sans text-base font-normal leading-snug text-ink transition-colors duration-300 group-hover:text-accent">
+                      <p className="font-sans text-base font-normal leading-snug text-paper transition-colors duration-300 group-hover:text-accent">
                         Browse the Library
                       </p>
                     </span>

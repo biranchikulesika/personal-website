@@ -234,7 +234,7 @@ export function PostsManager({ initialPosts }: PostsManagerProps) {
         <button
           type="button"
           onClick={handleOpenCreate}
-          className="inline-flex items-center gap-2 rounded-full bg-ink px-5 py-2.5 text-sm font-semibold text-cream shadow-sm transition-colors hover:bg-accent"
+          className="inline-flex items-center gap-2 rounded-full bg-ink px-5 py-2.5 text-sm font-semibold text-paper shadow-sm transition-colors hover:bg-accent-hover"
         >
           <span>+ New Essay</span>
         </button>
@@ -381,7 +381,7 @@ export function PostsManager({ initialPosts }: PostsManagerProps) {
 
       {/* Delete Confirmation Modal */}
       {deleteConfirmSlug && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-xs">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/60 p-4 backdrop-blur-xs">
           <div className="w-full max-w-md rounded-3xl border border-tinted bg-paper p-6 shadow-2xl animate-in zoom-in-95">
             <h3 className="font-serif text-xl font-normal text-ink">
               Delete Essay?
@@ -412,7 +412,7 @@ export function PostsManager({ initialPosts }: PostsManagerProps) {
 
       {/* Full Essay Composer Modal */}
       {isEditing && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/40 p-4 backdrop-blur-xs sm:p-6">
+        <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-ink/60 p-4 backdrop-blur-xs sm:p-6">
           <div className="relative my-8 max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-3xl border border-tinted bg-paper p-6 shadow-2xl sm:p-8">
             <div className="flex items-center justify-between border-b border-tinted pb-4">
               <div>
@@ -643,7 +643,7 @@ export function PostsManager({ initialPosts }: PostsManagerProps) {
                 <button
                   type="submit"
                   disabled={isPending}
-                  className="rounded-full bg-ink px-6 py-2 text-xs font-semibold text-cream shadow-sm hover:bg-accent disabled:opacity-50"
+                  className="rounded-full bg-ink px-6 py-2 text-xs font-semibold text-paper shadow-sm hover:bg-accent-hover transition-colors disabled:opacity-50"
                 >
                   {isPending ? 'Saving...' : 'Save Essay'}
                 </button>

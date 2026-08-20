@@ -139,7 +139,7 @@ export function BookCoverPicker({
 
   return (
     <div
-      className="relative aspect-[2/3] w-full overflow-hidden rounded-xl border border-tinted bg-cream shadow-sm"
+      className="relative aspect-[2/3] w-full overflow-hidden rounded-xl border border-tinted/20 bg-post-card shadow-sm"
       onDragOver={(event) => event.preventDefault()}
       onDrop={(event) => {
         event.preventDefault();
@@ -160,15 +160,15 @@ export function BookCoverPicker({
         <>
           <span
             aria-hidden
-            className="absolute bottom-0 left-0 top-0 w-2.5 border-r border-tinted/60 bg-paper/60"
+            className="absolute bottom-0 left-0 top-0 w-2.5 border-r border-tinted/30 bg-night-soft"
           />
           <div className="flex h-full w-full flex-col justify-between p-4">
             <div className="pl-2">
-              <span className="font-serif text-sm font-normal italic leading-snug text-ink sm:text-base">
+              <span className="font-serif text-sm font-normal italic leading-snug text-paper sm:text-base">
                 {title || 'Untitled'}
               </span>
             </div>
-            <div className="flex items-baseline justify-between border-t border-tinted/40 pl-2 pt-2 text-[11px] text-ink-soft">
+            <div className="flex items-baseline justify-between border-t border-tinted/20 pl-2 pt-2 text-[11px] text-gray-mid">
               <span className="truncate pr-1">{author || 'Author'}</span>
             </div>
           </div>
@@ -182,7 +182,7 @@ export function BookCoverPicker({
           onClick={removeCover}
           title="Remove cover"
           aria-label="Remove cover"
-          className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-ink/70 text-cream shadow-sm backdrop-blur-sm transition-all hover:scale-105 hover:bg-red-700"
+          className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-night/80 text-paper border border-tinted/30 shadow-sm backdrop-blur-sm transition-all hover:scale-105 hover:bg-red-700"
         >
           <svg
             viewBox="0 0 24 24"
@@ -198,29 +198,29 @@ export function BookCoverPicker({
         </button>
       ) : (
         /* No cover → segmented paste / upload / import control inside the preview */
-        <div className="absolute inset-0 flex items-center justify-center bg-ink/20 p-3 backdrop-blur-[2px]">
-          <div className="w-full max-w-[190px] rounded-2xl border border-tinted bg-paper/95 p-3 shadow-lg">
-            <div className="flex items-center gap-1 rounded-full border border-tinted bg-cream p-1">
+        <div className="absolute inset-0 flex items-center justify-center bg-black/40 p-3 backdrop-blur-[2px]">
+          <div className="w-full max-w-[190px] rounded-2xl border border-tinted/20 bg-night/95 p-3 shadow-lg">
+            <div className="flex items-center gap-1 rounded-full border border-tinted/20 bg-night-soft p-1">
               <button
                 type="button"
                 onClick={handlePasteLink}
                 title="Paste link"
                 aria-label="Paste cover image link"
-                className="group flex flex-1 items-center justify-center rounded-full py-1.5 text-ink transition-colors hover:bg-paper"
+                className="group flex flex-1 items-center justify-center rounded-full py-1.5 text-gray-mid transition-colors hover:bg-post-card hover:text-paper"
               >
-                <LinkIcon className="h-4 w-4 text-ink-soft group-hover:text-ink" />
+                <LinkIcon className="h-4 w-4 text-gray-mid group-hover:text-paper" />
               </button>
-              <span className="h-4 w-px bg-tinted" aria-hidden />
+              <span className="h-4 w-px bg-tinted/30" aria-hidden />
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 title="Upload from device"
                 aria-label="Upload cover image from device"
-                className="group flex flex-1 items-center justify-center rounded-full py-1.5 text-ink transition-colors hover:bg-paper"
+                className="group flex flex-1 items-center justify-center rounded-full py-1.5 text-gray-mid transition-colors hover:bg-post-card hover:text-paper"
               >
-                <UploadIcon className="h-4 w-4 text-ink-soft group-hover:text-ink" />
+                <UploadIcon className="h-4 w-4 text-gray-mid group-hover:text-paper" />
               </button>
-              <span className="h-4 w-px bg-tinted" aria-hidden />
+              <span className="h-4 w-px bg-tinted/30" aria-hidden />
               <button
                 type="button"
                 onClick={() => {
@@ -232,13 +232,13 @@ export function BookCoverPicker({
                 aria-pressed={mode === 'import'}
                 className={`group flex flex-1 items-center justify-center rounded-full py-1.5 transition-colors ${
                   mode === 'import'
-                    ? 'bg-ink text-cream'
-                    : 'text-ink hover:bg-paper'
+                    ? 'bg-accent text-paper'
+                    : 'text-gray-mid hover:bg-post-card hover:text-paper'
                 }`}
               >
                 <ImageIcon
                   className={`h-4 w-4 ${
-                    mode === 'import' ? 'text-cream' : 'text-ink-soft'
+                    mode === 'import' ? 'text-paper' : 'text-gray-mid'
                   }`}
                 />
               </button>
@@ -248,7 +248,7 @@ export function BookCoverPicker({
             {pasteError && (
               <p
                 role="alert"
-                className="mt-2 rounded-lg bg-red-50 px-2 py-1 text-center text-[10px] font-medium text-red-700"
+                className="mt-2 rounded-lg bg-red-950/40 border border-red-800/40 px-2 py-1 text-center text-[10px] font-medium text-red-400"
               >
                 {pasteError}
               </p>
@@ -262,7 +262,7 @@ export function BookCoverPicker({
                   placeholder="Search media resources..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="w-full rounded-lg border border-tinted bg-cream px-2.5 py-1.5 text-[11px] text-ink placeholder:text-ink-soft/60 focus:border-ink focus:outline-none"
+                  className="w-full rounded-lg border border-tinted/20 bg-night-soft px-2.5 py-1.5 text-[11px] text-paper placeholder:text-gray-mid/50 focus:border-accent focus:outline-none"
                 />
                 <div className="mt-2 grid max-h-40 grid-cols-3 gap-1.5 overflow-y-auto">
                   {filteredMedia.map((media) => {
@@ -277,8 +277,8 @@ export function BookCoverPicker({
                         }}
                         className={`group relative aspect-[2/3] overflow-hidden rounded-md border transition-all focus:outline-none ${
                           selected
-                            ? 'border-ink ring-2 ring-ink/30'
-                            : 'border-tinted hover:border-ink/40'
+                            ? 'border-accent ring-2 ring-accent/30'
+                            : 'border-tinted/20 hover:border-accent/40'
                         }`}
                       >
                         <Image
@@ -289,7 +289,7 @@ export function BookCoverPicker({
                           className="object-cover"
                         />
                         {selected && (
-                          <span className="absolute right-0.5 top-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-ink text-cream">
+                          <span className="absolute right-0.5 top-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-accent text-paper">
                             <CheckIcon className="h-2 w-2" />
                           </span>
                         )}
@@ -297,7 +297,7 @@ export function BookCoverPicker({
                     );
                   })}
                   {filteredMedia.length === 0 && (
-                    <p className="col-span-full py-4 text-center text-[10px] text-ink-soft">
+                    <p className="col-span-full py-4 text-center text-[10px] text-gray-mid">
                       No media resources found.
                     </p>
                   )}

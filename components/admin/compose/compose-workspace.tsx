@@ -544,20 +544,20 @@ export function ComposeWorkspace({
   });
 
   return (
-    <div className="flex h-screen w-full flex-col overflow-hidden bg-[#1e1e1e] text-[#cccccc] font-sans">
+    <div className="flex h-screen w-full flex-col overflow-hidden bg-ink text-paper/80 font-sans">
       {/* Toast Notification */}
       {toastMessage && (
-        <div className="fixed bottom-10 right-10 z-50 rounded-xl bg-[#252526] border border-[#444] px-4 py-2.5 text-xs font-medium text-white shadow-2xl animate-in fade-in slide-in-from-bottom-2">
+        <div className="fixed bottom-10 right-10 z-50 rounded-xl bg-night-soft border border-tinted/30 px-4 py-2.5 text-xs font-medium text-paper shadow-2xl animate-in fade-in slide-in-from-bottom-2">
           {toastMessage}
         </div>
       )}
 
-      {/* 1. VS Code Multi-Tab Bar with + button and Folder Icon */}
-      <div className="flex h-[35px] shrink-0 bg-[#111111] border-b border-[#222] overflow-x-auto relative select-none">
+      {/* 1. Multi-Tab Bar with + button and Folder Icon */}
+      <div className="flex h-[35px] shrink-0 bg-ink border-b border-tinted/20 overflow-x-auto relative select-none">
         {/* Navigation back to Admin */}
         <Link
           href="/admin"
-          className="flex items-center gap-1.5 px-3.5 h-full text-xs font-medium text-neutral-400 hover:text-white hover:bg-[#222] border-r border-[#222] transition-colors shrink-0"
+          className="flex items-center gap-1.5 px-3.5 h-full text-xs font-medium text-ink-soft hover:text-paper hover:bg-tinted/10 border-r border-tinted/20 transition-colors shrink-0"
           title="Back to Admin Dashboard"
         >
           <span>←</span>
@@ -573,21 +573,21 @@ export function ComposeWorkspace({
             <div
               key={tab.id}
               onClick={() => setActiveTabId(tab.id)}
-              className={`flex items-center h-full px-3.5 cursor-pointer min-w-[150px] max-w-[240px] group transition-colors border-r border-[#1a1a1a] text-xs ${
+              className={`flex items-center h-full px-3.5 cursor-pointer min-w-[150px] max-w-[240px] group transition-colors border-r border-tinted/20 text-xs ${
                 isSelected
-                  ? 'bg-[#1e1e1e] text-white font-medium'
-                  : 'bg-[#252525] text-neutral-400 hover:bg-[#2a2a2a] hover:text-neutral-200'
+                  ? 'bg-night-soft text-paper font-medium'
+                  : 'bg-ink/80 text-ink-soft hover:bg-night-soft hover:text-paper/90'
               }`}
             >
-              <span className={`mr-2 shrink-0 text-xs ${isSelected ? 'text-[#ff7700]' : 'text-neutral-500'}`}>
+              <span className={`mr-2 shrink-0 text-xs ${isSelected ? 'text-accent' : 'text-ink-soft'}`}>
                 {tab.docType === 'post' ? '📄' : tab.docType === 'note' ? '📝' : '⏰'}
               </span>
               <span className="truncate flex-1 font-mono text-[11px]">{displayTabName}</span>
 
               {isPending && isSelected ? (
-                <span className="h-2 w-2 rounded-full border border-blue-400 border-t-transparent animate-spin ml-1.5 shrink-0" />
+                <span className="h-2 w-2 rounded-full border border-sea-blue border-t-transparent animate-spin ml-1.5 shrink-0" />
               ) : tab.isDirty ? (
-                <span className="text-amber-400 font-mono text-xs ml-1.5 shrink-0" title="Unsaved changes">
+                <span className="text-accent font-mono text-xs ml-1.5 shrink-0" title="Unsaved changes">
                   ●
                 </span>
               ) : null}
@@ -595,7 +595,7 @@ export function ComposeWorkspace({
               <button
                 type="button"
                 onClick={(e) => handleCloseTab(tab.id, e)}
-                className="ml-2 rounded p-0.5 opacity-0 group-hover:opacity-100 hover:bg-[#383838] hover:text-white transition-opacity shrink-0"
+                className="ml-2 rounded p-0.5 opacity-0 group-hover:opacity-100 hover:bg-tinted/20 hover:text-paper transition-opacity shrink-0"
                 title="Close Tab"
               >
                 ✕
@@ -608,7 +608,7 @@ export function ComposeWorkspace({
         <button
           type="button"
           onClick={handleNewTab}
-          className="flex h-full items-center px-3 text-neutral-400 hover:bg-[#222] hover:text-white transition-colors"
+          className="flex h-full items-center px-3 text-ink-soft hover:bg-tinted/10 hover:text-paper transition-colors"
           title="New Draft (+)"
         >
           <span className="text-base font-normal">+</span>
@@ -618,17 +618,17 @@ export function ComposeWorkspace({
         <button
           type="button"
           onClick={() => setIsDraftsModalOpen(true)}
-          className="flex h-full items-center px-3 text-neutral-400 hover:bg-[#222] hover:text-white transition-colors text-xs"
+          className="flex h-full items-center px-3 text-ink-soft hover:bg-tinted/10 hover:text-paper transition-colors text-xs"
           title="Open Existing Draft or Note (📁)"
         >
           <span>📁</span>
         </button>
 
-        <div className="flex-1 bg-[#111111]" />
+        <div className="flex-1 bg-ink" />
       </div>
 
-      {/* 2. Unified Toolbar matching Develop Branch with Split Preview, Save, Publish */}
-      <div className="flex h-11 shrink-0 items-center justify-between border-b border-[#222] bg-[#181818] px-4 overflow-x-auto select-none">
+      {/* 2. Unified Toolbar with Split Preview, Save, Publish */}
+      <div className="flex h-11 shrink-0 items-center justify-between border-b border-tinted/20 bg-ink/95 px-4 overflow-x-auto select-none">
         {/* Left Formatting Group */}
         <div className="flex items-center gap-4">
           {/* Bold & Italic */}
@@ -636,7 +636,7 @@ export function ComposeWorkspace({
             <button
               type="button"
               onClick={() => insertFormat('**')}
-              className="rounded p-1.5 text-xs text-neutral-300 hover:bg-[#282828] hover:text-white transition-colors"
+              className="rounded p-1.5 text-xs text-paper/80 hover:bg-tinted/10 hover:text-paper transition-colors"
               title="Bold (Cmd+B)"
             >
               <b>B</b>
@@ -644,21 +644,21 @@ export function ComposeWorkspace({
             <button
               type="button"
               onClick={() => insertFormat('*')}
-              className="rounded p-1.5 text-xs text-neutral-300 hover:bg-[#282828] hover:text-white transition-colors"
+              className="rounded p-1.5 text-xs text-paper/80 hover:bg-tinted/10 hover:text-paper transition-colors"
               title="Italic (Cmd+I)"
             >
               <i>I</i>
             </button>
           </div>
 
-          <div className="h-4 w-px bg-[#333]" />
+          <div className="h-4 w-px bg-tinted/20" />
 
           {/* Link & Code */}
           <div className="flex items-center gap-0.5">
             <button
               type="button"
               onClick={() => insertFormat('[', '](https://)')}
-              className="rounded p-1.5 text-xs text-neutral-300 hover:bg-[#282828] hover:text-white transition-colors"
+              className="rounded p-1.5 text-xs text-paper/80 hover:bg-tinted/10 hover:text-paper transition-colors"
               title="Link (Cmd+K)"
             >
               🔗
@@ -666,21 +666,21 @@ export function ComposeWorkspace({
             <button
               type="button"
               onClick={() => insertFormat('`')}
-              className="rounded p-1.5 text-xs text-neutral-300 hover:bg-[#282828] hover:text-white transition-colors font-mono"
+              className="rounded p-1.5 text-xs text-paper/80 hover:bg-tinted/10 hover:text-paper transition-colors font-mono"
               title="Inline Code"
             >
               &lt;/&gt;
             </button>
           </div>
 
-          <div className="h-4 w-px bg-[#333]" />
+          <div className="h-4 w-px bg-tinted/20" />
 
           {/* Structure: Headings, Quotes, Tables, Callouts */}
           <div className="flex items-center gap-0.5">
             <button
               type="button"
               onClick={() => insertBlock('## Section Heading')}
-              className="rounded p-1.5 text-xs text-neutral-300 hover:bg-[#282828] hover:text-white transition-colors font-semibold"
+              className="rounded p-1.5 text-xs text-paper/80 hover:bg-tinted/10 hover:text-paper transition-colors font-semibold"
               title="Heading 2"
             >
               H2
@@ -688,7 +688,7 @@ export function ComposeWorkspace({
             <button
               type="button"
               onClick={() => insertBlock('### Subsection')}
-              className="rounded p-1.5 text-xs text-neutral-300 hover:bg-[#282828] hover:text-white transition-colors font-semibold"
+              className="rounded p-1.5 text-xs text-paper/80 hover:bg-tinted/10 hover:text-paper transition-colors font-semibold"
               title="Heading 3"
             >
               H3
@@ -696,7 +696,7 @@ export function ComposeWorkspace({
             <button
               type="button"
               onClick={() => insertBlock('> "A quote exploring quiet attention."\n> — Author')}
-              className="rounded p-1.5 text-xs text-neutral-300 hover:bg-[#282828] hover:text-white transition-colors"
+              className="rounded p-1.5 text-xs text-paper/80 hover:bg-tinted/10 hover:text-paper transition-colors"
               title="Blockquote"
             >
               “
@@ -704,7 +704,7 @@ export function ComposeWorkspace({
             <button
               type="button"
               onClick={() => insertBlock('```typescript\n// Code block here\n```')}
-              className="rounded p-1.5 text-xs text-neutral-300 hover:bg-[#282828] hover:text-white transition-colors font-mono"
+              className="rounded p-1.5 text-xs text-paper/80 hover:bg-tinted/10 hover:text-paper transition-colors font-mono"
               title="Code Block"
             >
               Pre
@@ -712,7 +712,7 @@ export function ComposeWorkspace({
             <button
               type="button"
               onClick={() => insertBlock('| Column 1 | Column 2 |\n| :--- | :--- |\n| Value A | Value B |')}
-              className="rounded p-1.5 text-xs text-neutral-300 hover:bg-[#282828] hover:text-white transition-colors"
+              className="rounded p-1.5 text-xs text-paper/80 hover:bg-tinted/10 hover:text-paper transition-colors"
               title="Table"
             >
               ▦
@@ -720,21 +720,21 @@ export function ComposeWorkspace({
             <button
               type="button"
               onClick={() => insertBlock('> [!NOTE]\n> Key context note here.')}
-              className="rounded p-1.5 text-xs text-neutral-300 hover:bg-[#282828] hover:text-white transition-colors"
+              className="rounded p-1.5 text-xs text-paper/80 hover:bg-tinted/10 hover:text-paper transition-colors"
               title="Callout Box"
             >
               💡
             </button>
           </div>
 
-          <div className="h-4 w-px bg-[#333]" />
+          <div className="h-4 w-px bg-tinted/20" />
 
           {/* Embeds: Images, Media, Video */}
           <div className="flex items-center gap-0.5">
             <button
               type="button"
               onClick={() => insertBlock('![Image Alt](https://)\n*Caption text*')}
-              className="rounded p-1.5 text-xs text-neutral-300 hover:bg-[#282828] hover:text-white transition-colors"
+              className="rounded p-1.5 text-xs text-paper/80 hover:bg-tinted/10 hover:text-paper transition-colors"
               title="Insert Image URL"
             >
               🖼
@@ -742,7 +742,7 @@ export function ComposeWorkspace({
             <button
               type="button"
               onClick={() => setIsMediaModalOpen(true)}
-              className="rounded p-1.5 text-xs text-neutral-300 hover:bg-[#282828] hover:text-[#ff7700] transition-colors"
+              className="rounded p-1.5 text-xs text-paper/80 hover:bg-tinted/10 hover:text-accent transition-colors"
               title="Media Library Asset"
             >
               📁 Media
@@ -750,7 +750,7 @@ export function ComposeWorkspace({
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="rounded p-1.5 text-xs text-neutral-300 hover:bg-[#282828] hover:text-white transition-colors"
+              className="rounded p-1.5 text-xs text-paper/80 hover:bg-tinted/10 hover:text-paper transition-colors"
               title="Upload Local Image"
             >
               ☁ Upload
@@ -758,7 +758,7 @@ export function ComposeWorkspace({
             <button
               type="button"
               onClick={() => insertBlock('<YouTube id="dQw4w9WgXcQ" />')}
-              className="rounded p-1.5 text-xs text-neutral-300 hover:bg-[#282828] hover:text-white transition-colors"
+              className="rounded p-1.5 text-xs text-paper/80 hover:bg-tinted/10 hover:text-paper transition-colors"
               title="Embed YouTube Video"
             >
               ▶ Video
@@ -789,8 +789,8 @@ export function ComposeWorkspace({
             onClick={() => setIsSplitView(!isSplitView)}
             className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-colors border ${
               isSplitView
-                ? 'border-[#333] bg-[#222] text-[#ff7700]'
-                : 'border-transparent text-neutral-400 hover:bg-[#222] hover:text-white'
+                ? 'border-tinted/30 bg-night-soft text-accent'
+                : 'border-transparent text-ink-soft hover:bg-tinted/10 hover:text-paper'
             }`}
             title="Toggle Split Preview"
           >
@@ -805,24 +805,24 @@ export function ComposeWorkspace({
             onClick={() => handleSaveDocument('unpublished')}
             className={`flex items-center gap-1.5 rounded-md px-3 py-1 text-xs font-medium transition-colors border ${
               activeTab.isDirty
-                ? 'border-amber-500/40 bg-[#252526] hover:bg-[#333] text-amber-300'
-                : 'border-[#333] bg-[#1e1e1e] hover:bg-[#2a2a2a] text-neutral-300'
+                ? 'border-accent/40 bg-night-soft hover:bg-tinted/10 text-accent'
+                : 'border-tinted/20 bg-night-soft hover:bg-tinted/10 text-paper/80'
             } disabled:opacity-50`}
             title="Save Draft (Ctrl+S / Cmd+S)"
           >
             {isPending ? (
               <>
-                <span className="h-2 w-2 rounded-full border border-blue-400 border-t-transparent animate-spin" />
+                <span className="h-2 w-2 rounded-full border border-sea-blue border-t-transparent animate-spin" />
                 <span>Saving...</span>
               </>
             ) : activeTab.isDirty ? (
               <>
-                <span className="h-2 w-2 rounded-full bg-amber-400 animate-pulse" />
+                <span className="h-2 w-2 rounded-full bg-accent animate-pulse" />
                 <span>Save Draft</span>
               </>
             ) : (
               <>
-                <span className="text-emerald-400">✓</span>
+                <span className="text-accent-green">✓</span>
                 <span>Saved</span>
               </>
             )}
@@ -836,7 +836,7 @@ export function ComposeWorkspace({
                 ? handleSaveDocument('published')
                 : setIsPublishDrawerOpen(true)
             }
-            className="flex items-center gap-1.5 rounded-md bg-[#ff7700] hover:bg-[#e66a00] text-black px-3.5 py-1 text-xs font-bold transition-all shadow-sm"
+            className="flex items-center gap-1.5 rounded-md bg-accent hover:bg-accent-hover text-paper px-3.5 py-1 text-xs font-bold transition-all shadow-sm"
           >
             <span>Publish</span>
           </button>
@@ -847,18 +847,18 @@ export function ComposeWorkspace({
       <div className="flex flex-1 min-h-0 relative">
         <div className="flex-1 min-w-0 flex flex-col relative h-full">
           {/* Breadcrumbs Row: Persona + Title */}
-          <div className="flex items-center min-h-[34px] bg-[#1e1e1e] px-4 text-[#cccccc] shrink-0 text-xs font-sans border-b border-[#242424] z-10">
+          <div className="flex items-center min-h-[34px] bg-night-soft px-4 text-paper/80 shrink-0 text-xs font-sans border-b border-tinted/20 z-10">
             {activeTab.docType !== 'now' && (
               <>
                 <select
                   value={activeTab.persona}
                   onChange={(e) => updateActiveTab({ persona: e.target.value as Persona })}
-                  className="bg-transparent text-neutral-400 hover:text-white capitalize font-mono text-[11px] focus:outline-none cursor-pointer"
+                  className="bg-transparent text-ink-soft hover:text-paper capitalize font-mono text-[11px] focus:outline-none cursor-pointer"
                 >
-                  <option value="builder" className="bg-[#1e1e1e] text-white">builder</option>
-                  <option value="operator" className="bg-[#1e1e1e] text-white">operator</option>
-                  <option value="thinker" className="bg-[#1e1e1e] text-white">thinker</option>
-                  <option value="wanderer" className="bg-[#1e1e1e] text-white">wanderer</option>
+                  <option value="builder" className="bg-ink text-paper">builder</option>
+                  <option value="operator" className="bg-ink text-paper">operator</option>
+                  <option value="thinker" className="bg-ink text-paper">thinker</option>
+                  <option value="wanderer" className="bg-ink text-paper">wanderer</option>
                 </select>
                 <span className="mx-2 opacity-40">›</span>
               </>
@@ -874,22 +874,22 @@ export function ComposeWorkspace({
                 });
               }}
               placeholder={activeTab.docType === 'now' ? 'Now Entry Title...' : 'Post Title...'}
-              className="flex-1 bg-transparent border-none outline-none text-white font-medium placeholder-[#555] py-1 text-xs"
+              className="flex-1 bg-transparent border-none outline-none text-paper font-medium placeholder-ink-soft/50 py-1 text-xs"
             />
           </div>
 
           {/* Subtitle Row */}
-          <div className="flex items-center min-h-[30px] bg-[#1a1a1a] px-4 text-[#cccccc] shrink-0 border-b border-[#222] justify-between">
+          <div className="flex items-center min-h-[30px] bg-ink px-4 text-paper/80 shrink-0 border-b border-tinted/20 justify-between">
             {activeTab.docType === 'now' ? (
               <div className="flex items-center gap-2 flex-1">
-                <span className="text-[10px] uppercase tracking-wider text-neutral-500 shrink-0">
+                <span className="text-[10px] uppercase tracking-wider text-ink-soft shrink-0">
                   Date
                 </span>
                 <input
                   type="month"
                   value={activeTab.date || ''}
                   onChange={(e) => updateActiveTab({ date: e.target.value })}
-                  className="bg-transparent border-none outline-none text-[#a0a0a0] placeholder-[#555] py-1 text-xs font-mono"
+                  className="bg-transparent border-none outline-none text-paper/70 placeholder-ink-soft/50 py-1 text-xs font-mono"
                 />
               </div>
             ) : (
@@ -898,14 +898,14 @@ export function ComposeWorkspace({
                 value={activeTab.subtitle}
                 onChange={(e) => updateActiveTab({ subtitle: e.target.value })}
                 placeholder="Subtitle (optional)..."
-                className="flex-1 bg-transparent border-none outline-none text-[#a0a0a0] placeholder-[#555] py-1 text-xs italic"
+                className="flex-1 bg-transparent border-none outline-none text-paper/70 placeholder-ink-soft/50 py-1 text-xs italic"
               />
             )}
             {activeTab.docType !== 'now' && (
               <button
                 type="button"
                 onClick={() => setIsPublishDrawerOpen(true)}
-                className="text-sm text-amber-300 hover:text-amber-200 transition-colors ml-3 shrink-0 p-1 hover:bg-[#252525] rounded"
+                className="text-sm text-accent hover:text-accent-hover transition-colors ml-3 shrink-0 p-1 hover:bg-tinted/10 rounded"
                 title="AI Summary"
               >
                 ✨
@@ -917,7 +917,7 @@ export function ComposeWorkspace({
           <div className="flex-1 flex flex-row relative min-h-0" ref={containerRef}>
             {/* Left Editor Area */}
             <div
-              className="relative h-full min-w-0 bg-[#1e1e1e]"
+              className="relative h-full min-w-0 bg-ink"
               style={{ width: isSplitView ? `${editorWidthPercent}%` : '100%' }}
             >
               <textarea
@@ -925,7 +925,7 @@ export function ComposeWorkspace({
                 value={activeTab.content}
                 onChange={(e) => updateActiveTab({ content: e.target.value })}
                 placeholder="Write your article in Markdown / MDX..."
-                className="w-full h-full resize-none bg-[#1e1e1e] p-6 font-mono text-xs leading-relaxed text-[#d4d4d4] focus:outline-none selection:bg-[#264f78]"
+                className="w-full h-full resize-none bg-ink p-6 font-mono text-xs leading-relaxed text-paper/90 focus:outline-none selection:bg-accent/30"
                 spellCheck={false}
               />
             </div>
@@ -933,13 +933,13 @@ export function ComposeWorkspace({
             {/* Split Resizer Handle */}
             {isSplitView && (
               <div
-                className="w-1.5 bg-[#181818] border-x border-[#222] hover:bg-[#ff7700] cursor-col-resize transition-colors z-10 shrink-0 relative"
+                className="w-1.5 bg-night-soft border-x border-tinted/20 hover:bg-accent cursor-col-resize transition-colors z-10 shrink-0 relative"
                 onMouseDown={handleMouseDown}
               >
                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col gap-1 pointer-events-none opacity-40">
-                  <div className="w-0.5 h-1 bg-[#888] rounded-full" />
-                  <div className="w-0.5 h-1 bg-[#888] rounded-full" />
-                  <div className="w-0.5 h-1 bg-[#888] rounded-full" />
+                  <div className="w-0.5 h-1 bg-tinted rounded-full" />
+                  <div className="w-0.5 h-1 bg-tinted rounded-full" />
+                  <div className="w-0.5 h-1 bg-tinted rounded-full" />
                 </div>
               </div>
             )}
@@ -947,7 +947,7 @@ export function ComposeWorkspace({
             {/* Right Live Preview Area */}
             {isSplitView && (
               <div
-                className="relative h-full overflow-hidden bg-paper"
+                className="relative h-full overflow-hidden bg-night"
                 style={{ width: `calc(${100 - editorWidthPercent}% - 6px)` }}
               >
                 <MDXPreview
@@ -979,15 +979,15 @@ export function ComposeWorkspace({
       </div>
 
       {/* 4. Bottom Status Bar */}
-      <div className="flex h-[26px] items-center justify-between border-t border-[#222] bg-[#111111] px-4 text-[11px] text-neutral-400 select-none">
+      <div className="flex h-[26px] items-center justify-between border-t border-tinted/20 bg-ink px-4 text-[11px] text-ink-soft select-none">
         <div className="flex items-center gap-4 font-mono">
-          <span className="capitalize text-neutral-300">
+          <span className="capitalize text-paper/80">
             {activeTab.docType === 'now'
               ? 'now • timeline entry'
               : `${activeTab.persona} • ${activeTab.docType}`}
           </span>
-          <span className="text-neutral-500">|</span>
-          <span className={activeTab.isDirty ? 'text-amber-400' : 'text-emerald-400'}>
+          <span className="text-tinted/30">|</span>
+          <span className={activeTab.isDirty ? 'text-accent' : 'text-accent-green'}>
             {activeTab.isDirty ? '● Unsaved' : '✓ Synced'}
           </span>
         </div>
@@ -1048,37 +1048,37 @@ export function ComposeWorkspace({
 
       {/* 5. Open Existing Drafts / Notes Modal (Triggered by Folder Icon) */}
       {isDraftsModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in">
-          <div className="w-full max-w-xl rounded-2xl border border-[#333] bg-[#1a1a1a] shadow-2xl flex flex-col max-h-[80vh] overflow-hidden text-neutral-200">
-            <div className="flex items-center justify-between p-4 border-b border-[#2a2a2a] bg-[#141414]">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/60 backdrop-blur-xs p-4 animate-in fade-in">
+          <div className="w-full max-w-xl rounded-2xl border border-tinted/20 bg-ink shadow-2xl flex flex-col max-h-[80vh] overflow-hidden text-paper/90">
+            <div className="flex items-center justify-between p-4 border-b border-tinted/20 bg-night-soft">
               <div className="flex items-center gap-2">
                 <span className="text-base">📁</span>
-                <h3 className="text-sm font-semibold uppercase tracking-wider text-white">
+                <h3 className="text-sm font-semibold uppercase tracking-wider text-paper">
                   Open Existing Draft or Note
                 </h3>
               </div>
               <button
                 type="button"
                 onClick={() => setIsDraftsModalOpen(false)}
-                className="text-neutral-400 hover:text-white p-1"
+                className="text-ink-soft hover:text-paper p-1"
               >
                 ✕
               </button>
             </div>
 
-            <div className="p-3 border-b border-[#262626]">
+            <div className="p-3 border-b border-tinted/20">
               <input
                 type="text"
                 placeholder="Search essays or notes by title..."
                 value={draftsSearchQuery}
                 onChange={(e) => setDraftsSearchQuery(e.target.value)}
-                className="w-full rounded-lg border border-[#333] bg-[#111] px-3.5 py-2 text-xs text-white placeholder-neutral-500 focus:border-[#ff7700] focus:outline-none"
+                className="w-full rounded-lg border border-tinted/20 bg-night-soft px-3.5 py-2 text-xs text-paper placeholder-ink-soft/50 focus:border-accent focus:outline-none"
               />
             </div>
 
             <div className="flex-1 overflow-y-auto p-3 space-y-1.5">
               {allDraftItems.length === 0 ? (
-                <div className="p-8 text-center text-xs text-neutral-500 italic">
+                <div className="p-8 text-center text-xs text-ink-soft italic">
                   No matching drafts or notes found.
                 </div>
               ) : (
@@ -1087,20 +1087,20 @@ export function ComposeWorkspace({
                     key={`${item.itemKind}-${item.slug}`}
                     type="button"
                     onClick={() => handleOpenExistingDocument(item, item.itemKind)}
-                    className="w-full flex items-center justify-between p-3 rounded-lg bg-[#141414] hover:bg-[#222] border border-transparent hover:border-[#3a3a3a] text-left transition-all group"
+                    className="w-full flex items-center justify-between p-3 rounded-lg bg-night-soft/60 hover:bg-night-soft border border-transparent hover:border-tinted/20 text-left transition-all group"
                   >
                     <div className="flex flex-col min-w-0 pr-3">
                       <div className="flex items-center gap-2">
                         <span className="text-xs">{item.itemKind === 'post' ? '📄' : '📝'}</span>
-                        <span className="text-xs font-semibold text-neutral-200 group-hover:text-[#ff7700] truncate">
+                        <span className="text-xs font-semibold text-paper/90 group-hover:text-accent truncate">
                           {item.title}
                         </span>
                       </div>
-                      <span className="text-[11px] text-neutral-500 truncate mt-0.5">
+                      <span className="text-[11px] text-ink-soft truncate mt-0.5">
                         {item.description || 'No description'}
                       </span>
                     </div>
-                    <div className="text-[10px] font-mono text-neutral-500 uppercase shrink-0">
+                    <div className="text-[10px] font-mono text-ink-soft uppercase shrink-0">
                       {item.itemKind} ↗
                     </div>
                   </button>

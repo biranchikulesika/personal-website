@@ -44,23 +44,23 @@ function BookCover({
       {/* Subtle book spine accent */}
       <span
         aria-hidden
-        className="absolute bottom-0 left-0 top-0 w-2.5 border-r border-tinted/60 bg-paper/60"
+        className="absolute bottom-0 left-0 top-0 w-2.5 border-r border-tinted/20 bg-night-soft"
       />
 
       <div className="pl-2">
-        <span className="font-serif text-sm font-normal italic leading-snug text-ink sm:text-base">
+        <span className="font-serif text-sm font-normal italic leading-snug text-paper sm:text-base">
           {title}
         </span>
       </div>
 
-      <div className="flex items-baseline justify-between border-t border-tinted/40 pl-2 pt-2 text-[11px] text-ink-soft">
+      <div className="flex items-baseline justify-between border-t border-tinted/20 pl-2 pt-2 text-[11px] text-ink-soft">
         <span className="truncate pr-1">{author}</span>
       </div>
     </>
   );
 
   return (
-    <div className="relative flex aspect-[2/3] w-full flex-col justify-between overflow-hidden rounded-lg border border-tinted bg-cream p-4 shadow-sm transition-all duration-300 group-hover:-translate-y-1 group-hover:shadow-md">
+    <div className="relative flex aspect-[2/3] w-full flex-col justify-between overflow-hidden rounded-lg border border-tinted/20 bg-post-card p-4 shadow-sm transition-all duration-300 group-hover:-translate-y-1 group-hover:shadow-md">
       {link ? (
         <a
           href={link}
@@ -126,8 +126,8 @@ export function LibraryPageView({ books, title, subheader }: LibraryPageProps) {
   const chipClass = (active: boolean) =>
     `shrink-0 whitespace-nowrap text-sm transition-colors ${
       active
-        ? 'text-accent underline underline-offset-4'
-        : 'text-ink hover:text-accent'
+        ? 'text-accent underline underline-offset-4 font-medium'
+        : 'text-paper/80 hover:text-accent'
     }`;
 
   return (
@@ -135,7 +135,7 @@ export function LibraryPageView({ books, title, subheader }: LibraryPageProps) {
       {/* Header */}
       <header className="flex flex-wrap items-start justify-between gap-x-8 gap-y-6">
         <div className="max-w-2xl">
-          <h1 className="font-serif text-4xl font-normal tracking-tight md:text-5xl">
+          <h1 className="font-serif text-4xl font-normal tracking-tight text-paper md:text-5xl">
             {title}
             <span className="ml-3 text-sea-blue">{books.length}</span>
           </h1>
@@ -152,7 +152,7 @@ export function LibraryPageView({ books, title, subheader }: LibraryPageProps) {
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search books, authors, topics"
             aria-label="Search Library"
-            className="w-full rounded-full border border-tinted bg-cream py-2 pl-9 pr-4 text-sm text-ink placeholder:text-ink-soft/70 focus:border-ink/40 focus:outline-none"
+            className="w-full rounded-full border border-tinted/20 bg-night-soft py-2 pl-9 pr-4 text-sm text-paper placeholder:text-ink-soft/60 focus:border-accent focus:outline-none"
           />
         </div>
       </header>
@@ -192,7 +192,7 @@ export function LibraryPageView({ books, title, subheader }: LibraryPageProps) {
             type="button"
             onClick={() => scroll(-1)}
             aria-label="Scroll topics left"
-            className="shrink-0 rounded-full p-1 text-ink-soft transition-colors hover:bg-cream hover:text-ink"
+            className="shrink-0 rounded-full p-1 text-ink-soft transition-colors hover:bg-night-soft hover:text-paper"
           >
             <ChevronLeftIcon className="h-4 w-4" />
           </button>
@@ -225,7 +225,7 @@ export function LibraryPageView({ books, title, subheader }: LibraryPageProps) {
             type="button"
             onClick={() => scroll(1)}
             aria-label="Scroll topics right"
-            className="shrink-0 rounded-full p-1 text-ink-soft transition-colors hover:bg-cream hover:text-ink"
+            className="shrink-0 rounded-full p-1 text-ink-soft transition-colors hover:bg-night-soft hover:text-paper"
           >
             <ChevronRightIcon className="h-4 w-4" />
           </button>
@@ -243,7 +243,7 @@ export function LibraryPageView({ books, title, subheader }: LibraryPageProps) {
               link={item.link}
             />
             <div className="mt-3">
-              <h3 className="font-serif text-base font-normal leading-snug text-ink transition-colors duration-300 group-hover:text-accent">
+              <h3 className="font-serif text-base font-normal leading-snug text-paper transition-colors duration-300 group-hover:text-accent">
                 {item.link ? (
                   <a
                     href={item.link}
@@ -269,7 +269,7 @@ export function LibraryPageView({ books, title, subheader }: LibraryPageProps) {
       )}
 
       {/* Reading Philosophy Note */}
-      <footer className="mx-auto mt-20 max-w-2xl border-t border-tinted pt-12 text-center">
+      <footer className="mx-auto mt-20 max-w-2xl border-t border-tinted/20 pt-12 text-center">
         <p className="font-serif text-lg italic text-ink-soft">
           “Read slowly, re-read often, and let good ideas change the way you build.”
         </p>

@@ -72,17 +72,17 @@ export function ErrorView({
       {/* Subtle radial background glow */}
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,var(--color-tinted)_0%,transparent_70%)] opacity-40"
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(250,249,245,0.04)_0%,transparent_70%)] opacity-40"
       />
 
       <div className="relative w-full max-w-lg text-center">
         {/* Error Badge Icon */}
-        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-tinted bg-cream text-accent shadow-xs">
+        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-tinted/20 bg-night-soft text-accent shadow-lg">
           <AlertCircleIcon className="h-6 w-6" />
         </div>
 
         {/* Headline */}
-        <h1 className="mt-6 font-serif text-3xl font-normal tracking-tight text-ink sm:text-4xl">
+        <h1 className="mt-6 font-serif text-3xl font-normal tracking-tight text-paper sm:text-4xl">
           We couldn’t load this page
         </h1>
 
@@ -95,7 +95,7 @@ export function ErrorView({
           <button
             type="button"
             onClick={() => window.history.back()}
-            className="inline-flex items-center gap-2 rounded-full border border-tinted bg-cream px-5 py-2.5 text-sm font-semibold text-ink shadow-xs transition-colors hover:bg-paper"
+            className="inline-flex items-center gap-2 rounded-full border border-tinted/20 bg-night-soft px-5 py-2.5 text-sm font-semibold text-paper shadow-sm transition-colors hover:bg-post-card"
           >
             <ArrowLeftIcon className="h-4 w-4" />
             <span>Go back</span>
@@ -105,7 +105,7 @@ export function ErrorView({
             type="button"
             onClick={handleRetry}
             disabled={retrying}
-            className="inline-flex items-center gap-2 rounded-full bg-ink px-6 py-2.5 text-sm font-semibold text-cream shadow-sm transition-all hover:bg-accent disabled:opacity-50"
+            className="inline-flex items-center gap-2 rounded-full bg-accent px-6 py-2.5 text-sm font-semibold text-paper shadow-sm transition-all hover:bg-accent-hover disabled:opacity-50"
           >
             <RefreshIcon
               className={`h-4 w-4 ${retrying ? 'animate-spin' : ''}`}
@@ -116,12 +116,12 @@ export function ErrorView({
 
         {/* Technical Details Accordion */}
         {(isDev || reference || error.message) && (
-          <div className="mt-10 border-t border-tinted pt-6">
+          <div className="mt-10 border-t border-tinted/20 pt-6">
             <button
               type="button"
               onClick={() => setShowDetails((v) => !v)}
               aria-expanded={showDetails}
-              className="mx-auto inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-ink-soft transition-colors hover:text-ink"
+              className="mx-auto inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-ink-soft transition-colors hover:text-paper"
             >
               <span>{showDetails ? 'Hide technical details' : 'Show technical details'}</span>
               <ChevronDownIcon
@@ -132,21 +132,21 @@ export function ErrorView({
             </button>
 
             {showDetails && (
-              <div className="mt-4 space-y-3 rounded-2xl border border-tinted bg-cream p-4 text-left shadow-xs animate-in fade-in zoom-in-95">
+              <div className="mt-4 space-y-3 rounded-2xl border border-tinted/20 bg-night-soft p-4 text-left shadow-lg animate-in fade-in zoom-in-95">
                 {reference && (
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <span className="block text-[11px] font-semibold uppercase tracking-wider text-ink-soft">
                         Error Reference
                       </span>
-                      <code className="mt-0.5 block truncate font-mono text-xs text-ink">
+                      <code className="mt-0.5 block truncate font-mono text-xs text-paper">
                         {reference}
                       </code>
                     </div>
                     <button
                       type="button"
                       onClick={() => copyText(`Error Reference: ${reference}`, 'reference')}
-                      className="shrink-0 rounded-lg bg-paper p-1.5 text-ink-soft ring-1 ring-tinted transition-colors hover:text-ink"
+                      className="shrink-0 rounded-lg bg-post-card p-1.5 text-ink-soft ring-1 ring-tinted/20 transition-colors hover:text-paper"
                       aria-label="Copy error reference"
                     >
                       {copied === 'reference' ? (
@@ -159,7 +159,7 @@ export function ErrorView({
                 )}
 
                 {error.message && (
-                  <div className="flex items-start justify-between gap-3 border-t border-tinted/60 pt-2.5">
+                  <div className="flex items-start justify-between gap-3 border-t border-tinted/20 pt-2.5">
                     <div className="min-w-0">
                       <span className="block text-[11px] font-semibold uppercase tracking-wider text-ink-soft">
                         Message
@@ -171,7 +171,7 @@ export function ErrorView({
                     <button
                       type="button"
                       onClick={() => copyText(error.message, 'message')}
-                      className="shrink-0 rounded-lg bg-paper p-1.5 text-ink-soft ring-1 ring-tinted transition-colors hover:text-ink"
+                      className="shrink-0 rounded-lg bg-post-card p-1.5 text-ink-soft ring-1 ring-tinted/20 transition-colors hover:text-paper"
                       aria-label="Copy error message"
                     >
                       {copied === 'message' ? (
@@ -192,10 +192,10 @@ export function ErrorView({
           <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-2 text-xs">
             {ESCAPE_ROUTES.map((route, idx) => (
               <Fragment key={route.href}>
-                {idx > 0 && <span className="text-tinted">•</span>}
+                {idx > 0 && <span className="text-tinted/30">•</span>}
                 <Link
                   href={route.href}
-                  className="font-medium text-ink-soft transition-colors hover:text-ink"
+                  className="font-medium text-ink-soft transition-colors hover:text-paper"
                 >
                   {route.label}
                 </Link>

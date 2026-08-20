@@ -249,24 +249,24 @@ export function ComponentLibrarySidebar({
     <div
       className={`${
         isCollapsed ? 'w-14' : 'w-72'
-      } border-l border-[#222] bg-[#0a0a0a] flex flex-col h-full shrink-0 transition-all duration-200`}
+      } border-l border-tinted/20 bg-ink flex flex-col h-full shrink-0 transition-all duration-200`}
     >
       {/* Sidebar Header */}
-      <div className="p-3 border-b border-[#222] bg-[#111]">
+      <div className="p-3 border-b border-tinted/20 bg-ink/90">
         <div
           className={`flex items-center ${
             isCollapsed ? 'justify-center' : 'justify-between'
           } ${!isCollapsed ? 'mb-2.5' : ''}`}
         >
           {!isCollapsed && (
-            <h3 className="text-[11px] font-sans uppercase tracking-widest text-neutral-400 flex items-center gap-2">
+            <h3 className="text-[11px] font-sans uppercase tracking-widest text-ink-soft flex items-center gap-2">
               <span>▦</span> Component Library
             </h3>
           )}
           <button
             type="button"
             onClick={onToggleCollapse}
-            className="p-1 hover:bg-[#222] rounded text-neutral-500 hover:text-white transition-colors"
+            className="p-1 hover:bg-tinted/10 rounded text-ink-soft hover:text-paper transition-colors"
             title={isCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'}
           >
             {isCollapsed ? '◀' : '▶'}
@@ -275,7 +275,7 @@ export function ComponentLibrarySidebar({
 
         {!isCollapsed && (
           <div className="relative">
-            <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-neutral-500 text-xs">
+            <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-ink-soft text-xs">
               🔍
             </span>
             <input
@@ -283,7 +283,7 @@ export function ComponentLibrarySidebar({
               placeholder="Search components..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-[#1a1a1a] border border-[#222] rounded-md py-1.5 pl-8 pr-3 text-xs font-sans text-neutral-300 focus:outline-none focus:border-[#555] transition-colors"
+              className="w-full bg-night-soft border border-tinted/20 rounded-md py-1.5 pl-8 pr-3 text-xs font-sans text-paper/80 focus:outline-none focus:border-accent transition-colors"
             />
           </div>
         )}
@@ -295,7 +295,7 @@ export function ComponentLibrarySidebar({
           filteredGroups.map((group) => (
             <div key={group.label} className="mb-4">
               {!isCollapsed && (
-                <div className="px-2 py-1 text-[10px] font-mono uppercase tracking-widest text-neutral-600">
+                <div className="px-2 py-1 text-[10px] font-mono uppercase tracking-widest text-ink-soft/70">
                   {group.label}
                 </div>
               )}
@@ -318,12 +318,12 @@ export function ComponentLibrarySidebar({
                         onInsert(comp.snippet);
                       }
                     }}
-                    className={`w-full text-left p-2 rounded-md hover:bg-[#1a1a1a] transition-colors flex items-start gap-2.5 group ${
+                    className={`w-full text-left p-2 rounded-md hover:bg-night-soft transition-colors flex items-start gap-2.5 group ${
                       isCollapsed ? 'justify-center' : ''
                     }`}
                   >
                     <div
-                      className={`h-7 w-7 flex items-center justify-center bg-[#111] border border-[#222] rounded text-xs text-neutral-400 group-hover:text-white group-hover:border-[#333] transition-colors shrink-0 ${
+                      className={`h-7 w-7 flex items-center justify-center bg-ink border border-tinted/20 rounded text-xs text-ink-soft group-hover:text-paper group-hover:border-tinted/40 transition-colors shrink-0 ${
                         !isCollapsed ? 'mt-0.5' : ''
                       }`}
                     >
@@ -331,10 +331,10 @@ export function ComponentLibrarySidebar({
                     </div>
                     {!isCollapsed && (
                       <div className="flex-1 min-w-0">
-                        <div className="text-[12px] font-medium font-sans text-neutral-300 group-hover:text-white transition-colors truncate">
+                        <div className="text-[12px] font-medium font-sans text-paper/80 group-hover:text-paper transition-colors truncate">
                           {comp.name}
                         </div>
-                        <div className="text-[10px] font-sans text-neutral-500 truncate mt-0.5">
+                        <div className="text-[10px] font-sans text-ink-soft truncate mt-0.5">
                           {comp.description}
                         </div>
                       </div>
@@ -345,7 +345,7 @@ export function ComponentLibrarySidebar({
             </div>
           ))
         ) : (
-          <div className="p-4 text-center text-xs font-sans text-neutral-500">
+          <div className="p-4 text-center text-xs font-sans text-ink-soft">
             {isCollapsed ? '...' : 'No components found.'}
           </div>
         )}

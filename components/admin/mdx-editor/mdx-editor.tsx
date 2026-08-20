@@ -174,19 +174,19 @@ export function MDXEditor({
 
   return (
     <div
-      className={`flex flex-col rounded-3xl border border-tinted bg-paper shadow-md overflow-hidden ${
+      className={`flex flex-col rounded-3xl border border-tinted/20 bg-night text-paper shadow-md overflow-hidden ${
         isFullscreen ? 'fixed inset-0 z-50 rounded-none border-none' : 'h-[650px]'
       } ${className}`}
     >
       {/* 1. Header Toolbar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-tinted bg-cream px-4 py-2.5">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-tinted/20 bg-night-soft px-4 py-2.5">
         {/* Left Formatting Tools */}
         <div className="flex flex-wrap items-center gap-1">
           {/* Headings */}
           <button
             type="button"
             onClick={() => insertLinePrefix('# ')}
-            className="rounded-lg px-2 py-1 text-xs font-bold text-ink hover:bg-paper hover:ring-1 hover:ring-tinted"
+            className="rounded-lg px-2 py-1 text-xs font-bold text-paper hover:bg-post-card hover:border hover:border-tinted/30"
             title="Heading 1"
           >
             H1
@@ -194,7 +194,7 @@ export function MDXEditor({
           <button
             type="button"
             onClick={() => insertLinePrefix('## ')}
-            className="rounded-lg px-2 py-1 text-xs font-bold text-ink hover:bg-paper hover:ring-1 hover:ring-tinted"
+            className="rounded-lg px-2 py-1 text-xs font-bold text-paper hover:bg-post-card hover:border hover:border-tinted/30"
             title="Heading 2"
           >
             H2
@@ -202,19 +202,19 @@ export function MDXEditor({
           <button
             type="button"
             onClick={() => insertLinePrefix('### ')}
-            className="rounded-lg px-2 py-1 text-xs font-bold text-ink hover:bg-paper hover:ring-1 hover:ring-tinted"
+            className="rounded-lg px-2 py-1 text-xs font-bold text-paper hover:bg-post-card hover:border hover:border-tinted/30"
             title="Heading 3"
           >
             H3
           </button>
 
-          <span className="mx-1 h-4 w-px bg-tinted" />
+          <span className="mx-1 h-4 w-px bg-tinted/30" />
 
           {/* Styles */}
           <button
             type="button"
             onClick={() => wrapSelection('**', '**', 'bold text')}
-            className="rounded-lg px-2 py-1 text-xs font-bold text-ink hover:bg-paper hover:ring-1 hover:ring-tinted"
+            className="rounded-lg px-2 py-1 text-xs font-bold text-paper hover:bg-post-card hover:border hover:border-tinted/30"
             title="Bold (Cmd+B)"
           >
             B
@@ -222,7 +222,7 @@ export function MDXEditor({
           <button
             type="button"
             onClick={() => wrapSelection('*', '*', 'italic text')}
-            className="rounded-lg px-2 py-1 text-xs font-serif italic text-ink hover:bg-paper hover:ring-1 hover:ring-tinted"
+            className="rounded-lg px-2 py-1 text-xs font-serif italic text-paper hover:bg-post-card hover:border hover:border-tinted/30"
             title="Italic (Cmd+I)"
           >
             I
@@ -230,7 +230,7 @@ export function MDXEditor({
           <button
             type="button"
             onClick={() => wrapSelection('`', '`', 'code')}
-            className="rounded-lg px-2 py-1 font-mono text-xs text-ink hover:bg-paper hover:ring-1 hover:ring-tinted"
+            className="rounded-lg px-2 py-1 font-mono text-xs text-paper hover:bg-post-card hover:border hover:border-tinted/30"
             title="Inline Code"
           >
             {'</>'}
@@ -238,19 +238,19 @@ export function MDXEditor({
           <button
             type="button"
             onClick={() => wrapSelection('~~', '~~', 'struck text')}
-            className="rounded-lg px-2 py-1 text-xs line-through text-ink hover:bg-paper hover:ring-1 hover:ring-tinted"
+            className="rounded-lg px-2 py-1 text-xs line-through text-gray-mid hover:bg-post-card hover:border hover:border-tinted/30"
             title="Strikethrough"
           >
             S
           </button>
 
-          <span className="mx-1 h-4 w-px bg-tinted" />
+          <span className="mx-1 h-4 w-px bg-tinted/30" />
 
           {/* Lists & Quotes */}
           <button
             type="button"
             onClick={() => insertLinePrefix('- ')}
-            className="rounded-lg px-2 py-1 text-xs text-ink hover:bg-paper hover:ring-1 hover:ring-tinted"
+            className="rounded-lg px-2 py-1 text-xs text-paper hover:bg-post-card hover:border hover:border-tinted/30"
             title="Bullet List"
           >
             • List
@@ -258,7 +258,7 @@ export function MDXEditor({
           <button
             type="button"
             onClick={() => insertLinePrefix('1. ')}
-            className="rounded-lg px-2 py-1 text-xs text-ink hover:bg-paper hover:ring-1 hover:ring-tinted"
+            className="rounded-lg px-2 py-1 text-xs text-paper hover:bg-post-card hover:border hover:border-tinted/30"
             title="Numbered List"
           >
             1. List
@@ -266,7 +266,7 @@ export function MDXEditor({
           <button
             type="button"
             onClick={() => insertLinePrefix('> ')}
-            className="rounded-lg px-2 py-1 font-serif text-xs italic text-ink hover:bg-paper hover:ring-1 hover:ring-tinted"
+            className="rounded-lg px-2 py-1 font-serif text-xs italic text-paper hover:bg-post-card hover:border hover:border-tinted/30"
             title="Blockquote"
           >
             Quote
@@ -274,19 +274,19 @@ export function MDXEditor({
           <button
             type="button"
             onClick={() => insertBlock('```typescript\n// code snippet\n```')}
-            className="rounded-lg px-2 py-1 text-xs text-ink hover:bg-paper hover:ring-1 hover:ring-tinted"
+            className="rounded-lg px-2 py-1 text-xs text-paper hover:bg-post-card hover:border hover:border-tinted/30"
             title="Code Block"
           >
             CodeBlock
           </button>
 
-          <span className="mx-1 h-4 w-px bg-tinted" />
+          <span className="mx-1 h-4 w-px bg-tinted/30" />
 
           {/* Quick Insert Snippets */}
           <button
             type="button"
             onClick={() => insertBlock('> [!NOTE]\n> Key takeaway or background context.')}
-            className="rounded-lg bg-blue-50 px-2 py-1 text-xs font-semibold text-blue-900 ring-1 ring-blue-200 hover:bg-blue-100"
+            className="rounded-lg bg-sea-blue/20 px-2 py-1 text-xs font-semibold text-sea-blue border border-sea-blue/30 hover:bg-sea-blue/30"
             title="Insert Callout Alert"
           >
             + Callout
@@ -298,7 +298,7 @@ export function MDXEditor({
                 '| Column 1 | Column 2 | Column 3 |\n| :--- | :--- | :--- |\n| Value 1 | Value 2 | Value 3 |\n| Value 4 | Value 5 | Value 6 |'
               )
             }
-            className="rounded-lg bg-paper px-2 py-1 text-xs font-medium text-ink ring-1 ring-tinted hover:bg-cream"
+            className="rounded-lg bg-night px-2 py-1 text-xs font-medium text-paper border border-tinted/20 hover:bg-post-card"
             title="Insert Markdown Table"
           >
             + Table
@@ -309,7 +309,7 @@ export function MDXEditor({
               const block = findBlock('Book');
               if (block) insertBlock(block.snippet);
             }}
-            className="rounded-lg bg-paper px-2.5 py-1 text-xs font-semibold text-accent ring-1 ring-tinted hover:bg-ink hover:text-cream transition-colors"
+            className="rounded-lg bg-post-card px-2.5 py-1 text-xs font-semibold text-accent border border-tinted/20 hover:bg-accent hover:text-paper transition-colors"
             title="Insert Book Block"
           >
             📖 Book
@@ -317,7 +317,7 @@ export function MDXEditor({
           <button
             type="button"
             onClick={() => setIsMediaModalOpen(true)}
-            className="rounded-lg bg-paper px-2.5 py-1 text-xs font-semibold text-accent ring-1 ring-tinted hover:bg-ink hover:text-cream transition-colors"
+            className="rounded-lg bg-post-card px-2.5 py-1 text-xs font-semibold text-accent border border-tinted/20 hover:bg-accent hover:text-paper transition-colors"
             title="Insert from Media Resources"
           >
             🖼 Media
@@ -325,7 +325,7 @@ export function MDXEditor({
           <button
             type="button"
             onClick={() => setIsEmbedModalOpen(true)}
-            className="rounded-lg bg-paper px-2.5 py-1 text-xs font-semibold text-accent ring-1 ring-tinted hover:bg-ink hover:text-cream transition-colors"
+            className="rounded-lg bg-post-card px-2.5 py-1 text-xs font-semibold text-accent border border-tinted/20 hover:bg-accent hover:text-paper transition-colors"
             title="Embed a book, essay, or note"
           >
             🔗 Embed
@@ -335,14 +335,14 @@ export function MDXEditor({
         {/* Right View Modes & Fullscreen */}
         <div className="flex items-center gap-2">
           {/* View Mode Toggle */}
-          <div className="flex rounded-full bg-paper p-0.5 ring-1 ring-tinted">
+          <div className="flex rounded-full bg-night p-0.5 border border-tinted/20">
             <button
               type="button"
               onClick={() => setViewMode('editor')}
               className={`rounded-full px-3 py-1 text-xs font-semibold transition-all ${
                 viewMode === 'editor'
-                  ? 'bg-ink text-cream shadow-2xs'
-                  : 'text-ink-soft hover:text-ink'
+                  ? 'bg-accent text-paper shadow-2xs'
+                  : 'text-gray-mid hover:text-paper'
               }`}
             >
               Write
@@ -352,8 +352,8 @@ export function MDXEditor({
               onClick={() => setViewMode('split')}
               className={`rounded-full px-3 py-1 text-xs font-semibold transition-all ${
                 viewMode === 'split'
-                  ? 'bg-ink text-cream shadow-2xs'
-                  : 'text-ink-soft hover:text-ink'
+                  ? 'bg-accent text-paper shadow-2xs'
+                  : 'text-gray-mid hover:text-paper'
               }`}
             >
               Split
@@ -363,8 +363,8 @@ export function MDXEditor({
               onClick={() => setViewMode('preview')}
               className={`rounded-full px-3 py-1 text-xs font-semibold transition-all ${
                 viewMode === 'preview'
-                  ? 'bg-ink text-cream shadow-2xs'
-                  : 'text-ink-soft hover:text-ink'
+                  ? 'bg-accent text-paper shadow-2xs'
+                  : 'text-gray-mid hover:text-paper'
               }`}
             >
               Preview
@@ -375,7 +375,7 @@ export function MDXEditor({
           <button
             type="button"
             onClick={() => setIsFullscreen((prev) => !prev)}
-            className="rounded-full bg-paper p-1.5 text-xs text-ink-soft ring-1 ring-tinted hover:bg-cream hover:text-ink"
+            className="rounded-full bg-night-soft p-1.5 text-xs text-gray-mid border border-tinted/20 hover:bg-post-card hover:text-paper"
             title={isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}
           >
             {isFullscreen ? (
@@ -392,17 +392,17 @@ export function MDXEditor({
       </div>
 
       {/* 2. Main Work Area (Split / Single) */}
-      <div className="flex flex-1 min-h-0 divide-x divide-tinted">
+      <div className="flex flex-1 min-h-0 divide-x divide-tinted/20">
         {/* Editor Pane */}
         {(viewMode === 'editor' || viewMode === 'split') && (
-          <div className={`relative h-full flex-1 min-w-0 bg-paper ${viewMode === 'split' ? 'w-1/2' : 'w-full'}`}>
+          <div className={`relative h-full flex-1 min-w-0 bg-night ${viewMode === 'split' ? 'w-1/2' : 'w-full'}`}>
             <textarea
               ref={textareaRef}
               value={content}
               onChange={(e) => handleContentChange(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="Write your thoughts, essays, notes, or marginalia in Markdown / MDX..."
-              className="h-full w-full resize-none bg-transparent p-5 sm:p-6 font-mono text-sm leading-relaxed text-ink placeholder:text-ink-soft/50 focus:outline-none overflow-y-auto"
+              className="h-full w-full resize-none bg-transparent p-5 sm:p-6 font-mono text-sm leading-relaxed text-paper placeholder:text-gray-mid/40 focus:outline-none overflow-y-auto"
               spellCheck="false"
             />
           </div>
@@ -410,7 +410,7 @@ export function MDXEditor({
 
         {/* Live Preview Pane */}
         {(viewMode === 'preview' || viewMode === 'split') && (
-          <div className={`h-full flex-1 min-w-0 bg-paper ${viewMode === 'split' ? 'w-1/2' : 'w-full'}`}>
+          <div className={`h-full flex-1 min-w-0 bg-night ${viewMode === 'split' ? 'w-1/2' : 'w-full'}`}>
             <MDXPreview
               content={content}
               title={title}
@@ -426,22 +426,22 @@ export function MDXEditor({
       </div>
 
       {/* 3. Footer Stats Bar */}
-      <div className="flex flex-wrap items-center justify-between border-t border-tinted bg-cream/70 px-4 py-2 text-[11px] text-ink-soft">
+      <div className="flex flex-wrap items-center justify-between border-t border-tinted/20 bg-night-soft px-4 py-2 text-[11px] text-gray-mid">
         <div className="flex items-center gap-4">
-          <span><b>{stats.words}</b> words</span>
+          <span><b className="text-paper">{stats.words}</b> words</span>
           <span>•</span>
-          <span><b>{stats.chars}</b> chars</span>
+          <span><b className="text-paper">{stats.chars}</b> chars</span>
           <span>•</span>
-          <span><b>{stats.lines}</b> lines</span>
+          <span><b className="text-paper">{stats.lines}</b> lines</span>
           <span>•</span>
-          <span className="text-ink font-medium">~{stats.readTime} min read</span>
+          <span className="text-accent font-medium">~{stats.readTime} min read</span>
         </div>
 
         <div className="hidden sm:flex items-center gap-3 text-[10px]">
-          <span><kbd className="rounded bg-paper px-1 py-0.5 ring-1 ring-tinted font-mono">Tab</kbd> Indent</span>
-          <span><kbd className="rounded bg-paper px-1 py-0.5 ring-1 ring-tinted font-mono">Cmd+B</kbd> Bold</span>
-          <span><kbd className="rounded bg-paper px-1 py-0.5 ring-1 ring-tinted font-mono">Cmd+I</kbd> Italic</span>
-          <span><kbd className="rounded bg-paper px-1 py-0.5 ring-1 ring-tinted font-mono">Cmd+K</kbd> Link</span>
+          <span><kbd className="rounded bg-night px-1 py-0.5 border border-tinted/20 font-mono text-paper">Tab</kbd> Indent</span>
+          <span><kbd className="rounded bg-night px-1 py-0.5 border border-tinted/20 font-mono text-paper">Cmd+B</kbd> Bold</span>
+          <span><kbd className="rounded bg-night px-1 py-0.5 border border-tinted/20 font-mono text-paper">Cmd+I</kbd> Italic</span>
+          <span><kbd className="rounded bg-night px-1 py-0.5 border border-tinted/20 font-mono text-paper">Cmd+K</kbd> Link</span>
         </div>
       </div>
 

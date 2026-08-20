@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import type { SectionGroup, WritingItem } from '@/lib/types';
 import { SectionHeading } from './section-heading';
+import { formatDisplayDate } from '@/lib/utils';
 
 interface WritingSectionProps {
   writing: SectionGroup<WritingItem>;
@@ -8,20 +9,55 @@ interface WritingSectionProps {
 }
 
 /**
- * Placeholder cover for essay listing cards. A neutral letter composition
- * until real images exist — no fabricated imagery or assets.
+ * Letter cover for essay cards matching the warm dark digital garden aesthetic.
  */
 function EssayCover({ title }: { title: string }) {
   return (
-    <div className="flex aspect-square items-center justify-center overflow-hidden rounded-lg bg-cream">
-      <span className="font-serif text-6xl italic text-ink-soft/40">
+    <div className="flex aspect-[16/10] items-center justify-center overflow-hidden rounded-xl bg-[radial-gradient(ellipse_at_center,rgba(250,249,245,0.08)_15%,transparent_75%)]">
+      <span className="font-serif text-5xl italic text-paper/40 transition-transform duration-300 group-hover:scale-110">
         {title.charAt(0)}
       </span>
     </div>
   );
 }
 
-export function WritingSection({ writing, limit }: WritingSectionProps) {
+function EssayCard({ item }: { item: WritingItem }) {
+  return (
+    <article className="group h-full">
+      <Link
+        href={`/p/${item.slug}`}
+        className="flex h-full flex-col justify-between rounded-2xl border border-tinted/20 bg-post-card p-4 sm:p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-accent/40 hover:shadow-lg"
+      >
+        <div>
+          <EssayCover title={item.title} />
+          <h4 className="mt-4 font-serif text-lg font-normal leading-snug text-paper transition-colors duration-300 group-hover:text-accent">
+            {item.title}
+          </h4>
+          <p className="mt-2 text-sm leading-relaxed text-gray-mid line-clamp-2">
+            {item.description}
+          </p>
+        </div>
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-tinted/15 pt-3 text-xs text-gray-mid">
+          <span>{formatDisplayDate(item.date)}</span>
+          {item.tags && item.tags.length > 0 && (
+            <div className="flex flex-wrap items-center gap-1.5">
+              {item.tags.map((tag) => (
+                <span
+                  key={tag}
+                  className="rounded-full border border-tinted/20 px-2 py-0.5 text-[11px] text-gray-mid"
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      </Link>
+    </article>
+  );
+}
+
+export function WritingSection({ writing, limit = 4 }: WritingSectionProps) {
   const items = limit ? writing.items.slice(0, limit) : writing.items;
 
   return (
@@ -29,29 +65,22 @@ export function WritingSection({ writing, limit }: WritingSectionProps) {
       <SectionHeading
         id="home-writing-heading"
         title={writing.title}
-        href={writing.href}
         subheader={writing.subheader}
       />
 
-      <div className="no-scrollbar -mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-1 sm:-mx-0 sm:px-0">
+      {/* Desktop Mode: 2 by 2 Grid */}
+      <div className="hidden sm:grid sm:grid-cols-2 sm:gap-6">
         {items.map((item) => (
-          <article
-            key={item.slug}
-            className="group w-[78%] shrink-0 snap-start sm:w-[46%] md:w-[31%] lg:w-[calc(33.333%-0.75rem)]"
-          >
-            <Link
-              href={`/p/${item.slug}`}
-              className="block rounded-lg border border-tinted bg-cream p-2.5 shadow-sm transition-all duration-300 hover:shadow-md"
-            >
-              <EssayCover title={item.title} />
-              <h4 className="mt-2.5 font-sans text-base font-normal leading-snug text-ink transition-colors duration-300 group-hover:text-accent">
-                {item.title}
-              </h4>
-              <p className="mt-1 text-xs leading-relaxed text-ink-soft">
-                {item.description}
-              </p>
-            </Link>
-          </article>
+          <EssayCard key={item.slug} item={item} />
+        ))}
+      </div>
+
+      {/* Mobile Mode: Sideways Scroll */}
+      <div className="no-scrollbar -mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-1 sm:hidden">
+        {items.map((item) => (
+          <div key={item.slug} className="w-[82%] shrink-0 snap-start">
+            <EssayCard item={item} />
+          </div>
         ))}
       </div>
     </section>

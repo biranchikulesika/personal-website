@@ -20,7 +20,7 @@ function renderInlineTokens(text: string, keyBase: string): React.ReactNode[] {
       return (
         <code
           key={key}
-          className="rounded bg-cream px-1.5 py-0.5 font-mono text-[0.9em] text-ink ring-1 ring-tinted"
+          className="rounded bg-night-soft px-1.5 py-0.5 font-mono text-[0.9em] text-paper ring-1 ring-tinted/20"
         >
           {part.slice(1, -1)}
         </code>
@@ -37,7 +37,7 @@ function renderInlineTokens(text: string, keyBase: string): React.ReactNode[] {
           key={key}
           src={img[2]}
           alt={img[1]}
-          className="my-2 w-full rounded-xl border border-tinted shadow-sm"
+          className="my-2 w-full rounded-xl border border-tinted/20 shadow-lg"
         />
       );
     }
@@ -49,7 +49,7 @@ function renderInlineTokens(text: string, keyBase: string): React.ReactNode[] {
           href={link[2]}
           target={link[2].startsWith('http') ? '_blank' : undefined}
           rel={link[2].startsWith('http') ? 'noopener noreferrer' : undefined}
-          className="text-ink underline decoration-tinted underline-offset-4 transition-colors hover:text-accent hover:decoration-accent"
+          className="text-paper underline decoration-tinted/40 underline-offset-4 transition-colors hover:text-accent hover:decoration-accent"
         >
           {link[1]}
         </a>
@@ -89,7 +89,7 @@ function renderBlocks(content: string): React.ReactNode[] {
       nodes.push(
         <blockquote
           key={`q-${key++}`}
-          className="my-8 border-y border-tinted py-6 text-center font-serif text-lg italic text-ink md:text-xl"
+          className="my-8 border-y border-tinted/20 py-6 text-center font-serif text-lg italic text-paper md:text-xl"
         >
           {quote.map((q, i) => (
             <span key={i}>{renderInlineTokens(q, `q-${key}-${i}`)}</span>
@@ -104,7 +104,7 @@ function renderBlocks(content: string): React.ReactNode[] {
       const items = list.items;
       if (list.ordered) {
         nodes.push(
-          <ol key={`ol-${key++}`} className="my-4 list-decimal space-y-1.5 pl-6">
+          <ol key={`ol-${key++}`} className="my-4 list-decimal space-y-1.5 pl-6 text-paper/85">
             {items.map((it, i) => (
               <li key={i}>{renderInlineTokens(it, `li-${key}-${i}`)}</li>
             ))}
@@ -112,7 +112,7 @@ function renderBlocks(content: string): React.ReactNode[] {
         );
       } else {
         nodes.push(
-          <ul key={`ul-${key++}`} className="my-4 list-disc space-y-1.5 pl-6">
+          <ul key={`ul-${key++}`} className="my-4 list-disc space-y-1.5 pl-6 text-paper/85">
             {items.map((it, i) => (
               <li key={i}>{renderInlineTokens(it, `li-${key}-${i}`)}</li>
             ))}
@@ -132,10 +132,10 @@ function renderBlocks(content: string): React.ReactNode[] {
         nodes.push(
           <div
             key={`code-${key++}`}
-            className="my-6 overflow-x-auto rounded-xl border border-tinted bg-[#1a1713] p-4 font-mono text-xs leading-relaxed text-[#f5efe3] shadow-sm"
+            className="my-6 overflow-x-auto rounded-xl border border-tinted/20 bg-night-soft p-4 font-mono text-xs leading-relaxed text-paper shadow-md"
           >
             {codeLang && (
-              <span className="mb-2 block text-[10px] font-semibold uppercase tracking-widest text-[#a09e99]">
+              <span className="mb-2 block text-[10px] font-semibold uppercase tracking-widest text-ink-soft">
                 {codeLang}
               </span>
             )}
@@ -180,7 +180,7 @@ function renderBlocks(content: string): React.ReactNode[] {
       flushQuote();
       flushList();
       nodes.push(
-        <h3 key={`h-${key++}`} className="mt-8 mb-2 font-serif text-xl font-normal text-ink">
+        <h3 key={`h-${key++}`} className="mt-8 mb-2 font-serif text-xl font-normal text-paper">
           {renderInlineTokens(t.replace(/^#+\s/, ''), `h-${key}`)}
         </h3>
       );
@@ -210,7 +210,7 @@ function renderBlocks(content: string): React.ReactNode[] {
       flushPara();
       flushQuote();
       flushList();
-      nodes.push(<hr key={`hr-${key++}`} className="my-8 border-t border-tinted" />);
+      nodes.push(<hr key={`hr-${key++}`} className="my-8 border-t border-tinted/20" />);
       continue;
     }
 
@@ -238,7 +238,7 @@ function renderBlocks(content: string): React.ReactNode[] {
           <img
             src={imgMatch[2]}
             alt={imgMatch[1]}
-            className="w-full rounded-xl border border-tinted shadow-sm"
+            className="w-full rounded-xl border border-tinted/20 shadow-lg"
           />
         </figure>
       );
@@ -264,7 +264,7 @@ export function NowPageView({ entries }: NowPageViewProps) {
       <main className="mx-auto max-w-[760px]">
         {/* Header */}
         <header className="mb-14">
-          <h1 className="font-serif text-4xl font-normal tracking-tight text-ink md:text-5xl lg:text-6xl">
+          <h1 className="font-serif text-4xl font-normal tracking-tight text-paper md:text-5xl lg:text-6xl">
             Now
           </h1>
           <h2 className="mt-3 font-serif text-xl font-light italic leading-relaxed text-ink-soft md:text-2xl">
@@ -277,18 +277,18 @@ export function NowPageView({ entries }: NowPageViewProps) {
           {entries.map((entry, index) => (
             <section
               key={entry.id}
-              className="relative ml-2 border-l border-dashed border-tinted pl-8 md:ml-4 md:pl-12"
+              className="relative ml-2 border-l border-dashed border-tinted/30 pl-8 md:ml-4 md:pl-12"
             >
               {/* Timeline node dot */}
               <span
                 aria-hidden
                 className={`absolute -left-[7px] top-2 h-3.5 w-3.5 rounded-full border-2 ${
-                  index === 0 ? 'border-sea-blue' : 'border-tinted'
-                } bg-cream shadow-sm`}
+                  index === 0 ? 'border-sea-blue' : 'border-tinted/40'
+                } bg-night-soft shadow-sm`}
               />
 
-              <article className="space-y-5 text-base leading-[1.85] text-ink-soft md:text-lg">
-                <h3 className="font-serif text-2xl font-normal text-ink md:text-3xl">
+              <article className="space-y-5 text-base leading-[1.85] text-paper/85 md:text-lg">
+                <h3 className="font-serif text-2xl font-normal text-paper md:text-3xl">
                   {entry.title}
                 </h3>
 
@@ -299,14 +299,14 @@ export function NowPageView({ entries }: NowPageViewProps) {
         </div>
 
         {/* Footer info & Now Movement Note */}
-        <footer className="mt-20 border-t border-tinted pt-10 text-center">
+        <footer className="mt-20 border-t border-tinted/20 pt-10 text-center">
           <p className="text-sm text-ink-soft">
             This page is inspired by the{' '}
             <a
               href="https://nownownow.com/about"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-ink underline decoration-tinted underline-offset-4 transition-colors hover:text-accent hover:decoration-accent"
+              className="text-paper underline decoration-tinted/40 underline-offset-4 transition-colors hover:text-accent hover:decoration-accent"
             >
               /now movement
             </a>{' '}

@@ -14,7 +14,7 @@ interface LibrarySectionProps {
 function BookCover({ title, cover }: { title: string; cover?: string }) {
   if (cover) {
     return (
-      <div className="aspect-[2/3] overflow-hidden rounded-lg shadow-sm ring-1 ring-tinted transition-all duration-300 group-hover:scale-[1.02] group-hover:shadow-md">
+      <div className="aspect-[2/3] overflow-hidden rounded-lg shadow-sm ring-1 ring-tinted/20 transition-all duration-300 group-hover:scale-[1.02] group-hover:shadow-md">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={cover}
@@ -25,8 +25,8 @@ function BookCover({ title, cover }: { title: string; cover?: string }) {
     );
   }
   return (
-    <div className="flex aspect-[2/3] items-center justify-center overflow-hidden rounded-lg bg-cream p-3 shadow-sm ring-1 ring-tinted transition-all duration-300 group-hover:scale-[1.02] group-hover:opacity-20 group-hover:shadow-md">
-      <span className="text-center font-serif text-lg italic leading-snug text-ink-soft/50">
+    <div className="flex aspect-[2/3] items-center justify-center overflow-hidden rounded-lg bg-night-soft p-3 shadow-sm ring-1 ring-tinted/20 transition-all duration-300 group-hover:scale-[1.02] group-hover:opacity-30 group-hover:shadow-md">
+      <span className="text-center font-serif text-lg italic leading-snug text-paper/50">
         {title}
       </span>
     </div>
@@ -45,27 +45,64 @@ export function LibrarySection({ library, limit = 4 }: LibrarySectionProps) {
         subheader={library.subheader}
       />
 
-      <div className="no-scrollbar -mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-1 sm:-mx-0 sm:px-0">
+      {/* Desktop Mode: 4 columns grid */}
+      <div className="hidden sm:grid sm:grid-cols-2 md:grid-cols-4 sm:gap-6">
         {items.map((item) => (
-          <article
-            key={item.slug}
-            className="group relative w-[42%] shrink-0 snap-start sm:w-[30%] md:w-[22%] lg:w-[calc(25%-0.75rem)]"
-          >
+          <article key={item.slug} className="group relative">
             <Link href={library.href} className="block">
-              <span className="absolute left-1/2 top-[34%] z-10 -translate-x-1/2 -translate-y-1/2 rounded bg-paper px-3 py-1 text-sm font-medium text-ink shadow-lg opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+              <span className="absolute left-1/2 top-[34%] z-10 -translate-x-1/2 -translate-y-1/2 rounded-full bg-accent px-3.5 py-1 text-xs font-semibold text-paper shadow-lg opacity-0 transition-opacity duration-300 group-hover:opacity-100">
                 View
-                <ExternalLinkIcon className="ml-1 inline h-[14px] w-[14px]" />
+                <ExternalLinkIcon className="ml-1 inline h-[12px] w-[12px]" />
               </span>
               <BookCover title={item.title} cover={item.cover} />
               <span className="mt-3 block transition-transform duration-300 group-hover:translate-y-1">
-                <p className="font-sans text-base font-normal leading-snug text-ink transition-colors duration-300 group-hover:text-accent">
+                <p className="font-sans text-base font-normal leading-snug text-paper transition-colors duration-300 group-hover:text-accent">
                   {item.title}
                 </p>
-                <p className="mt-1 text-xs text-ink-soft">{item.author}</p>
+                <p className="mt-1 text-xs text-gray-mid">{item.author}</p>
               </span>
             </Link>
           </article>
         ))}
+      </div>
+
+      {/* Mobile Mode: Sideways Scroll with End Card */}
+      <div className="no-scrollbar -mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-1 sm:hidden">
+        {items.map((item) => (
+          <article
+            key={item.slug}
+            className="group relative w-[42%] shrink-0 snap-start"
+          >
+            <Link href={library.href} className="block">
+              <BookCover title={item.title} cover={item.cover} />
+              <span className="mt-3 block">
+                <p className="font-sans text-sm font-normal leading-snug text-paper transition-colors duration-300 group-hover:text-accent">
+                  {item.title}
+                </p>
+                <p className="mt-1 text-xs text-gray-mid">{item.author}</p>
+              </span>
+            </Link>
+          </article>
+        ))}
+
+        {/* Mobile "Browse the Library" end card */}
+        <article className="group relative w-[42%] shrink-0 snap-start">
+          <Link href={library.href} className="block h-full">
+            <div className="flex aspect-[2/3] flex-col items-center justify-center rounded-lg border border-dashed border-tinted/30 bg-night-soft/80 p-3 text-center transition-all duration-300 group-hover:border-accent group-hover:bg-night-soft">
+              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-post-card ring-1 ring-tinted/20 transition-transform duration-300 group-hover:scale-110">
+                <ExternalLinkIcon className="h-4 w-4 text-teal transition-transform duration-300 group-hover:translate-x-0.5" />
+              </div>
+              <span className="mt-2.5 font-serif text-xs italic leading-tight text-gray-mid">
+                Library
+              </span>
+            </div>
+            <span className="mt-3 block transition-transform duration-300 group-hover:translate-y-1">
+              <p className="font-sans text-sm font-normal leading-snug text-paper transition-colors duration-300 group-hover:text-accent">
+                Browse Library
+              </p>
+            </span>
+          </Link>
+        </article>
       </div>
     </section>
   );

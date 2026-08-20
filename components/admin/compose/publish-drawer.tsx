@@ -98,13 +98,13 @@ export function PublishDrawer({
   const liveUrlPrefix = isPost ? '/p/' : '/n/';
 
   return (
-    <div className="fixed inset-0 z-50 overflow-hidden bg-black/60 backdrop-blur-xs flex justify-end animate-in fade-in">
-      <div className="relative w-full max-w-xl bg-[#111111] border-l border-[#222] text-neutral-200 h-full flex flex-col shadow-2xl animate-in slide-in-from-right duration-200">
+    <div className="fixed inset-0 z-50 overflow-hidden bg-ink/60 backdrop-blur-xs flex justify-end animate-in fade-in">
+      <div className="relative w-full max-w-xl bg-ink border-l border-tinted/20 text-paper/90 h-full flex flex-col shadow-2xl animate-in slide-in-from-right duration-200">
         {/* Header */}
-        <div className="px-5 py-3 border-b border-[#202020] flex items-center justify-between shrink-0">
+        <div className="px-5 py-3 border-b border-tinted/20 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3">
-            <h3 className="text-sm font-semibold text-white">Publish</h3>
-            <span className="text-[10px] font-mono text-neutral-500">
+            <h3 className="text-sm font-semibold text-paper">Publish</h3>
+            <span className="text-[10px] font-mono text-ink-soft">
               {isNow ? 'now entry' : isPost ? 'essay' : 'note'} • {wordCount}w • {readingTime}m
             </span>
           </div>
@@ -114,14 +114,14 @@ export function PublishDrawer({
                 <select
                   value={persona}
                   onChange={(e) => onPersonaChange(e.target.value as Persona)}
-                  className="appearance-none rounded-md border border-[#262626] bg-[#161616] px-2.5 py-1 text-[10px] font-medium capitalize text-neutral-300 focus:border-[#ff7700] focus:outline-none cursor-pointer pr-5"
+                  className="appearance-none rounded-md border border-tinted/20 bg-night-soft px-2.5 py-1 text-[10px] font-medium capitalize text-paper/80 focus:border-accent focus:outline-none cursor-pointer pr-5"
                 >
-                  <option value="builder" className="bg-[#1a1a1a]">Builder</option>
-                  <option value="operator" className="bg-[#1a1a1a]">Operator</option>
-                  <option value="thinker" className="bg-[#1a1a1a]">Thinker</option>
-                  <option value="wanderer" className="bg-[#1a1a1a]">Wanderer</option>
+                  <option value="builder" className="bg-ink text-paper">Builder</option>
+                  <option value="operator" className="bg-ink text-paper">Operator</option>
+                  <option value="thinker" className="bg-ink text-paper">Thinker</option>
+                  <option value="wanderer" className="bg-ink text-paper">Wanderer</option>
                 </select>
-                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-1.5 text-neutral-600 text-[8px]">
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-1.5 text-ink-soft text-[8px]">
                   ▼
                 </div>
               </div>
@@ -129,7 +129,7 @@ export function PublishDrawer({
             <button
               type="button"
               onClick={onClose}
-              className="rounded-md p-1 text-neutral-500 hover:bg-[#222] hover:text-white transition-colors text-xs"
+              className="rounded-md p-1 text-ink-soft hover:bg-tinted/10 hover:text-paper transition-colors text-xs"
             >
               ✕
             </button>
@@ -142,12 +142,12 @@ export function PublishDrawer({
           {isPost && (
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
-                <span className="text-[11px] font-medium text-neutral-400">Cover</span>
+                <span className="text-[11px] font-medium text-ink-soft">Cover</span>
                 {hasCoverImage && (
                   <button
                     type="button"
                     onClick={() => onCoverImageChange('')}
-                    className="text-[10px] text-neutral-500 hover:text-red-400 transition-colors"
+                    className="text-[10px] text-ink-soft hover:text-accent transition-colors"
                   >
                     Remove
                   </button>
@@ -155,7 +155,7 @@ export function PublishDrawer({
               </div>
 
               {hasCoverImage ? (
-                <div className="group relative h-44 w-full overflow-hidden rounded-lg border border-[#2a2a2a] bg-[#181818]">
+                <div className="group relative h-44 w-full overflow-hidden rounded-lg border border-tinted/20 bg-night-soft">
                   <Image
                     src={coverImage!}
                     alt="Cover preview"
@@ -163,18 +163,18 @@ export function PublishDrawer({
                     className="object-cover"
                     unoptimized={coverImage!.startsWith('blob:') || coverImage!.startsWith('http')}
                   />
-                  <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                  <div className="absolute inset-0 bg-ink/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                     <button
                       type="button"
                       onClick={() => setIsMediaModalOpen(true)}
-                      className="rounded-md bg-white/90 hover:bg-white text-black px-3 py-1 text-[11px] font-semibold shadow-xs"
+                      className="rounded-md bg-night-soft hover:bg-post-card text-paper border border-tinted/20 px-3 py-1 text-[11px] font-semibold shadow-xs"
                     >
                       Change
                     </button>
                     <button
                       type="button"
                       onClick={() => onCoverImageChange('')}
-                      className="rounded-md bg-red-600/90 hover:bg-red-600 text-white px-3 py-1 text-[11px] font-semibold shadow-xs"
+                      className="rounded-md bg-accent-hover hover:bg-accent text-paper px-3 py-1 text-[11px] font-semibold shadow-xs"
                     >
                       Remove
                     </button>
@@ -195,18 +195,18 @@ export function PublishDrawer({
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    className="flex items-center justify-center gap-2 rounded-lg border border-dashed border-[#2a2a2a] bg-[#141414] py-6 hover:border-[#444] transition-colors"
+                    className="flex items-center justify-center gap-2 rounded-lg border border-dashed border-tinted/30 bg-night-soft py-6 hover:border-tinted/60 transition-colors"
                   >
                     <span className="text-lg opacity-50">📤</span>
-                    <span className="text-[11px] text-neutral-400">Upload File</span>
+                    <span className="text-[11px] text-ink-soft">Upload File</span>
                   </button>
                   <button
                     type="button"
                     onClick={() => setIsMediaModalOpen(true)}
-                    className="flex items-center justify-center gap-2 rounded-lg border border-dashed border-[#2a2a2a] bg-[#141414] py-6 hover:border-[#ff7700]/40 transition-colors"
+                    className="flex items-center justify-center gap-2 rounded-lg border border-dashed border-tinted/30 bg-night-soft py-6 hover:border-accent/40 transition-colors"
                   >
                     <span className="text-lg opacity-50">📁</span>
-                    <span className="text-[11px] text-[#ff7700]">Media Library</span>
+                    <span className="text-[11px] text-accent">Media Library</span>
                   </button>
                 </div>
               )}
@@ -216,32 +216,32 @@ export function PublishDrawer({
           {/* URL Slug / Now Date */}
           {isNow ? (
             <div className="space-y-1.5">
-              <span className="text-[11px] font-medium text-neutral-400">Timeline Date</span>
+              <span className="text-[11px] font-medium text-ink-soft">Timeline Date</span>
               <input
                 type="month"
                 value={date || ''}
                 onChange={(e) => onDateChange?.(e.target.value)}
-                className="w-full rounded-lg border border-[#262626] bg-[#161616] px-3 py-2 text-xs font-mono text-white focus:border-[#ff7700] focus:outline-none"
+                className="w-full rounded-lg border border-tinted/20 bg-night-soft px-3 py-2 text-xs font-mono text-paper focus:border-accent focus:outline-none"
               />
-              <p className="text-[10px] text-neutral-500">
+              <p className="text-[10px] text-ink-soft">
                 Month shown on the Now page timeline.
               </p>
             </div>
           ) : (
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
-                <span className="text-[11px] font-medium text-neutral-400">Permalink</span>
-                <span className="text-[10px] font-mono text-neutral-600 truncate max-w-[60%]">
+                <span className="text-[11px] font-medium text-ink-soft">Permalink</span>
+                <span className="text-[10px] font-mono text-ink-soft/70 truncate max-w-[60%]">
                   {liveUrlPrefix}{slug || '…'}
                 </span>
               </div>
-              <div className="flex items-center rounded-lg border border-[#262626] bg-[#161616] px-3 py-2 text-xs font-mono focus-within:border-[#ff7700]">
-                <span className="text-neutral-500 select-none shrink-0">{liveUrlPrefix}</span>
+              <div className="flex items-center rounded-lg border border-tinted/20 bg-night-soft px-3 py-2 text-xs font-mono focus-within:border-accent">
+                <span className="text-ink-soft select-none shrink-0">{liveUrlPrefix}</span>
                 <input
                   type="text"
                   value={slug}
                   onChange={(e) => onSlugChange(e.target.value)}
-                  className="w-full bg-transparent focus:outline-none ml-1 text-neutral-100"
+                  className="w-full bg-transparent focus:outline-none ml-1 text-paper"
                   placeholder="slug-name"
                 />
               </div>
@@ -251,7 +251,7 @@ export function PublishDrawer({
           {/* Tags */}
           {!isNow && (
             <div className="space-y-1.5">
-            <span className="text-[11px] font-medium text-neutral-400">Tags</span>
+            <span className="text-[11px] font-medium text-ink-soft">Tags</span>
             <input
               type="text"
               placeholder="craft, software, tools…"
@@ -260,20 +260,20 @@ export function PublishDrawer({
                 setTagInput(e.target.value);
                 syncTagsFromInput(e.target.value);
               }}
-              className="w-full rounded-lg border border-[#262626] bg-[#161616] px-2.5 py-1.5 text-[11px] text-white focus:border-[#ff7700] focus:outline-none"
+              className="w-full rounded-lg border border-tinted/20 bg-night-soft px-2.5 py-1.5 text-[11px] text-paper focus:border-accent focus:outline-none"
             />
             {tags.length > 0 && (
               <div className="flex flex-wrap gap-1">
                 {tags.map((t) => (
                   <span
                     key={t}
-                    className="inline-flex items-center gap-0.5 rounded bg-[#1c1c1c] border border-[#2a2a2a] px-1.5 py-0.5 text-[10px] text-neutral-400"
+                    className="inline-flex items-center gap-0.5 rounded bg-night-soft border border-tinted/20 px-1.5 py-0.5 text-[10px] text-ink-soft"
                   >
                     #{t}
                     <button
                       type="button"
                       onClick={() => handleRemoveTag(t)}
-                      className="text-neutral-600 hover:text-red-400 ml-0.5"
+                      className="text-ink-soft/60 hover:text-accent ml-0.5"
                     >
                       ×
                     </button>
@@ -286,18 +286,18 @@ export function PublishDrawer({
         </div>
 
         {/* Previews + Footer */}
-        <div className="border-t border-[#202020] bg-[#111111] shrink-0">
+        <div className="border-t border-tinted/20 bg-ink shrink-0">
           {/* Preview Tabs */}
           {!isNow && (
             <div className="px-5 pt-3 space-y-2">
-            <div className="flex items-center gap-0 border-b border-[#222]">
+            <div className="flex items-center gap-0 border-b border-tinted/20">
               <button
                 type="button"
                 onClick={() => setPreviewTab('google')}
                 className={`px-3 py-1.5 text-[10px] font-medium transition-colors border-b-2 -mb-px ${
                   previewTab === 'google'
-                    ? 'border-[#ff7700] text-white'
-                    : 'border-transparent text-neutral-500 hover:text-neutral-300'
+                    ? 'border-accent text-paper'
+                    : 'border-transparent text-ink-soft hover:text-paper'
                 }`}
               >
                 Google
@@ -307,8 +307,8 @@ export function PublishDrawer({
                 onClick={() => setPreviewTab('og')}
                 className={`px-3 py-1.5 text-[10px] font-medium transition-colors border-b-2 -mb-px ${
                   previewTab === 'og'
-                    ? 'border-[#ff7700] text-white'
-                    : 'border-transparent text-neutral-500 hover:text-neutral-300'
+                    ? 'border-accent text-paper'
+                    : 'border-transparent text-ink-soft hover:text-paper'
                 }`}
               >
                 Social / OG
@@ -316,35 +316,35 @@ export function PublishDrawer({
             </div>
 
             {previewTab === 'google' ? (
-              <div className="rounded bg-white px-0 py-0">
+              <div className="rounded bg-night-soft px-0 py-0 border border-tinted/20">
                 {/* Breadcrumb */}
                 <div className="flex items-center gap-1.5 px-4 pt-3 pb-0.5">
-                  <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#f1f3f4] text-[9px] font-bold text-[#5f6368]">
+                  <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-accent text-[9px] font-bold text-paper">
                     B
                   </span>
                   <div className="flex flex-col">
-                    <span className="text-[12px] leading-tight text-[#202124]">
+                    <span className="text-[12px] leading-tight text-paper">
                       biranchi.xyz
                     </span>
-                    <span className="text-[12px] leading-tight text-[#5f6368]">
+                    <span className="text-[12px] leading-tight text-gray-mid">
                       {liveUrlPrefix}{slug || 'slug-name'}
                     </span>
                   </div>
                 </div>
                 {/* Title */}
-                <h3 className="px-4 pt-0.5 pb-1 text-[20px] leading-[1.3] text-[#1a0dab] decoration-none line-clamp-1">
+                <h3 className="px-4 pt-0.5 pb-1 text-[20px] leading-[1.3] text-accent decoration-none line-clamp-1">
                   {title || 'Page Title — biranchi.xyz'}
                 </h3>
                 {/* Description */}
-                <p className="px-4 pb-3 text-[14px] leading-[1.58] text-[#4d5156] line-clamp-2">
+                <p className="px-4 pb-3 text-[14px] leading-[1.58] text-gray-mid line-clamp-2">
                   {description || 'No description set for this page. Google will auto-generate a snippet from your page content.'}
                 </p>
               </div>
             ) : (
               /* Facebook / Open Graph share card — pixel-accurate */
-              <div className="rounded-lg border border-[#dadde1] bg-white overflow-hidden">
+              <div className="rounded-lg border border-tinted/20 bg-night-soft overflow-hidden">
                 {/* OG Image — 1.91:1 ratio (1200×630) */}
-                <div className="relative w-full bg-[#f0f2f5]" style={{ aspectRatio: '1200 / 630' }}>
+                <div className="relative w-full bg-night" style={{ aspectRatio: '1200 / 630' }}>
                   {hasCoverImage ? (
                     <Image
                       src={coverImage!}
@@ -355,19 +355,19 @@ export function PublishDrawer({
                     />
                   ) : (
                     <div className="flex h-full w-full items-center justify-center">
-                      <span className="text-[13px] text-[#8c93a1]">No image</span>
+                      <span className="text-[13px] text-gray-mid">No image</span>
                     </div>
                   )}
                 </div>
                 {/* Text */}
                 <div className="px-3.5 py-2.5">
-                  <p className="text-[12px] uppercase tracking-[0.2px] text-[#65676b] leading-tight">
+                  <p className="text-[12px] uppercase tracking-[0.2px] text-gray-mid leading-tight">
                     biranchi.xyz
                   </p>
-                  <p className="mt-0.5 text-[16px] font-bold text-[#000000] leading-[1.3] line-clamp-2">
+                  <p className="mt-0.5 text-[16px] font-bold text-paper leading-[1.3] line-clamp-2">
                     {title || 'Page Title'}
                   </p>
-                  <p className="mt-0.5 text-[14px] text-[#65676b] leading-[1.33] line-clamp-2">
+                  <p className="mt-0.5 text-[14px] text-gray-mid leading-[1.33] line-clamp-2">
                     {description || 'No description set for this page.'}
                   </p>
                 </div>
@@ -383,7 +383,7 @@ export function PublishDrawer({
                 type="button"
                 disabled={isSaving}
                 onClick={() => onSave('unpublished')}
-                className="rounded-lg border border-[#333] bg-[#1a1a1a] hover:bg-[#252525] text-neutral-300 px-4 py-2 text-[11px] font-medium transition-colors"
+                className="rounded-lg border border-tinted/20 bg-night-soft hover:bg-tinted/10 text-paper/80 px-4 py-2 text-[11px] font-medium transition-colors"
               >
                 Save Draft
               </button>
@@ -392,7 +392,7 @@ export function PublishDrawer({
               type="button"
               disabled={isSaving}
               onClick={() => onSave('published')}
-              className="flex-1 rounded-lg px-4 py-2 text-[11px] font-bold uppercase tracking-wider transition-all bg-[#ff7700] hover:bg-[#e66a00] text-black disabled:bg-[#252525] disabled:text-neutral-600 disabled:cursor-not-allowed"
+              className="flex-1 rounded-lg px-4 py-2 text-[11px] font-bold uppercase tracking-wider transition-all bg-accent hover:bg-accent-hover text-paper disabled:bg-night-soft disabled:text-ink-soft disabled:cursor-not-allowed"
             >
               {isSaving
                 ? 'Saving…'

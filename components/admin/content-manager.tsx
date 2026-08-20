@@ -629,7 +629,7 @@ export function ContentManager({
     <div className="space-y-6">
       {/* Toast Notification */}
       {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-50 rounded-2xl bg-ink px-5 py-3 text-sm font-medium text-cream shadow-xl ring-1 ring-tinted animate-in fade-in slide-in-from-bottom-3">
+        <div className="fixed bottom-6 right-6 z-50 rounded-2xl bg-night-soft border border-tinted/30 px-5 py-3 text-sm font-medium text-paper shadow-xl animate-in fade-in slide-in-from-bottom-3">
           {toastMessage}
         </div>
       )}
@@ -637,7 +637,7 @@ export function ContentManager({
       {/* Header & Quick Action Buttons */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="font-serif text-2xl font-normal text-ink md:text-3xl">
+          <h2 className="font-serif text-2xl font-normal text-paper md:text-3xl">
             Content
           </h2>
         </div>
@@ -645,21 +645,21 @@ export function ContentManager({
         <div className="flex items-center gap-2.5">
           <Link
             href="/admin/compose?type=now"
-            className="inline-flex items-center gap-1.5 rounded-full bg-ink px-5 py-2 text-xs font-semibold text-cream shadow-sm transition-colors hover:bg-accent"
+            className="inline-flex items-center gap-1.5 rounded-full bg-accent px-5 py-2 text-xs font-semibold text-paper shadow-sm transition-colors hover:bg-accent-hover"
           >
             <span>+ New Now</span>
           </Link>
 
           <Link
             href="/admin/compose?type=note"
-            className="inline-flex items-center gap-1.5 rounded-full border border-tinted bg-cream px-4 py-2 text-xs font-semibold text-ink shadow-2xs transition-colors hover:bg-paper"
+            className="inline-flex items-center gap-1.5 rounded-full border border-tinted/20 bg-post-card px-4 py-2 text-xs font-semibold text-paper shadow-2xs transition-colors hover:bg-night-soft"
           >
             <span>+ New Note</span>
           </Link>
 
           <Link
             href="/admin/compose?type=post"
-            className="inline-flex items-center gap-1.5 rounded-full border border-tinted bg-cream px-4 py-2 text-xs font-semibold text-ink shadow-2xs transition-colors hover:bg-paper"
+            className="inline-flex items-center gap-1.5 rounded-full border border-tinted/20 bg-post-card px-4 py-2 text-xs font-semibold text-paper shadow-2xs transition-colors hover:bg-night-soft"
           >
             <span>+ New Post</span>
           </Link>
@@ -667,7 +667,7 @@ export function ContentManager({
           <button
             type="button"
             onClick={handleOpenCreateBook}
-            className="inline-flex items-center gap-1.5 rounded-full border border-tinted bg-cream px-4 py-2 text-xs font-semibold text-ink shadow-2xs transition-colors hover:bg-paper"
+            className="inline-flex items-center gap-1.5 rounded-full border border-tinted/20 bg-post-card px-4 py-2 text-xs font-semibold text-paper shadow-2xs transition-colors hover:bg-night-soft"
           >
             <span>+ Add Book</span>
           </button>
@@ -682,7 +682,7 @@ export function ContentManager({
             placeholder="Search by title, slug, or persona..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full rounded-full border border-tinted bg-cream px-4 py-2 text-sm text-ink placeholder:text-ink-soft/60 focus:border-ink focus:outline-none"
+            className="w-full rounded-full border border-tinted/20 bg-night-soft px-4 py-2 text-sm text-paper placeholder:text-gray-mid/50 focus:border-accent focus:outline-none"
           />
         </div>
 
@@ -690,45 +690,45 @@ export function ContentManager({
         <select
           value={typeFilter}
           onChange={(e) => setTypeFilter(e.target.value as ContentFilterType)}
-          className="rounded-full border border-tinted bg-cream px-3.5 py-2 text-xs font-medium text-ink focus:border-ink focus:outline-none"
+          className="rounded-full border border-tinted/20 bg-night-soft px-3.5 py-2 text-xs font-medium text-paper focus:border-accent focus:outline-none"
         >
-          <option value="all">All Types</option>
-          <option value="post">Essays ({posts.length})</option>
-          <option value="note">Notes ({notes.length})</option>
-          <option value="book">Books ({books.length})</option>
-          <option value="now">Now ({nowEntries.length})</option>
+          <option value="all" className="bg-night text-paper">All Types</option>
+          <option value="post" className="bg-night text-paper">Essays ({posts.length})</option>
+          <option value="note" className="bg-night text-paper">Notes ({notes.length})</option>
+          <option value="book" className="bg-night text-paper">Books ({books.length})</option>
+          <option value="now" className="bg-night text-paper">Now ({nowEntries.length})</option>
         </select>
 
         {/* Persona Filter */}
         <select
           value={personaFilter}
           onChange={(e) => setPersonaFilter(e.target.value as PersonaFilterType)}
-          className="rounded-full border border-tinted bg-cream px-3.5 py-2 text-xs font-medium text-ink focus:border-ink focus:outline-none"
+          className="rounded-full border border-tinted/20 bg-night-soft px-3.5 py-2 text-xs font-medium text-paper focus:border-accent focus:outline-none"
         >
-          <option value="all">All Personas</option>
-          <option value="builder">Builder</option>
-          <option value="operator">Operator</option>
-          <option value="thinker">Thinker</option>
-          <option value="wanderer">Wanderer</option>
+          <option value="all" className="bg-night text-paper">All Personas</option>
+          <option value="builder" className="bg-night text-paper">Builder</option>
+          <option value="operator" className="bg-night text-paper">Operator</option>
+          <option value="thinker" className="bg-night text-paper">Thinker</option>
+          <option value="wanderer" className="bg-night text-paper">Wanderer</option>
         </select>
 
         {/* Status Filter */}
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value as StatusFilterType)}
-          className="rounded-full border border-tinted bg-cream px-3.5 py-2 text-xs font-medium text-ink focus:border-ink focus:outline-none"
+          className="rounded-full border border-tinted/20 bg-night-soft px-3.5 py-2 text-xs font-medium text-paper focus:border-accent focus:outline-none"
         >
-          <option value="all">All Status</option>
-          <option value="published">Published</option>
-          <option value="unpublished">Draft</option>
+          <option value="all" className="bg-night text-paper">All Status</option>
+          <option value="published" className="bg-night text-paper">Published</option>
+          <option value="unpublished" className="bg-night text-paper">Draft</option>
         </select>
       </div>
 
       {/* Unified Content Table */}
-      <div className="overflow-hidden rounded-2xl border border-tinted bg-cream shadow-sm">
+      <div className="overflow-hidden rounded-2xl border border-tinted/20 bg-post-card shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
-            <thead className="border-b border-tinted bg-paper/60 text-xs font-semibold uppercase tracking-wider text-ink-soft">
+            <thead className="border-b border-tinted/20 bg-night-soft text-xs font-semibold uppercase tracking-wider text-gray-mid">
               <tr>
                 <th className="px-5 py-3.5">Title</th>
                 <th className="px-4 py-3.5">Type</th>
@@ -738,7 +738,7 @@ export function ContentManager({
                 <th className="px-5 py-3.5 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-tinted/60">
+            <tbody className="divide-y divide-tinted/20">
               {filteredItems.map((item, rowIndex) => {
                 const isBook = item.kind === 'book';
                 const isNow = item.kind === 'now';
@@ -753,15 +753,15 @@ export function ContentManager({
                         : '/library';
 
                 return (
-                  <tr key={item.id} className="transition-colors hover:bg-paper/40">
+                  <tr key={item.id} className="transition-colors hover:bg-night-soft/60">
                     {/* Title */}
                     <td className="px-5 py-4">
-                      <div className="font-serif text-base font-medium text-ink">
+                      <div className="font-serif text-base font-medium text-paper">
                         {item.title}
                       </div>
                       {isBook && item.rawBook && (
-                        <p className="mt-0.5 text-xs text-ink-soft">
-                          by <span className="font-medium text-ink/90">{item.rawBook.author}</span>
+                        <p className="mt-0.5 text-xs text-gray-mid">
+                          by <span className="font-medium text-paper/90">{item.rawBook.author}</span>
                         </p>
                       )}
                     </td>
@@ -771,8 +771,8 @@ export function ContentManager({
                       <span
                         className={`rounded-md px-2 py-0.5 text-xs font-semibold uppercase tracking-wider ${
                           item.kind === 'post'
-                            ? 'bg-ink text-cream'
-                            : 'bg-paper text-ink-soft ring-1 ring-tinted'
+                            ? 'bg-accent text-paper'
+                            : 'bg-night-soft text-paper border border-tinted/20'
                         }`}
                       >
                         {item.kind === 'post'
@@ -788,37 +788,37 @@ export function ContentManager({
                     {/* Persona */}
                     <td className="px-4 py-4 text-xs whitespace-nowrap">
                       {isNow ? (
-                        <span className="text-ink-soft/50">—</span>
+                        <span className="text-gray-mid/50">—</span>
                       ) : (
-                        <span className="capitalize text-ink-soft font-medium">
+                        <span className="capitalize text-teal font-medium">
                           {item.persona}
                         </span>
                       )}
                     </td>
 
                     {/* Date */}
-                    <td className="px-4 py-4 text-xs text-ink-soft whitespace-nowrap">
+                    <td className="px-4 py-4 text-xs text-gray-mid whitespace-nowrap">
                       {item.kind === 'note' ? formatDisplayDate(item.date) : item.date}
                     </td>
 
                     {/* Status */}
                     <td className="px-4 py-4 text-xs whitespace-nowrap">
                       {isBook ? (
-                        <span className="inline-flex items-center gap-1.5 rounded-full bg-paper px-2.5 py-0.5 text-xs font-semibold text-ink-soft ring-1 ring-tinted">
-                          <span className="h-1.5 w-1.5 rounded-full bg-ink/60" />
+                        <span className="inline-flex items-center gap-1.5 rounded-full bg-night-soft px-2.5 py-0.5 text-xs font-semibold text-gray-mid border border-tinted/20">
+                          <span className="h-1.5 w-1.5 rounded-full bg-teal" />
                           On Shelf
                         </span>
                       ) : isNow ? (
                         <span
                           className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold ${
                             rowIndex === 0
-                              ? 'bg-sea-blue/10 text-sea-blue ring-1 ring-sea-blue/30'
-                              : 'bg-paper text-ink-soft ring-1 ring-tinted'
+                              ? 'bg-sea-blue/20 text-sea-blue border border-sea-blue/30'
+                              : 'bg-night-soft text-gray-mid border border-tinted/20'
                           }`}
                         >
                           <span
                             className={`h-1.5 w-1.5 rounded-full ${
-                              rowIndex === 0 ? 'bg-sea-blue' : 'bg-ink/40'
+                              rowIndex === 0 ? 'bg-sea-blue' : 'bg-gray-mid'
                             }`}
                           />
                           {rowIndex === 0 ? 'Current' : 'Past'}
@@ -827,13 +827,13 @@ export function ContentManager({
                         <span
                           className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold ${
                             isPublished
-                              ? 'bg-emerald-50 text-emerald-800 ring-1 ring-emerald-200'
-                              : 'bg-amber-50 text-amber-800 ring-1 ring-amber-200'
+                              ? 'bg-emerald-950/60 text-emerald-400 border border-emerald-800/40'
+                              : 'bg-amber-950/60 text-amber-400 border border-amber-800/40'
                           }`}
                         >
                           <span
                             className={`h-1.5 w-1.5 rounded-full ${
-                              isPublished ? 'bg-emerald-600' : 'bg-amber-600'
+                              isPublished ? 'bg-emerald-400' : 'bg-amber-400'
                             }`}
                           />
                           {isPublished ? 'Published' : 'Draft'}
@@ -851,7 +851,7 @@ export function ContentManager({
                               target="_blank"
                               title="View on Shelf"
                               aria-label={`View ${item.title} on shelf`}
-                              className="rounded-full p-2 text-ink-soft transition-colors hover:bg-paper hover:text-ink"
+                              className="rounded-full p-2 text-gray-mid transition-colors hover:bg-night-soft hover:text-paper"
                             >
                               <ExternalLinkIcon className="h-4 w-4" />
                             </Link>
@@ -860,7 +860,7 @@ export function ContentManager({
                               title="Edit"
                               aria-label={`Edit ${item.title}`}
                               onClick={() => item.rawBook && handleOpenEditBook(item.rawBook)}
-                              className="rounded-full p-2 text-ink transition-colors hover:bg-paper"
+                              className="rounded-full p-2 text-paper transition-colors hover:bg-night-soft"
                             >
                               <PencilIcon className="h-4 w-4" />
                             </button>
@@ -876,7 +876,7 @@ export function ContentManager({
                                   title: item.title,
                                 })
                               }
-                              className="rounded-full p-2 text-red-700 transition-colors hover:bg-red-50"
+                              className="rounded-full p-2 text-red-400 transition-colors hover:bg-red-950/40"
                             >
                               <TrashIcon className="h-4 w-4" />
                             </button>
@@ -888,7 +888,7 @@ export function ContentManager({
                               target="_blank"
                               title="View Now page"
                               aria-label={`View ${item.title} on the Now page`}
-                              className="rounded-full p-2 text-ink-soft transition-colors hover:bg-paper hover:text-ink"
+                              className="rounded-full p-2 text-gray-mid transition-colors hover:bg-night-soft hover:text-paper"
                             >
                               <ExternalLinkIcon className="h-4 w-4" />
                             </Link>
@@ -896,7 +896,7 @@ export function ContentManager({
                               href={`/admin/compose?slug=${item.slug}&type=now`}
                               title="Edit"
                               aria-label={`Edit ${item.title}`}
-                              className="rounded-full p-2 text-ink transition-colors hover:bg-paper"
+                              className="rounded-full p-2 text-paper transition-colors hover:bg-night-soft"
                             >
                               <PencilIcon className="h-4 w-4" />
                             </Link>
@@ -912,7 +912,7 @@ export function ContentManager({
                                   title: item.title,
                                 })
                               }
-                              className="rounded-full p-2 text-red-700 transition-colors hover:bg-red-50"
+                              className="rounded-full p-2 text-red-400 transition-colors hover:bg-red-950/40"
                             >
                               <TrashIcon className="h-4 w-4" />
                             </button>
@@ -924,7 +924,7 @@ export function ContentManager({
                               target="_blank"
                               title="View"
                               aria-label={`View ${item.title}`}
-                              className="rounded-full p-2 text-ink-soft transition-colors hover:bg-paper hover:text-ink"
+                              className="rounded-full p-2 text-gray-mid transition-colors hover:bg-night-soft hover:text-paper"
                             >
                               <ExternalLinkIcon className="h-4 w-4" />
                             </Link>
@@ -932,7 +932,7 @@ export function ContentManager({
                               href={`/admin/compose?slug=${item.slug}&type=${item.kind}`}
                               title="Edit"
                               aria-label={`Edit ${item.title}`}
-                              className="rounded-full p-2 text-ink transition-colors hover:bg-paper"
+                              className="rounded-full p-2 text-paper transition-colors hover:bg-night-soft"
                             >
                               <PencilIcon className="h-4 w-4" />
                             </Link>
@@ -949,7 +949,7 @@ export function ContentManager({
                                   title: item.title,
                                 })
                               }
-                              className="rounded-full p-2 text-amber-700 transition-colors hover:bg-amber-50"
+                              className="rounded-full p-2 text-amber-400 transition-colors hover:bg-amber-950/40"
                             >
                               <EyeSlashIcon className="h-4 w-4" />
                             </button>
@@ -965,7 +965,7 @@ export function ContentManager({
                                   title: item.title,
                                 })
                               }
-                              className="rounded-full p-2 text-red-700 transition-colors hover:bg-red-50"
+                              className="rounded-full p-2 text-red-400 transition-colors hover:bg-red-950/40"
                             >
                               <TrashIcon className="h-4 w-4" />
                             </button>
@@ -977,7 +977,7 @@ export function ContentManager({
                               target="_blank"
                               title="Preview"
                               aria-label={`Preview ${item.title}`}
-                              className="rounded-full p-2 text-ink-soft transition-colors hover:bg-paper hover:text-ink"
+                              className="rounded-full p-2 text-gray-mid transition-colors hover:bg-night-soft hover:text-paper"
                             >
                               <ExternalLinkIcon className="h-4 w-4" />
                             </Link>
@@ -985,7 +985,7 @@ export function ContentManager({
                               href={`/admin/compose?slug=${item.slug}&type=${item.kind}`}
                               title="Edit"
                               aria-label={`Edit ${item.title}`}
-                              className="rounded-full p-2 text-ink transition-colors hover:bg-paper"
+                              className="rounded-full p-2 text-paper transition-colors hover:bg-night-soft"
                             >
                               <PencilIcon className="h-4 w-4" />
                             </Link>
@@ -1002,7 +1002,7 @@ export function ContentManager({
                                   title: item.title,
                                 })
                               }
-                              className="rounded-full p-2 text-emerald-700 transition-colors hover:bg-emerald-50"
+                              className="rounded-full p-2 text-emerald-400 transition-colors hover:bg-emerald-950/40"
                             >
                               <EyeIcon className="h-4 w-4" />
                             </button>
@@ -1018,7 +1018,7 @@ export function ContentManager({
                                   title: item.title,
                                 })
                               }
-                              className="rounded-full p-2 text-red-700 transition-colors hover:bg-red-50"
+                              className="rounded-full p-2 text-red-400 transition-colors hover:bg-red-950/40"
                             >
                               <TrashIcon className="h-4 w-4" />
                             </button>
@@ -1043,9 +1043,9 @@ export function ContentManager({
 
       {/* Action Confirmation Modal (Publish / Unpublish / Delete) */}
       {confirmAction && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-xs">
-          <div className="w-full max-w-md rounded-3xl border border-tinted bg-paper p-6 shadow-2xl animate-in zoom-in-95">
-            <h3 className="font-serif text-xl font-normal text-ink">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-xs">
+          <div className="w-full max-w-md rounded-3xl border border-tinted/20 bg-night-soft p-6 shadow-2xl animate-in zoom-in-95">
+            <h3 className="font-serif text-xl font-normal text-paper">
               {confirmAction.action === 'delete'
                 ? `Delete ${
                     confirmAction.kind === 'post'
@@ -1060,11 +1060,11 @@ export function ContentManager({
                   ? 'Unpublish?'
                   : 'Publish?'}
             </h3>
-            <p className="mt-2 text-sm leading-relaxed text-ink-soft">
+            <p className="mt-2 text-sm leading-relaxed text-gray-mid">
               {confirmAction.action === 'delete' ? (
                 <>
                   Are you sure you want to delete{' '}
-                  <b className="text-ink">{confirmAction.title}</b>? This action cannot be undone.
+                  <b className="text-paper">{confirmAction.title}</b>? This action cannot be undone.
                   {confirmAction.action === 'delete' && (
                     <span className="mt-3 block">
                       Type the full title to confirm:
@@ -1075,7 +1075,7 @@ export function ContentManager({
                 <>
                   Are you sure you want to{' '}
                   {confirmAction.action === 'unpublish' ? 'unpublish' : 'publish'}{' '}
-                  <b className="text-ink">{confirmAction.title}</b>?
+                  <b className="text-paper">{confirmAction.title}</b>?
                 </>
               )}
             </p>
@@ -1091,14 +1091,14 @@ export function ContentManager({
                     handleConfirmAction();
                   }
                 }}
-                className="mt-3 w-full rounded-xl border border-tinted bg-cream px-3.5 py-2 text-sm text-ink placeholder:text-ink-soft/60 focus:border-ink focus:outline-none"
+                className="mt-3 w-full rounded-xl border border-tinted/20 bg-night px-3.5 py-2 text-sm text-paper placeholder:text-gray-mid/50 focus:border-accent focus:outline-none"
               />
             )}
             <div className="mt-6 flex justify-end gap-3">
               <button
                 type="button"
                 onClick={() => setConfirmAction(null)}
-                className="rounded-full px-4 py-2 text-xs font-medium text-ink-soft hover:text-ink"
+                className="rounded-full px-4 py-2 text-xs font-medium text-gray-mid hover:text-paper"
               >
                 Cancel
               </button>
@@ -1110,7 +1110,7 @@ export function ContentManager({
                 }
                 onClick={handleConfirmAction}
                 className={`rounded-full px-5 py-2 text-xs font-semibold text-white shadow-sm hover:brightness-110 disabled:opacity-50 ${
-                  confirmAction.action === 'delete' ? 'bg-red-700' : 'bg-ink'
+                  confirmAction.action === 'delete' ? 'bg-red-700' : 'bg-accent'
                 }`}
               >
                 {isPending
@@ -1128,21 +1128,21 @@ export function ContentManager({
 
       {/* Full Essay Composer Modal with MDX Editor */}
       {isEditingPost && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/50 p-3 sm:p-6 backdrop-blur-xs">
-          <div className="relative my-4 max-h-[96vh] w-full max-w-6xl overflow-y-auto rounded-3xl border border-tinted bg-paper p-6 shadow-2xl sm:p-8">
-            <div className="flex items-center justify-between border-b border-tinted pb-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/70 p-3 sm:p-6 backdrop-blur-xs">
+          <div className="relative my-4 max-h-[96vh] w-full max-w-6xl overflow-y-auto rounded-3xl border border-tinted/20 bg-night p-6 shadow-2xl sm:p-8">
+            <div className="flex items-center justify-between border-b border-tinted/20 pb-4">
               <div>
-                <h3 className="font-serif text-2xl font-normal text-ink">
+                <h3 className="font-serif text-2xl font-normal text-paper">
                   {editingPost ? 'Edit Post' : 'New Post'}
                 </h3>
-                <p className="mt-0.5 text-xs text-ink-soft">
+                <p className="mt-0.5 text-xs text-gray-mid">
                   Author long-form essays with live split-view markdown and rich component insertions.
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => setIsEditingPost(false)}
-                className="rounded-full p-2 text-ink-soft hover:bg-cream hover:text-ink"
+                className="rounded-full p-2 text-gray-mid hover:bg-night-soft hover:text-paper"
               >
                 ✕
               </button>
@@ -1152,7 +1152,7 @@ export function ContentManager({
               {/* Metadata row: Title & Slug */}
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-ink-soft">
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-gray-mid">
                     Title
                   </label>
                   <input
@@ -1166,11 +1166,11 @@ export function ContentManager({
                         setPostSlug(slugify(e.target.value));
                       }
                     }}
-                    className="mt-1.5 w-full rounded-xl border border-tinted bg-cream px-3.5 py-2 text-sm text-ink focus:border-ink focus:outline-none"
+                    className="mt-1.5 w-full rounded-xl border border-tinted/20 bg-night-soft px-3.5 py-2 text-sm text-paper placeholder:text-gray-mid/50 focus:border-accent focus:outline-none"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-ink-soft">
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-gray-mid">
                     Slug
                   </label>
                   <input
@@ -1179,7 +1179,7 @@ export function ContentManager({
                     placeholder="essay-slug-url"
                     value={postSlug}
                     onChange={(e) => setPostSlug(slugify(e.target.value))}
-                    className="mt-1.5 w-full rounded-xl border border-tinted bg-cream px-3.5 py-2 font-mono text-sm text-ink focus:border-ink focus:outline-none"
+                    className="mt-1.5 w-full rounded-xl border border-tinted/20 bg-night-soft px-3.5 py-2 font-mono text-sm text-paper placeholder:text-gray-mid/50 focus:border-accent focus:outline-none"
                   />
                 </div>
               </div>
@@ -1187,46 +1187,46 @@ export function ContentManager({
               {/* Persona, Status, Dates & Tags row */}
               <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
                 <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-ink-soft">
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-gray-mid">
                     Status
                   </label>
                   <select
                     value={postStatus}
                     onChange={(e) => setPostStatus(e.target.value as 'published' | 'unpublished')}
-                    className="mt-1.5 w-full rounded-xl border border-tinted bg-cream px-3.5 py-2 text-xs text-ink focus:border-ink focus:outline-none"
+                    className="mt-1.5 w-full rounded-xl border border-tinted/20 bg-night-soft px-3.5 py-2 text-xs text-paper focus:border-accent focus:outline-none"
                   >
-                    <option value="published">Published</option>
-                    <option value="unpublished">Draft</option>
+                    <option value="published" className="bg-night text-paper">Published</option>
+                    <option value="unpublished" className="bg-night text-paper">Draft</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-ink-soft">
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-gray-mid">
                     Persona Theme
                   </label>
                   <select
                     value={postPersona}
                     onChange={(e) => setPostPersona(e.target.value as Persona)}
-                    className="mt-1.5 w-full rounded-xl border border-tinted bg-cream px-3.5 py-2 text-xs text-ink focus:border-ink focus:outline-none"
+                    className="mt-1.5 w-full rounded-xl border border-tinted/20 bg-night-soft px-3.5 py-2 text-xs text-paper focus:border-accent focus:outline-none"
                   >
-                    <option value="builder">Builder</option>
-                    <option value="operator">Operator</option>
-                    <option value="thinker">Thinker</option>
-                    <option value="wanderer">Wanderer</option>
+                    <option value="builder" className="bg-night text-paper">Builder</option>
+                    <option value="operator" className="bg-night text-paper">Operator</option>
+                    <option value="thinker" className="bg-night text-paper">Thinker</option>
+                    <option value="wanderer" className="bg-night text-paper">Wanderer</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-ink-soft">
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-gray-mid">
                     Planted Date
                   </label>
                   <input
                     type="date"
                     value={postPlantedAt}
                     onChange={(e) => setPostPlantedAt(e.target.value)}
-                    className="mt-1.5 w-full rounded-xl border border-tinted bg-cream px-3.5 py-2 text-xs text-ink focus:border-ink focus:outline-none"
+                    className="mt-1.5 w-full rounded-xl border border-tinted/20 bg-night-soft px-3.5 py-2 text-xs text-paper focus:border-accent focus:outline-none"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-ink-soft">
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-gray-mid">
                     Tags
                   </label>
                   <input
@@ -1234,14 +1234,14 @@ export function ContentManager({
                     placeholder="craft, tools, web"
                     value={postTagsInput}
                     onChange={(e) => setPostTagsInput(e.target.value)}
-                    className="mt-1.5 w-full rounded-xl border border-tinted bg-cream px-3.5 py-2 text-xs text-ink focus:border-ink focus:outline-none"
+                    className="mt-1.5 w-full rounded-xl border border-tinted/20 bg-night-soft px-3.5 py-2 text-xs text-paper placeholder:text-gray-mid/50 focus:border-accent focus:outline-none"
                   />
                 </div>
               </div>
 
               {/* Summary / Excerpt */}
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-ink-soft">
+                <label className="block text-xs font-semibold uppercase tracking-wider text-gray-mid">
                   Summary / Excerpt
                 </label>
                 <input
@@ -1249,13 +1249,13 @@ export function ContentManager({
                   placeholder="Short one-line synopsis for cards..."
                   value={postDescription}
                   onChange={(e) => setPostDescription(e.target.value)}
-                  className="mt-1.5 w-full rounded-xl border border-tinted bg-cream px-3.5 py-2 text-sm text-ink focus:border-ink focus:outline-none"
+                  className="mt-1.5 w-full rounded-xl border border-tinted/20 bg-night-soft px-3.5 py-2 text-sm text-paper placeholder:text-gray-mid/50 focus:border-accent focus:outline-none"
                 />
               </div>
 
               {/* Rich MDX Editor */}
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-ink-soft mb-1.5">
+                <label className="block text-xs font-semibold uppercase tracking-wider text-gray-mid mb-1.5">
                   Essay Body (Markdown & MDX)
                 </label>
                 <MDXEditor
@@ -1265,27 +1265,26 @@ export function ContentManager({
                   persona={postPersona}
                   date={postPlantedAt}
                   mediaItems={mediaItems}
-                  embedBooks={initialBooks}
-                  embedPosts={initialPosts}
-                  embedNotes={initialNotes}
+                  embedBooks={books}
+                  embedPosts={posts}
+                  embedNotes={notes}
                   onChange={(val) => setPostMdxContent(val)}
                   className="h-[520px]"
                 />
               </div>
 
-              {/* Form Footer Buttons */}
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-tinted">
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-tinted/20">
                 <button
                   type="button"
                   onClick={() => setIsEditingPost(false)}
-                  className="rounded-full px-5 py-2 text-xs font-semibold text-ink-soft hover:text-ink"
+                  className="rounded-full px-5 py-2 text-xs font-semibold text-gray-mid hover:text-paper"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isPending}
-                  className="rounded-full bg-ink px-6 py-2.5 text-xs font-semibold text-cream shadow-sm hover:bg-accent disabled:opacity-50"
+                  className="rounded-full bg-accent px-6 py-2.5 text-xs font-semibold text-paper shadow-sm hover:bg-accent-hover transition-colors disabled:opacity-50"
                 >
                   {isPending ? 'Saving Essay...' : 'Save Essay'}
                 </button>
@@ -1297,21 +1296,21 @@ export function ContentManager({
 
       {/* Note Composer Modal with MDX Editor */}
       {isEditingNote && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/50 p-3 sm:p-6 backdrop-blur-xs">
-          <div className="relative my-4 max-h-[96vh] w-full max-w-5xl overflow-y-auto rounded-3xl border border-tinted bg-paper p-6 shadow-2xl sm:p-8">
-            <div className="flex items-center justify-between border-b border-tinted pb-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/70 p-3 sm:p-6 backdrop-blur-xs">
+          <div className="relative my-4 max-h-[96vh] w-full max-w-5xl overflow-y-auto rounded-3xl border border-tinted/20 bg-night p-6 shadow-2xl sm:p-8">
+            <div className="flex items-center justify-between border-b border-tinted/20 pb-4">
               <div>
-                <h3 className="font-serif text-2xl font-normal text-ink">
+                <h3 className="font-serif text-2xl font-normal text-paper">
                   {editingNote ? 'Edit Note' : 'New Note'}
                 </h3>
-                <p className="mt-0.5 text-xs text-ink-soft">
+                <p className="mt-0.5 text-xs text-gray-mid">
                   Capture an atomic thought or observation with live MDX preview.
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => setIsEditingNote(false)}
-                className="rounded-full p-2 text-ink-soft hover:bg-cream hover:text-ink"
+                className="rounded-full p-2 text-gray-mid hover:bg-night-soft hover:text-paper"
               >
                 ✕
               </button>
@@ -1321,7 +1320,7 @@ export function ContentManager({
               {/* Metadata: Title, Slug, Status, Persona */}
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-ink-soft">
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-gray-mid">
                     Title
                   </label>
                   <input
@@ -1335,11 +1334,11 @@ export function ContentManager({
                         setNoteSlug(slugify(e.target.value));
                       }
                     }}
-                    className="mt-1.5 w-full rounded-xl border border-tinted bg-cream px-3.5 py-2 text-sm text-ink focus:border-ink focus:outline-none"
+                    className="mt-1.5 w-full rounded-xl border border-tinted/20 bg-night-soft px-3.5 py-2 text-sm text-paper placeholder:text-gray-mid/50 focus:border-accent focus:outline-none"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-ink-soft">
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-gray-mid">
                     Slug
                   </label>
                   <input
@@ -1348,53 +1347,53 @@ export function ContentManager({
                     placeholder="note-slug"
                     value={noteSlug}
                     onChange={(e) => setNoteSlug(slugify(e.target.value))}
-                    className="mt-1.5 w-full rounded-xl border border-tinted bg-cream px-3.5 py-2 font-mono text-sm text-ink focus:border-ink focus:outline-none"
+                    className="mt-1.5 w-full rounded-xl border border-tinted/20 bg-night-soft px-3.5 py-2 font-mono text-sm text-paper placeholder:text-gray-mid/50 focus:border-accent focus:outline-none"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
                 <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-ink-soft">
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-gray-mid">
                     Status
                   </label>
                   <select
                     value={noteStatus}
                     onChange={(e) => setNoteStatus(e.target.value as 'published' | 'unpublished')}
-                    className="mt-1.5 w-full rounded-xl border border-tinted bg-cream px-3.5 py-2 text-xs text-ink focus:border-ink focus:outline-none"
+                    className="mt-1.5 w-full rounded-xl border border-tinted/20 bg-night-soft px-3.5 py-2 text-xs text-paper focus:border-accent focus:outline-none"
                   >
-                    <option value="published">Published</option>
-                    <option value="unpublished">Draft</option>
+                    <option value="published" className="bg-night text-paper">Published</option>
+                    <option value="unpublished" className="bg-night text-paper">Draft</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-ink-soft">
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-gray-mid">
                     Persona Theme
                   </label>
                   <select
                     value={notePersona}
                     onChange={(e) => setNotePersona(e.target.value as Persona)}
-                    className="mt-1.5 w-full rounded-xl border border-tinted bg-cream px-3.5 py-2 text-xs text-ink focus:border-ink focus:outline-none"
+                    className="mt-1.5 w-full rounded-xl border border-tinted/20 bg-night-soft px-3.5 py-2 text-xs text-paper focus:border-accent focus:outline-none"
                   >
-                    <option value="builder">Builder</option>
-                    <option value="operator">Operator</option>
-                    <option value="thinker">Thinker</option>
-                    <option value="wanderer">Wanderer</option>
+                    <option value="builder" className="bg-night text-paper">Builder</option>
+                    <option value="operator" className="bg-night text-paper">Operator</option>
+                    <option value="thinker" className="bg-night text-paper">Thinker</option>
+                    <option value="wanderer" className="bg-night text-paper">Wanderer</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-ink-soft">
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-gray-mid">
                     Date
                   </label>
                   <input
                     type="date"
                     value={noteDate}
                     onChange={(e) => setNoteDate(e.target.value)}
-                    className="mt-1.5 w-full rounded-xl border border-tinted bg-cream px-3.5 py-2 text-xs text-ink focus:border-ink focus:outline-none"
+                    className="mt-1.5 w-full rounded-xl border border-tinted/20 bg-night-soft px-3.5 py-2 text-xs text-paper focus:border-accent focus:outline-none"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-ink-soft">
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-gray-mid">
                     Tags
                   </label>
                   <input
@@ -1402,14 +1401,14 @@ export function ContentManager({
                     placeholder="philosophy, web"
                     value={noteTagsInput}
                     onChange={(e) => setNoteTagsInput(e.target.value)}
-                    className="mt-1.5 w-full rounded-xl border border-tinted bg-cream px-3.5 py-2 text-xs text-ink focus:border-ink focus:outline-none"
+                    className="mt-1.5 w-full rounded-xl border border-tinted/20 bg-night-soft px-3.5 py-2 text-xs text-paper placeholder:text-gray-mid/50 focus:border-accent focus:outline-none"
                   />
                 </div>
               </div>
 
               {/* MDX Note Editor */}
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-ink-soft mb-1.5">
+                <label className="block text-xs font-semibold uppercase tracking-wider text-gray-mid mb-1.5">
                   Note Content (Markdown & MDX)
                 </label>
                 <MDXEditor
@@ -1427,18 +1426,18 @@ export function ContentManager({
                 />
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-tinted">
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-tinted/20">
                 <button
                   type="button"
                   onClick={() => setIsEditingNote(false)}
-                  className="rounded-full px-5 py-2 text-xs font-semibold text-ink-soft hover:text-ink"
+                  className="rounded-full px-5 py-2 text-xs font-semibold text-gray-mid hover:text-paper"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isPending}
-                  className="rounded-full bg-ink px-6 py-2.5 text-xs font-semibold text-cream shadow-sm hover:bg-accent disabled:opacity-50"
+                  className="rounded-full bg-accent px-6 py-2.5 text-xs font-semibold text-paper shadow-sm hover:bg-accent-hover transition-colors disabled:opacity-50"
                 >
                   {isPending ? 'Saving Note...' : 'Save Note'}
                 </button>
@@ -1450,19 +1449,19 @@ export function ContentManager({
 
       {/* Book Editor Modal */}
       {isEditingBook && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/40 p-4 backdrop-blur-xs sm:p-6">
-          <div className="relative my-8 max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-3xl border border-tinted bg-paper shadow-2xl sm:p-8">
+        <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/70 p-4 backdrop-blur-xs sm:p-6">
+          <div className="relative my-8 max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-3xl border border-tinted/20 bg-night p-6 shadow-2xl sm:p-8">
             {/* Header */}
             <div className="flex items-start justify-between gap-4">
               <div>
-                <h3 className="font-serif text-2xl font-normal text-ink">
+                <h3 className="font-serif text-2xl font-normal text-paper">
                   {editingBook ? 'Edit Book' : 'Add Book to Library'}
                 </h3>
               </div>
               <button
                 type="button"
                 onClick={() => setIsEditingBook(false)}
-                className="rounded-full p-2 text-ink-soft transition-colors hover:bg-cream hover:text-ink"
+                className="rounded-full p-2 text-gray-mid transition-colors hover:bg-night-soft hover:text-paper"
               >
                 ✕
               </button>
@@ -1491,7 +1490,7 @@ export function ContentManager({
                       placeholder="Book Title"
                       value={bookTitle}
                       onChange={(e) => setBookTitle(e.target.value)}
-                      className="w-full rounded-xl border border-tinted bg-cream px-3.5 py-2 text-sm text-ink placeholder:text-ink-soft/60 focus:border-ink focus:outline-none"
+                      className="w-full rounded-xl border border-tinted/20 bg-night-soft px-3.5 py-2 text-sm text-paper placeholder:text-gray-mid/50 focus:border-accent focus:outline-none"
                     />
                     <input
                       type="text"
@@ -1499,7 +1498,7 @@ export function ContentManager({
                       placeholder="Author Name"
                       value={bookAuthor}
                       onChange={(e) => setBookAuthor(e.target.value)}
-                      className="w-full rounded-xl border border-tinted bg-cream px-3.5 py-2 text-sm text-ink placeholder:text-ink-soft/60 focus:border-ink focus:outline-none"
+                      className="w-full rounded-xl border border-tinted/20 bg-night-soft px-3.5 py-2 text-sm text-paper placeholder:text-gray-mid/50 focus:border-accent focus:outline-none"
                     />
                   </div>
 
@@ -1507,19 +1506,19 @@ export function ContentManager({
                     <select
                       value={bookPersona}
                       onChange={(e) => setBookPersona(e.target.value as Persona)}
-                      className="w-full rounded-xl border border-tinted bg-cream px-3.5 py-2 text-sm text-ink focus:border-ink focus:outline-none"
+                      className="w-full rounded-xl border border-tinted/20 bg-night-soft px-3.5 py-2 text-sm text-paper focus:border-accent focus:outline-none"
                     >
-                      <option value="builder">Builder</option>
-                      <option value="operator">Operator</option>
-                      <option value="thinker">Thinker</option>
-                      <option value="wanderer">Wanderer</option>
+                      <option value="builder" className="bg-night text-paper">Builder</option>
+                      <option value="operator" className="bg-night text-paper">Operator</option>
+                      <option value="thinker" className="bg-night text-paper">Thinker</option>
+                      <option value="wanderer" className="bg-night text-paper">Wanderer</option>
                     </select>
                     <input
                       type="text"
                       placeholder="Tags"
                       value={bookTagsInput}
                       onChange={(e) => setBookTagsInput(e.target.value)}
-                      className="w-full rounded-xl border border-tinted bg-cream px-3.5 py-2 text-sm text-ink placeholder:text-ink-soft/60 focus:border-ink focus:outline-none"
+                      className="w-full rounded-xl border border-tinted/20 bg-night-soft px-3.5 py-2 text-sm text-paper placeholder:text-gray-mid/50 focus:border-accent focus:outline-none"
                     />
                   </div>
 
@@ -1528,7 +1527,7 @@ export function ContentManager({
                     placeholder="Note / Summary"
                     value={bookDescription}
                     onChange={(e) => setBookDescription(e.target.value)}
-                    className="w-full resize-none rounded-xl border border-tinted bg-cream px-3.5 py-2 text-sm text-ink placeholder:text-ink-soft/60 focus:border-ink focus:outline-none"
+                    className="w-full resize-none rounded-xl border border-tinted/20 bg-night-soft px-3.5 py-2 text-sm text-paper placeholder:text-gray-mid/50 focus:border-accent focus:outline-none"
                   />
 
                   <input
@@ -1536,24 +1535,24 @@ export function ContentManager({
                     placeholder="External Link"
                     value={bookLink}
                     onChange={(e) => setBookLink(e.target.value)}
-                    className="w-full rounded-xl border border-tinted bg-cream px-3.5 py-2 text-sm text-ink placeholder:text-ink-soft/60 focus:border-ink focus:outline-none"
+                    className="w-full rounded-xl border border-tinted/20 bg-night-soft px-3.5 py-2 text-sm text-paper placeholder:text-gray-mid/50 focus:border-accent focus:outline-none"
                   />
                 </div>
               </div>
 
               {/* Footer */}
-              <div className="mt-8 flex items-center justify-end gap-3 border-t border-tinted pt-5">
+              <div className="mt-8 flex items-center justify-end gap-3 border-t border-tinted/20 pt-5">
                 <button
                   type="button"
                   onClick={() => setIsEditingBook(false)}
-                  className="rounded-full px-5 py-2 text-xs font-semibold text-ink-soft transition-colors hover:text-ink"
+                  className="rounded-full px-5 py-2 text-xs font-semibold text-gray-mid transition-colors hover:text-paper"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isPending}
-                  className="inline-flex items-center gap-2 rounded-full bg-ink px-6 py-2 text-xs font-semibold text-cream shadow-sm transition-colors hover:bg-accent disabled:opacity-50"
+                  className="inline-flex items-center gap-2 rounded-full bg-accent px-6 py-2 text-xs font-semibold text-paper shadow-sm transition-colors hover:bg-accent-hover disabled:opacity-50"
                 >
                   {isPending ? 'Saving...' : 'Save Book'}
                 </button>

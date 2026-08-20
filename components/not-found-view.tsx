@@ -20,7 +20,7 @@ export function NotFoundView() {
       {/* Soft radial glow */}
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,var(--color-tinted)_0%,transparent_70%)] opacity-50"
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(250,249,245,0.04)_0%,transparent_70%)] opacity-50"
       />
 
       <div className="relative w-full max-w-xl text-center">
@@ -28,11 +28,11 @@ export function NotFoundView() {
         <h1 className="flex flex-col items-center">
           <span
             aria-hidden
-            className="font-serif text-7xl font-normal leading-none tracking-tight text-ink sm:text-8xl"
+            className="font-serif text-7xl font-normal leading-none tracking-tight text-paper sm:text-8xl"
           >
             404
           </span>
-          <span className="mt-4 font-serif text-2xl font-normal tracking-tight text-ink sm:text-3xl">
+          <span className="mt-4 font-serif text-2xl font-normal tracking-tight text-paper sm:text-3xl">
             Page Not Found
           </span>
         </h1>
@@ -47,9 +47,9 @@ export function NotFoundView() {
             <Link
               key={action.href}
               href={action.href}
-              className="group flex flex-col items-center justify-center rounded-2xl border border-tinted bg-cream p-5 shadow-xs transition-all hover:border-ink/40 hover:bg-paper hover:shadow-sm"
+              className="group flex flex-col items-center justify-center rounded-2xl border border-tinted/20 bg-night-soft p-5 shadow-sm transition-all hover:border-accent/40 hover:bg-post-card hover:shadow-md"
             >
-              <span className="font-serif text-lg font-medium text-ink group-hover:text-accent">
+              <span className="font-serif text-lg font-medium text-paper group-hover:text-accent">
                 {action.label}
               </span>
               <span className="mt-1 text-xs text-ink-soft">
@@ -60,24 +60,24 @@ export function NotFoundView() {
         </div>
 
         {/* Quiet Tertiary Escape Routes */}
-        <nav aria-label="Other destinations" className="mt-10 border-t border-tinted pt-6">
+        <nav aria-label="Other destinations" className="mt-10 border-t border-tinted/20 pt-6">
           <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-2 text-xs">
             {POPULAR_DESTINATIONS.map((dest, idx) => (
               <Fragment key={dest.href}>
-                {idx > 0 && <span className="text-tinted">•</span>}
+                {idx > 0 && <span className="text-tinted/30">•</span>}
                 {dest.href.startsWith('http') ? (
                   <a
                     href={dest.href}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="font-medium text-ink-soft transition-colors hover:text-ink"
+                    className="font-medium text-ink-soft transition-colors hover:text-paper"
                   >
                     {dest.label}
                   </a>
                 ) : (
                   <Link
                     href={dest.href}
-                    className="font-medium text-ink-soft transition-colors hover:text-ink"
+                    className="font-medium text-ink-soft transition-colors hover:text-paper"
                   >
                     {dest.label}
                   </Link>

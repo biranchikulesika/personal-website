@@ -64,13 +64,13 @@ export function Navbar({ identity, links }: NavbarProps) {
     <>
       <header
         ref={headerRef}
-        className="sticky top-0 z-50 border-b border-ink/10 bg-paper/90 backdrop-blur-sm"
+        className="sticky top-0 z-50 border-b border-tinted/20 bg-[#141413]/90 backdrop-blur-md"
       >
-        <nav className="container-site flex items-center justify-between gap-x-6 py-2.5 md:py-4">
+        <nav className="container-site flex items-center justify-between gap-x-6 py-3.5 md:py-4">
           <Link
             href="/"
             onClick={closeMenu}
-            className={`text-lg font-semibold tracking-tight text-ink ${
+            className={`text-lg font-semibold tracking-tight text-paper transition-colors hover:text-accent ${
               menuOpen ? 'invisible md:visible' : 'visible'
             }`}
             aria-label={identity.name}
@@ -79,7 +79,7 @@ export function Navbar({ identity, links }: NavbarProps) {
           </Link>
 
           {/* Desktop links */}
-          <ul className="hidden items-center gap-6 md:flex md:gap-7">
+          <ul className="hidden items-center gap-7 md:flex">
             {links.map((link) => {
               const active = isActive(link.href);
               return (
@@ -87,10 +87,10 @@ export function Navbar({ identity, links }: NavbarProps) {
                   <Link
                     href={link.href}
                     aria-current={active ? 'page' : undefined}
-                    className={`text-sm transition-colors ${
+                    className={`text-sm transition-colors duration-200 ${
                       active
-                        ? 'font-medium text-ink'
-                        : 'text-ink-soft hover:text-ink'
+                        ? 'font-medium text-paper underline decoration-accent decoration-2 underline-offset-8'
+                        : 'text-gray-mid hover:text-accent'
                     }`}
                   >
                     {link.label}
@@ -107,7 +107,7 @@ export function Navbar({ identity, links }: NavbarProps) {
             aria-expanded={menuOpen}
             aria-controls="mobile-nav"
             aria-label={menuOpen ? 'Close menu' : 'Open menu'}
-            className="relative z-50 flex h-9 w-9 items-center justify-center rounded-full text-ink transition-colors hover:bg-cream md:hidden"
+            className="relative z-50 flex h-9 w-9 items-center justify-center rounded-full text-paper transition-colors hover:bg-night-soft md:hidden"
           >
             <div className="flex h-3.5 w-4.5 flex-col justify-between">
               <span
@@ -136,9 +136,9 @@ export function Navbar({ identity, links }: NavbarProps) {
         {menuOpen && (
           <div
             id="mobile-nav"
-            className="absolute inset-x-0 top-full z-50 border-b border-tinted bg-paper/98 px-6 py-3 shadow-lg backdrop-blur-md md:hidden"
+            className="absolute inset-x-0 top-full z-50 border-b border-tinted/20 bg-[#1c1c1a] px-6 py-4 shadow-2xl backdrop-blur-md md:hidden"
           >
-            <ul className="flex flex-col">
+            <ul className="flex flex-col space-y-1">
               {links.map((link) => {
                 const active = isActive(link.href);
                 return (
@@ -147,10 +147,10 @@ export function Navbar({ identity, links }: NavbarProps) {
                       href={link.href}
                       onClick={closeMenu}
                       aria-current={active ? 'page' : undefined}
-                      className={`block py-2.5 text-base transition-colors ${
+                      className={`block py-2 text-base transition-colors ${
                         active
-                          ? 'font-medium text-ink'
-                          : 'text-ink-soft hover:text-ink'
+                          ? 'font-medium text-paper text-accent'
+                          : 'text-gray-mid hover:text-accent'
                       }`}
                     >
                       {link.label}
@@ -167,7 +167,7 @@ export function Navbar({ identity, links }: NavbarProps) {
       {menuOpen && (
         <div
           onClick={closeMenu}
-          className="fixed inset-0 z-40 bg-ink/20 backdrop-blur-[2px] md:hidden"
+          className="fixed inset-0 z-40 bg-black/60 backdrop-blur-xs md:hidden"
           aria-hidden
         />
       )}

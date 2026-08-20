@@ -31,7 +31,7 @@ export function LandscapeGallery({ images = [] }: LandscapeGalleryProps) {
 
   return (
     <figure
-      className="group relative aspect-[1.65/1] w-full overflow-hidden rounded-2xl bg-cream shadow-md ring-1 ring-tinted transition-all duration-300 hover:shadow-lg"
+      className="group relative aspect-[1.65/1] w-full overflow-hidden rounded-2xl bg-night-soft shadow-2xl ring-1 ring-tinted/20 transition-all duration-300 hover:shadow-xl"
       aria-label="Landscape photo gallery"
     >
       {currentImage ? (
@@ -44,7 +44,7 @@ export function LandscapeGallery({ images = [] }: LandscapeGalleryProps) {
           />
 
           {currentImage.caption && (
-            <figcaption className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-ink/70 via-ink/30 to-transparent p-4 pt-8 text-xs text-cream/90 backdrop-blur-[2px]">
+            <figcaption className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-ink/90 via-ink/40 to-transparent p-4 pt-8 text-xs text-paper/90 backdrop-blur-[2px]">
               {currentImage.caption}
             </figcaption>
           )}
@@ -55,7 +55,7 @@ export function LandscapeGallery({ images = [] }: LandscapeGalleryProps) {
                 type="button"
                 onClick={handlePrev}
                 aria-label="Previous photo"
-                className="flex h-7 w-7 items-center justify-center rounded-full bg-paper/90 text-ink shadow-sm backdrop-blur transition-transform hover:scale-110"
+                className="flex h-7 w-7 items-center justify-center rounded-full bg-night-soft/90 text-paper shadow-md backdrop-blur transition-transform hover:scale-110"
               >
                 <ChevronLeftIcon className="h-4 w-4" />
               </button>
@@ -63,7 +63,7 @@ export function LandscapeGallery({ images = [] }: LandscapeGalleryProps) {
                 type="button"
                 onClick={handleNext}
                 aria-label="Next photo"
-                className="flex h-7 w-7 items-center justify-center rounded-full bg-paper/90 text-ink shadow-sm backdrop-blur transition-transform hover:scale-110"
+                className="flex h-7 w-7 items-center justify-center rounded-full bg-night-soft/90 text-paper shadow-md backdrop-blur transition-transform hover:scale-110"
               >
                 <ChevronRightIcon className="h-4 w-4" />
               </button>
@@ -76,7 +76,7 @@ export function LandscapeGallery({ images = [] }: LandscapeGalleryProps) {
                 <span
                   key={i}
                   className={`h-1.5 rounded-full transition-all duration-300 ${
-                    i === currentIndex ? 'w-4 bg-cream' : 'w-1.5 bg-cream/50'
+                    i === currentIndex ? 'w-4 bg-paper' : 'w-1.5 bg-paper/50'
                   }`}
                   aria-hidden
                 />
@@ -86,7 +86,7 @@ export function LandscapeGallery({ images = [] }: LandscapeGalleryProps) {
         </>
       ) : (
         <div className="flex h-full w-full flex-col items-center justify-center p-6 text-center">
-          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-paper/80 ring-1 ring-tinted">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-post-card/80 ring-1 ring-tinted/20">
             <span className="font-serif text-lg italic text-ink-soft/60">✦</span>
           </div>
           <p className="mt-3 font-serif text-base italic text-ink-soft">

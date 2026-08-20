@@ -90,29 +90,29 @@ export function EmbedInsertModal({
         : filteredNotes.map((n) => ({ slug: n.slug, title: n.title, subtitle: n.description }));
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-xs">
-      <div className="relative my-8 max-h-[85vh] w-full max-w-3xl overflow-hidden rounded-3xl border border-tinted bg-paper shadow-2xl flex flex-col animate-in zoom-in-95">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-xs font-sans">
+      <div className="relative my-8 max-h-[85vh] w-full max-w-3xl overflow-hidden rounded-3xl border border-tinted/20 bg-night text-paper shadow-2xl flex flex-col animate-in zoom-in-95">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-tinted px-6 py-4">
+        <div className="flex items-center justify-between border-b border-tinted/20 px-6 py-4">
           <div>
-            <h3 className="font-serif text-xl font-normal text-ink">Embed Content</h3>
-            <p className="mt-0.5 text-xs text-ink-soft">
+            <h3 className="font-serif text-xl font-normal text-paper">Embed Content</h3>
+            <p className="mt-0.5 text-xs text-gray-mid">
               Insert a book, essay, or note card into this document, just like embedding media.
             </p>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-full p-2 text-ink-soft hover:bg-cream hover:text-ink"
+            className="rounded-full p-2 text-gray-mid hover:bg-night-soft hover:text-paper"
           >
             ✕
           </button>
         </div>
 
         {/* Type Tabs + Search */}
-        <div className="border-b border-tinted bg-cream/50 px-6 py-3">
+        <div className="border-b border-tinted/20 bg-night-soft px-6 py-3">
           <div className="flex items-center justify-between gap-4 flex-wrap">
-            <div className="flex items-center gap-1 rounded-full bg-paper p-1 ring-1 ring-tinted">
+            <div className="flex items-center gap-1 rounded-full bg-night p-1 border border-tinted/20">
               {tabs.map((tab) => (
                 <button
                   key={tab.type}
@@ -120,8 +120,8 @@ export function EmbedInsertModal({
                   onClick={() => setActiveType(tab.type)}
                   className={`rounded-full px-3.5 py-1 text-xs font-semibold transition-all ${
                     activeType === tab.type
-                      ? 'bg-ink text-cream shadow-2xs'
-                      : 'text-ink-soft hover:text-ink'
+                      ? 'bg-accent text-paper shadow-2xs'
+                      : 'text-gray-mid hover:text-paper'
                   }`}
                 >
                   {tab.label} ({tab.count})
@@ -133,7 +133,7 @@ export function EmbedInsertModal({
               placeholder="Search title, author, or slug..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full max-w-xs rounded-full border border-tinted bg-paper px-4 py-1.5 text-xs text-ink placeholder:text-ink-soft/60 focus:border-ink focus:outline-none"
+              className="w-full max-w-xs rounded-full border border-tinted/20 bg-night px-4 py-1.5 text-xs text-paper placeholder:text-gray-mid/50 focus:border-accent focus:outline-none"
             />
           </div>
         </div>
@@ -149,18 +149,18 @@ export function EmbedInsertModal({
                   onSelect(buildSnippet(activeType, item as never));
                   onClose();
                 }}
-                className="group flex flex-col rounded-2xl border border-tinted bg-cream p-4 text-left shadow-2xs transition-all hover:border-ink hover:shadow-md focus:outline-none"
+                className="group flex flex-col rounded-2xl border border-tinted/20 bg-post-card p-4 text-left shadow-2xs transition-all hover:border-accent/40 hover:shadow-md focus:outline-none"
               >
-                <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wider text-ink-soft">
+                <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wider text-gray-mid">
                   <span aria-hidden>
                     {activeType === 'book' ? '📖' : activeType === 'post' ? '📄' : '📝'}
                   </span>
                   <span>{activeType === 'book' ? 'Book' : activeType === 'post' ? 'Essay' : 'Note'}</span>
                 </div>
-                <div className="mt-1.5 truncate text-sm font-medium text-ink group-hover:text-accent">
+                <div className="mt-1.5 truncate text-sm font-medium text-paper group-hover:text-accent">
                   {item.title}
                 </div>
-                <div className="mt-0.5 truncate text-xs text-ink-soft">{item.subtitle}</div>
+                <div className="mt-0.5 truncate text-xs text-gray-mid">{item.subtitle}</div>
                 <span className="mt-2 inline-flex items-center gap-1 text-[10px] font-semibold text-accent opacity-0 transition-opacity group-hover:opacity-100">
                   Embed ↵
                 </span>
@@ -169,7 +169,7 @@ export function EmbedInsertModal({
           </div>
 
           {currentItems.length === 0 && (
-            <div className="py-12 text-center text-xs text-ink-soft">
+            <div className="py-12 text-center text-xs text-gray-mid">
               No {tabs.find((t) => t.type === activeType)?.label.toLowerCase()} found
               {search ? ` matching "${search}"` : ''}.
             </div>
@@ -177,11 +177,11 @@ export function EmbedInsertModal({
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end border-t border-tinted px-6 py-3">
+        <div className="flex items-center justify-end border-t border-tinted/20 px-6 py-3">
           <button
             type="button"
             onClick={onClose}
-            className="rounded-full px-4 py-1.5 text-xs font-semibold text-ink-soft hover:text-ink"
+            className="rounded-full px-4 py-1.5 text-xs font-semibold text-gray-mid hover:text-paper"
           >
             Cancel
           </button>

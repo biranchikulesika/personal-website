@@ -32,7 +32,7 @@ export function NewsletterForm({
       {/* Mobile layout — underline input + full-width button */}
       <form
         onSubmit={handleSubmit}
-        className="rounded-2xl bg-paper p-4 shadow-sm ring-1 ring-tinted sm:hidden"
+        className="rounded-2xl bg-night-soft p-4 shadow-lg ring-1 ring-tinted/20 sm:hidden"
       >
         <input
           type="email"
@@ -40,20 +40,20 @@ export function NewsletterForm({
           required
           placeholder={newsletter.placeholder}
           aria-label="Email address"
-          className="w-full border-b border-ink/15 bg-transparent pb-2 text-base text-ink placeholder:text-ink-soft/50 focus:border-accent focus:outline-none"
+          className="w-full border-b border-tinted/20 bg-transparent pb-2 text-base text-paper placeholder:text-ink-soft/60 focus:border-accent focus:outline-none"
         />
         <button
           type="submit"
-          className="mt-4 w-full rounded-xl bg-ink px-5 py-3 text-base font-semibold text-cream transition-colors hover:bg-accent"
+          className="mt-4 w-full rounded-xl bg-accent px-5 py-3 text-base font-semibold text-paper transition-colors hover:bg-accent-hover"
         >
           {subscribed ? 'Subscribed!' : newsletter.button}
         </button>
       </form>
 
-      {/* Desktop layout — compact pill, unaffected */}
+      {/* Desktop layout — compact pill */}
       <form
         onSubmit={handleSubmit}
-        className="hidden flex-col gap-2 rounded-2xl bg-paper p-1.5 shadow-sm ring-1 ring-tinted sm:flex sm:flex-row sm:items-center sm:rounded-full"
+        className="hidden flex-col gap-2 rounded-2xl bg-night-soft p-1.5 shadow-lg ring-1 ring-tinted/20 sm:flex sm:flex-row sm:items-center sm:rounded-full"
       >
         <input
           type="email"
@@ -61,11 +61,11 @@ export function NewsletterForm({
           required
           placeholder={newsletter.placeholder}
           aria-label="Email address"
-          className="w-full flex-1 rounded-full bg-transparent px-5 py-3 text-base text-ink placeholder:text-ink-soft/50 focus:outline-none"
+          className="w-full flex-1 rounded-full bg-transparent px-5 py-3 text-base text-paper placeholder:text-ink-soft/60 focus:outline-none"
         />
         <button
           type="submit"
-          className="w-full whitespace-nowrap rounded-full bg-ink px-5 py-3 text-base font-semibold text-cream transition-colors hover:bg-accent sm:w-auto"
+          className="w-full whitespace-nowrap rounded-full bg-accent px-6 py-3 text-base font-semibold text-paper transition-colors hover:bg-accent-hover sm:w-auto"
         >
           {subscribed ? 'Subscribed!' : newsletter.button}
         </button>

@@ -50,7 +50,7 @@ export function SupportPageView() {
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent sm:text-sm">
             PATRONAGE & SUPPORT
           </p>
-          <h1 className="mt-4 font-serif text-3xl font-normal leading-[1.12] tracking-tight text-ink sm:text-4xl md:text-5xl xl:text-[3.5rem]">
+          <h1 className="mt-4 font-serif text-3xl font-normal leading-[1.12] tracking-tight text-paper sm:text-4xl md:text-5xl xl:text-[3.5rem]">
             Help me keep this corner of the web independent.
           </h1>
 
@@ -69,22 +69,22 @@ export function SupportPageView() {
 
         {/* Right Column: Payment Box */}
         <div className="lg:col-span-6">
-          <div className="rounded-3xl border border-tinted bg-cream p-6 shadow-sm sm:p-8">
+          <div className="rounded-3xl border border-tinted/20 bg-night-soft p-6 shadow-2xl sm:p-8">
             {submitted ? (
               <div className="py-6 text-center">
-                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-paper text-accent shadow-sm ring-1 ring-tinted">
+                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-post-card text-accent shadow-sm ring-1 ring-tinted/20">
                   <HeartIcon className="h-7 w-7 fill-accent/20" />
                 </div>
-                <h2 className="mt-5 font-serif text-2xl font-normal text-ink md:text-3xl">
+                <h2 className="mt-5 font-serif text-2xl font-normal text-paper md:text-3xl">
                   Thank you deeply{name ? `, ${name}` : ''}!
                 </h2>
                 <p className="mx-auto mt-3 max-w-sm text-base leading-relaxed text-ink-soft">
                   Your simulated contribution of{' '}
-                  <b className="font-semibold text-ink">₹{amount}</b> helps keep
+                  <b className="font-semibold text-paper">₹{amount}</b> helps keep
                   this work independent, thoughtful, and deliberate.
                 </p>
                 {message && (
-                  <blockquote className="mx-auto mt-5 max-w-xs rounded-xl border border-tinted bg-paper p-3.5 font-serif text-sm italic text-ink-soft">
+                  <blockquote className="mx-auto mt-5 max-w-xs rounded-xl border border-tinted/20 bg-post-card p-3.5 font-serif text-sm italic text-ink-soft">
                     “{message}”
                   </blockquote>
                 )}
@@ -94,7 +94,7 @@ export function SupportPageView() {
                     setSubmitted(false);
                     setMessage('');
                   }}
-                  className="mt-6 rounded-full bg-ink px-6 py-2.5 text-sm font-semibold text-cream transition-colors hover:bg-accent"
+                  className="mt-6 rounded-full bg-accent px-6 py-2.5 text-sm font-semibold text-paper transition-colors hover:bg-accent-hover"
                 >
                   Make another contribution
                 </button>
@@ -109,8 +109,8 @@ export function SupportPageView() {
                   >
                     Contribution Amount
                   </label>
-                  <div className="mt-2 flex items-center rounded-2xl bg-paper px-4 py-3 ring-1 ring-tinted transition-all focus-within:ring-2 focus-within:ring-ink">
-                    <span className="font-serif text-2xl font-normal text-ink">₹</span>
+                  <div className="mt-2 flex items-center rounded-2xl bg-post-card px-4 py-3 ring-1 ring-tinted/20 transition-all focus-within:ring-2 focus-within:ring-accent">
+                    <span className="font-serif text-2xl font-normal text-paper">₹</span>
                     <input
                       id="support-amount"
                       type="number"
@@ -120,7 +120,7 @@ export function SupportPageView() {
                       placeholder="Enter amount"
                       value={amount}
                       onChange={(e) => setAmount(e.target.value)}
-                      className="ml-3 w-full bg-transparent font-serif text-2xl font-normal text-ink placeholder:font-sans placeholder:text-base placeholder:text-ink-soft/40 focus:outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                      className="ml-3 w-full bg-transparent font-serif text-2xl font-normal text-paper placeholder:font-sans placeholder:text-base placeholder:text-ink-soft/40 focus:outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                     />
                     <span className="text-xs font-semibold uppercase tracking-wider text-ink-soft">
                       INR
@@ -142,7 +142,7 @@ export function SupportPageView() {
                     placeholder="e.g. Alex"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    className="mt-1.5 w-full rounded-xl bg-paper px-4 py-2.5 text-sm text-ink placeholder:text-ink-soft/60 ring-1 ring-tinted focus:outline-none focus:ring-2 focus:ring-ink"
+                    className="mt-1.5 w-full rounded-xl bg-post-card px-4 py-2.5 text-sm text-paper placeholder:text-ink-soft/60 ring-1 ring-tinted/20 focus:outline-none focus:ring-2 focus:ring-accent"
                   />
                 </div>
 
@@ -160,7 +160,7 @@ export function SupportPageView() {
                     placeholder="Share a thought, feedback on an essay, or a friendly hello..."
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
-                    className="mt-1.5 w-full resize-none rounded-xl bg-paper px-4 py-2.5 text-sm text-ink placeholder:text-ink-soft/60 ring-1 ring-tinted focus:outline-none focus:ring-2 focus:ring-ink"
+                    className="mt-1.5 w-full resize-none rounded-xl bg-post-card px-4 py-2.5 text-sm text-paper placeholder:text-ink-soft/60 ring-1 ring-tinted/20 focus:outline-none focus:ring-2 focus:ring-accent"
                   />
                 </div>
 
@@ -168,7 +168,7 @@ export function SupportPageView() {
                 <button
                   type="submit"
                   disabled={numAmount < 10}
-                  className="group flex w-full items-center justify-center gap-2 rounded-full bg-ink py-3.5 text-base font-semibold text-cream shadow-sm transition-all hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-ink"
+                  className="group flex w-full items-center justify-center gap-2 rounded-full bg-accent py-3.5 text-base font-semibold text-paper shadow-sm transition-all hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <HeartIcon className="h-4 w-4 transition-transform group-hover:scale-110" />
                   <span>
@@ -189,7 +189,7 @@ export function SupportPageView() {
 
       {/* 2. Where does the support go? */}
       <section className="mx-auto mt-20 max-w-4xl lg:mt-28">
-        <h2 className="text-center font-serif text-2xl font-normal text-ink md:text-3xl lg:text-4xl">
+        <h2 className="text-center font-serif text-2xl font-normal text-paper md:text-3xl lg:text-4xl">
           Where does the support go?
         </h2>
         <p className="mx-auto mt-3 max-w-2xl text-center text-base text-ink-soft md:text-lg">
@@ -200,13 +200,13 @@ export function SupportPageView() {
           {WHERE_MONEY_GOES.map((item) => (
             <div
               key={item.title}
-              className="flex flex-col justify-between rounded-2xl border border-tinted bg-cream p-6 sm:p-7 shadow-sm"
+              className="flex flex-col justify-between rounded-2xl border border-tinted/20 bg-night-soft p-6 sm:p-7 shadow-sm"
             >
               <div>
-                <h3 className="font-serif text-xl font-normal text-ink">
+                <h3 className="font-serif text-xl font-normal text-paper">
                   {item.title}
                 </h3>
-                <p className="mt-2.5 text-sm font-medium text-ink/90">
+                <p className="mt-2.5 text-sm font-medium text-paper/90">
                   {item.lead}
                 </p>
                 <p className="mt-2 text-sm leading-relaxed text-ink-soft">
@@ -219,8 +219,8 @@ export function SupportPageView() {
       </section>
 
       {/* 3. Closing Note */}
-      <footer className="mx-auto mt-20 max-w-2xl border-t border-tinted pt-12 text-center">
-        <p className="font-serif text-lg font-medium text-ink md:text-xl">
+      <footer className="mx-auto mt-20 max-w-2xl border-t border-tinted/20 pt-12 text-center">
+        <p className="font-serif text-lg font-medium text-paper md:text-xl">
           Thank you for reading, sharing, supporting, or simply being here.
         </p>
       </footer>

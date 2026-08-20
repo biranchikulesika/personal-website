@@ -43,9 +43,9 @@ function CardMeta({
   date: string;
 }) {
   return (
-    <p className="mt-3 flex items-center gap-1.5 text-xs text-ink-soft">
+    <p className="mt-3 flex items-center gap-1.5 text-xs text-gray-mid">
       <span>{TYPE_LABELS[type]}</span>
-      <span className="h-1 w-1 rounded-full bg-ink-soft" aria-hidden />
+      <span className="h-1 w-1 rounded-full bg-gray-mid" aria-hidden />
       <span>{formatDisplayDate(date)}</span>
     </p>
   );
@@ -56,8 +56,8 @@ function CardMeta({
  */
 function EssayCover({ title }: { title: string }) {
   return (
-    <div className="flex aspect-[16/10] w-full items-center justify-center overflow-hidden rounded-xl bg-[radial-gradient(ellipse_at_center,var(--color-paper)_15%,transparent_75%)]">
-      <span className="font-serif text-5xl italic text-ink-soft/40 transition-transform duration-300 group-hover:scale-110">
+    <div className="flex aspect-[16/10] w-full items-center justify-center overflow-hidden rounded-xl bg-[radial-gradient(ellipse_at_center,rgba(250,249,245,0.08)_15%,transparent_75%)]">
+      <span className="font-serif text-5xl italic text-paper/40 transition-transform duration-300 group-hover:scale-110">
         {title.charAt(0)}
       </span>
     </div>
@@ -69,13 +69,13 @@ function EssayCover({ title }: { title: string }) {
  */
 function BookCover({ title, author }: { title: string; author?: string }) {
   return (
-    <div className="flex aspect-[16/10] w-full items-center justify-center overflow-hidden rounded-xl bg-[radial-gradient(ellipse_at_center,var(--color-paper)_15%,transparent_75%)] p-4">
-      <div className="flex aspect-[2/3] h-full max-h-32 flex-col justify-between rounded bg-cream p-2.5 shadow-sm transition-transform duration-300 group-hover:scale-105">
-        <span className="text-center font-serif text-xs italic leading-tight text-ink line-clamp-3">
+    <div className="flex aspect-[16/10] w-full items-center justify-center overflow-hidden rounded-xl bg-[radial-gradient(ellipse_at_center,rgba(250,249,245,0.08)_15%,transparent_75%)] p-4">
+      <div className="flex aspect-[2/3] h-full max-h-32 flex-col justify-between rounded bg-night-soft border border-tinted/20 p-2.5 shadow-sm transition-transform duration-300 group-hover:scale-105">
+        <span className="text-center font-serif text-xs italic leading-tight text-paper line-clamp-3">
           {title}
         </span>
         {author && (
-          <span className="truncate text-center text-[10px] text-ink-soft">
+          <span className="truncate text-center text-[10px] text-gray-mid">
             {author}
           </span>
         )}
@@ -88,10 +88,10 @@ function NoteCard({ entry }: { entry: ScribbleEntry }) {
   return (
     <article className="py-2">
       <Link href={entry.href} className="group block">
-        <h3 className="font-serif text-xl font-normal leading-snug text-ink transition-colors duration-300 group-hover:text-accent">
+        <h3 className="font-serif text-xl font-normal leading-snug text-paper transition-colors duration-300 group-hover:text-accent">
           {entry.title}
         </h3>
-        <p className="mt-2 text-sm leading-relaxed text-ink-soft">
+        <p className="mt-2 text-sm leading-relaxed text-gray-mid">
           {entry.description}
         </p>
         <CardMeta
@@ -108,14 +108,14 @@ function EssayCard({ entry }: { entry: ScribbleEntry }) {
     <article>
       <Link
         href={entry.href}
-        className="group block rounded-2xl border border-tinted bg-cream p-4 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md"
+        className="group block rounded-2xl border border-tinted/20 bg-post-card p-4 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md hover:border-accent/40"
       >
         <EssayCover title={entry.title} />
         <div className="mt-3.5">
-          <h3 className="font-serif text-lg font-normal leading-snug text-ink transition-colors duration-300 group-hover:text-accent">
+          <h3 className="font-serif text-lg font-normal leading-snug text-paper transition-colors duration-300 group-hover:text-accent">
             {entry.title}
           </h3>
-          <p className="mt-1.5 text-sm leading-relaxed text-ink-soft">{entry.description}</p>
+          <p className="mt-1.5 text-sm leading-relaxed text-gray-mid">{entry.description}</p>
           <CardMeta
             type={entry.type}
             date={entry.date}
@@ -131,17 +131,17 @@ function BookCard({ entry }: { entry: ScribbleEntry }) {
     <article>
       <Link
         href={entry.href}
-        className="group block rounded-2xl border border-tinted bg-cream p-4 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md"
+        className="group block rounded-2xl border border-tinted/20 bg-post-card p-4 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md hover:border-accent/40"
       >
         <BookCover title={entry.title} author={entry.author} />
         <div className="mt-3.5">
-          <h3 className="font-serif text-lg font-normal leading-snug text-ink transition-colors duration-300 group-hover:text-accent">
+          <h3 className="font-serif text-lg font-normal leading-snug text-paper transition-colors duration-300 group-hover:text-accent">
             {entry.title}
           </h3>
           {entry.author && (
-            <p className="mt-0.5 text-xs text-ink-soft">{entry.author}</p>
+            <p className="mt-0.5 text-xs text-gray-mid">{entry.author}</p>
           )}
-          <p className="mt-1 text-sm leading-relaxed text-ink-soft">{entry.description}</p>
+          <p className="mt-1 text-sm leading-relaxed text-gray-mid">{entry.description}</p>
           <CardMeta
             type={entry.type}
             date={entry.date}
@@ -189,8 +189,8 @@ function FilterBar({
   const chipClass = (active: boolean) =>
     `shrink-0 whitespace-nowrap text-sm transition-colors ${
       active
-        ? 'text-accent underline underline-offset-4'
-        : 'text-ink hover:text-accent'
+        ? 'text-accent underline underline-offset-4 font-medium'
+        : 'text-paper/80 hover:text-accent'
     }`;
 
   return (
@@ -221,7 +221,7 @@ function FilterBar({
         type="button"
         onClick={() => scroll(-1)}
         aria-label="Scroll topics left"
-        className="hidden shrink-0 rounded-full p-1 text-ink-soft transition-colors hover:bg-cream hover:text-ink sm:inline-flex"
+        className="hidden shrink-0 rounded-full p-1 text-ink-soft transition-colors hover:bg-night-soft hover:text-paper sm:inline-flex"
       >
         <ChevronLeftIcon className="h-4 w-4" />
       </button>
@@ -254,7 +254,7 @@ function FilterBar({
         type="button"
         onClick={() => scroll(1)}
         aria-label="Scroll topics right"
-        className="hidden shrink-0 rounded-full p-1 text-ink-soft transition-colors hover:bg-cream hover:text-ink sm:inline-flex"
+        className="hidden shrink-0 rounded-full p-1 text-ink-soft transition-colors hover:bg-night-soft hover:text-paper sm:inline-flex"
       >
         <ChevronRightIcon className="h-4 w-4" />
       </button>
@@ -310,7 +310,7 @@ export function ScribblePage({ entries }: ScribblePageProps) {
     <section aria-label="Scribble" className="container-site py-10 md:py-14">
       <header className="flex flex-wrap items-start justify-between gap-x-8 gap-y-6">
         <div className="max-w-2xl">
-          <h1 className="font-serif text-4xl font-normal tracking-tight md:text-5xl">
+          <h1 className="font-serif text-4xl font-normal tracking-tight text-paper md:text-5xl">
             Scribble
             <span className="ml-3 text-sea-blue">{entries.length}</span>
           </h1>
@@ -327,7 +327,7 @@ export function ScribblePage({ entries }: ScribblePageProps) {
             onChange={(event) => setSearch(event.target.value)}
             placeholder="Search Scribble"
             aria-label="Search Scribble"
-            className="w-full rounded-full border border-tinted bg-cream py-2 pl-9 pr-4 text-sm text-ink placeholder:text-ink-soft/70 focus:border-ink/40 focus:outline-none"
+            className="w-full rounded-full border border-tinted/20 bg-night-soft py-2 pl-9 pr-4 text-sm text-paper placeholder:text-ink-soft/60 focus:border-accent focus:outline-none"
           />
         </div>
       </header>

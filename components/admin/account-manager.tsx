@@ -62,7 +62,7 @@ function getInitials(name: string): string {
 
 function IconChip({ children }: { children: React.ReactNode }) {
   return (
-    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-paper text-ink-soft ring-1 ring-tinted">
+    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-night-soft text-gray-mid border border-tinted/20">
       {children}
     </span>
   );
@@ -70,7 +70,7 @@ function IconChip({ children }: { children: React.ReactNode }) {
 
 function SectionHeading({ title }: { title: string }) {
   return (
-    <h3 className="text-xs font-semibold uppercase tracking-wider text-ink-soft">
+    <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-mid">
       {title}
     </h3>
   );
@@ -162,17 +162,17 @@ export function AccountManager({ initialProfile }: AccountManagerProps) {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 font-sans">
       {/* Toast Notification */}
       {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-50 rounded-2xl bg-ink px-5 py-3 text-sm font-medium text-cream shadow-xl ring-1 ring-tinted animate-in fade-in slide-in-from-bottom-3">
+        <div className="fixed bottom-6 right-6 z-50 rounded-2xl bg-night-soft border border-tinted/30 px-5 py-3 text-sm font-medium text-paper shadow-xl animate-in fade-in slide-in-from-bottom-3">
           {toastMessage}
         </div>
       )}
 
       {/* Header */}
       <div>
-        <h2 className="font-serif text-2xl font-normal text-ink md:text-3xl">
+        <h2 className="font-serif text-2xl font-normal text-paper md:text-3xl">
           Account & Security
         </h2>
       </div>
@@ -182,17 +182,17 @@ export function AccountManager({ initialProfile }: AccountManagerProps) {
           {/* ── Sign-in & Authentication ── */}
           <section>
             <SectionHeading title="Sign-in & Authentication" />
-            <div className="mt-3 divide-y divide-tinted/60 overflow-hidden rounded-2xl border border-tinted bg-cream shadow-sm">
+            <div className="mt-3 divide-y divide-tinted/20 overflow-hidden rounded-2xl border border-tinted/20 bg-post-card shadow-sm">
               {/* Identity */}
               <div className="flex items-center gap-3 px-5 py-4">
-                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-ink text-sm font-semibold text-cream">
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-accent text-sm font-semibold text-paper">
                   {getInitials(initialProfile.name)}
                 </span>
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold text-ink">
+                  <p className="truncate text-sm font-semibold text-paper">
                     {initialProfile.name}
                   </p>
-                  <p className="mt-0.5 flex items-center gap-1.5 truncate text-xs text-ink-soft">
+                  <p className="mt-0.5 flex items-center gap-1.5 truncate text-xs text-gray-mid">
                     <EnvelopeIcon className="h-3.5 w-3.5 shrink-0" />
                     {initialProfile.email}
                   </p>
@@ -200,11 +200,11 @@ export function AccountManager({ initialProfile }: AccountManagerProps) {
               </div>
 
               {/* Passkeys header */}
-              <div className="flex items-center justify-between px-5 py-3">
-                <p className="text-xs font-semibold uppercase tracking-wider text-ink-soft">
+              <div className="flex items-center justify-between px-5 py-3 bg-night-soft/40">
+                <p className="text-xs font-semibold uppercase tracking-wider text-gray-mid">
                   Passkeys
                 </p>
-                <span className="rounded-full bg-paper px-2 py-0.5 text-[10px] font-semibold text-ink ring-1 ring-tinted">
+                <span className="rounded-full bg-night px-2 py-0.5 text-[10px] font-semibold text-paper border border-tinted/20">
                   {passkeys.length}
                 </span>
               </div>
@@ -216,13 +216,13 @@ export function AccountManager({ initialProfile }: AccountManagerProps) {
                 >
                   <div className="flex min-w-0 items-center gap-3">
                     <IconChip>
-                      <FingerprintIcon className="h-4 w-4" />
+                      <FingerprintIcon className="h-4 w-4 text-teal" />
                     </IconChip>
                     <div className="min-w-0">
-                      <p className="truncate text-sm font-medium text-ink">
+                      <p className="truncate text-sm font-medium text-paper">
                         {passkey.label}
                       </p>
-                      <p className="mt-0.5 text-xs text-ink-soft">
+                      <p className="mt-0.5 text-xs text-gray-mid">
                         Last used {passkey.lastUsedAt}
                       </p>
                     </div>
@@ -232,7 +232,7 @@ export function AccountManager({ initialProfile }: AccountManagerProps) {
                     title="Remove passkey"
                     aria-label={`Remove ${passkey.label} passkey`}
                     onClick={() => handleRemovePasskey(passkey.id)}
-                    className="shrink-0 rounded-full p-2 text-ink-soft transition-colors hover:bg-red-50 hover:text-red-700"
+                    className="shrink-0 rounded-full p-2 text-gray-mid transition-colors hover:bg-red-950/40 hover:text-red-400"
                   >
                     <TrashIcon className="h-4 w-4" />
                   </button>
@@ -241,7 +241,7 @@ export function AccountManager({ initialProfile }: AccountManagerProps) {
 
               {passkeys.length === 0 && (
                 <div className="px-5 py-3">
-                  <p className="text-xs text-ink-soft">
+                  <p className="text-xs text-gray-mid">
                     Add a passkey to sign in with your device instead of using a
                     password.
                   </p>
@@ -254,7 +254,7 @@ export function AccountManager({ initialProfile }: AccountManagerProps) {
                   type="button"
                   disabled={isRegistering}
                   onClick={handleAddPasskey}
-                  className="flex w-full items-center justify-center gap-1.5 rounded-full bg-ink py-2.5 text-xs font-semibold text-cream shadow-sm transition-colors hover:bg-accent disabled:opacity-50"
+                  className="flex w-full items-center justify-center gap-1.5 rounded-full bg-accent py-2.5 text-xs font-semibold text-paper shadow-sm transition-colors hover:bg-accent-hover disabled:opacity-50"
                 >
                   <FingerprintIcon className="h-3.5 w-3.5" />
                   {isRegistering ? 'Creating passkey…' : 'Add passkey'}
@@ -266,7 +266,7 @@ export function AccountManager({ initialProfile }: AccountManagerProps) {
           {/* ── Connected Accounts ── */}
           <section>
             <SectionHeading title="Connected Accounts" />
-            <div className="mt-3 divide-y divide-tinted/60 overflow-hidden rounded-2xl border border-tinted bg-cream shadow-sm">
+            <div className="mt-3 divide-y divide-tinted/20 overflow-hidden rounded-2xl border border-tinted/20 bg-post-card shadow-sm">
               {CONNECTED_ACCOUNTS.map((provider) => {
                 const isConnected = connectedProviders.includes(provider.id);
                 const isPending = pendingProvider === provider.id;
@@ -282,7 +282,7 @@ export function AccountManager({ initialProfile }: AccountManagerProps) {
                       <IconChip>
                         <provider.Icon className="h-4 w-4" />
                       </IconChip>
-                      <p className="text-sm font-medium text-ink">
+                      <p className="text-sm font-medium text-paper">
                         {provider.label}
                       </p>
                     </div>
@@ -293,12 +293,12 @@ export function AccountManager({ initialProfile }: AccountManagerProps) {
                           type="button"
                           disabled={isPending}
                           onClick={() => handleDisconnect(provider.id)}
-                          className="shrink-0 text-xs font-semibold text-red-700 transition-colors hover:text-red-800 disabled:cursor-wait disabled:opacity-50"
+                          className="shrink-0 text-xs font-semibold text-red-400 transition-colors hover:text-red-300 disabled:cursor-wait disabled:opacity-50"
                         >
                           {isPending ? 'Disconnecting…' : 'Disconnect'}
                         </button>
                       ) : (
-                        <span className="shrink-0 rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-semibold text-emerald-700 ring-1 ring-emerald-200">
+                        <span className="shrink-0 rounded-full bg-emerald-950/60 px-2.5 py-1 text-[10px] font-semibold text-emerald-400 border border-emerald-800/40">
                           Connected
                         </span>
                       )
@@ -307,7 +307,7 @@ export function AccountManager({ initialProfile }: AccountManagerProps) {
                         type="button"
                         disabled={isPending}
                         onClick={() => handleConnect(provider.id)}
-                        className="shrink-0 rounded-full bg-paper px-3 py-1 text-xs font-semibold text-ink ring-1 ring-tinted transition-colors hover:bg-ink hover:text-cream disabled:cursor-not-allowed disabled:opacity-50"
+                        className="shrink-0 rounded-full bg-night-soft border border-tinted/20 px-3 py-1 text-xs font-semibold text-paper transition-colors hover:bg-accent hover:border-accent disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         {isPending ? 'Connecting…' : 'Connect'}
                       </button>
@@ -327,13 +327,13 @@ export function AccountManager({ initialProfile }: AccountManagerProps) {
               <button
                 type="button"
                 onClick={handleSignOutAll}
-                className="text-xs font-semibold text-ink-soft transition-colors hover:text-red-700"
+                className="text-xs font-semibold text-gray-mid transition-colors hover:text-red-400"
               >
                 Sign out all
               </button>
             )}
           </div>
-          <div className="mt-3 divide-y divide-tinted/60 overflow-hidden rounded-2xl border border-tinted bg-cream shadow-sm">
+          <div className="mt-3 divide-y divide-tinted/20 overflow-hidden rounded-2xl border border-tinted/20 bg-post-card shadow-sm">
             {sessions.map((session) => (
               <div
                 key={session.id}
@@ -341,31 +341,31 @@ export function AccountManager({ initialProfile }: AccountManagerProps) {
               >
                 <div className="flex min-w-0 items-center gap-3">
                   <IconChip>
-                    <LaptopIcon className="h-4 w-4" />
+                    <LaptopIcon className="h-4 w-4 text-teal" />
                   </IconChip>
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                      <p className="text-sm font-medium text-ink">
+                      <p className="text-sm font-medium text-paper">
                         {session.device}
                       </p>
-                      <span className="rounded-full bg-paper px-2 py-0.5 text-[10px] font-semibold text-ink ring-1 ring-tinted">
+                      <span className="rounded-full bg-night px-2 py-0.5 text-[10px] font-semibold text-teal border border-tinted/20">
                         This device
                       </span>
                     </div>
-                    <p className="mt-0.5 text-xs text-ink-soft">
+                    <p className="mt-0.5 text-xs text-gray-mid">
                       {session.location} · Started {session.startedAt}
                     </p>
                   </div>
                 </div>
                 <div className="flex shrink-0 items-center gap-3">
-                  <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700">
-                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-600" />
+                  <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-400">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
                     Active
                   </span>
                   <button
                     type="button"
                     onClick={() => handleSignOutSession(session.id)}
-                    className="text-xs font-semibold text-ink-soft transition-colors hover:text-red-700"
+                    className="text-xs font-semibold text-gray-mid transition-colors hover:text-red-400"
                   >
                     Sign out
                   </button>
@@ -374,7 +374,7 @@ export function AccountManager({ initialProfile }: AccountManagerProps) {
             ))}
             {sessions.length === 0 && (
               <div className="px-5 py-4">
-                <p className="text-xs text-ink-soft">
+                <p className="text-xs text-gray-mid">
                   No active sessions. Sign in to see your devices here.
                 </p>
               </div>

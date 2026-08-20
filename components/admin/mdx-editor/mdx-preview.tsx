@@ -42,12 +42,12 @@ function PreviewImage({
 
   return (
     <figure className={`my-8 block ${className}`}>
-      <div className="overflow-hidden rounded-xl border border-tinted bg-cream/60 shadow-md">
+      <div className="overflow-hidden rounded-xl border border-tinted/20 bg-post-card shadow-md">
         {hasError || !cleanSrc ? (
-          <div className="flex aspect-[16/9] w-full flex-col items-center justify-center bg-paper p-6 text-center text-ink-soft">
+          <div className="flex aspect-[16/9] w-full flex-col items-center justify-center bg-night p-6 text-center text-gray-mid">
             <span className="text-3xl">🖼</span>
-            <span className="mt-2 font-mono text-xs font-semibold text-ink">{alt || 'Image Asset'}</span>
-            <span className="mt-1 font-mono text-[10px] text-ink-soft/70 truncate max-w-sm">{src || 'No source URL provided'}</span>
+            <span className="mt-2 font-mono text-xs font-semibold text-paper">{alt || 'Image Asset'}</span>
+            <span className="mt-1 font-mono text-[10px] text-gray-mid/70 truncate max-w-sm">{src || 'No source URL provided'}</span>
           </div>
         ) : (
           // eslint-disable-next-line @next/next/no-img-element
@@ -60,7 +60,7 @@ function PreviewImage({
         )}
       </div>
       {(caption || alt) && (
-        <figcaption className="mt-2.5 text-center font-serif text-xs italic text-ink-soft">
+        <figcaption className="mt-2.5 text-center font-serif text-xs italic text-gray-mid">
           {caption || alt}
         </figcaption>
       )}
@@ -110,43 +110,43 @@ export function MDXPreview({
   const effectiveDate = date || new Date().toISOString().split('T')[0];
 
   return (
-    <div className={`h-full overflow-y-auto bg-paper text-ink selection:bg-accent selection:text-white ${className}`}>
+    <div className={`h-full overflow-y-auto bg-night text-paper selection:bg-accent selection:text-white ${className}`}>
       <article className="mx-auto max-w-4xl px-6 py-10 sm:px-10 md:py-16">
         {/* Real Post Header */}
-        <header className="border-b border-tinted/60 pb-8">
-          <h1 className="font-serif text-3xl font-normal leading-tight text-ink sm:text-4xl md:text-5xl">
+        <header className="border-b border-tinted/20 pb-8">
+          <h1 className="font-serif text-3xl font-normal leading-tight text-paper sm:text-4xl md:text-5xl">
             {title || 'Untitled Post'}
           </h1>
 
           {subtitle && (
-            <p className="mt-4 text-lg leading-relaxed text-ink-soft md:text-xl">
+            <p className="mt-4 text-lg leading-relaxed text-gray-mid md:text-xl">
               {subtitle}
             </p>
           )}
 
-          <div className="mt-6 flex flex-wrap items-center gap-x-2 gap-y-1.5 text-sm text-ink">
+          <div className="mt-6 flex flex-wrap items-center gap-x-2 gap-y-1.5 text-sm text-paper">
             {tags.map((tag) => (
               <span
                 key={tag}
-                className="rounded-full border border-tinted px-3 py-0.5 text-xs text-ink-soft"
+                className="rounded-full border border-tinted/20 px-3 py-0.5 text-xs text-gray-mid"
               >
                 {tag}
               </span>
             ))}
 
-            <span className="text-ink-soft" aria-hidden>
+            <span className="text-gray-mid" aria-hidden>
               ·
             </span>
 
-            <span className="text-ink-soft">Published</span>
+            <span className="text-gray-mid">Pub.</span>
             <span>{effectiveDate}</span>
 
             {persona && (
               <>
-                <span className="text-ink-soft" aria-hidden>
+                <span className="text-gray-mid" aria-hidden>
                   ·
                 </span>
-                <span className="capitalize text-accent font-medium">{persona}</span>
+                <span className="capitalize text-teal font-medium">{persona}</span>
               </>
             )}
           </div>
@@ -165,7 +165,7 @@ export function MDXPreview({
 
           {/* Empty state prompt */}
           {introNodes.length === 0 && sections.length === 0 && (
-            <div className="py-12 text-center text-sm italic text-ink-soft">
+            <div className="py-12 text-center text-sm italic text-gray-mid">
               Type on the left editor to preview your live post layout here...
             </div>
           )}
@@ -173,7 +173,7 @@ export function MDXPreview({
           {/* Sections */}
           {sections.map((section) => (
             <section key={section.id} id={section.id} className="mt-12 space-y-6">
-              <h2 className="font-serif text-2xl text-ink md:text-3xl">
+              <h2 className="font-serif text-2xl text-paper md:text-3xl">
                 {section.heading}
               </h2>
 
@@ -187,14 +187,14 @@ export function MDXPreview({
 
           {/* Footnotes */}
           {sortedFootnotes.length > 0 && (
-            <section className="mt-16 pt-8 border-t border-tinted">
-              <h2 className="text-xs font-semibold uppercase tracking-wider text-ink-soft mb-4">Footnotes</h2>
-              <ol className="space-y-2 text-sm leading-relaxed text-ink-soft list-decimal pl-5">
+            <section className="mt-16 pt-8 border-t border-tinted/20">
+              <h2 className="text-xs font-semibold uppercase tracking-wider text-gray-mid mb-4">Footnotes</h2>
+              <ol className="space-y-2 text-sm leading-relaxed text-gray-mid list-decimal pl-5">
                 {sortedFootnotes.map(([num, text]) => (
                   <li key={num} id={`fn-${num}`} className="target:bg-accent/10 target:ring-1 target:ring-accent/30 target:rounded transition-colors">
-                    <span className="text-ink font-medium mr-1.5">{num}.</span>
+                    <span className="text-paper font-medium mr-1.5">{num}.</span>
                     {text}
-                    <a href={`#fnref-${num}`} className="ml-1.5 text-accent hover:text-ink transition-colors" title="Back to reference">
+                    <a href={`#fnref-${num}`} className="ml-1.5 text-accent hover:text-paper transition-colors" title="Back to reference">
                       ↩
                     </a>
                   </li>
@@ -343,9 +343,9 @@ function parseMdxLines(lines: string[], isIntro = false): React.ReactNode[] {
       i++;
 
       nodes.push(
-        <div key={`code-${i}`} className="relative my-6 rounded-xl border border-tinted bg-[#1a1713] p-4 text-xs font-mono text-[#f5efe3] shadow-sm overflow-x-auto">
+        <div key={`code-${i}`} className="relative my-6 rounded-xl border border-tinted bg-ink p-4 text-xs font-mono text-paper shadow-sm overflow-x-auto">
           {lang && (
-            <span className="absolute top-2.5 right-3 text-[10px] font-semibold uppercase tracking-widest text-[#a09e99]">
+            <span className="absolute top-2.5 right-3 text-[10px] font-semibold uppercase tracking-widest text-ink-soft">
               {lang}
             </span>
           )}
@@ -446,14 +446,14 @@ function parseMdxLines(lines: string[], isIntro = false): React.ReactNode[] {
       nodes.push(
         <div
           key={`alert-${i}`}
-          className="my-6 rounded-lg border border-tinted bg-cream p-5 shadow-2xs"
+          className="my-6 rounded-lg border border-tinted/20 bg-post-card p-5 shadow-2xs"
         >
           <div className="flex items-center gap-2">
-            <span className="rounded bg-paper px-2 py-0.5 text-[11px] font-bold uppercase tracking-wider text-accent ring-1 ring-tinted">
+            <span className="rounded bg-night px-2 py-0.5 text-[11px] font-bold uppercase tracking-wider text-accent border border-tinted/20">
               {alertType}
             </span>
           </div>
-          <div className="mt-2 text-sm leading-relaxed text-ink space-y-1 font-serif">
+          <div className="mt-2 text-sm leading-relaxed text-paper space-y-1 font-serif">
             {alertLines.map((al, idx) => (
               <p key={idx}>{renderInlineTokens(al)}</p>
             ))}
@@ -482,13 +482,13 @@ function parseMdxLines(lines: string[], isIntro = false): React.ReactNode[] {
       nodes.push(
         <blockquote
           key={`quote-${i}`}
-          className="mt-8 border-l-4 border-sea-blue pl-6"
+          className="mt-8 border-l-4 border-teal pl-6"
         >
-          <p className="font-serif text-xl italic leading-relaxed text-ink md:text-2xl">
+          <p className="font-serif text-xl italic leading-relaxed text-paper md:text-2xl">
             “{quoteText}”
           </p>
           {attribution && (
-            <cite className="mt-3 block text-sm not-italic text-ink-soft">
+            <cite className="mt-3 block text-sm not-italic text-gray-mid">
               — {attribution}
             </cite>
           )}
@@ -516,7 +516,7 @@ function parseMdxLines(lines: string[], isIntro = false): React.ReactNode[] {
 
       if (isOrdered) {
         nodes.push(
-          <ol key={`ol-${i}`} className="my-4 list-decimal pl-6 space-y-2 text-base leading-[1.85] text-ink font-serif">
+          <ol key={`ol-${i}`} className="my-4 list-decimal pl-6 space-y-2 text-base leading-[1.85] text-paper font-serif">
             {listItems.map((item, idx) => (
               <li key={idx}>{renderInlineTokens(item)}</li>
             ))}
@@ -524,7 +524,7 @@ function parseMdxLines(lines: string[], isIntro = false): React.ReactNode[] {
         );
       } else {
         nodes.push(
-          <ul key={`ul-${i}`} className="my-4 list-disc pl-6 space-y-2 text-base leading-[1.85] text-ink font-serif">
+          <ul key={`ul-${i}`} className="my-4 list-disc pl-6 space-y-2 text-base leading-[1.85] text-paper font-serif">
             {listItems.map((item, idx) => (
               <li key={idx}>{renderInlineTokens(item)}</li>
             ))}
@@ -553,20 +553,20 @@ function parseMdxLines(lines: string[], isIntro = false): React.ReactNode[] {
       }
 
       nodes.push(
-        <div key={`table-${i}`} className="my-6 overflow-x-auto rounded-lg border border-tinted bg-cream p-1 shadow-2xs">
+        <div key={`table-${i}`} className="my-6 overflow-x-auto rounded-lg border border-tinted/20 bg-post-card p-1 shadow-2xs">
           <table className="w-full text-left text-sm font-sans">
-            <thead className="border-b border-tinted bg-paper text-xs font-semibold uppercase tracking-wider text-ink-soft">
+            <thead className="border-b border-tinted/20 bg-night-soft text-xs font-semibold uppercase tracking-wider text-gray-mid">
               <tr>
                 {headerRow.map((h, idx) => (
                   <th key={idx} className="px-4 py-3">{h}</th>
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-tinted/60">
+            <tbody className="divide-y divide-tinted/20">
               {bodyRows.map((row, rIdx) => (
-                <tr key={rIdx} className="hover:bg-paper/40 transition-colors">
+                <tr key={rIdx} className="hover:bg-night-soft/40 transition-colors">
                   {row.map((cell, cIdx) => (
-                    <td key={cIdx} className="px-4 py-3 text-ink">{renderInlineTokens(cell)}</td>
+                    <td key={cIdx} className="px-4 py-3 text-paper">{renderInlineTokens(cell)}</td>
                   ))}
                 </tr>
               ))}
@@ -607,8 +607,8 @@ function parseMdxLines(lines: string[], isIntro = false): React.ReactNode[] {
           key={`p-${i}`}
           className={
             applyDropCap
-              ? 'leading-[1.85] text-base text-ink font-serif first-letter:float-left first-letter:mr-3 first-letter:mt-1 first-letter:font-serif first-letter:text-6xl first-letter:leading-[0.8] first-letter:text-ink'
-              : 'text-base leading-[1.85] text-ink font-serif'
+              ? 'leading-[1.85] text-base text-paper font-serif first-letter:float-left first-letter:mr-3 first-letter:mt-1 first-letter:font-serif first-letter:text-6xl first-letter:leading-[0.8] first-letter:text-paper'
+              : 'text-base leading-[1.85] text-paper font-serif'
           }
         >
           {renderInlineTokens(paragraphText)}
