@@ -2,6 +2,7 @@
 
 import React, { useMemo, useState, Fragment } from 'react';
 import type { Persona, BookCard } from '@/lib/types';
+import { slugify } from '@/lib/utils';
 import {
   parseBlockAttributes,
   renderBlock,
@@ -215,14 +216,7 @@ interface ParsedSection {
   nodes: React.ReactNode[];
 }
 
-function slugify(text: string): string {
-  return text
-    .toLowerCase()
-    .trim()
-    .replace(/[^\w\s-]/g, '')
-    .replace(/[\s_-]+/g, '-')
-    .replace(/^-+|-+$/g, '');
-}
+
 
 /**
  * Parses full MDX text into rich intro nodes and section nodes.

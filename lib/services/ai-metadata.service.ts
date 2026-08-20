@@ -1,4 +1,5 @@
 import type { Persona } from '@/lib/types';
+import { slugify } from '@/lib/utils';
 
 export interface AiMetadataResult {
   excerpt: string;
@@ -7,15 +8,6 @@ export interface AiMetadataResult {
   slugCandidates: string[];
   tags: string[];
   keyThemes: string[];
-}
-
-function slugify(text: string): string {
-  return text
-    .toLowerCase()
-    .trim()
-    .replace(/[^\w\s-]/g, '')
-    .replace(/[\s_-]+/g, '-')
-    .replace(/^-+|-+$/g, '');
 }
 
 /**

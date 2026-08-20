@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ArrowRightIcon } from "./icons";
 import { LandscapeGallery } from "./landscape-gallery";
 import { NewsletterForm } from "./newsletter-form";
+import { EssayCover } from "./ui/essay-cover";
 
 interface AboutPageProps {
   site: SiteContent;
@@ -160,11 +161,7 @@ export function AboutPageView({ site, featuredWriting }: AboutPageProps) {
               href={`/p/${item.slug}`}
               className="group flex flex-col rounded-2xl border border-tinted/20 bg-post-card p-4 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md"
             >
-              <div className="flex aspect-[16/10] items-center justify-center overflow-hidden rounded-xl bg-[radial-gradient(ellipse_at_center,rgba(250,249,245,0.08)_15%,transparent_75%)]">
-                <span className="font-serif text-5xl italic text-paper/40 transition-transform duration-300 group-hover:scale-110">
-                  {item.title.charAt(0)}
-                </span>
-              </div>
+              <EssayCover title={item.title} />
               <h3 className="mt-4 font-serif text-lg font-normal leading-snug text-paper transition-colors duration-300 group-hover:text-accent">
                 {item.title}
               </h3>

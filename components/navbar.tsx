@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import type { Identity, NavLink } from '@/lib/types';
+import { useClickOutside } from './ui/use-click-outside';
 
 interface NavbarProps {
   identity: Identity;
@@ -15,29 +16,8 @@ export function Navbar({ identity, links }: NavbarProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const headerRef = useRef<HTMLElement>(null);
 
-  useEffect(() => {
-    if (!menuOpen) return;
-
-    function handlePointerDown(event: PointerEvent) {
-      if (
-        headerRef.current &&
-        !headerRef.current.contains(event.target as Node)
-      ) {
-        setMenuOpen(false);
-      }
-    }
-
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === 'Escape') setMenuOpen(false);
-    }
-
-    document.addEventListener('pointerdown', handlePointerDown);
-    document.addEventListener('keydown', handleKeyDown);
-    return () => {
-      document.removeEventListener('pointerdown', handlePointerDown);
-      document.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [menuOpen]);
+  const closeMenu = useCallback(() => setMenuOpen(false), []);
+  useClickOutside(headerRef, closeMenu, menuOpen);
 
   // Lock body scroll when mobile menu is open
   useEffect(() => {
@@ -54,10 +34,6 @@ export function Navbar({ identity, links }: NavbarProps) {
   function isActive(href: string): boolean {
     if (href === '/') return pathname === '/';
     return pathname === href || pathname.startsWith(`${href}/`);
-  }
-
-  function closeMenu() {
-    setMenuOpen(false);
   }
 
   return (

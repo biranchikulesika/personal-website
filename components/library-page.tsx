@@ -3,19 +3,13 @@
 import { useMemo, useRef, useState } from 'react';
 import type { BookItem, Persona } from '@/lib/types';
 import { ChevronLeftIcon, ChevronRightIcon, SearchIcon } from './icons';
+import { PERSONA_LABELS, ALL_PERSONAS } from '@/lib/constants';
 
 interface LibraryPageProps {
   books: BookItem[];
   title: string;
   subheader: string;
 }
-
-const PERSONA_LABELS: Record<Persona, string> = {
-  builder: 'Builder',
-  operator: 'Operator',
-  thinker: 'Thinker',
-  wanderer: 'Wanderer',
-};
 
 /**
  * Aesthetic book cover card representing physical print texture, or the real
@@ -171,7 +165,7 @@ export function LibraryPageView({ books, title, subheader }: LibraryPageProps) {
             >
               All
             </button>
-            {(['builder', 'operator', 'thinker', 'wanderer'] as const).map(
+            {ALL_PERSONAS.map(
               (persona) => (
                 <button
                   key={persona}

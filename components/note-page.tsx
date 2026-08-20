@@ -3,13 +3,7 @@ import type { NoteItem } from '@/lib/types';
 import { formatDisplayDate } from '@/lib/utils';
 import { ArrowLeftIcon } from './icons';
 import { ShareMenu } from './share-menu';
-
-const PERSONA_LABELS: Record<string, string> = {
-  builder: 'Builder',
-  operator: 'Operator',
-  thinker: 'Thinker',
-  wanderer: 'Wanderer',
-};
+import { PERSONA_LABELS } from '@/lib/constants';
 
 export function NotePageView({ note }: { note: NoteItem }) {
   const personaLabel = note.persona

@@ -1,15 +1,15 @@
-import Link from 'next/link';
-import { Fragment } from 'react';
-import type { BlogPost, PostFigure, PostSection } from '@/lib/types';
-import { ArrowLeftIcon, ArrowRightIcon, ChevronDownIcon, ExternalLinkIcon } from './icons';
-import { ShareMenu } from './share-menu';
-
-const PERSONA_LABELS: Record<string, string> = {
-  builder: 'Builder',
-  operator: 'Operator',
-  thinker: 'Thinker',
-  wanderer: 'Wanderer',
-};
+import { PERSONA_LABELS } from "@/lib/constants";
+import type { BlogPost, PostFigure, PostSection } from "@/lib/types";
+import Link from "next/link";
+import { Fragment } from "react";
+import {
+  ArrowLeftIcon,
+  ArrowRightIcon,
+  ChevronDownIcon,
+  ExternalLinkIcon,
+} from "./icons";
+import { ShareMenu } from "./share-menu";
+import { BookCover } from "./ui/book-cover";
 
 /**
  * Inline rendering for post paragraphs. Handles `^[n]` footnote markers by
@@ -83,31 +83,6 @@ function TocList({ sections }: { sections: PostSection[] }) {
   );
 }
 
-/**
- * Placeholder book cover, or the real cover image when one is set.
- */
-function BookCover({ title, cover }: { title: string; cover?: string }) {
-  if (cover) {
-    return (
-      <div className="aspect-[2/3] overflow-hidden rounded-lg shadow-sm ring-1 ring-tinted/20 transition-all duration-300 group-hover:scale-[1.02] group-hover:shadow-md">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={cover}
-          alt={`${title} cover`}
-          className="h-full w-full object-cover"
-        />
-      </div>
-    );
-  }
-  return (
-    <div className="flex aspect-[2/3] items-center justify-center overflow-hidden rounded-lg bg-night-soft p-3 shadow-sm ring-1 ring-tinted/20 transition-all duration-300 group-hover:scale-[1.02] group-hover:opacity-30 group-hover:shadow-md">
-      <span className="text-center font-serif text-lg italic leading-snug text-paper/50">
-        {title}
-      </span>
-    </div>
-  );
-}
-
 function BookCardView({
   title,
   author,
@@ -120,15 +95,15 @@ function BookCardView({
   cover?: string;
   link?: string;
 }) {
-  const href = link || '/library';
-  const isExternal = href.startsWith('http');
+  const href = link || "/library";
+  const isExternal = href.startsWith("http");
 
   return (
     <article className="group relative w-[42%] shrink-0 snap-start sm:w-[30%] md:w-[22%] lg:w-[calc(25%-0.75rem)]">
       <Link
         href={href}
-        target={isExternal ? '_blank' : undefined}
-        rel={isExternal ? 'noopener noreferrer' : undefined}
+        target={isExternal ? "_blank" : undefined}
+        rel={isExternal ? "noopener noreferrer" : undefined}
         className="block"
       >
         <span className="absolute left-1/2 top-[34%] z-10 -translate-x-1/2 -translate-y-1/2 rounded-full bg-accent px-3.5 py-1 text-xs font-semibold text-paper shadow-lg opacity-0 transition-opacity duration-300 group-hover:opacity-100">
@@ -150,7 +125,7 @@ function BookCardView({
 export function BlogPostView({ post }: { post: BlogPost }) {
   const showToc = post.sections.length > 2;
   const personaLabel = post.persona
-    ? PERSONA_LABELS[post.persona] ?? post.persona
+    ? (PERSONA_LABELS[post.persona] ?? post.persona)
     : null;
 
   return (
@@ -203,14 +178,14 @@ export function BlogPostView({ post }: { post: BlogPost }) {
               )}
 
               <span className="text-ink-soft">Pub.</span>
-              <span className="text-paper">{post.plantedAt}</span>
-              {post.lastTendedAt !== post.plantedAt && (
+              <span className="text-paper">{post.publishedAt}</span>
+              {post.lastEditedAt !== post.publishedAt && (
                 <span className="hidden sm:inline-flex sm:items-center sm:gap-x-2">
                   <span className="text-ink-soft" aria-hidden>
                     ·
                   </span>
                   <span className="text-ink-soft">Ed.</span>
-                  <span className="text-paper">{post.lastTendedAt}</span>
+                  <span className="text-paper">{post.lastEditedAt}</span>
                 </span>
               )}
 
@@ -249,8 +224,8 @@ export function BlogPostView({ post }: { post: BlogPost }) {
                 key={index}
                 className={
                   index === 0
-                    ? 'leading-[1.85] first-letter:float-left first-letter:mr-3 first-letter:mt-1 first-letter:font-serif first-letter:text-6xl first-letter:leading-[0.8] first-letter:text-paper'
-                    : 'leading-[1.85]'
+                    ? "leading-[1.85] first-letter:float-left first-letter:mr-3 first-letter:mt-1 first-letter:font-serif first-letter:text-6xl first-letter:leading-[0.8] first-letter:text-paper"
+                    : "leading-[1.85]"
                 }
               >
                 {renderInline(paragraph, `intro-${index}`, undefined)}
@@ -272,13 +247,15 @@ export function BlogPostView({ post }: { post: BlogPost }) {
                 </h2>
 
                 {section.paragraphs.map((paragraph, paragraphIndex) => {
-                  const refs = section.footnotes
-                    ? footnoteRefs(paragraph)
-                    : [];
+                  const refs = section.footnotes ? footnoteRefs(paragraph) : [];
                   return (
                     <Fragment key={paragraphIndex}>
                       <p className="leading-[1.85] lg:col-start-1">
-                        {renderInline(paragraph, `sec-${sectionIndex}`, section.footnotes)}
+                        {renderInline(
+                          paragraph,
+                          `sec-${sectionIndex}`,
+                          section.footnotes,
+                        )}
                       </p>
                       {refs.length > 0 && (
                         <aside
@@ -286,10 +263,20 @@ export function BlogPostView({ post }: { post: BlogPost }) {
                           aria-label="Footnotes"
                         >
                           {refs.map((n) => (
-                            <p key={n} id={`fn-${n}`} className="text-[13px] leading-relaxed text-ink-soft">
-                              <sup className="mr-1 font-medium text-accent">{n}</sup>
+                            <p
+                              key={n}
+                              id={`fn-${n}`}
+                              className="text-[13px] leading-relaxed text-ink-soft"
+                            >
+                              <sup className="mr-1 font-medium text-accent">
+                                {n}
+                              </sup>
                               {section.footnotes?.[n - 1]}
-                              <a href={`#fnref-${n}`} className="ml-1 text-accent hover:text-paper transition-colors" title="Back">
+                              <a
+                                href={`#fnref-${n}`}
+                                className="ml-1 text-accent hover:text-paper transition-colors"
+                                title="Back"
+                              >
                                 ↩
                               </a>
                             </p>

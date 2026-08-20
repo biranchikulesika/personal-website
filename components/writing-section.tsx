@@ -2,23 +2,11 @@ import Link from 'next/link';
 import type { SectionGroup, WritingItem } from '@/lib/types';
 import { SectionHeading } from './section-heading';
 import { formatDisplayDate } from '@/lib/utils';
+import { EssayCover } from './ui/essay-cover';
 
 interface WritingSectionProps {
   writing: SectionGroup<WritingItem>;
   limit?: number;
-}
-
-/**
- * Letter cover for essay cards matching the warm dark digital garden aesthetic.
- */
-function EssayCover({ title }: { title: string }) {
-  return (
-    <div className="flex aspect-[16/10] items-center justify-center overflow-hidden rounded-xl bg-[radial-gradient(ellipse_at_center,rgba(250,249,245,0.08)_15%,transparent_75%)]">
-      <span className="font-serif text-5xl italic text-paper/40 transition-transform duration-300 group-hover:scale-110">
-        {title.charAt(0)}
-      </span>
-    </div>
-  );
 }
 
 function EssayCard({ item }: { item: WritingItem }) {

@@ -2,11 +2,9 @@ import type {
   AdminProfile,
   BlogPost,
   BookItem,
-  Entry,
   MediaItem,
   NoteItem,
   NowEntry,
-  PageContent,
   SectionGroup,
   SiteContent,
   WritingItem,
@@ -15,20 +13,17 @@ import {
   seedBooks,
   seedNotes,
   seedNow,
-  seedPages,
   seedPosts,
   seedSiteContent,
   seedWriting,
 } from "./seeds";
 
 export interface MockDatabase {
-  entries: Entry[];
   site: SiteContent;
   writing: SectionGroup<WritingItem>;
   notes: SectionGroup<NoteItem>;
   books: SectionGroup<BookItem>;
   posts: BlogPost[];
-  pages: PageContent[];
   now: NowEntry[];
   media: MediaItem[];
   storage: string[];
@@ -46,13 +41,11 @@ export function getDatabase(): MockDatabase {
 
 export function createDatabase(): MockDatabase {
   return {
-    entries: seedEntries(),
     site: seedSiteContent(),
     writing: seedWriting(),
     notes: seedNotes(),
     books: seedBooks(),
     posts: seedPosts(),
-    pages: seedPages(),
     now: seedNow(),
     media: seedMedia(),
     storage: seedStorage(),
@@ -197,30 +190,4 @@ function seedMedia(): MediaItem[] {
   ];
 }
 
-function seedEntries(): Entry[] {
-  const now = new Date();
-  const day = 24 * 60 * 60 * 1000;
-  return [
-    {
-      id: "1",
-      slug: "hello",
-      title: "Hello, new world",
-      body: "This is placeholder content from the mock database. The real requirements are still being defined.",
-      publishedAt: new Date(now.getTime() - 7 * day).toISOString(),
-    },
-    {
-      id: "2",
-      slug: "foundation",
-      title: "Laying the foundation",
-      body: "UI talks to a service layer, which talks to a repository, which reads from a mock database.",
-      publishedAt: new Date(now.getTime() - 3 * day).toISOString(),
-    },
-    {
-      id: "3",
-      slug: "next-steps",
-      title: "Next steps are unclear — intentionally",
-      body: "We will decide what this website should be progressively. Nothing is locked in.",
-      publishedAt: new Date(now.getTime() - 1 * day).toISOString(),
-    },
-  ];
-}
+

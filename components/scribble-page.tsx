@@ -14,6 +14,8 @@ import {
   SearchIcon,
 } from './icons';
 import { formatDisplayDate } from '@/lib/utils';
+import { PERSONA_LABELS, ALL_PERSONAS } from '@/lib/constants';
+import { EssayCover } from './ui/essay-cover';
 
 interface ScribblePageProps {
   entries: ScribbleEntry[];
@@ -23,13 +25,6 @@ const TYPE_LABELS: Record<ScribbleEntryType, string> = {
   essay: 'Essay',
   note: 'Note',
   book: 'Library',
-};
-
-const PERSONA_LABELS: Record<Persona, string> = {
-  builder: 'Builder',
-  operator: 'Operator',
-  thinker: 'Thinker',
-  wanderer: 'Wanderer',
 };
 
 /**
@@ -51,18 +46,7 @@ function CardMeta({
   );
 }
 
-/**
- * Placeholder cover for essay cards, blending softly into the background on all four sides.
- */
-function EssayCover({ title }: { title: string }) {
-  return (
-    <div className="flex aspect-[16/10] w-full items-center justify-center overflow-hidden rounded-xl bg-[radial-gradient(ellipse_at_center,rgba(250,249,245,0.08)_15%,transparent_75%)]">
-      <span className="font-serif text-5xl italic text-paper/40 transition-transform duration-300 group-hover:scale-110">
-        {title.charAt(0)}
-      </span>
-    </div>
-  );
-}
+
 
 /**
  * Placeholder cover for book cards, blending softly into the background on all four sides.
@@ -203,7 +187,7 @@ function FilterBar({
         >
           All
         </button>
-        {(['builder', 'operator', 'thinker', 'wanderer'] as const).map(
+        {ALL_PERSONAS.map(
           (persona) => (
             <button
               key={persona}

@@ -8,7 +8,6 @@ import type {
   Persona,
   ScribbleEntry,
   HomeContent,
-  PageContent,
   SectionGroup,
   SiteContent,
   WritingItem,
@@ -42,7 +41,6 @@ export interface ContentRepository {
   saveBook(book: BookItem): Promise<BookItem>;
   deleteBook(slug: string): Promise<boolean>;
 
-  getPage(slug: string): Promise<PageContent | null>;
   getScribbleEntries(): Promise<ScribbleEntry[]>;
 
   getNowEntries(): Promise<NowEntry[]>;

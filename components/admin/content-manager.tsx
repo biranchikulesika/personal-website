@@ -1,29 +1,41 @@
-'use client';
+"use client";
 
-import { useState, useTransition } from 'react';
-import Link from 'next/link';
-import type { BlogPost, BookItem, MediaItem, NoteItem, NowEntry, Persona, PostSection } from '@/lib/types';
 import {
-  savePostAction,
-  deletePostAction,
-  togglePostStatusAction,
-  saveNoteAction,
-  deleteNoteAction,
-  toggleNoteStatusAction,
-  saveBookAction,
   deleteBookAction,
+  deleteNoteAction,
   deleteNowEntryAction,
-} from '@/app/admin/actions';
-import { MDXEditor } from './mdx-editor/mdx-editor';
-import { BookCoverPicker } from './book-cover-picker';
-import { formatDisplayDate } from '@/lib/utils';
+  deletePostAction,
+  saveBookAction,
+  saveNoteAction,
+  savePostAction,
+  toggleNoteStatusAction,
+  togglePostStatusAction,
+} from "@/app/admin/actions";
 import {
   ExternalLinkIcon,
-  PencilIcon,
-  TrashIcon,
   EyeIcon,
   EyeSlashIcon,
-} from '@/components/icons';
+  PencilIcon,
+  TrashIcon,
+} from "@/components/icons";
+import type {
+  BlogPost,
+  BookItem,
+  MediaItem,
+  NoteItem,
+  NowEntry,
+  Persona,
+} from "@/lib/types";
+import {
+  formatDisplayDate,
+  markdownToPostSections,
+  sectionsToMarkdown,
+  slugify,
+} from "@/lib/utils";
+import Link from "next/link";
+import { useState, useTransition } from "react";
+import { BookCoverPicker } from "./book-cover-picker";
+import { MDXEditor } from "./mdx-editor/mdx-editor";
 
 interface ContentManagerProps {
   initialPosts: BlogPost[];
@@ -33,94 +45,9 @@ interface ContentManagerProps {
   mediaItems?: MediaItem[];
 }
 
-type ContentFilterType = 'all' | 'post' | 'note' | 'book' | 'now';
-type StatusFilterType = 'all' | 'published' | 'unpublished';
-type PersonaFilterType = 'all' | Persona;
-
-function slugify(text: string): string {
-  return text
-    .toLowerCase()
-    .trim()
-    .replace(/[^\w\s-]/g, '')
-    .replace(/[\s_-]+/g, '-')
-    .replace(/^-+|-+$/g, '');
-}
-
-/**
- * Converts post sections and intro into an MDX markdown string.
- */
-function sectionsToMarkdown(intro: string[], sections: PostSection[]): string {
-  const parts: string[] = [];
-  if (intro && intro.length > 0) {
-    parts.push(intro.join('\n\n'));
-  }
-  if (sections && sections.length > 0) {
-    sections.forEach((sec) => {
-      parts.push(`## ${sec.heading}`);
-      if (sec.paragraphs && sec.paragraphs.length > 0) {
-        parts.push(sec.paragraphs.join('\n\n'));
-      }
-      if (sec.figure) {
-        parts.push(`![${sec.figure.alt}](${sec.figure.src})\n*${sec.figure.caption}*`);
-      }
-      if (sec.quote) {
-        parts.push(`> ${sec.quote.text}\n> — ${sec.quote.attribution || ''}`);
-      }
-      if (sec.footnotes && sec.footnotes.length > 0) {
-        sec.footnotes.forEach((fn, idx) => {
-          parts.push(`[^${idx + 1}]: ${fn}`);
-        });
-      }
-    });
-  }
-  return parts.join('\n\n');
-}
-
-/**
- * Converts MDX markdown string back into structured PostSections and intro.
- */
-function markdownToPostSections(md: string): { intro: string[]; sections: PostSection[] } {
-  if (!md || !md.trim()) {
-    return { intro: [], sections: [] };
-  }
-
-  // Split by H2 headers (## Heading)
-  const parts = md.split(/^##\s+/m);
-  const introText = parts[0]?.trim() || '';
-  const intro = introText ? introText.split('\n\n').filter(Boolean) : [];
-
-  const sections: PostSection[] = [];
-  for (let i = 1; i < parts.length; i++) {
-    const chunk = parts[i];
-    const firstNewline = chunk.indexOf('\n');
-    const heading = (firstNewline > -1 ? chunk.slice(0, firstNewline) : chunk).trim();
-    const body = firstNewline > -1 ? chunk.slice(firstNewline).trim() : '';
-
-    // Extract footnote definitions: [^1]: text
-    const footnotes: string[] = [];
-    const bodyLines = body.split('\n');
-    const contentLines: string[] = [];
-    for (const line of bodyLines) {
-      const fnMatch = line.trim().match(/^\[\^(\d+)\]:\s*(.+)/);
-      if (fnMatch) {
-        footnotes[Number(fnMatch[1]) - 1] = fnMatch[2];
-      } else {
-        contentLines.push(line);
-      }
-    }
-
-    const paragraphs = contentLines.join('\n').split('\n\n').filter(Boolean);
-
-    sections.push({
-      id: slugify(heading) || `section-${i}`,
-      heading: heading || `Section ${i}`,
-      paragraphs: paragraphs.length > 0 ? paragraphs : [''],
-      ...(footnotes.length > 0 ? { footnotes } : {}),
-    });
-  }
-
-  return { intro, sections };
-}
+type ContentFilterType = "all" | "post" | "note" | "book" | "now";
+type StatusFilterType = "all" | "published" | "unpublished";
+type PersonaFilterType = "all" | Persona;
 
 export function ContentManager({
   initialPosts,
@@ -135,72 +62,76 @@ export function ContentManager({
   const [nowEntries, setNowEntries] = useState<NowEntry[]>(initialNowEntries);
 
   // Filters
-  const [search, setSearch] = useState('');
-  const [typeFilter, setTypeFilter] = useState<ContentFilterType>('all');
-  const [personaFilter, setPersonaFilter] = useState<PersonaFilterType>('all');
-  const [statusFilter, setStatusFilter] = useState<StatusFilterType>('all');
+  const [search, setSearch] = useState("");
+  const [typeFilter, setTypeFilter] = useState<ContentFilterType>("all");
+  const [personaFilter, setPersonaFilter] = useState<PersonaFilterType>("all");
+  const [statusFilter, setStatusFilter] = useState<StatusFilterType>("all");
 
   const [isPending, startTransition] = useTransition();
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   // Confirmation dialog state (publish / unpublish / delete)
   const [confirmAction, setConfirmAction] = useState<{
-    kind: 'post' | 'note' | 'book' | 'now';
-    action: 'publish' | 'unpublish' | 'delete';
+    kind: "post" | "note" | "book" | "now";
+    action: "publish" | "unpublish" | "delete";
     slug: string;
     title: string;
   } | null>(null);
 
   // Type-to-confirm input for deletion
-  const [confirmTypedTitle, setConfirmTypedTitle] = useState('');
+  const [confirmTypedTitle, setConfirmTypedTitle] = useState("");
 
   function openConfirmAction(confirm: {
-    kind: 'post' | 'note' | 'book' | 'now';
-    action: 'publish' | 'unpublish' | 'delete';
+    kind: "post" | "note" | "book" | "now";
+    action: "publish" | "unpublish" | "delete";
     slug: string;
     title: string;
   }) {
-    setConfirmTypedTitle('');
+    setConfirmTypedTitle("");
     setConfirmAction(confirm);
   }
 
   // Post Editor State
   const [isEditingPost, setIsEditingPost] = useState(false);
   const [editingPost, setEditingPost] = useState<BlogPost | null>(null);
-  const [postTitle, setPostTitle] = useState('');
-  const [postSlug, setPostSlug] = useState('');
-  const [postDescription, setPostDescription] = useState('');
-  const [postPersona, setPostPersona] = useState<Persona>('builder');
-  const [postStatus, setPostStatus] = useState<'published' | 'unpublished'>('published');
-  const [postTagsInput, setPostTagsInput] = useState('');
-  const [postPlantedAt, setPostPlantedAt] = useState('');
-  const [postLastTendedAt, setPostLastTendedAt] = useState('');
-  const [postAssumedAudience, setPostAssumedAudience] = useState('');
-  const [postMdxContent, setPostMdxContent] = useState('');
+  const [postTitle, setPostTitle] = useState("");
+  const [postSlug, setPostSlug] = useState("");
+  const [postDescription, setPostDescription] = useState("");
+  const [postPersona, setPostPersona] = useState<Persona>("builder");
+  const [postStatus, setPostStatus] = useState<"published" | "unpublished">(
+    "published",
+  );
+  const [postTagsInput, setPostTagsInput] = useState("");
+  const [postPlantedAt, setPostPlantedAt] = useState("");
+  const [postLastTendedAt, setPostLastTendedAt] = useState("");
+  const [postAssumedAudience, setPostAssumedAudience] = useState("");
+  const [postMdxContent, setPostMdxContent] = useState("");
 
   // Note Editor State
   const [isEditingNote, setIsEditingNote] = useState(false);
   const [editingNote, setEditingNote] = useState<NoteItem | null>(null);
-  const [noteTitle, setNoteTitle] = useState('');
-  const [noteSlug, setNoteSlug] = useState('');
-  const [noteDescription, setNoteDescription] = useState('');
-  const [noteDate, setNoteDate] = useState('');
-  const [notePersona, setNotePersona] = useState<Persona>('thinker');
-  const [noteStatus, setNoteStatus] = useState<'published' | 'unpublished'>('published');
-  const [noteTagsInput, setNoteTagsInput] = useState('');
-  const [noteMdxContent, setNoteMdxContent] = useState('');
+  const [noteTitle, setNoteTitle] = useState("");
+  const [noteSlug, setNoteSlug] = useState("");
+  const [noteDescription, setNoteDescription] = useState("");
+  const [noteDate, setNoteDate] = useState("");
+  const [notePersona, setNotePersona] = useState<Persona>("thinker");
+  const [noteStatus, setNoteStatus] = useState<"published" | "unpublished">(
+    "published",
+  );
+  const [noteTagsInput, setNoteTagsInput] = useState("");
+  const [noteMdxContent, setNoteMdxContent] = useState("");
 
   // Book Editor State
   const [isEditingBook, setIsEditingBook] = useState(false);
   const [editingBook, setEditingBook] = useState<BookItem | null>(null);
-  const [bookTitle, setBookTitle] = useState('');
-  const [bookAuthor, setBookAuthor] = useState('');
-  const [bookDescription, setBookDescription] = useState('');
-  const [bookDate, setBookDate] = useState('');
-  const [bookPersona, setBookPersona] = useState<Persona>('thinker');
-  const [bookTagsInput, setBookTagsInput] = useState('');
-  const [bookCover, setBookCover] = useState('');
-  const [bookLink, setBookLink] = useState('');
+  const [bookTitle, setBookTitle] = useState("");
+  const [bookAuthor, setBookAuthor] = useState("");
+  const [bookDescription, setBookDescription] = useState("");
+  const [bookDate, setBookDate] = useState("");
+  const [bookPersona, setBookPersona] = useState<Persona>("thinker");
+  const [bookTagsInput, setBookTagsInput] = useState("");
+  const [bookCover, setBookCover] = useState("");
+  const [bookLink, setBookLink] = useState("");
   const [uploadedMedia, setUploadedMedia] = useState<MediaItem[]>([]);
 
   const availableMedia = [...uploadedMedia, ...mediaItems];
@@ -219,17 +150,17 @@ export function ContentManager({
   // Post Handlers
   function handleOpenCreatePost() {
     setEditingPost(null);
-    setPostTitle('');
-    setPostSlug('');
-    setPostDescription('');
-    setPostPersona('builder');
-    setPostStatus('published');
-    setPostTagsInput('craft, software, tools');
-    setPostPlantedAt(new Date().toISOString().split('T')[0]);
-    setPostLastTendedAt(new Date().toISOString().split('T')[0]);
-    setPostAssumedAudience('Curious technologists and builders');
+    setPostTitle("");
+    setPostSlug("");
+    setPostDescription("");
+    setPostPersona("builder");
+    setPostStatus("published");
+    setPostTagsInput("craft, software, tools");
+    setPostPlantedAt(new Date().toISOString().split("T")[0]);
+    setPostLastTendedAt(new Date().toISOString().split("T")[0]);
+    setPostAssumedAudience("Curious technologists and builders");
     setPostMdxContent(
-      'An opening reflection on tools, craft, and technology.\n\n## First Principle\n\nWe often build digital things quickly before understanding their long-term impact on our attention.\n\n> [!NOTE]\n> Taking the slower path usually yields more resilient systems.\n\n## The Architecture of Quiet Spaces\n\nSoftware should feel like an orderly workshop, not a crowded marketplace.'
+      "An opening reflection on tools, craft, and technology.\n\n## First Principle\n\nWe often build digital things quickly before understanding their long-term impact on our attention.\n\n> [!NOTE]\n> Taking the slower path usually yields more resilient systems.\n\n## The Architecture of Quiet Spaces\n\nSoftware should feel like an orderly workshop, not a crowded marketplace.",
     );
     setIsEditingPost(true);
   }
@@ -239,12 +170,12 @@ export function ContentManager({
     setPostTitle(post.title);
     setPostSlug(post.slug);
     setPostDescription(post.description);
-    setPostPersona('builder');
-    setPostStatus(post.status || 'published');
-    setPostTagsInput(post.tags.join(', '));
-    setPostPlantedAt(post.plantedAt);
-    setPostLastTendedAt(post.lastTendedAt);
-    setPostAssumedAudience(post.assumedAudience || '');
+    setPostPersona("builder");
+    setPostStatus(post.status || "published");
+    setPostTagsInput(post.tags.join(", "));
+    setPostPlantedAt(post.publishedAt);
+    setPostLastTendedAt(post.lastEditedAt);
+    setPostAssumedAudience(post.assumedAudience || "");
     setPostMdxContent(sectionsToMarkdown(post.intro, post.sections));
     setIsEditingPost(true);
   }
@@ -254,7 +185,7 @@ export function ContentManager({
     if (!postTitle.trim() || !postSlug.trim()) return;
 
     const parsedTags = postTagsInput
-      .split(',')
+      .split(",")
       .map((t) => t.trim())
       .filter(Boolean);
 
@@ -263,19 +194,23 @@ export function ContentManager({
     const postPayload: BlogPost = {
       title: postTitle,
       slug: slugify(postSlug),
-      description: postDescription || (intro[0] ? intro[0].slice(0, 150) : postTitle),
-      tags: parsedTags.length > 0 ? parsedTags : ['essay'],
-      plantedAt: postPlantedAt || new Date().toISOString().split('T')[0],
-      lastTendedAt: postLastTendedAt || new Date().toISOString().split('T')[0],
+      description:
+        postDescription || (intro[0] ? intro[0].slice(0, 150) : postTitle),
+      tags: parsedTags.length > 0 ? parsedTags : ["essay"],
+      publishedAt: postPlantedAt || new Date().toISOString().split("T")[0],
+      lastEditedAt: postLastTendedAt || new Date().toISOString().split("T")[0],
       assumedAudience: postAssumedAudience,
       intro: intro.length > 0 ? intro : [postDescription],
-      sections: sections.length > 0 ? sections : [
-        {
-          id: 'section-1',
-          heading: 'Overview',
-          paragraphs: [postMdxContent || ''],
-        }
-      ],
+      sections:
+        sections.length > 0
+          ? sections
+          : [
+              {
+                id: "section-1",
+                heading: "Overview",
+                paragraphs: [postMdxContent || ""],
+              },
+            ],
       books: editingPost?.books || [],
       status: postStatus,
     };
@@ -295,22 +230,22 @@ export function ContentManager({
         setIsEditingPost(false);
         showToast(`Essay "${postTitle}" saved successfully with MDX!`);
       } else {
-        showToast(res.error || 'Failed to save post');
+        showToast(res.error || "Failed to save post");
       }
     });
   }
 
   function handleOpenCreateNote() {
     setEditingNote(null);
-    setNoteTitle('');
-    setNoteSlug('');
-    setNoteDescription('');
-    setNoteDate(new Date().toISOString().split('T')[0]);
-    setNotePersona('thinker');
-    setNoteStatus('published');
-    setNoteTagsInput('notes, thoughts');
+    setNoteTitle("");
+    setNoteSlug("");
+    setNoteDescription("");
+    setNoteDate(new Date().toISOString().split("T")[0]);
+    setNotePersona("thinker");
+    setNoteStatus("published");
+    setNoteTagsInput("notes, thoughts");
     setNoteMdxContent(
-      'An atomic thought or brief observation.\n\n> [!TIP]\n> Keep notes focused on a single coherent idea.'
+      "An atomic thought or brief observation.\n\n> [!TIP]\n> Keep notes focused on a single coherent idea.",
     );
     setIsEditingNote(true);
   }
@@ -322,9 +257,9 @@ export function ContentManager({
     setNoteDescription(note.description);
     setNoteDate(note.date);
     setNotePersona(note.persona);
-    setNoteStatus(note.status || 'published');
-    setNoteTagsInput(note.tags.join(', '));
-    setNoteMdxContent(note.content.join('\n\n'));
+    setNoteStatus(note.status || "published");
+    setNoteTagsInput(note.tags.join(", "));
+    setNoteMdxContent(note.content.join("\n\n"));
     setIsEditingNote(true);
   }
 
@@ -333,12 +268,12 @@ export function ContentManager({
     if (!noteTitle.trim() || !noteSlug.trim()) return;
 
     const parsedTags = noteTagsInput
-      .split(',')
+      .split(",")
       .map((t) => t.trim())
       .filter(Boolean);
 
     const parsedParagraphs = noteMdxContent
-      .split('\n\n')
+      .split("\n\n")
       .map((p) => p.trim())
       .filter(Boolean);
 
@@ -346,11 +281,14 @@ export function ContentManager({
       id: editingNote ? editingNote.id : `note-${Date.now()}`,
       title: noteTitle,
       slug: slugify(noteSlug),
-      description: noteDescription || (parsedParagraphs[0] ? parsedParagraphs[0].slice(0, 120) : noteTitle),
-      content: parsedParagraphs.length > 0 ? parsedParagraphs : [noteDescription],
-      date: noteDate || new Date().toISOString().split('T')[0],
+      description:
+        noteDescription ||
+        (parsedParagraphs[0] ? parsedParagraphs[0].slice(0, 120) : noteTitle),
+      content:
+        parsedParagraphs.length > 0 ? parsedParagraphs : [noteDescription],
+      date: noteDate || new Date().toISOString().split("T")[0],
       persona: notePersona,
-      tags: parsedTags.length > 0 ? parsedTags : ['note'],
+      tags: parsedTags.length > 0 ? parsedTags : ["note"],
       status: noteStatus,
     };
 
@@ -369,7 +307,7 @@ export function ContentManager({
         setIsEditingNote(false);
         showToast(`Note "${noteTitle}" saved successfully!`);
       } else {
-        showToast(res.error || 'Failed to save note');
+        showToast(res.error || "Failed to save note");
       }
     });
   }
@@ -379,15 +317,17 @@ export function ContentManager({
       const res = await toggleNoteStatusAction(slug);
       if (res.success && res.note) {
         setNotes((prev) =>
-          prev.map((n) => (n.slug === slug ? { ...n, status: res.note!.status } : n))
+          prev.map((n) =>
+            n.slug === slug ? { ...n, status: res.note!.status } : n,
+          ),
         );
         showToast(
           `Note is now ${
-            res.note.status === 'unpublished' ? 'Draft' : 'Published'
-          }.`
+            res.note.status === "unpublished" ? "Draft" : "Published"
+          }.`,
         );
       } else {
-        showToast(res.error || 'Failed to toggle status');
+        showToast(res.error || "Failed to toggle status");
       }
     });
   }
@@ -395,14 +335,14 @@ export function ContentManager({
   // Book Handlers
   function handleOpenCreateBook() {
     setEditingBook(null);
-    setBookTitle('');
-    setBookAuthor('');
-    setBookDescription('');
-    setBookDate(new Date().toISOString().split('T')[0]);
-    setBookPersona('thinker');
-    setBookTagsInput('philosophy, craft');
-    setBookCover('');
-    setBookLink('');
+    setBookTitle("");
+    setBookAuthor("");
+    setBookDescription("");
+    setBookDate(new Date().toISOString().split("T")[0]);
+    setBookPersona("thinker");
+    setBookTagsInput("philosophy, craft");
+    setBookCover("");
+    setBookLink("");
     setIsEditingBook(true);
   }
 
@@ -413,9 +353,9 @@ export function ContentManager({
     setBookDescription(book.description);
     setBookDate(book.date);
     setBookPersona(book.persona);
-    setBookTagsInput(book.tags.join(', '));
-    setBookCover(book.cover || '');
-    setBookLink(book.link || '');
+    setBookTagsInput(book.tags.join(", "));
+    setBookCover(book.cover || "");
+    setBookLink(book.link || "");
     setIsEditingBook(true);
   }
 
@@ -424,7 +364,7 @@ export function ContentManager({
     if (!bookTitle.trim() || !bookAuthor.trim()) return;
 
     const parsedTags = bookTagsInput
-      .split(',')
+      .split(",")
       .map((t) => t.trim())
       .filter(Boolean);
 
@@ -432,11 +372,13 @@ export function ContentManager({
       id: editingBook ? editingBook.id : `book-${Date.now()}`,
       title: bookTitle,
       author: bookAuthor,
-      slug: editingBook ? editingBook.slug : slugify(bookTitle || 'untitled-book'),
+      slug: editingBook
+        ? editingBook.slug
+        : slugify(bookTitle || "untitled-book"),
       description: bookDescription,
-      date: bookDate || new Date().toISOString().split('T')[0],
+      date: bookDate || new Date().toISOString().split("T")[0],
       persona: bookPersona,
-      tags: parsedTags.length > 0 ? parsedTags : ['book'],
+      tags: parsedTags.length > 0 ? parsedTags : ["book"],
       cover: bookCover.trim() || undefined,
       link: bookLink.trim() || undefined,
     };
@@ -456,7 +398,7 @@ export function ContentManager({
         setIsEditingBook(false);
         showToast(`Book "${bookTitle}" saved to library shelf!`);
       } else {
-        showToast(res.error || 'Failed to save book');
+        showToast(res.error || "Failed to save book");
       }
     });
   }
@@ -467,74 +409,78 @@ export function ContentManager({
     const { kind, slug, action } = confirmAction;
 
     startTransition(async () => {
-      if (action === 'delete') {
-        if (kind === 'post') {
+      if (action === "delete") {
+        if (kind === "post") {
           const res = await deletePostAction(slug);
           if (res.success) {
             setPosts((prev) => prev.filter((p) => p.slug !== slug));
             setConfirmAction(null);
-            showToast('Essay deleted successfully');
+            showToast("Essay deleted successfully");
           } else {
-            showToast(res.error || 'Failed to delete essay');
+            showToast(res.error || "Failed to delete essay");
           }
-        } else if (kind === 'note') {
+        } else if (kind === "note") {
           const res = await deleteNoteAction(slug);
           if (res.success) {
             setNotes((prev) => prev.filter((n) => n.slug !== slug));
             setConfirmAction(null);
-            showToast('Note deleted successfully');
+            showToast("Note deleted successfully");
           } else {
-            showToast(res.error || 'Failed to delete note');
+            showToast(res.error || "Failed to delete note");
           }
-        } else if (kind === 'now') {
+        } else if (kind === "now") {
           const res = await deleteNowEntryAction(slug);
           if (res.success) {
             setNowEntries((prev) => prev.filter((e) => e.id !== slug));
             setConfirmAction(null);
-            showToast('Now entry removed from the timeline');
+            showToast("Now entry removed from the timeline");
           } else {
-            showToast(res.error || 'Failed to delete now entry');
+            showToast(res.error || "Failed to delete now entry");
           }
         } else {
           const res = await deleteBookAction(slug);
           if (res.success) {
             setBooks((prev) => prev.filter((b) => b.slug !== slug));
             setConfirmAction(null);
-            showToast('Book removed from library');
+            showToast("Book removed from library");
           } else {
-            showToast(res.error || 'Failed to delete book');
+            showToast(res.error || "Failed to delete book");
           }
         }
       } else {
-        if (kind === 'post') {
+        if (kind === "post") {
           const res = await togglePostStatusAction(slug);
           if (res.success && res.post) {
             setPosts((prev) =>
-              prev.map((p) => (p.slug === slug ? { ...p, status: res.post!.status } : p))
+              prev.map((p) =>
+                p.slug === slug ? { ...p, status: res.post!.status } : p,
+              ),
             );
             setConfirmAction(null);
             showToast(
               `Essay is now ${
-                res.post.status === 'unpublished' ? 'Draft' : 'Published'
-              }.`
+                res.post.status === "unpublished" ? "Draft" : "Published"
+              }.`,
             );
           } else {
-            showToast(res.error || 'Failed to toggle status');
+            showToast(res.error || "Failed to toggle status");
           }
         } else {
           const res = await toggleNoteStatusAction(slug);
           if (res.success && res.note) {
             setNotes((prev) =>
-              prev.map((n) => (n.slug === slug ? { ...n, status: res.note!.status } : n))
+              prev.map((n) =>
+                n.slug === slug ? { ...n, status: res.note!.status } : n,
+              ),
             );
             setConfirmAction(null);
             showToast(
               `Note is now ${
-                res.note.status === 'unpublished' ? 'Draft' : 'Published'
-              }.`
+                res.note.status === "unpublished" ? "Draft" : "Published"
+              }.`,
             );
           } else {
-            showToast(res.error || 'Failed to toggle status');
+            showToast(res.error || "Failed to toggle status");
           }
         }
       }
@@ -544,33 +490,33 @@ export function ContentManager({
   // Build unified items list
   const unifiedItems = [
     ...posts.map((p) => ({
-      kind: 'post' as const,
+      kind: "post" as const,
       id: `post-${p.slug}`,
       slug: p.slug,
       title: p.title,
-      date: p.plantedAt,
-      persona: ('builder' as Persona),
-      status: p.status || 'published',
+      date: p.publishedAt,
+      persona: "builder" as Persona,
+      status: p.status || "published",
       rawPost: p,
       rawNote: undefined,
       rawBook: undefined,
       rawNow: undefined,
     })),
     ...notes.map((n) => ({
-      kind: 'note' as const,
+      kind: "note" as const,
       id: n.id || `note-${n.slug}`,
       slug: n.slug,
       title: n.title,
       date: n.date,
       persona: n.persona,
-      status: n.status || 'published',
+      status: n.status || "published",
       rawPost: undefined,
       rawNote: n,
       rawBook: undefined,
       rawNow: undefined,
     })),
     ...books.map((b) => ({
-      kind: 'book' as const,
+      kind: "book" as const,
       id: b.id || `book-${b.slug}`,
       slug: b.slug,
       title: b.title,
@@ -583,7 +529,7 @@ export function ContentManager({
       rawNow: undefined,
     })),
     ...nowEntries.map((n) => ({
-      kind: 'now' as const,
+      kind: "now" as const,
       id: n.id,
       slug: n.id,
       title: n.title,
@@ -602,8 +548,8 @@ export function ContentManager({
 
   // Filter unified items
   const filteredItems = unifiedItems.filter((item) => {
-    if (typeFilter !== 'all' && item.kind !== typeFilter) return false;
-    if (personaFilter !== 'all' && item.persona !== personaFilter) return false;
+    if (typeFilter !== "all" && item.kind !== typeFilter) return false;
+    if (personaFilter !== "all" && item.persona !== personaFilter) return false;
 
     if (search.trim()) {
       const q = search.toLowerCase();
@@ -613,14 +559,16 @@ export function ContentManager({
         ? item.persona.toLowerCase().includes(q)
         : false;
       const matchAuthor =
-        item.kind === 'book' && item.rawBook
+        item.kind === "book" && item.rawBook
           ? item.rawBook.author.toLowerCase().includes(q)
           : false;
-      if (!(matchTitle || matchSlug || matchPersona || matchAuthor)) return false;
+      if (!(matchTitle || matchSlug || matchPersona || matchAuthor))
+        return false;
     }
 
-    if (item.kind === 'book' || item.kind === 'now') return statusFilter === 'all';
-    if (statusFilter !== 'all' && item.status !== statusFilter) return false;
+    if (item.kind === "book" || item.kind === "now")
+      return statusFilter === "all";
+    if (statusFilter !== "all" && item.status !== statusFilter) return false;
 
     return true;
   });
@@ -692,24 +640,46 @@ export function ContentManager({
           onChange={(e) => setTypeFilter(e.target.value as ContentFilterType)}
           className="rounded-full border border-tinted/20 bg-night-soft px-3.5 py-2 text-xs font-medium text-paper focus:border-accent focus:outline-none"
         >
-          <option value="all" className="bg-night text-paper">All Types</option>
-          <option value="post" className="bg-night text-paper">Essays ({posts.length})</option>
-          <option value="note" className="bg-night text-paper">Notes ({notes.length})</option>
-          <option value="book" className="bg-night text-paper">Books ({books.length})</option>
-          <option value="now" className="bg-night text-paper">Now ({nowEntries.length})</option>
+          <option value="all" className="bg-night text-paper">
+            All Types
+          </option>
+          <option value="post" className="bg-night text-paper">
+            Essays ({posts.length})
+          </option>
+          <option value="note" className="bg-night text-paper">
+            Notes ({notes.length})
+          </option>
+          <option value="book" className="bg-night text-paper">
+            Books ({books.length})
+          </option>
+          <option value="now" className="bg-night text-paper">
+            Now ({nowEntries.length})
+          </option>
         </select>
 
         {/* Persona Filter */}
         <select
           value={personaFilter}
-          onChange={(e) => setPersonaFilter(e.target.value as PersonaFilterType)}
+          onChange={(e) =>
+            setPersonaFilter(e.target.value as PersonaFilterType)
+          }
           className="rounded-full border border-tinted/20 bg-night-soft px-3.5 py-2 text-xs font-medium text-paper focus:border-accent focus:outline-none"
         >
-          <option value="all" className="bg-night text-paper">All Personas</option>
-          <option value="builder" className="bg-night text-paper">Builder</option>
-          <option value="operator" className="bg-night text-paper">Operator</option>
-          <option value="thinker" className="bg-night text-paper">Thinker</option>
-          <option value="wanderer" className="bg-night text-paper">Wanderer</option>
+          <option value="all" className="bg-night text-paper">
+            All Personas
+          </option>
+          <option value="builder" className="bg-night text-paper">
+            Builder
+          </option>
+          <option value="operator" className="bg-night text-paper">
+            Operator
+          </option>
+          <option value="thinker" className="bg-night text-paper">
+            Thinker
+          </option>
+          <option value="wanderer" className="bg-night text-paper">
+            Wanderer
+          </option>
         </select>
 
         {/* Status Filter */}
@@ -718,9 +688,15 @@ export function ContentManager({
           onChange={(e) => setStatusFilter(e.target.value as StatusFilterType)}
           className="rounded-full border border-tinted/20 bg-night-soft px-3.5 py-2 text-xs font-medium text-paper focus:border-accent focus:outline-none"
         >
-          <option value="all" className="bg-night text-paper">All Status</option>
-          <option value="published" className="bg-night text-paper">Published</option>
-          <option value="unpublished" className="bg-night text-paper">Draft</option>
+          <option value="all" className="bg-night text-paper">
+            All Status
+          </option>
+          <option value="published" className="bg-night text-paper">
+            Published
+          </option>
+          <option value="unpublished" className="bg-night text-paper">
+            Draft
+          </option>
         </select>
       </div>
 
@@ -740,20 +716,24 @@ export function ContentManager({
             </thead>
             <tbody className="divide-y divide-tinted/20">
               {filteredItems.map((item, rowIndex) => {
-                const isBook = item.kind === 'book';
-                const isNow = item.kind === 'now';
-                const isPublished = !isBook && !isNow && item.status !== 'unpublished';
+                const isBook = item.kind === "book";
+                const isNow = item.kind === "now";
+                const isPublished =
+                  !isBook && !isNow && item.status !== "unpublished";
                 const linkHref =
-                  item.kind === 'post'
+                  item.kind === "post"
                     ? `/p/${item.slug}`
-                    : item.kind === 'note'
+                    : item.kind === "note"
                       ? `/n/${item.slug}`
-                      : item.kind === 'now'
-                        ? '/now'
-                        : '/library';
+                      : item.kind === "now"
+                        ? "/now"
+                        : "/library";
 
                 return (
-                  <tr key={item.id} className="transition-colors hover:bg-night-soft/60">
+                  <tr
+                    key={item.id}
+                    className="transition-colors hover:bg-night-soft/60"
+                  >
                     {/* Title */}
                     <td className="px-5 py-4">
                       <div className="font-serif text-base font-medium text-paper">
@@ -761,7 +741,10 @@ export function ContentManager({
                       </div>
                       {isBook && item.rawBook && (
                         <p className="mt-0.5 text-xs text-gray-mid">
-                          by <span className="font-medium text-paper/90">{item.rawBook.author}</span>
+                          by{" "}
+                          <span className="font-medium text-paper/90">
+                            {item.rawBook.author}
+                          </span>
                         </p>
                       )}
                     </td>
@@ -770,18 +753,18 @@ export function ContentManager({
                     <td className="px-4 py-4 whitespace-nowrap">
                       <span
                         className={`rounded-md px-2 py-0.5 text-xs font-semibold uppercase tracking-wider ${
-                          item.kind === 'post'
-                            ? 'bg-accent text-paper'
-                            : 'bg-night-soft text-paper border border-tinted/20'
+                          item.kind === "post"
+                            ? "bg-accent text-paper"
+                            : "bg-night-soft text-paper border border-tinted/20"
                         }`}
                       >
-                        {item.kind === 'post'
-                          ? 'Essay'
-                          : item.kind === 'note'
-                            ? 'Note'
-                            : item.kind === 'now'
-                              ? 'Now'
-                              : 'Book'}
+                        {item.kind === "post"
+                          ? "Essay"
+                          : item.kind === "note"
+                            ? "Note"
+                            : item.kind === "now"
+                              ? "Now"
+                              : "Book"}
                       </span>
                     </td>
 
@@ -798,7 +781,9 @@ export function ContentManager({
 
                     {/* Date */}
                     <td className="px-4 py-4 text-xs text-gray-mid whitespace-nowrap">
-                      {item.kind === 'note' ? formatDisplayDate(item.date) : item.date}
+                      {item.kind === "note"
+                        ? formatDisplayDate(item.date)
+                        : item.date}
                     </td>
 
                     {/* Status */}
@@ -812,31 +797,31 @@ export function ContentManager({
                         <span
                           className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold ${
                             rowIndex === 0
-                              ? 'bg-sea-blue/20 text-sea-blue border border-sea-blue/30'
-                              : 'bg-night-soft text-gray-mid border border-tinted/20'
+                              ? "bg-sea-blue/20 text-sea-blue border border-sea-blue/30"
+                              : "bg-night-soft text-gray-mid border border-tinted/20"
                           }`}
                         >
                           <span
                             className={`h-1.5 w-1.5 rounded-full ${
-                              rowIndex === 0 ? 'bg-sea-blue' : 'bg-gray-mid'
+                              rowIndex === 0 ? "bg-sea-blue" : "bg-gray-mid"
                             }`}
                           />
-                          {rowIndex === 0 ? 'Current' : 'Past'}
+                          {rowIndex === 0 ? "Current" : "Past"}
                         </span>
                       ) : (
                         <span
                           className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold ${
                             isPublished
-                              ? 'bg-emerald-950/60 text-emerald-400 border border-emerald-800/40'
-                              : 'bg-amber-950/60 text-amber-400 border border-amber-800/40'
+                              ? "bg-emerald-950/60 text-emerald-400 border border-emerald-800/40"
+                              : "bg-amber-950/60 text-amber-400 border border-amber-800/40"
                           }`}
                         >
                           <span
                             className={`h-1.5 w-1.5 rounded-full ${
-                              isPublished ? 'bg-emerald-400' : 'bg-amber-400'
+                              isPublished ? "bg-emerald-400" : "bg-amber-400"
                             }`}
                           />
-                          {isPublished ? 'Published' : 'Draft'}
+                          {isPublished ? "Published" : "Draft"}
                         </span>
                       )}
                     </td>
@@ -859,7 +844,9 @@ export function ContentManager({
                               type="button"
                               title="Edit"
                               aria-label={`Edit ${item.title}`}
-                              onClick={() => item.rawBook && handleOpenEditBook(item.rawBook)}
+                              onClick={() =>
+                                item.rawBook && handleOpenEditBook(item.rawBook)
+                              }
                               className="rounded-full p-2 text-paper transition-colors hover:bg-night-soft"
                             >
                               <PencilIcon className="h-4 w-4" />
@@ -870,8 +857,8 @@ export function ContentManager({
                               aria-label={`Remove ${item.title}`}
                               onClick={() =>
                                 openConfirmAction({
-                                  kind: 'book',
-                                  action: 'delete',
+                                  kind: "book",
+                                  action: "delete",
                                   slug: item.slug,
                                   title: item.title,
                                 })
@@ -906,8 +893,8 @@ export function ContentManager({
                               aria-label={`Delete ${item.title}`}
                               onClick={() =>
                                 openConfirmAction({
-                                  kind: 'now',
-                                  action: 'delete',
+                                  kind: "now",
+                                  action: "delete",
                                   slug: item.slug,
                                   title: item.title,
                                 })
@@ -944,7 +931,7 @@ export function ContentManager({
                               onClick={() =>
                                 openConfirmAction({
                                   kind: item.kind,
-                                  action: 'unpublish',
+                                  action: "unpublish",
                                   slug: item.slug,
                                   title: item.title,
                                 })
@@ -960,7 +947,7 @@ export function ContentManager({
                               onClick={() =>
                                 openConfirmAction({
                                   kind: item.kind,
-                                  action: 'delete',
+                                  action: "delete",
                                   slug: item.slug,
                                   title: item.title,
                                 })
@@ -997,7 +984,7 @@ export function ContentManager({
                               onClick={() =>
                                 openConfirmAction({
                                   kind: item.kind,
-                                  action: 'publish',
+                                  action: "publish",
                                   slug: item.slug,
                                   title: item.title,
                                 })
@@ -1013,7 +1000,7 @@ export function ContentManager({
                               onClick={() =>
                                 openConfirmAction({
                                   kind: item.kind,
-                                  action: 'delete',
+                                  action: "delete",
                                   slug: item.slug,
                                   title: item.title,
                                 })
@@ -1031,7 +1018,10 @@ export function ContentManager({
               })}
               {filteredItems.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-5 py-10 text-center text-ink-soft">
+                  <td
+                    colSpan={6}
+                    className="px-5 py-10 text-center text-ink-soft"
+                  >
                     No entries match your search and filter criteria.
                   </td>
                 </tr>
@@ -1046,26 +1036,27 @@ export function ContentManager({
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-xs">
           <div className="w-full max-w-md rounded-3xl border border-tinted/20 bg-night-soft p-6 shadow-2xl animate-in zoom-in-95">
             <h3 className="font-serif text-xl font-normal text-paper">
-              {confirmAction.action === 'delete'
+              {confirmAction.action === "delete"
                 ? `Delete ${
-                    confirmAction.kind === 'post'
-                      ? 'Essay'
-                      : confirmAction.kind === 'note'
-                        ? 'Note'
-                        : confirmAction.kind === 'now'
-                          ? 'Now Entry'
-                          : 'Book'
+                    confirmAction.kind === "post"
+                      ? "Essay"
+                      : confirmAction.kind === "note"
+                        ? "Note"
+                        : confirmAction.kind === "now"
+                          ? "Now Entry"
+                          : "Book"
                   }?`
-                : confirmAction.action === 'unpublish'
-                  ? 'Unpublish?'
-                  : 'Publish?'}
+                : confirmAction.action === "unpublish"
+                  ? "Unpublish?"
+                  : "Publish?"}
             </h3>
             <p className="mt-2 text-sm leading-relaxed text-gray-mid">
-              {confirmAction.action === 'delete' ? (
+              {confirmAction.action === "delete" ? (
                 <>
-                  Are you sure you want to delete{' '}
-                  <b className="text-paper">{confirmAction.title}</b>? This action cannot be undone.
-                  {confirmAction.action === 'delete' && (
+                  Are you sure you want to delete{" "}
+                  <b className="text-paper">{confirmAction.title}</b>? This
+                  action cannot be undone.
+                  {confirmAction.action === "delete" && (
                     <span className="mt-3 block">
                       Type the full title to confirm:
                     </span>
@@ -1073,13 +1064,15 @@ export function ContentManager({
                 </>
               ) : (
                 <>
-                  Are you sure you want to{' '}
-                  {confirmAction.action === 'unpublish' ? 'unpublish' : 'publish'}{' '}
+                  Are you sure you want to{" "}
+                  {confirmAction.action === "unpublish"
+                    ? "unpublish"
+                    : "publish"}{" "}
                   <b className="text-paper">{confirmAction.title}</b>?
                 </>
               )}
             </p>
-            {confirmAction.action === 'delete' && (
+            {confirmAction.action === "delete" && (
               <input
                 type="text"
                 autoFocus
@@ -1087,7 +1080,10 @@ export function ContentManager({
                 value={confirmTypedTitle}
                 onChange={(e) => setConfirmTypedTitle(e.target.value)}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter' && confirmTypedTitle === confirmAction.title) {
+                  if (
+                    e.key === "Enter" &&
+                    confirmTypedTitle === confirmAction.title
+                  ) {
                     handleConfirmAction();
                   }
                 }}
@@ -1106,20 +1102,21 @@ export function ContentManager({
                 type="button"
                 disabled={
                   isPending ||
-                  (confirmAction.action === 'delete' && confirmTypedTitle !== confirmAction.title)
+                  (confirmAction.action === "delete" &&
+                    confirmTypedTitle !== confirmAction.title)
                 }
                 onClick={handleConfirmAction}
                 className={`rounded-full px-5 py-2 text-xs font-semibold text-white shadow-sm hover:brightness-110 disabled:opacity-50 ${
-                  confirmAction.action === 'delete' ? 'bg-red-700' : 'bg-accent'
+                  confirmAction.action === "delete" ? "bg-red-700" : "bg-accent"
                 }`}
               >
                 {isPending
-                  ? 'Processing...'
-                  : confirmAction.action === 'delete'
-                    ? 'Confirm Delete'
-                    : confirmAction.action === 'unpublish'
-                      ? 'Unpublish'
-                      : 'Publish'}
+                  ? "Processing..."
+                  : confirmAction.action === "delete"
+                    ? "Confirm Delete"
+                    : confirmAction.action === "unpublish"
+                      ? "Unpublish"
+                      : "Publish"}
               </button>
             </div>
           </div>
@@ -1133,10 +1130,11 @@ export function ContentManager({
             <div className="flex items-center justify-between border-b border-tinted/20 pb-4">
               <div>
                 <h3 className="font-serif text-2xl font-normal text-paper">
-                  {editingPost ? 'Edit Post' : 'New Post'}
+                  {editingPost ? "Edit Post" : "New Post"}
                 </h3>
                 <p className="mt-0.5 text-xs text-gray-mid">
-                  Author long-form essays with live split-view markdown and rich component insertions.
+                  Author long-form essays with live split-view markdown and rich
+                  component insertions.
                 </p>
               </div>
               <button
@@ -1192,11 +1190,19 @@ export function ContentManager({
                   </label>
                   <select
                     value={postStatus}
-                    onChange={(e) => setPostStatus(e.target.value as 'published' | 'unpublished')}
+                    onChange={(e) =>
+                      setPostStatus(
+                        e.target.value as "published" | "unpublished",
+                      )
+                    }
                     className="mt-1.5 w-full rounded-xl border border-tinted/20 bg-night-soft px-3.5 py-2 text-xs text-paper focus:border-accent focus:outline-none"
                   >
-                    <option value="published" className="bg-night text-paper">Published</option>
-                    <option value="unpublished" className="bg-night text-paper">Draft</option>
+                    <option value="published" className="bg-night text-paper">
+                      Published
+                    </option>
+                    <option value="unpublished" className="bg-night text-paper">
+                      Draft
+                    </option>
                   </select>
                 </div>
                 <div>
@@ -1208,10 +1214,18 @@ export function ContentManager({
                     onChange={(e) => setPostPersona(e.target.value as Persona)}
                     className="mt-1.5 w-full rounded-xl border border-tinted/20 bg-night-soft px-3.5 py-2 text-xs text-paper focus:border-accent focus:outline-none"
                   >
-                    <option value="builder" className="bg-night text-paper">Builder</option>
-                    <option value="operator" className="bg-night text-paper">Operator</option>
-                    <option value="thinker" className="bg-night text-paper">Thinker</option>
-                    <option value="wanderer" className="bg-night text-paper">Wanderer</option>
+                    <option value="builder" className="bg-night text-paper">
+                      Builder
+                    </option>
+                    <option value="operator" className="bg-night text-paper">
+                      Operator
+                    </option>
+                    <option value="thinker" className="bg-night text-paper">
+                      Thinker
+                    </option>
+                    <option value="wanderer" className="bg-night text-paper">
+                      Wanderer
+                    </option>
                   </select>
                 </div>
                 <div>
@@ -1286,7 +1300,7 @@ export function ContentManager({
                   disabled={isPending}
                   className="rounded-full bg-accent px-6 py-2.5 text-xs font-semibold text-paper shadow-sm hover:bg-accent-hover transition-colors disabled:opacity-50"
                 >
-                  {isPending ? 'Saving Essay...' : 'Save Essay'}
+                  {isPending ? "Saving Essay..." : "Save Essay"}
                 </button>
               </div>
             </form>
@@ -1301,10 +1315,11 @@ export function ContentManager({
             <div className="flex items-center justify-between border-b border-tinted/20 pb-4">
               <div>
                 <h3 className="font-serif text-2xl font-normal text-paper">
-                  {editingNote ? 'Edit Note' : 'New Note'}
+                  {editingNote ? "Edit Note" : "New Note"}
                 </h3>
                 <p className="mt-0.5 text-xs text-gray-mid">
-                  Capture an atomic thought or observation with live MDX preview.
+                  Capture an atomic thought or observation with live MDX
+                  preview.
                 </p>
               </div>
               <button
@@ -1359,11 +1374,19 @@ export function ContentManager({
                   </label>
                   <select
                     value={noteStatus}
-                    onChange={(e) => setNoteStatus(e.target.value as 'published' | 'unpublished')}
+                    onChange={(e) =>
+                      setNoteStatus(
+                        e.target.value as "published" | "unpublished",
+                      )
+                    }
                     className="mt-1.5 w-full rounded-xl border border-tinted/20 bg-night-soft px-3.5 py-2 text-xs text-paper focus:border-accent focus:outline-none"
                   >
-                    <option value="published" className="bg-night text-paper">Published</option>
-                    <option value="unpublished" className="bg-night text-paper">Draft</option>
+                    <option value="published" className="bg-night text-paper">
+                      Published
+                    </option>
+                    <option value="unpublished" className="bg-night text-paper">
+                      Draft
+                    </option>
                   </select>
                 </div>
                 <div>
@@ -1375,10 +1398,18 @@ export function ContentManager({
                     onChange={(e) => setNotePersona(e.target.value as Persona)}
                     className="mt-1.5 w-full rounded-xl border border-tinted/20 bg-night-soft px-3.5 py-2 text-xs text-paper focus:border-accent focus:outline-none"
                   >
-                    <option value="builder" className="bg-night text-paper">Builder</option>
-                    <option value="operator" className="bg-night text-paper">Operator</option>
-                    <option value="thinker" className="bg-night text-paper">Thinker</option>
-                    <option value="wanderer" className="bg-night text-paper">Wanderer</option>
+                    <option value="builder" className="bg-night text-paper">
+                      Builder
+                    </option>
+                    <option value="operator" className="bg-night text-paper">
+                      Operator
+                    </option>
+                    <option value="thinker" className="bg-night text-paper">
+                      Thinker
+                    </option>
+                    <option value="wanderer" className="bg-night text-paper">
+                      Wanderer
+                    </option>
                   </select>
                 </div>
                 <div>
@@ -1439,7 +1470,7 @@ export function ContentManager({
                   disabled={isPending}
                   className="rounded-full bg-accent px-6 py-2.5 text-xs font-semibold text-paper shadow-sm hover:bg-accent-hover transition-colors disabled:opacity-50"
                 >
-                  {isPending ? 'Saving Note...' : 'Save Note'}
+                  {isPending ? "Saving Note..." : "Save Note"}
                 </button>
               </div>
             </form>
@@ -1455,7 +1486,7 @@ export function ContentManager({
             <div className="flex items-start justify-between gap-4">
               <div>
                 <h3 className="font-serif text-2xl font-normal text-paper">
-                  {editingBook ? 'Edit Book' : 'Add Book to Library'}
+                  {editingBook ? "Edit Book" : "Add Book to Library"}
                 </h3>
               </div>
               <button
@@ -1505,13 +1536,23 @@ export function ContentManager({
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <select
                       value={bookPersona}
-                      onChange={(e) => setBookPersona(e.target.value as Persona)}
+                      onChange={(e) =>
+                        setBookPersona(e.target.value as Persona)
+                      }
                       className="w-full rounded-xl border border-tinted/20 bg-night-soft px-3.5 py-2 text-sm text-paper focus:border-accent focus:outline-none"
                     >
-                      <option value="builder" className="bg-night text-paper">Builder</option>
-                      <option value="operator" className="bg-night text-paper">Operator</option>
-                      <option value="thinker" className="bg-night text-paper">Thinker</option>
-                      <option value="wanderer" className="bg-night text-paper">Wanderer</option>
+                      <option value="builder" className="bg-night text-paper">
+                        Builder
+                      </option>
+                      <option value="operator" className="bg-night text-paper">
+                        Operator
+                      </option>
+                      <option value="thinker" className="bg-night text-paper">
+                        Thinker
+                      </option>
+                      <option value="wanderer" className="bg-night text-paper">
+                        Wanderer
+                      </option>
                     </select>
                     <input
                       type="text"
@@ -1554,7 +1595,7 @@ export function ContentManager({
                   disabled={isPending}
                   className="inline-flex items-center gap-2 rounded-full bg-accent px-6 py-2 text-xs font-semibold text-paper shadow-sm transition-colors hover:bg-accent-hover disabled:opacity-50"
                 >
-                  {isPending ? 'Saving...' : 'Save Book'}
+                  {isPending ? "Saving..." : "Save Book"}
                 </button>
               </div>
             </form>

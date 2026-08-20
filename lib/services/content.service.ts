@@ -8,7 +8,6 @@ import type {
   Persona,
   ScribbleEntry,
   HomeContent,
-  PageContent,
   SectionGroup,
   SiteContent,
   WritingItem,
@@ -97,10 +96,6 @@ export class ContentService {
 
   deleteBook(slug: string): Promise<boolean> {
     return this.repo.deleteBook(slug);
-  }
-
-  getPage(slug: string): Promise<PageContent | null> {
-    return this.repo.getPage(slug);
   }
 
   getNowEntries(): Promise<NowEntry[]> {

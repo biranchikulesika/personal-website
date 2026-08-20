@@ -9,7 +9,6 @@ import type {
   BookItem,
   NoteItem,
   NowEntry,
-  PageContent,
   SectionGroup,
   SiteContent,
   WritingItem,
@@ -87,7 +86,7 @@ export function seedSiteContent(): SiteContent {
           ],
         },
       ],
-      bottom: "© 2026 Biranchi Kulesika. Built by hand, slowly.",
+      bottom: "© 2026 Biranchi Kulesika.",
     },
   };
 }
@@ -103,7 +102,7 @@ function writingItems(): WritingItem[] {
       title: "Building in public, carefully",
       description:
         "What it looks like to share unfinished work without performing it.",
-      date: "Mar 3, 2026",
+      date: "2026-03-03",
       tags: ["Craft", "Attention", "The web"],
     },
     {
@@ -113,7 +112,7 @@ function writingItems(): WritingItem[] {
       title: "Attention as a material",
       description:
         "Treating focus the way a craftsperson treats their material.",
-      date: "Feb 12, 2026",
+      date: "2026-02-12",
       tags: ["Attention", "Craft"],
     },
     {
@@ -123,7 +122,7 @@ function writingItems(): WritingItem[] {
       title: "The web as a garden",
       description:
         "On tending a corner of the internet instead of farming an audience.",
-      date: "Jan 16, 2026",
+      date: "2026-01-16",
       tags: ["The web", "Craft"],
     },
     {
@@ -132,7 +131,7 @@ function writingItems(): WritingItem[] {
       persona: "builder",
       title: "Small tools over big platforms",
       description: "Why simpler software often respects your attention more.",
-      date: "Dec 8, 2025",
+      date: "2025-12-08",
       tags: ["Tools", "Attention"],
     },
     {
@@ -142,7 +141,7 @@ function writingItems(): WritingItem[] {
       title: "The slow web",
       description:
         "A gentler pace for the personal internet, and why speed is not the only virtue.",
-      date: "Nov 14, 2025",
+      date: "2025-11-14",
       tags: ["The web", "Attention"],
     },
     {
@@ -152,7 +151,7 @@ function writingItems(): WritingItem[] {
       title: "Notes on good feedback",
       description:
         "What makes critique useful instead of corrosive, for both the giver and the receiver.",
-      date: "Oct 9, 2025",
+      date: "2025-10-09",
       tags: ["Craft", "Communication"],
     },
     {
@@ -162,7 +161,7 @@ function writingItems(): WritingItem[] {
       title: "Tools that respect you",
       description:
         "Software as a relationship rather than a transaction, and what respect looks like in practice.",
-      date: "Sep 18, 2025",
+      date: "2025-09-18",
       tags: ["Tools", "Attention"],
     },
     {
@@ -172,7 +171,7 @@ function writingItems(): WritingItem[] {
       title: "What redesigning taught me",
       description:
         "Lessons from tearing the website down and rebuilding it from first principles.",
-      date: "Aug 26, 2025",
+      date: "2025-08-26",
       tags: ["Craft", "The web"],
     },
     {
@@ -182,7 +181,7 @@ function writingItems(): WritingItem[] {
       title: "The case for boring technology",
       description:
         "Why stable, unglamorous tools keep winning, and what that says about craft.",
-      date: "Jul 31, 2025",
+      date: "2025-07-31",
       tags: ["Tools", "Craft"],
     },
   ];
@@ -201,7 +200,7 @@ function noteItems(): NoteItem[] {
         "Until it is written, an idea is mostly a feeling — an intuition that something is there. Writing forces that intuition to take shape, and shape is where the real thinking happens.",
         "This is why notes beat memory. Memory is a feeling. A note is evidence.",
       ],
-      date: "Mar 12, 2026",
+      date: "2026-03-12",
       tags: ["Craft", "Attention"],
     },
     {
@@ -215,7 +214,7 @@ function noteItems(): NoteItem[] {
         "The Shallows, by Nicholas Carr. Stolen Focus, by Johann Hari. And a handful of essays about attention and craft that I keep coming back to.",
         "Reading in small, deliberate sessions has been more useful than trying to keep pace with everything.",
       ],
-      date: "Feb 18, 2026",
+      date: "2026-02-18",
       tags: ["Reading"],
     },
     {
@@ -229,7 +228,7 @@ function noteItems(): NoteItem[] {
         "The lesson is not that the work was bad. It is that time is a better editor than intention.",
         "Revisiting old work is a way of seeing how far the standard has moved — and whether you have actually moved it.",
       ],
-      date: "Jan 24, 2026",
+      date: "2026-01-24",
       tags: ["Craft"],
     },
     {
@@ -243,7 +242,7 @@ function noteItems(): NoteItem[] {
         "Feedback fails most often because it skips straight to judgment. The better order is attention first: say what the work is doing, then what it could do differently.",
         "When someone knows you actually read their work, the criticism lands as care rather than as correction.",
       ],
-      date: "Dec 9, 2025",
+      date: "2025-12-09",
       tags: ["Communication", "Craft"],
     },
     {
@@ -258,7 +257,7 @@ function noteItems(): NoteItem[] {
         "The price is usually time, but the time is not wasted. It is the difference between finishing something and finishing something that can be revisited.",
         "Cheap work is expensive in the only currency that matters: the attention of the people you respect.",
       ],
-      date: "Nov 14, 2025",
+      date: "2025-11-14",
       tags: ["Craft", "Attention"],
     },
   ];
@@ -418,7 +417,7 @@ export function seedWriting(): SectionGroup<WritingItem> {
   };
 }
 
-export function seedNotes() {
+export function seedNotes(): SectionGroup<NoteItem> {
   return {
     title: "Notes",
     href: "/notes",
@@ -447,8 +446,8 @@ function featuredPost(): BlogPost {
       "What it looks like to share unfinished work without turning the process into a performance.",
     persona: "builder",
     tags: ["Craft", "Attention", "The web"],
-    plantedAt: "Mar 3, 2026",
-    lastTendedAt: "Aug 21, 2026",
+    publishedAt: "2026-03-03",
+    lastEditedAt: "2026-08-21",
     assumedAudience:
       "People who share work online and want to keep the process honest — without performing the making of it.",
     intro: [
@@ -540,8 +539,8 @@ function attentionPost(): BlogPost {
       "Treating focus the way a craftsperson treats their material — with care, patience, and respect for its limits.",
     persona: "thinker",
     tags: ["Attention", "Craft"],
-    plantedAt: "Feb 12, 2026",
-    lastTendedAt: "Aug 20, 2026",
+    publishedAt: "2026-02-12",
+    lastEditedAt: "2026-08-20",
     assumedAudience:
       "People who work with their minds and want to protect the quality of their focus.",
     intro: [
@@ -595,8 +594,8 @@ function fallbackPost(item: WritingItem): BlogPost {
     description: item.description,
     persona: item.persona,
     tags: item.tags,
-    plantedAt: item.date,
-    lastTendedAt: item.date,
+    publishedAt: item.date,
+    lastEditedAt: item.date,
     assumedAudience: "Anyone curious about this topic.",
     intro: [item.description],
     sections: [],
@@ -613,34 +612,6 @@ export function seedPosts(): BlogPost[] {
   bySlug.set(featured.slug, featured);
   bySlug.set(attention.slug, attention);
   return seedWriting().items.map((item) => bySlug.get(item.slug)!);
-}
-
-// Structural pages -----------------------------------------------------------
-
-export function seedPages(): PageContent[] {
-  return [
-    {
-      slug: "library",
-      title: "Library",
-      description: "Library page placeholder.",
-      content:
-        "This page will contain books read and books on the shelf — what has shaped thinking and what still needs to.",
-    },
-    {
-      slug: "now",
-      title: "Now",
-      description: "Now page placeholder.",
-      content:
-        "This page will contain a snapshot of what currently has Biranchi’s attention — building, learning, reading, exploring.",
-    },
-    {
-      slug: "about",
-      title: "About",
-      description: "About page placeholder.",
-      content:
-        "This page will explain who Biranchi is, what he does, and how his work and interests connect.",
-    },
-  ];
 }
 
 // Now page timeline ----------------------------------------------------------

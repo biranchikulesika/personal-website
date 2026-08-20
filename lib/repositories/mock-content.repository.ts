@@ -1,23 +1,45 @@
+import type { MockDatabase } from "@/lib/data/mock-db";
 import type {
   AdminProfile,
   BlogPost,
   BookItem,
+  HomeContent,
   MediaItem,
   NoteItem,
   NowEntry,
   Persona,
   ScribbleEntry,
-  HomeContent,
-  PageContent,
   SectionGroup,
   SiteContent,
   WritingItem,
-} from '@/lib/types';
-import type { MockDatabase } from '@/lib/data/mock-db';
-import type { ContentRepository } from './content.repository';
+} from "@/lib/types";
+import type { ContentRepository } from "./content.repository";
 
 export class MockContentRepository implements ContentRepository {
   constructor(private db: MockDatabase) {}
+
+  /**
+   * Checks whether a slug already exists in any slug-based collection.
+   * Used to prevent silent overwrites on insert.
+   */
+  private slugExists(
+    slug: string,
+    excludeType?: "post" | "note" | "book",
+  ): boolean {
+    if (excludeType !== "post" && this.db.posts.some((p) => p.slug === slug))
+      return true;
+    if (
+      excludeType !== "note" &&
+      this.db.notes.items.some((n) => n.slug === slug)
+    )
+      return true;
+    if (
+      excludeType !== "book" &&
+      this.db.books.items.some((b) => b.slug === slug)
+    )
+      return true;
+    return false;
+  }
 
   async getSiteContent(): Promise<SiteContent> {
     return this.db.site;
@@ -51,26 +73,40 @@ export class MockContentRepository implements ContentRepository {
     return [...this.db.posts];
   }
 
-  async savePost(post: BlogPost, persona: Persona = 'builder'): Promise<BlogPost> {
+  async savePost(
+    post: BlogPost,
+    persona: Persona = "builder",
+  ): Promise<BlogPost> {
     const postWithStatus: BlogPost = {
       ...post,
-      status: post.status || 'published',
+      status: post.status || "published",
     };
     const existingIndex = this.db.posts.findIndex((p) => p.slug === post.slug);
     if (existingIndex >= 0) {
       this.db.posts[existingIndex] = { ...postWithStatus };
     } else {
+      // On insert: reject if slug already exists in another collection.
+      if (this.slugExists(post.slug, "post")) {
+        throw new Error(
+          `Slug "${post.slug}" already exists. Choose a unique slug.`,
+        );
+      }
       this.db.posts.push({ ...postWithStatus });
     }
 
     // Keep writing items list in sync
-    const writingIndex = this.db.writing.items.findIndex((w) => w.slug === post.slug);
+    const writingIndex = this.db.writing.items.findIndex(
+      (w) => w.slug === post.slug,
+    );
     const writingEntry: WritingItem = {
-      id: writingIndex >= 0 ? this.db.writing.items[writingIndex].id : `writing-${Date.now()}`,
+      id:
+        writingIndex >= 0
+          ? this.db.writing.items[writingIndex].id
+          : `writing-${Date.now()}`,
       slug: post.slug,
       title: post.title,
       description: post.description,
-      date: post.plantedAt || new Date().toISOString().split('T')[0],
+      date: post.publishedAt || new Date().toISOString().split("T")[0],
       persona,
       tags: post.tags,
       status: postWithStatus.status,
@@ -88,7 +124,8 @@ export class MockContentRepository implements ContentRepository {
   async togglePostStatus(slug: string): Promise<BlogPost | null> {
     const post = this.db.posts.find((p) => p.slug === slug);
     if (!post) return null;
-    const nextStatus = post.status === 'unpublished' ? 'published' : 'unpublished';
+    const nextStatus =
+      post.status === "unpublished" ? "published" : "unpublished";
     post.status = nextStatus;
 
     const writing = this.db.writing.items.find((w) => w.slug === slug);
@@ -103,7 +140,9 @@ export class MockContentRepository implements ContentRepository {
     if (postIndex >= 0) {
       this.db.posts.splice(postIndex, 1);
     }
-    const writingIndex = this.db.writing.items.findIndex((w) => w.slug === slug);
+    const writingIndex = this.db.writing.items.findIndex(
+      (w) => w.slug === slug,
+    );
     if (writingIndex >= 0) {
       this.db.writing.items.splice(writingIndex, 1);
     }
@@ -125,12 +164,20 @@ export class MockContentRepository implements ContentRepository {
   async saveNote(note: NoteItem): Promise<NoteItem> {
     const noteWithStatus: NoteItem = {
       ...note,
-      status: note.status || 'published',
+      status: note.status || "published",
     };
-    const existingIndex = this.db.notes.items.findIndex((n) => n.slug === note.slug);
+    const existingIndex = this.db.notes.items.findIndex(
+      (n) => n.slug === note.slug,
+    );
     if (existingIndex >= 0) {
       this.db.notes.items[existingIndex] = { ...noteWithStatus };
     } else {
+      // On insert: reject if slug already exists in another collection.
+      if (this.slugExists(note.slug, "note")) {
+        throw new Error(
+          `Slug "${note.slug}" already exists. Choose a unique slug.`,
+        );
+      }
       this.db.notes.items.unshift({ ...noteWithStatus });
     }
     return noteWithStatus;
@@ -139,7 +186,7 @@ export class MockContentRepository implements ContentRepository {
   async toggleNoteStatus(slug: string): Promise<NoteItem | null> {
     const note = this.db.notes.items.find((n) => n.slug === slug);
     if (!note) return null;
-    note.status = note.status === 'unpublished' ? 'published' : 'unpublished';
+    note.status = note.status === "unpublished" ? "published" : "unpublished";
     return { ...note };
   }
 
@@ -157,10 +204,18 @@ export class MockContentRepository implements ContentRepository {
   }
 
   async saveBook(book: BookItem): Promise<BookItem> {
-    const existingIndex = this.db.books.items.findIndex((b) => b.slug === book.slug);
+    const existingIndex = this.db.books.items.findIndex(
+      (b) => b.slug === book.slug,
+    );
     if (existingIndex >= 0) {
       this.db.books.items[existingIndex] = { ...book };
     } else {
+      // On insert: reject if slug already exists in another collection.
+      if (this.slugExists(book.slug, "book")) {
+        throw new Error(
+          `Slug "${book.slug}" already exists. Choose a unique slug.`,
+        );
+      }
       this.db.books.items.unshift({ ...book });
     }
     return book;
@@ -173,10 +228,6 @@ export class MockContentRepository implements ContentRepository {
       return true;
     }
     return false;
-  }
-
-  async getPage(slug: string): Promise<PageContent | null> {
-    return this.db.pages.find((page) => page.slug === slug) ?? null;
   }
 
   async getNowEntries(): Promise<NowEntry[]> {
@@ -210,7 +261,7 @@ export class MockContentRepository implements ContentRepository {
   async getScribbleEntries(): Promise<ScribbleEntry[]> {
     const essays: ScribbleEntry[] = this.db.writing.items.map((item) => ({
       id: item.id,
-      type: 'essay',
+      type: "essay",
       title: item.title,
       description: item.description,
       date: item.date,
@@ -221,7 +272,7 @@ export class MockContentRepository implements ContentRepository {
 
     const notes: ScribbleEntry[] = this.db.notes.items.map((item) => ({
       id: item.id,
-      type: 'note',
+      type: "note",
       title: item.title,
       description: item.description,
       date: item.date,
@@ -232,7 +283,7 @@ export class MockContentRepository implements ContentRepository {
 
     const books: ScribbleEntry[] = this.db.books.items.map((item) => ({
       id: item.id,
-      type: 'book',
+      type: "book",
       title: item.title,
       description: item.description,
       date: item.date,
@@ -294,7 +345,7 @@ export class MockContentRepository implements ContentRepository {
     // Scan free text for inline / markdown image references.
     const textBlob: string[] = [];
     for (const item of this.db.writing.items) {
-      textBlob.push(item.title, item.subtitle ?? '', item.description);
+      textBlob.push(item.title, item.subtitle ?? "", item.description);
     }
     for (const item of this.db.notes.items) {
       textBlob.push(item.title, item.description, ...item.content);
@@ -303,28 +354,25 @@ export class MockContentRepository implements ContentRepository {
       textBlob.push(item.title, item.author, item.description);
     }
     for (const post of this.db.posts) {
-      textBlob.push(post.title, post.subtitle ?? '', post.description);
+      textBlob.push(post.title, post.subtitle ?? "", post.description);
       textBlob.push(...post.intro);
       for (const section of post.sections) {
         textBlob.push(section.heading, ...section.paragraphs);
         if (section.footnotes) textBlob.push(...section.footnotes);
       }
     }
-    for (const page of this.db.pages) {
-      textBlob.push(page.title, page.description, page.content);
-    }
-    const body = textBlob.join(' ');
+    const body = textBlob.join(" ");
 
     return this.db.storage
       .filter((src) => !referenced.has(src) && !body.includes(src))
       .map((src) => ({
         id: `bucket-${src}`,
-        name: src.split('/').pop() ?? src,
+        name: src.split("/").pop() ?? src,
         src,
-        alt: '',
-        size: '—',
-        uploadedAt: '',
-        tag: 'atmosphere' as const,
+        alt: "",
+        size: "—",
+        uploadedAt: "",
+        tag: "atmosphere" as const,
       }));
   }
 
@@ -339,7 +387,9 @@ export class MockContentRepository implements ContentRepository {
     return { ...this.db.admin };
   }
 
-  async updateAdminProfile(profile: Partial<AdminProfile>): Promise<AdminProfile> {
+  async updateAdminProfile(
+    profile: Partial<AdminProfile>,
+  ): Promise<AdminProfile> {
     this.db.admin = { ...this.db.admin, ...profile };
     return this.db.admin;
   }

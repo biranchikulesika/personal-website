@@ -3,14 +3,6 @@
 // Do not treat these as final. They exist only to prove the
 // service-layer architecture works end to end.
 
-export interface Entry {
-  id: string;
-  slug: string;
-  title: string;
-  body: string;
-  publishedAt: string;
-}
-
 // Navigation -----------------------------------------------------------------
 
 export interface NavLink {
@@ -82,10 +74,10 @@ export interface SiteContent {
 
 // Homepage sections ----------------------------------------------------------
 
-export type Persona = 'builder' | 'operator' | 'thinker' | 'wanderer';
+export type Persona = "builder" | "operator" | "thinker" | "wanderer";
 
 export interface WritingItem {
-  id?: string;
+  id: string;
   slug: string;
   title: string;
   subtitle?: string;
@@ -94,7 +86,7 @@ export interface WritingItem {
   persona: Persona;
   tags: string[];
   coverImage?: string;
-  status?: 'published' | 'unpublished';
+  status?: "published" | "unpublished";
 }
 
 export interface NoteItem {
@@ -107,7 +99,7 @@ export interface NoteItem {
   persona: Persona;
   tags: string[];
   coverImage?: string;
-  status?: 'published' | 'unpublished';
+  status?: "published" | "unpublished";
 }
 
 export interface BookItem {
@@ -138,7 +130,7 @@ export interface HomeContent {
 
 // Scribble (aggregated index) -------------------------------------------------
 
-export type ScribbleEntryType = 'essay' | 'note' | 'book';
+export type ScribbleEntryType = "essay" | "note" | "book";
 
 export interface ScribbleEntry {
   id: string;
@@ -187,23 +179,14 @@ export interface BlogPost {
   description: string;
   persona?: Persona;
   tags: string[];
-  plantedAt: string;
-  lastTendedAt: string;
+  publishedAt: string;
+  lastEditedAt: string;
   assumedAudience: string;
   intro: string[];
   sections: PostSection[];
   books: BookCard[];
   coverImage?: string;
-  status?: 'published' | 'unpublished';
-}
-
-// Structural pages -----------------------------------------------------------
-
-export interface PageContent {
-  slug: string;
-  title: string;
-  description: string;
-  content: string;
+  status?: "published" | "unpublished";
 }
 
 // Now page timeline ----------------------------------------------------------
@@ -234,7 +217,7 @@ export interface MediaItem {
   size: string;
   dimensions?: string;
   uploadedAt: string;
-  tag: 'profile' | 'atmosphere' | 'post' | 'book';
+  tag: "profile" | "atmosphere" | "post" | "book";
 }
 
 // Admin & Security ------------------------------------------------------------
@@ -244,6 +227,6 @@ export interface AdminProfile {
   email: string;
   avatarUrl: string;
   role: string;
-  authStatus: 'developer_mode' | 'enabled';
+  authStatus: "developer_mode" | "enabled";
   lastLogin: string;
 }
