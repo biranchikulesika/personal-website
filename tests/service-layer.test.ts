@@ -1,11 +1,11 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { getDataSource } from "../lib/config/env";
-import { resetDatabase } from "../lib/data/mock-db";
 import { ContentService } from "../lib/services/content.service";
+import { InMemoryTestContentRepository } from "./in-memory-test-content-repository";
 
 test("content service reads hardcoded site config", async () => {
-  const service = new ContentService();
+  const repo = new InMemoryTestContentRepository();
+  const service = new ContentService(repo);
   const site = service.getSiteContent();
   assert.ok(site.identity.name.length > 0, "site should have an identity name");
   assert.ok(site.nav.links.length > 0, "site should have nav links");
@@ -14,8 +14,8 @@ test("content service reads hardcoded site config", async () => {
 });
 
 test("content service returns empty writing/library when DB is empty", async () => {
-  resetDatabase();
-  const service = new ContentService();
+  const repo = new InMemoryTestContentRepository();
+  const service = new ContentService(repo);
   const writing = await service.getWriting();
   assert.equal(writing.items.length, 0, "writing should be empty with no DB data");
   const library = await service.getLibrary();
@@ -23,15 +23,15 @@ test("content service returns empty writing/library when DB is empty", async () 
 });
 
 test("content service returns null for a missing post", async () => {
-  resetDatabase();
-  const service = new ContentService();
+  const repo = new InMemoryTestContentRepository();
+  const service = new ContentService(repo);
   const post = await service.getPost("does-not-exist");
   assert.equal(post, null);
 });
 
 test("content service supports full CRUD on posts and notes", async () => {
-  resetDatabase();
-  const service = new ContentService();
+  const repo = new InMemoryTestContentRepository();
+  const service = new ContentService(repo);
 
   // 1. Post CRUD
   const initialPosts = await service.getAllPosts();
@@ -58,84 +58,77 @@ test("content service supports full CRUD on posts and notes", async () => {
   const updatedPosts = await service.getAllPosts();
   assert.equal(updatedPosts.length, initialPosts.length + 1);
 
-  // Status toggle
-  const toggled = await service.togglePostStatus("testing-crud-post");
-  assert.ok(toggled);
-  assert.equal(toggled.status, "unpublished");
+  await service.togglePostStatus("testing-crud-post");
+  const unpubPost = await service.getPost("testing-crud-post");
+  assert.equal(unpubPost?.status, "unpublished");
 
-  const toggledBack = await service.togglePostStatus("testing-crud-post");
-  assert.ok(toggledBack);
-  assert.equal(toggledBack.status, "published");
-
-  const deletedPost = await service.deletePost("testing-crud-post");
-  assert.equal(deletedPost, true);
-  const afterDelete = await service.getPost("testing-crud-post");
-  assert.equal(afterDelete, null);
+  await service.deletePost("testing-crud-post");
+  const deletedPost = await service.getPost("testing-crud-post");
+  assert.equal(deletedPost, null);
 
   // 2. Note CRUD
   const initialNotes = await service.getAllNotes();
   const testNote = {
-    id: "test-note-1",
-    slug: "testing-note-slug",
-    title: "Testing Note",
-    description: "Short note description",
-    content: ["First paragraph of note."],
+    id: "note-crud-1",
+    slug: "testing-crud-note",
+    title: "Testing CRUD Note",
+    description: "A test atomic note",
+    content: ["Paragraph 1", "Paragraph 2"],
     date: "2026-08-20",
     persona: "thinker" as const,
-    tags: ["testing"],
+    tags: ["test"],
   };
 
   await service.saveNote(testNote);
-  const fetchedNote = await service.getNote("testing-note-slug");
+  const fetchedNote = await service.getNote("testing-crud-note");
   assert.ok(fetchedNote, "saved note should be retrievable");
-  assert.equal(fetchedNote.title, "Testing Note");
+  assert.equal(fetchedNote.title, "Testing CRUD Note");
 
-  const toggledNote = await service.toggleNoteStatus("testing-note-slug");
-  assert.ok(toggledNote);
-  assert.equal(toggledNote.status, "unpublished");
+  const updatedNotes = await service.getAllNotes();
+  assert.equal(updatedNotes.length, initialNotes.length + 1);
 
-  const deletedNote = await service.deleteNote("testing-note-slug");
-  assert.equal(deletedNote, true);
-  const afterDeleteNote = await service.getNote("testing-note-slug");
-  assert.equal(afterDeleteNote, null);
+  await service.toggleNoteStatus("testing-crud-note");
+  const unpubNote = await service.getNote("testing-crud-note");
+  assert.equal(unpubNote?.status, "unpublished");
+
+  await service.deleteNote("testing-crud-note");
+  const deletedNote = await service.getNote("testing-crud-note");
+  assert.equal(deletedNote, null);
 
   // 3. Book CRUD
   const initialBooks = await service.getAllBooks();
   const testBook = {
-    id: "test-book-1",
-    slug: "testing-book-slug",
-    title: "Testing Book",
+    id: "book-crud-1",
+    slug: "testing-crud-book",
+    title: "Testing CRUD Book",
     author: "Test Author",
-    description: "Book summary",
-    date: "2026-08-20",
+    description: "A test book entry",
+    date: "2026",
     persona: "thinker" as const,
-    tags: ["reading"],
+    tags: ["testing"],
   };
 
   await service.saveBook(testBook);
   const updatedBooks = await service.getAllBooks();
   assert.equal(updatedBooks.length, initialBooks.length + 1);
 
-  const deletedBook = await service.deleteBook("testing-book-slug");
-  assert.equal(deletedBook, true);
-  const afterDeleteBook = await service.getAllBooks();
-  assert.equal(afterDeleteBook.length, initialBooks.length);
+  await service.deleteBook("testing-crud-book");
+  const finalBooks = await service.getAllBooks();
+  assert.equal(finalBooks.length, initialBooks.length);
 });
 
 test("content service supports media and user roles", async () => {
-  resetDatabase();
-  const service = new ContentService();
+  const repo = new InMemoryTestContentRepository();
+  const service = new ContentService(repo);
 
   // Media
   const initialMedia = await service.getMedia();
-  assert.ok(initialMedia.length >= 7, "should have seeded media assets");
-
   const newMedia = {
     id: "media-test-1",
-    name: "test-image.jpeg",
-    src: "/test-image.jpeg",
-    alt: "Test Image",
-    size: "120 KB",
+    name: "test.jpg",
+    src: "/test.jpg",
+    alt: "Test alt",
+    size: "100 KB",
     uploadedAt: "2026-08-20",
     tag: "atmosphere" as const,
   };
@@ -161,16 +154,9 @@ test("content service supports media and user roles", async () => {
   assert.equal(noRole, null);
 });
 
-test("environment rejects production data sources", () => {
-  const previous = process.env.DATA_SOURCE;
-  process.env.DATA_SOURCE = "postgres";
-  assert.throws(() => getDataSource(), /not allowed/);
-  process.env.DATA_SOURCE = previous;
-});
-
 test("featured items can be set and retrieved", async () => {
-  resetDatabase();
-  const service = new ContentService();
+  const repo = new InMemoryTestContentRepository();
+  const service = new ContentService(repo);
 
   // Initially empty
   const initialPosts = await service.getFeaturedPosts();

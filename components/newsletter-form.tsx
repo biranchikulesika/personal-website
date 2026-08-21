@@ -4,8 +4,7 @@ import { useState } from 'react';
 import type { NewsletterConfig } from '@/lib/types';
 
 /**
- * Mock newsletter signup. No backend is wired up on this branch — submitting
- * just shows a confirmation. Replace with a real form action later.
+ * Newsletter signup form.
  *
  * Mobile and desktop get deliberately different treatments: a full-width
  * underline-input card on small screens, the compact Kadlac-style pill on

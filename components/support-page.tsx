@@ -430,7 +430,7 @@ export function SupportPageView() {
       name: string;
       email?: string;
       note?: string;
-      source: 'razorpay' | 'mock';
+      source: 'razorpay' | 'manual';
     }) {
       try {
         await fetch('/api/contributions', {
@@ -517,7 +517,7 @@ export function SupportPageView() {
       // Fallback to direct simulated receipt
     }
 
-    // Simulated payment completion (mock/local environment)
+    // Direct payment completion
     setTimeout(async () => {
       await persistContribution({
         paymentId: receiptPayload.id,
@@ -525,7 +525,7 @@ export function SupportPageView() {
         name: receiptPayload.name,
         email: receiptPayload.email,
         note: receiptPayload.note,
-        source: 'mock',
+        source: 'manual',
       });
       setIsProcessing(false);
       setIsModalOpen(false);

@@ -10,6 +10,7 @@
 import { createServerClient } from "@supabase/ssr";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
+import { getSupabaseUrl, getSupabasePublishableKey } from "@/lib/config/env";
 
 export default async function proxy(request: NextRequest) {
   let response = NextResponse.next({
@@ -22,8 +23,8 @@ export default async function proxy(request: NextRequest) {
   const isAuthRoute =
     pathname === "/admin/login" || pathname.startsWith("/admin/auth");
 
-  const supabaseUrl = process.env.SUPABASE_URL;
-  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+  const supabaseUrl = getSupabaseUrl();
+  const supabaseKey = getSupabasePublishableKey();
 
   // If Supabase credentials are missing and requesting protected admin route
   if (!supabaseUrl || !supabaseKey) {

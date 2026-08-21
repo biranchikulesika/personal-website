@@ -16,10 +16,8 @@ import type {
   UserSession,
 } from '@/lib/types';
 
-// Repository contract for content. The UI (via the service layer) asks for
-// content by intent and never knows whether it comes from the mock database
-// or a real one. Swapping data sources later means swapping this
-// implementation, nothing else.
+// Repository contract for data access. UI components call the service layer,
+// which interacts with Supabase through this interface.
 
 export interface ContentRepository {
   getHomeContent(): Promise<HomeContent>;

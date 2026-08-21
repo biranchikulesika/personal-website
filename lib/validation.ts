@@ -111,9 +111,15 @@ export const MediaItemSchema = z.object({
   src: z
     .string()
     .min(1)
-    .refine((val) => (val.startsWith('/') && !val.startsWith('//') && !val.startsWith('/\\')) || /^https?:\/\//i.test(val), {
-      message: 'Media src must be a relative path or an HTTP/HTTPS URL',
-    }),
+    .refine(
+      (val) =>
+        (val.startsWith('/') && !val.startsWith('//') && !val.startsWith('/\\')) ||
+        /^https?:\/\//i.test(val) ||
+        /^data:image\/[a-zA-Z0-9+.-]+;base64,/i.test(val),
+      {
+        message: 'Media src must be a relative path, HTTP/HTTPS URL, or image data URL',
+      },
+    ),
   alt: z.string().max(500),
   size: z.string(),
   dimensions: z.string().optional(),

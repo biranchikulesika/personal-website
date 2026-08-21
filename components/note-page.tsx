@@ -5,6 +5,66 @@ import { ArrowLeftIcon } from './icons';
 import { ShareMenu } from './share-menu';
 import { PERSONA_LABELS } from '@/lib/constants';
 
+function NoteFigure({ src, alt, caption }: { src: string; alt: string; caption?: string }) {
+  return (
+    <figure className="my-6 block">
+      <div className="overflow-hidden rounded-xl border border-tinted/20 bg-post-card shadow-md">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={src} alt={alt} className="w-full h-auto max-h-[500px] object-cover object-center" loading="lazy" />
+      </div>
+      {(caption || alt) && (
+        <figcaption className="mt-2.5 text-center font-serif text-xs italic text-ink-soft">
+          {caption || alt}
+        </figcaption>
+      )}
+    </figure>
+  );
+}
+
+function renderNoteParagraphOrFigure(paragraph: string, index: number) {
+  const trimmed = paragraph.trim();
+
+  // 1. Markdown Image block: ![alt](src) optionally with title or next-line *caption*
+  const mdImgMatch = trimmed.match(/^!\[([\s\S]*?)\]\(([\s\S]*?)\)(?:\s*\*([\s\S]*?)\*)?$/);
+  if (mdImgMatch) {
+    const alt = mdImgMatch[1];
+    let src = mdImgMatch[2].trim();
+    let caption = mdImgMatch[3] ? mdImgMatch[3].trim() : "";
+
+    const titleMatch = src.match(/^(.*?)\s+["'](.*?)["']$/);
+    if (titleMatch) {
+      src = titleMatch[1];
+      if (!caption) caption = titleMatch[2];
+    }
+
+    return <NoteFigure key={index} src={src} alt={alt || "Note Image"} caption={caption} />;
+  }
+
+  // 2. MDX / HTML Image: <img ... /> or <Image ... />
+  const htmlImgMatch = trimmed.match(/^<(img|Image)\s+([^>]*?)\/?>$/i);
+  if (htmlImgMatch) {
+    const tagContent = htmlImgMatch[2];
+    const srcMatch = tagContent.match(/(?:src|path)=["']([^"']+)["']/i);
+    const altMatch = tagContent.match(/alt=["']([^"']+)["']/i);
+    const capMatch = tagContent.match(/caption=["']([^"']+)["']/i);
+
+    const src = srcMatch ? srcMatch[1] : "";
+    const alt = altMatch ? altMatch[1] : "Note Image";
+    const caption = capMatch ? capMatch[1] : "";
+
+    if (src) {
+      return <NoteFigure key={index} src={src} alt={alt} caption={caption} />;
+    }
+  }
+
+  // Regular paragraph
+  return (
+    <p key={index} className="leading-[1.85]">
+      {paragraph}
+    </p>
+  );
+}
+
 export function NotePageView({ note }: { note: NoteItem }) {
   const personaLabel = note.persona
     ? PERSONA_LABELS[note.persona] ?? note.persona
@@ -79,11 +139,9 @@ export function NotePageView({ note }: { note: NoteItem }) {
 
       <div className="container-site mt-10 md:mt-14 lg:grid lg:grid-cols-[1fr_minmax(0,72ch)_1fr] lg:gap-8">
         <div className="lg:col-start-2 space-y-5 text-paper/85">
-          {note.content.map((paragraph, index) => (
-            <p key={index} className="leading-[1.85]">
-              {paragraph}
-            </p>
-          ))}
+          {note.content.map((paragraph, index) =>
+            renderNoteParagraphOrFigure(paragraph, index),
+          )}
         </div>
       </div>
     </article>

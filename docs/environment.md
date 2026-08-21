@@ -14,7 +14,7 @@ Next.js loads environment files in the following order of precedence (highest to
 ├─────────────────────────────────────────────────────────────┤
 │ 2. .env.production / .env (Production / shared defaults)    │
 ├─────────────────────────────────────────────────────────────┤
-│ 3. .env.example           (Committed local mock template)   │
+│ 3. .env.example           (Committed environment template)  │
 ├─────────────────────────────────────────────────────────────┤
 │ 4. .env.production.example(Committed production template)   │
 └─────────────────────────────────────────────────────────────┘
@@ -34,25 +34,6 @@ Next.js loads environment files in the following order of precedence (highest to
 
 ---
 
-### `DATA_SOURCE`
-
-1. **Variable name**: `DATA_SOURCE`
-2. **What it is**: Primary data adapter switch.
-3. **Why the app needs it**: Controls whether the application connects to the in-memory mock repository or the production Supabase PostgreSQL repository.
-4. **Where to get it**: Set manually to `mock` or `supabase`.
-5. **Expected format**: `mock` or `supabase` (string literal, without quotes).
-6. **Where it is used**:
-   - `lib/config/env.ts` -> `getDataSource()`
-   - `lib/repositories/index.ts` -> `getContentRepository()`
-7. **Server vs Client**: **Server-only**.
-8. **Security implications**: Non-secret configuration flag. Any value other than `mock` or `supabase` triggers a loud crash at boot to prevent silent fallbacks.
-9. **Common mistakes**: Setting to `postgres` or `production`.
-10. **Troubleshooting**: If you see `DATA_SOURCE="..." is not allowed`, verify the value is exactly `mock` or `supabase`.
-11. **Required**: **Yes** (Defaults to `mock` if unset).
-12. **Environment behavior**: Use `mock` locally for instant zero-dependency work; use `supabase` in production.
-
----
-
 ### `NEXT_PUBLIC_SITE_URL`
 
 1. **Variable name**: `NEXT_PUBLIC_SITE_URL`
@@ -63,9 +44,6 @@ Next.js loads environment files in the following order of precedence (highest to
 6. **Where it is used**:
    - `lib/constants.ts` -> `SITE_URL`
    - `lib/seo.ts` -> metadata builders & JSON-LD generators
-   - `app/sitemap.ts` -> dynamic sitemap generator
-   - `app/robots.ts` -> sitemap link
-   - `app/admin/login/actions.ts` -> OAuth redirect URL
 7. **Server vs Client**: **Client-safe** (`NEXT_PUBLIC_` prefix).
 8. **Security implications**: Public domain identifier. Ensure HTTPS is enforced in production.
 9. **Common mistakes**: Adding a trailing slash (e.g. `https://biranchikulesika.com/`), causing double slashes (`//about`) in generated links.
@@ -91,7 +69,7 @@ Next.js loads environment files in the following order of precedence (highest to
 8. **Security implications**: Public endpoint. Access is protected by Supabase Row-Level Security (RLS).
 9. **Common mistakes**: Pasting the PostgreSQL direct connection string (`postgresql://...`) instead of the HTTPS API URL.
 10. **Troubleshooting**: If requests fail with network errors, verify the project is active and not paused in Supabase.
-11. **Required**: **Conditional** (Required when `DATA_SOURCE=supabase`).
+11. **Required**: **Yes**.
 12. **Environment behavior**: Points to your production or staging Supabase project.
 
 ---
@@ -112,7 +90,7 @@ Next.js loads environment files in the following order of precedence (highest to
 8. **Security implications**: Safe to expose in browser code. RLS policies control table access.
 9. **Common mistakes**: Pasting the `service_role` secret key into this public variable.
 10. **Troubleshooting**: If public queries return `401 Unauthorized`, verify the key has not expired.
-11. **Required**: **Conditional** (Required when `DATA_SOURCE=supabase`).
+11. **Required**: **Yes**.
 12. **Environment behavior**: Configured in development (if using live DB) and production.
 
 ---
@@ -134,7 +112,7 @@ Next.js loads environment files in the following order of precedence (highest to
    - If leaked, rotate immediately in the Supabase Dashboard.
 9. **Common mistakes**: Prefixing with `NEXT_PUBLIC_` or committing to GitHub.
 10. **Troubleshooting**: If server actions throw `Missing Supabase configuration`, verify `SUPABASE_SECRET_KEY` is present in server environment variables.
-11. **Required**: **Conditional** (Required when `DATA_SOURCE=supabase`).
+11. **Required**: **Yes**.
 12. **Environment behavior**: Server-only across all environments.
 
 ---

@@ -107,15 +107,12 @@ The engine of the application. Contains all business logic, data models, reposit
 ```
 lib/
 ├── config/
-│   ├── env.ts            # Environment guards (DATA_SOURCE validation)
+│   ├── env.ts            # Environment variable resolvers
 │   └── site.ts           # Hardcoded site identity, nav links, hero & footer content
-├── data/
-│   └── mock-db.ts        # In-memory test database
 ├── repositories/
 │   ├── content.repository.ts          # Repository interface contract
-│   ├── index.ts                       # Repository factory
-│   ├── mock-content.repository.ts     # In-memory repository implementation
-│   └── supabase-content.repository.ts # Production Supabase PostgreSQL repository
+│   ├── index.ts                       # Repository export
+│   └── supabase-content.repository.ts # Supabase PostgreSQL repository
 ├── services/
 │   └── content.service.ts             # Application service layer
 ├── supabase/

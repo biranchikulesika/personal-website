@@ -194,6 +194,21 @@ test("MediaItemSchema accepts valid media", () => {
   assert.ok(result.success, "valid media should pass");
 });
 
+test("MediaItemSchema accepts valid image data URL", () => {
+  const validDataUrl = {
+    id: "media-2",
+    name: "upload.png",
+    src: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+    alt: "Uploaded PNG",
+    size: "120 KB",
+    uploadedAt: "2026-08-22",
+    tag: "post" as const,
+  };
+
+  const result = MediaItemSchema.safeParse(validDataUrl);
+  assert.ok(result.success, "valid data URL media should pass");
+});
+
 test("MediaItemSchema rejects invalid tag", () => {
   const invalid = {
     id: "media-1",

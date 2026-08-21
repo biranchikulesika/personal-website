@@ -221,7 +221,7 @@ export function HomeOverview({
             </Link>
           </div>
           <p className="text-sm text-paper/80 leading-relaxed font-serif italic pt-1">
-            "{latestNow.content}"
+            &ldquo;{latestNow.content}&rdquo;
           </p>
         </section>
       )}

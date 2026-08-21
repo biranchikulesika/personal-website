@@ -12,7 +12,7 @@ This codebase is a modern, high-performance web platform built with **Next.js 16
 | :--- | :--- |
 | [**Architecture**](./architecture.md) | The 4-tier layer model (`UI → Service → Repository → Database`), data flow, and design boundaries. |
 | [**Project Structure**](./project-structure.md) | Walkthrough of the directory tree, naming conventions, and file placement rules. |
-| [**Data Layer**](./data-layer.md) | Repository pattern, in-memory mock vs Supabase live adapters, and `ContentService`. |
+| [**Data Layer**](./data-layer.md) | Repository pattern, Supabase PostgreSQL data access, and `ContentService`. |
 | [**Database & Schema**](./database.md) | PostgreSQL / Supabase schema, `schema.sql`, tables, indexes, triggers, and RLS policies. |
 | [**Authentication & Security**](./authentication.md) | Role-based authorization (`user_roles`), proxy guards, and environment safety locks. |
 | [**Content System**](./content-system.md) | Essays (posts), atomic notes, library books, now timeline, and scribble feed. |
@@ -31,11 +31,11 @@ This codebase is a modern, high-performance web platform built with **Next.js 16
 
 ## Core Architectural Principles
 
-1. **Strict 4-Tier Separation**
+1. **Strict Service & Repository Separation**
    - UI components (`components/`, `app/`) never query databases or Supabase clients directly.
-   - All operations flow: `UI Component → Server Action / Service → Repository → Database Adapter`.
-2. **Swappable Data Providers**
-   - The application supports both an in-memory test database (`lib/data/mock-db.ts`) and a production PostgreSQL database (`lib/repositories/supabase-content.repository.ts`) via the unified `ContentRepository` contract.
+   - All operations flow: `UI Component → Server Action / Service → Repository → Supabase`.
+2. **Authoritative PostgreSQL Database**
+   - The application connects to Supabase PostgreSQL (`lib/repositories/supabase-content.repository.ts`) via the unified `ContentRepository` contract.
 3. **No Buzzwords & Editorial Typography**
    - UI avoids heavy card borders and generic marketing components in favor of open, typographic horizontal ledgers and high-contrast dark tones.
 4. **Absolute Admin Isolation**
@@ -59,10 +59,12 @@ npm install
 ```
 
 ### 3. Environment Setup
-Create a local `.env.local` file:
+Create a local `.env.local` file from `.env.example`:
 ```bash
-DATA_SOURCE=mock
 NEXT_PUBLIC_SITE_URL=http://localhost:3000
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOi...
+SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOi...
 ```
 
 ### 4. Running the Project
