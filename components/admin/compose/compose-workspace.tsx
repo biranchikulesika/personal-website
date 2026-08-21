@@ -510,7 +510,7 @@ export function ComposeWorkspace({
       <ToastView message={toastMessage} />
 
       {/* 1. Multi-Tab Bar with + button and Folder Icon */}
-      <div className="flex h-[35px] shrink-0 bg-ink border-b border-tinted/20 overflow-x-auto relative select-none">
+      <div className="flex h-8.75 shrink-0 bg-ink border-b border-tinted/20 overflow-x-auto relative select-none">
         {/* Navigation back to Admin */}
         <Link
           href="/admin"
@@ -530,7 +530,7 @@ export function ComposeWorkspace({
             <div
               key={tab.id}
               onClick={() => setActiveTabId(tab.id)}
-              className={`flex items-center h-full px-3.5 cursor-pointer min-w-[150px] max-w-[240px] group transition-colors border-r border-tinted/20 text-xs ${
+              className={`flex items-center h-full px-3.5 cursor-pointer min-w-37.5 max-w-60 group transition-colors border-r border-tinted/20 text-xs ${
                 isSelected
                   ? "bg-night-soft text-paper font-medium"
                   : "bg-ink/80 text-ink-soft hover:bg-night-soft hover:text-paper/90"
@@ -827,7 +827,7 @@ export function ComposeWorkspace({
       <div className="flex flex-1 min-h-0 relative">
         <div className="flex-1 min-w-0 flex flex-col relative h-full">
           {/* Breadcrumbs Row: Persona + Title */}
-          <div className="flex items-center min-h-[34px] bg-night-soft px-4 text-paper/80 shrink-0 text-xs font-sans border-b border-tinted/20 z-10">
+          <div className="flex items-center min-h-8.5 bg-night-soft px-4 text-paper/80 shrink-0 text-xs font-sans border-b border-tinted/20 z-10">
             {activeTab.docType !== "now" && (
               <>
                 <select
@@ -873,7 +873,7 @@ export function ComposeWorkspace({
           </div>
 
           {/* Subtitle Row */}
-          <div className="flex items-center min-h-[30px] bg-ink px-4 text-paper/80 shrink-0 border-b border-tinted/20 justify-between">
+          <div className="flex items-center min-h-7.5 bg-ink px-4 text-paper/80 shrink-0 border-b border-tinted/20 justify-between">
             {activeTab.docType === "now" ? (
               <div className="flex items-center gap-2 flex-1">
                 <span className="text-[10px] uppercase tracking-wider text-ink-soft shrink-0">
@@ -976,7 +976,7 @@ export function ComposeWorkspace({
       </div>
 
       {/* 4. Bottom Status Bar */}
-      <div className="flex h-[26px] items-center justify-between border-t border-tinted/20 bg-ink px-4 text-[11px] text-ink-soft select-none">
+      <div className="flex h-6.5 items-center justify-between border-t border-tinted/20 bg-ink px-4 text-[11px] text-ink-soft select-none">
         <div className="flex items-center gap-4 font-mono">
           <span className="capitalize text-paper/80">
             {activeTab.docType === "now"

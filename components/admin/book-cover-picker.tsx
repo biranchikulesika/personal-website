@@ -140,7 +140,7 @@ export function BookCoverPicker({
 
   return (
     <div
-      className="relative aspect-[2/3] w-full overflow-hidden rounded-xl border border-tinted/20 bg-post-card shadow-sm"
+      className="relative aspect-2/3 w-full overflow-hidden rounded-xl border border-tinted/20 bg-post-card shadow-sm"
       onDragOver={(event) => event.preventDefault()}
       onDrop={(event) => {
         event.preventDefault();
@@ -200,7 +200,7 @@ export function BookCoverPicker({
       ) : (
         /* No cover → segmented paste / upload / import control inside the preview */
         <div className="absolute inset-0 flex items-center justify-center bg-black/40 p-3 backdrop-blur-[2px]">
-          <div className="w-full max-w-[190px] rounded-2xl border border-tinted/20 bg-night/95 p-3 shadow-lg">
+          <div className="w-full max-w-47.5 rounded-2xl border border-tinted/20 bg-night/95 p-3 shadow-lg">
             <div className="flex items-center gap-1 rounded-full border border-tinted/20 bg-night-soft p-1">
               <button
                 type="button"
@@ -276,7 +276,7 @@ export function BookCoverPicker({
                           commitCover(media.src);
                           showToast(`"${media.name}" set as cover`);
                         }}
-                        className={`group relative aspect-[2/3] overflow-hidden rounded-md border transition-all focus:outline-none ${
+                        className={`group relative aspect-2/3 overflow-hidden rounded-md border transition-all focus:outline-none ${
                           selected
                             ? 'border-accent ring-2 ring-accent/30'
                             : 'border-tinted/20 hover:border-accent/40'

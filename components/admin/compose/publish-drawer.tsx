@@ -320,7 +320,7 @@ export function PublishDrawer({
               {previewTab === 'card' && (
                 <div className="rounded-xl border border-tinted/20 bg-post-card overflow-hidden">
                   {hasCoverImage ? (
-                    <div className="relative min-h-[140px] overflow-hidden">
+                    <div className="relative min-h-35 overflow-hidden">
                       <Image
                         src={coverImage || ''}
                         alt="Card cover preview"
@@ -330,7 +330,7 @@ export function PublishDrawer({
                       />
                     </div>
                   ) : (
-                    <div className="flex min-h-[140px] items-center justify-center overflow-hidden bg-[radial-gradient(ellipse_at_center,rgba(250,249,245,0.08)_15%,transparent_75%)]">
+                    <div className="flex min-h-35 items-center justify-center overflow-hidden bg-[radial-gradient(ellipse_at_center,rgba(250,249,245,0.08)_15%,transparent_75%)]">
                       <span className="font-serif text-4xl italic text-paper/40">
                         {(title || 'P').charAt(0)}
                       </span>
@@ -369,7 +369,7 @@ export function PublishDrawer({
                         </div>
                       )}
                       <div className="flex flex-1 flex-col justify-center px-5">
-                        <h3 className="font-serif text-[28px] font-normal leading-[1.05] tracking-[-0.025em] text-[#FAF9F5] line-clamp-3">
+                        <h3 className="font-serif text-[28px] font-normal leading-[1.05] tracking-tight text-[#FAF9F5] line-clamp-3">
                           {title || 'Page Title'}
                         </h3>
                         {description && (

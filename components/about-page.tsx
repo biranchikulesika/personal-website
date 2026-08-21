@@ -82,7 +82,7 @@ export function AboutPageView({ site, featuredWriting }: AboutPageProps) {
 
         {/* Profile / Atmosphere mosaic grid */}
         <div className="grid grid-cols-2 gap-4">
-          <div className="group relative aspect-[4/5] w-full overflow-hidden rounded-2xl bg-night-soft shadow-2xl ring-1 ring-tinted/20">
+          <div className="group relative aspect-4/5 w-full overflow-hidden rounded-2xl bg-night-soft shadow-2xl ring-1 ring-tinted/20">
             <Image
               src="/selfiewithmiku.jpeg"
               alt="Biranchi with Miku"
@@ -92,7 +92,7 @@ export function AboutPageView({ site, featuredWriting }: AboutPageProps) {
             />
           </div>
 
-          <div className="group relative aspect-[4/5] w-full overflow-hidden rounded-2xl bg-night-soft shadow-2xl ring-1 ring-tinted/20">
+          <div className="group relative aspect-4/5 w-full overflow-hidden rounded-2xl bg-night-soft shadow-2xl ring-1 ring-tinted/20">
             <Image
               src="/selfiewithblessie.jpeg"
               alt="Biranchi with Blessie"
@@ -102,7 +102,7 @@ export function AboutPageView({ site, featuredWriting }: AboutPageProps) {
             />
           </div>
 
-          <div className="group relative aspect-[4/5] w-full overflow-hidden rounded-2xl bg-night-soft shadow-2xl ring-1 ring-tinted/20">
+          <div className="group relative aspect-4/5 w-full overflow-hidden rounded-2xl bg-night-soft shadow-2xl ring-1 ring-tinted/20">
             <Image
               src="/selfiewithfriends.jpeg"
               alt="Biranchi with friends"
@@ -112,7 +112,7 @@ export function AboutPageView({ site, featuredWriting }: AboutPageProps) {
             />
           </div>
 
-          <div className="group relative aspect-[4/5] w-full overflow-hidden rounded-2xl bg-night-soft shadow-2xl ring-1 ring-tinted/20">
+          <div className="group relative aspect-4/5 w-full overflow-hidden rounded-2xl bg-night-soft shadow-2xl ring-1 ring-tinted/20">
             <Image
               src="/selfiewithbhabani.jpeg"
               alt="Biranchi with Bhabani"
@@ -127,7 +127,7 @@ export function AboutPageView({ site, featuredWriting }: AboutPageProps) {
       {/* 2. Newsletter Banner */}
       <div className="mb-20 rounded-3xl border border-tinted/20 bg-night-soft p-8 shadow-2xl md:p-12 lg:mb-28">
         <div className="mx-auto flex max-w-5xl flex-col gap-8 md:flex-row md:items-center md:justify-between md:gap-12">
-          <div className="flex-1 md:min-w-[420px]">
+          <div className="flex-1 md:min-w-105">
             <h2 className="font-serif text-2xl font-normal text-paper md:text-3xl lg:text-[34px] md:whitespace-nowrap">
               Things I Keep Thinking About
             </h2>
