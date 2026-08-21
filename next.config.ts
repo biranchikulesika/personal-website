@@ -5,7 +5,6 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: false,
   },
-  output: 'standalone',
 
   // ── Redirects ─────────────────────────────────────────────────────────────
   redirects: async () => [
