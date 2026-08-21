@@ -161,3 +161,80 @@ export function markdownToPostSections(
 
   return { intro, sections };
 }
+
+// Device & User Agent utilities ------------------------------------------------
+
+/**
+ * Parses a user-agent string into a clean, human-readable device and browser description.
+ * e.g., "Linux Computer / Chrome", "MacBook / Safari", "iPhone / Safari", "Windows PC / Edge".
+ */
+export function parseUserAgent(ua?: string | null): {
+  device: string;
+  browser: string;
+  label: string;
+} {
+  if (!ua || typeof ua !== 'string') {
+    return {
+      device: 'Current Device',
+      browser: 'Web Browser',
+      label: 'Current Device / Web Browser',
+    };
+  }
+
+  let device = 'Desktop Computer';
+  let browser = 'Web Browser';
+
+  // Device / OS detection
+  if (/iPhone/i.test(ua)) {
+    device = 'iPhone';
+  } else if (/iPad/i.test(ua)) {
+    device = 'iPad';
+  } else if (/Android/i.test(ua)) {
+    device = 'Android Phone';
+  } else if (/Macintosh|Mac OS X/i.test(ua)) {
+    device = 'MacBook';
+  } else if (/Windows/i.test(ua)) {
+    device = 'Windows PC';
+  } else if (/Linux/i.test(ua)) {
+    device = 'Linux Computer';
+  }
+
+  // Browser detection
+  if (/Edg\//i.test(ua)) {
+    browser = 'Edge';
+  } else if (/OPR\/|Opera/i.test(ua)) {
+    browser = 'Opera';
+  } else if (/Chrome\/|CriOS\//i.test(ua)) {
+    browser = 'Chrome';
+  } else if (/Firefox\/|FxiOS\//i.test(ua)) {
+    browser = 'Firefox';
+  } else if (/Safari/i.test(ua) && !/Chrome/i.test(ua)) {
+    browser = 'Safari';
+  }
+
+  return {
+    device,
+    browser,
+    label: `${device} / ${browser}`,
+  };
+}
+
+/**
+ * Formats note snippet for listing and homepages.
+ * When the content character limit is about to be reached, truncates cleanly
+ * at word boundary and ends with "...read now" for a professional feel.
+ */
+export function formatNoteSnippet(
+  content: string | string[] | undefined,
+  maxLen = 160,
+): string {
+  if (!content) return '';
+  const fullText = (Array.isArray(content) ? content.join(' ') : content).trim();
+  if (!fullText) return '';
+  if (fullText.length <= maxLen) return fullText;
+
+  const truncated = fullText.slice(0, maxLen);
+  const lastSpace = truncated.lastIndexOf(' ');
+  const cleanSnippet = lastSpace > 0 ? truncated.slice(0, lastSpace) : truncated;
+  return `${cleanSnippet}...read now`;
+}

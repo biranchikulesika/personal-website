@@ -12,6 +12,8 @@ import type {
   SectionGroup,
   WritingItem,
   Contribution,
+  PasskeyItem,
+  UserSession,
 } from '@/lib/types';
 
 // Repository contract for content. The UI (via the service layer) asks for
@@ -66,4 +68,19 @@ export interface ContentRepository {
   recordContribution(contribution: Contribution): Promise<Contribution>;
   getContribution(id: string): Promise<Contribution | null>;
   getContributions(): Promise<Contribution[]>;
+
+  // Passkeys & Auth
+  getPasskeys(userId: string): Promise<PasskeyItem[]>;
+  savePasskey(userId: string, passkey: PasskeyItem): Promise<PasskeyItem>;
+  deletePasskey(userId: string, passkeyId: string): Promise<boolean>;
+
+  // Active Sessions
+  getSessions(userId: string, currentSessionId?: string): Promise<UserSession[]>;
+  recordSession(session: UserSession): Promise<UserSession>;
+  deleteSession(userId: string, sessionId: string): Promise<boolean>;
+  deleteAllSessions(userId: string): Promise<boolean>;
+
+  // Connected Accounts
+  getConnectedProviders(userId: string): Promise<string[]>;
+  setConnectedProviders(userId: string, providers: string[]): Promise<void>;
 }

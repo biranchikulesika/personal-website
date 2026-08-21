@@ -63,6 +63,7 @@ export const NoteItemSchema = z.object({
   id: z.string().min(1),
   slug: SlugField,
   title: z.string().min(1, 'Title is required').max(500),
+  subtitle: z.string().max(500).optional(),
   description: z.string().min(1).max(1000),
   content: z.array(z.string()),
   date: z.string().min(1),

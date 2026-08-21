@@ -14,6 +14,8 @@ import type {
   SiteContent,
   WritingItem,
   Contribution,
+  PasskeyItem,
+  UserSession,
 } from '@/lib/types';
 import {
   verifyPaymentSignature,
@@ -311,5 +313,47 @@ export class ContentService {
       event,
       contribution: null,
     };
+  }
+
+  // ── Passkeys & Auth ─────────────────────────────────────────────────────
+
+  getPasskeys(userId: string): Promise<PasskeyItem[]> {
+    return this.repo.getPasskeys(userId);
+  }
+
+  savePasskey(userId: string, passkey: PasskeyItem): Promise<PasskeyItem> {
+    return this.repo.savePasskey(userId, passkey);
+  }
+
+  deletePasskey(userId: string, passkeyId: string): Promise<boolean> {
+    return this.repo.deletePasskey(userId, passkeyId);
+  }
+
+  // ── Active Sessions ─────────────────────────────────────────────────────
+
+  getSessions(userId: string, currentSessionId?: string): Promise<UserSession[]> {
+    return this.repo.getSessions(userId, currentSessionId);
+  }
+
+  recordSession(session: UserSession): Promise<UserSession> {
+    return this.repo.recordSession(session);
+  }
+
+  deleteSession(userId: string, sessionId: string): Promise<boolean> {
+    return this.repo.deleteSession(userId, sessionId);
+  }
+
+  deleteAllSessions(userId: string): Promise<boolean> {
+    return this.repo.deleteAllSessions(userId);
+  }
+
+  // ── Connected Accounts ──────────────────────────────────────────────────
+
+  getConnectedProviders(userId: string): Promise<string[]> {
+    return this.repo.getConnectedProviders(userId);
+  }
+
+  setConnectedProviders(userId: string, providers: string[]): Promise<void> {
+    return this.repo.setConnectedProviders(userId, providers);
   }
 }

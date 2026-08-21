@@ -65,6 +65,7 @@ export interface Database {
           id: string;
           slug: string;
           title: string;
+          subtitle: string | null;
           description: string;
           content: unknown;
           date: string | null;
@@ -79,6 +80,7 @@ export interface Database {
           id: string;
           slug: string;
           title: string;
+          subtitle?: string | null;
           description?: string;
           content?: unknown;
           date?: string | null;
@@ -91,6 +93,7 @@ export interface Database {
           id?: string;
           slug?: string;
           title?: string;
+          subtitle?: string | null;
           description?: string;
           content?: unknown;
           date?: string | null;

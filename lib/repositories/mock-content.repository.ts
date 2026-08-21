@@ -13,6 +13,8 @@ import type {
   SectionGroup,
   WritingItem,
   Contribution,
+  PasskeyItem,
+  UserSession,
 } from "@/lib/types";
 import type { ContentRepository } from "./content.repository";
 
@@ -189,29 +191,36 @@ export class MockContentRepository implements ContentRepository {
   // ── Scribble ────────────────────────────────────────────────────────────
 
   async getScribbleEntries(): Promise<ScribbleEntry[]> {
-    const essays: ScribbleEntry[] = this.posts.map((p) => ({
-      id: p.slug,
-      type: "essay" as const,
-      title: p.title,
-      description: p.description,
-      date: p.publishedAt,
-      persona: p.persona ?? "builder",
-      topics: p.tags,
-      href: `/p/${p.slug}`,
-      coverImage: p.coverImage,
-    }));
+    const essays: ScribbleEntry[] = this.posts
+      .filter((p) => p.status !== "unpublished")
+      .map((p) => ({
+        id: p.slug,
+        type: "essay" as const,
+        title: p.title,
+        description: p.description,
+        date: p.publishedAt,
+        persona: p.persona ?? "builder",
+        topics: p.tags,
+        href: `/p/${p.slug}`,
+        coverImage: p.coverImage,
+      }));
 
-    const noteEntries: ScribbleEntry[] = this.notes.map((n) => ({
-      id: n.id,
-      type: "note" as const,
-      title: n.title,
-      description: n.description,
-      date: n.date,
-      persona: n.persona,
-      topics: n.tags,
-      href: `/n/${n.slug}`,
-      coverImage: n.coverImage,
-    }));
+    const noteEntries: ScribbleEntry[] = this.notes
+      .filter((n) => n.status !== "unpublished")
+      .map((n) => ({
+        id: n.id,
+        type: "note" as const,
+        title: n.title,
+        description:
+          n.content && n.content.length > 0
+            ? n.content.join(" ")
+            : n.description,
+        date: n.date,
+        persona: n.persona,
+        topics: n.tags,
+        href: `/n/${n.slug}`,
+        coverImage: n.coverImage,
+      }));
 
     const bookEntries: ScribbleEntry[] = this.books.map((b) => ({
       id: b.id,
@@ -358,5 +367,69 @@ export class MockContentRepository implements ContentRepository {
 
   async getContributions(): Promise<Contribution[]> {
     return [...this.db.contributions];
+  }
+
+  // ── Passkeys & Auth ─────────────────────────────────────────────────────
+
+  async getPasskeys(_userId: string): Promise<PasskeyItem[]> {
+    return [...this.db.passkeys];
+  }
+
+  async savePasskey(_userId: string, passkey: PasskeyItem): Promise<PasskeyItem> {
+    const idx = this.db.passkeys.findIndex((p) => p.id === passkey.id);
+    if (idx >= 0) {
+      this.db.passkeys[idx] = passkey;
+    } else {
+      this.db.passkeys.push(passkey);
+    }
+    return passkey;
+  }
+
+  async deletePasskey(_userId: string, passkeyId: string): Promise<boolean> {
+    const before = this.db.passkeys.length;
+    this.db.passkeys = this.db.passkeys.filter((p) => p.id !== passkeyId);
+    return this.db.passkeys.length < before;
+  }
+
+  // ── Active Sessions ─────────────────────────────────────────────────────
+
+  async getSessions(userId: string, currentSessionId?: string): Promise<UserSession[]> {
+    return this.db.sessions.map((s) => ({
+      ...s,
+      isCurrent: currentSessionId ? s.id === currentSessionId : s.isCurrent,
+    }));
+  }
+
+  async recordSession(session: UserSession): Promise<UserSession> {
+    const idx = this.db.sessions.findIndex((s) => s.id === session.id);
+    if (idx >= 0) {
+      this.db.sessions[idx] = session;
+    } else {
+      this.db.sessions.unshift(session);
+    }
+    return session;
+  }
+
+  async deleteSession(_userId: string, sessionId: string): Promise<boolean> {
+    const before = this.db.sessions.length;
+    this.db.sessions = this.db.sessions.filter((s) => s.id !== sessionId);
+    return this.db.sessions.length < before;
+  }
+
+  async deleteAllSessions(userId: string): Promise<boolean> {
+    const had = this.db.sessions.length > 0;
+    this.db.sessions = [];
+    return had;
+  }
+
+  // ── Connected Accounts ──────────────────────────────────────────────────
+
+  async getConnectedProviders(userId: string): Promise<string[]> {
+    return this.db.connectedProviders[userId] || this.db.connectedProviders["default"] || ["google"];
+  }
+
+  async setConnectedProviders(userId: string, providers: string[]): Promise<void> {
+    this.db.connectedProviders[userId] = [...providers];
+    this.db.connectedProviders["default"] = [...providers];
   }
 }

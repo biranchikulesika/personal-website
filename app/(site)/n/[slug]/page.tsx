@@ -17,7 +17,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { slug } = await params;
   const note = await new ContentService().getNote(slug);
-  if (!note) {
+  if (!note || note.status === 'unpublished') {
     return {
       title: 'Note not found',
       robots: { index: false, follow: false },
@@ -33,7 +33,7 @@ export default async function NotePage({
 }) {
   const { slug } = await params;
   const note = await new ContentService().getNote(slug);
-  if (!note) notFound();
+  if (!note || note.status === 'unpublished') notFound();
 
   const breadcrumbs = breadcrumbJsonLd([
     { name: 'Home', url: '/' },

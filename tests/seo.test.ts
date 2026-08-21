@@ -145,6 +145,13 @@ test("noteMetadata generates correct metadata for a note", () => {
   assert.equal(og.type, "article");
   assert.ok((og.tags as string[]).includes("philosophy"));
   assert.ok((og.tags as string[]).includes("Thinker"));
+
+  const noteWithSubtitle: NoteItem = {
+    ...note,
+    subtitle: "Custom Note Subtitle",
+  };
+  const metaWithSubtitle = noteMetadata(noteWithSubtitle);
+  assert.equal(metaWithSubtitle.description, "Custom Note Subtitle");
 });
 
 // ── websiteJsonLd ───────────────────────────────────────────────────────────

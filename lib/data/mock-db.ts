@@ -6,6 +6,8 @@ import type {
   UserRole,
   MediaItem,
   Contribution,
+  PasskeyItem,
+  UserSession,
 } from "@/lib/types";
 
 export interface MockDatabase {
@@ -13,6 +15,9 @@ export interface MockDatabase {
   storage: string[];
   userRoles: UserRole[];
   contributions: Contribution[];
+  passkeys: PasskeyItem[];
+  sessions: UserSession[];
+  connectedProviders: Record<string, string[]>;
 }
 
 let db: MockDatabase | null = null;
@@ -30,12 +35,44 @@ export function createDatabase(): MockDatabase {
     storage: seedStorage(),
     userRoles: [],
     contributions: [],
+    passkeys: seedPasskeys(),
+    sessions: seedSessions(),
+    connectedProviders: {
+      default: ["google"],
+    },
   };
 }
 
 export function resetDatabase(): MockDatabase {
   db = createDatabase();
   return db;
+}
+
+function seedPasskeys(): PasskeyItem[] {
+  return [
+    {
+      id: "pk-1",
+      label: "Linux Computer",
+      createdAt: "2026-08-14T12:00:00.000Z",
+      lastUsedAt: "Aug 14, 2026",
+      credentialId: "cred-linux-fido2",
+    },
+  ];
+}
+
+function seedSessions(): UserSession[] {
+  return [
+    {
+      id: "sess-current",
+      userId: "default",
+      device: "Linux Computer / Chrome",
+      location: "127.0.0.1 (Local)",
+      ipAddress: "127.0.0.1",
+      startedAt: "Just now",
+      lastActiveAt: new Date().toISOString(),
+      isCurrent: true,
+    },
+  ];
 }
 
 function seedStorage(): string[] {
@@ -47,12 +84,9 @@ function seedStorage(): string[] {
     "/selfiewithbhabani.jpeg",
     "/groupphotowithfriends.jpeg",
     "/melayingonsciencemuseum.jpeg",
-    "https://upload.wikimedia.org/wikipedia/en/5/5a/Thinking_in_Systems_cover.jpg",
-    "https://upload.wikimedia.org/wikipedia/en/6/6d/Technopoly_cover.jpg",
     "/IMG_20240512_184302.jpeg",
     "/DSC_0217.png",
     "/old-header-banner.webp",
-    "/testing.webp",
   ];
 }
 
@@ -127,36 +161,6 @@ function seedMedia(): MediaItem[] {
       dimensions: "1600 × 900",
       uploadedAt: "2026-08-19",
       tag: "atmosphere",
-    },
-    {
-      id: "media-008",
-      name: "thinking-in-systems-cover.jpg",
-      src: "https://upload.wikimedia.org/wikipedia/en/5/5a/Thinking_in_Systems_cover.jpg",
-      alt: "Thinking in Systems book cover",
-      size: "38 KB",
-      dimensions: "256 × 402",
-      uploadedAt: "2026-08-19",
-      tag: "book",
-    },
-    {
-      id: "media-009",
-      name: "technopoly-cover.jpg",
-      src: "https://upload.wikimedia.org/wikipedia/en/6/6d/Technopoly_cover.jpg",
-      alt: "Technopoly book cover",
-      size: "42 KB",
-      dimensions: "256 × 402",
-      uploadedAt: "2026-08-19",
-      tag: "book",
-    },
-    {
-      id: "media-010",
-      name: "testing.webp",
-      src: "/testing.webp",
-      alt: "Cover artwork — transparent WebP test asset",
-      size: "14 KB",
-      dimensions: "399 × 399",
-      uploadedAt: "2026-08-20",
-      tag: "post",
     },
   ];
 }

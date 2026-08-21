@@ -117,7 +117,6 @@ CREATE TABLE IF NOT EXISTS public.notes (
   id             TEXT PRIMARY KEY,
   slug           TEXT NOT NULL UNIQUE,
   title          TEXT NOT NULL,
-  subtitle       TEXT,
   description    TEXT NOT NULL DEFAULT '',
   content        JSONB DEFAULT '[]'::jsonb,
   date           DATE,

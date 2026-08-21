@@ -20,26 +20,57 @@ export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl;
   const slug = searchParams.get('slug');
 
-  // ── Per-post mode: resolve post from database ────────────────────────────
+  // ── Per-post / note mode: resolve item from database ─────────────────────
   if (slug) {
     const service = new ContentService();
-    const post = await service.getPost(slug);
+    const typeParam = searchParams.get('type');
 
-    if (!post) {
-      return generateFallbackOG();
+    if (typeParam === 'note') {
+      const note = await service.getNote(slug);
+      if (!note) return generateFallbackOG();
+      const personaLabel = note.persona ? (PERSONA_LABELS[note.persona] ?? note.persona) : '';
+      const coverImageB64 = await resolveCoverImage(note.coverImage);
+      return generatePostOG({
+        title: note.title,
+        description: note.subtitle || note.description || '',
+        typeLabel: 'Note',
+        personaLabel,
+        coverImageB64,
+        hasCover: Boolean(coverImageB64),
+      });
     }
 
-    const personaLabel = post.persona ? PERSONA_LABELS[post.persona] : '';
-    const coverImageB64 = await resolveCoverImage(post.coverImage);
+    const post = await service.getPost(slug);
 
-    return generatePostOG({
-      title: post.title,
-      description: post.description || post.subtitle || '',
-      typeLabel: 'Essay',
-      personaLabel,
-      coverImageB64,
-      hasCover: Boolean(coverImageB64),
-    });
+    if (post) {
+      const personaLabel = post.persona ? PERSONA_LABELS[post.persona] : '';
+      const coverImageB64 = await resolveCoverImage(post.coverImage);
+
+      return generatePostOG({
+        title: post.title,
+        description: post.subtitle || post.description || '',
+        typeLabel: 'Essay',
+        personaLabel,
+        coverImageB64,
+        hasCover: Boolean(coverImageB64),
+      });
+    }
+
+    const note = await service.getNote(slug);
+    if (note) {
+      const personaLabel = note.persona ? (PERSONA_LABELS[note.persona] ?? note.persona) : '';
+      const coverImageB64 = await resolveCoverImage(note.coverImage);
+      return generatePostOG({
+        title: note.title,
+        description: note.subtitle || note.description || '',
+        typeLabel: 'Note',
+        personaLabel,
+        coverImageB64,
+        hasCover: Boolean(coverImageB64),
+      });
+    }
+
+    return generateFallbackOG();
   }
 
   // ── Generic mode: use query params directly ──────────────────────────────

@@ -1,9 +1,10 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
 import { ToastView } from '@/components/ui/toast-view';
-
+import { UserAvatar } from '@/components/ui/user-avatar';
 import {
   EnvelopeIcon,
   FingerprintIcon,
@@ -13,30 +14,31 @@ import {
   GoogleIcon,
 } from '@/components/icons';
 import { NoContentState } from '@/components/ui/states';
+import { getSupabaseBrowser } from '@/lib/supabase/client';
+import {
+  registerPasskeyAction,
+  deletePasskeyAction,
+  connectProviderAction,
+  disconnectProviderAction,
+  signOutSessionAction,
+  signOutAllSessionsAction,
+} from '@/app/admin/actions';
+import type { PasskeyItem, UserSession } from '@/lib/types';
 
 interface AccountManagerProps {
   userName: string;
   userEmail: string;
+  userAvatarUrl?: string | null;
   userRole: string;
-}
-
-interface Passkey {
-  id: string;
-  label: string;
-  lastUsedAt: string;
+  initialPasskeys?: PasskeyItem[];
+  initialConnectedProviders?: string[];
+  initialSessions?: UserSession[];
 }
 
 interface ConnectedAccount {
-  id: string;
+  id: 'google' | 'github';
   label: string;
   Icon: (props: { className?: string }) => React.JSX.Element;
-}
-
-interface Session {
-  id: string;
-  device: string;
-  location: string;
-  startedAt: string;
 }
 
 const CONNECTED_ACCOUNTS: ConnectedAccount[] = [
@@ -47,12 +49,13 @@ const CONNECTED_ACCOUNTS: ConnectedAccount[] = [
 function getDeviceLabel(): string {
   if (typeof navigator === 'undefined') return 'This device';
   const ua = navigator.userAgent;
-  if (ua.includes('iPhone')) return 'iPhone';
-  if (ua.includes('iPad')) return 'iPad';
-  if (ua.includes('Mac')) return 'MacBook';
-  if (ua.includes('Windows')) return 'Windows PC';
-  if (ua.includes('Linux')) return 'Linux Computer';
-  return 'This device';
+  if (/iPhone/i.test(ua)) return 'iPhone Face ID';
+  if (/iPad/i.test(ua)) return 'iPad Touch ID';
+  if (/Macintosh|Mac OS X/i.test(ua)) return 'MacBook Touch ID';
+  if (/Windows/i.test(ua)) return 'Windows Hello';
+  if (/Android/i.test(ua)) return 'Android Biometric';
+  if (/Linux/i.test(ua)) return 'Linux Computer';
+  return 'Security Key / Passkey';
 }
 
 function getInitials(name: string): string {
@@ -81,88 +84,232 @@ function SectionHeading({ title }: { title: string }) {
   );
 }
 
-export function AccountManager({ userName, userEmail, userRole }: AccountManagerProps) {
-  const [passkeys, setPasskeys] = useState<Passkey[]>([
-    { id: 'pk-1', label: 'Linux Computer', lastUsedAt: 'Aug 14, 2026' },
-  ]);
+export function AccountManager({
+  userName,
+  userEmail,
+  userAvatarUrl,
+  userRole,
+  initialPasskeys = [],
+  initialConnectedProviders = ['google'],
+  initialSessions = [],
+}: AccountManagerProps) {
+  const [passkeys, setPasskeys] = useState<PasskeyItem[]>(initialPasskeys);
   const [isRegistering, setIsRegistering] = useState(false);
-  const [connectedProviders, setConnectedProviders] = useState<string[]>([
-    'google',
-  ]);
+  const [connectedProviders, setConnectedProviders] = useState<string[]>(
+    initialConnectedProviders.length > 0 ? initialConnectedProviders : ['google'],
+  );
   const [pendingProvider, setPendingProvider] = useState<string | null>(null);
-  const [sessions, setSessions] = useState<Session[]>([
-    {
-      id: 's-1',
-      device: 'Linux / Chrome',
-      location: '127.0.0.1',
-      startedAt: 'Just now',
-    },
-  ]);
+  const [sessions, setSessions] = useState<UserSession[]>(initialSessions);
+  const [isSigningOutAll, setIsSigningOutAll] = useState(false);
+  const [signingOutSessionId, setSigningOutSessionId] = useState<string | null>(null);
   const { message: toastMessage, showToast } = useToast();
 
-  function handleAddPasskey() {
+  async function handleAddPasskey() {
     if (isRegistering) return;
     setIsRegistering(true);
-    setTimeout(() => {
-      const label = getDeviceLabel();
-      setPasskeys((prev) => [
-        ...prev,
-        {
-          id: `pk-${Date.now()}`,
-          label,
-          lastUsedAt: new Date().toLocaleDateString('en-US', {
-            month: 'short',
-            day: 'numeric',
-            year: 'numeric',
-          }),
-        },
-      ]);
+    const label = getDeviceLabel();
+
+    try {
+      let credentialId: string | undefined = undefined;
+
+      // 1. Try Supabase browser client if configured
+      const supabase = getSupabaseBrowser();
+      if (supabase) {
+        try {
+          const { data, error } = await supabase.auth.registerPasskey();
+          if (!error && data) {
+            credentialId = (data as { id?: string })?.id;
+          }
+        } catch {
+          // Fallback to standard WebAuthn
+        }
+      }
+
+      // 2. Standard WebAuthn ceremony in browser
+      if (
+        !credentialId &&
+        typeof window !== 'undefined' &&
+        window.PublicKeyCredential &&
+        navigator.credentials
+      ) {
+        try {
+          const challenge = new Uint8Array(32);
+          window.crypto.getRandomValues(challenge);
+          const userIdBytes = new TextEncoder().encode(userEmail || 'admin');
+
+          const credential = await navigator.credentials.create({
+            publicKey: {
+              challenge,
+              rp: {
+                name: 'Biranchi Kulesika Admin',
+                id:
+                  window.location.hostname === 'localhost'
+                    ? undefined
+                    : window.location.hostname,
+              },
+              user: {
+                id: userIdBytes,
+                name: userEmail || 'admin@biranchikulesika.com',
+                displayName: userName || 'Admin',
+              },
+              pubKeyCredParams: [
+                { alg: -7, type: 'public-key' },
+                { alg: -257, type: 'public-key' },
+              ],
+              timeout: 60000,
+              authenticatorSelection: {
+                residentKey: 'preferred',
+                userVerification: 'preferred',
+              },
+              attestation: 'none',
+            },
+          });
+
+          if (credential) {
+            credentialId = credential.id;
+          }
+        } catch (webauthnErr: unknown) {
+          const errName = (webauthnErr as { name?: string })?.name;
+          if (errName === 'NotAllowedError' || errName === 'AbortError') {
+            showToast('Passkey registration was cancelled.');
+            setIsRegistering(false);
+            return;
+          }
+        }
+      }
+
+      // 3. Persist via server action
+      const result = await registerPasskeyAction({
+        label,
+        credentialId,
+      });
+
+      if (result.success && result.passkey) {
+        setPasskeys((prev) => [
+          result.passkey!,
+          ...prev.filter((p) => p.id !== result.passkey!.id),
+        ]);
+        showToast(`Passkey added for ${label}`);
+      } else {
+        showToast(result.error || 'Failed to add passkey');
+      }
+    } catch (err: unknown) {
+      showToast((err as Error).message || 'Failed to register passkey');
+    } finally {
       setIsRegistering(false);
-      showToast(`Passkey added for ${label}`);
-    }, 800);
+    }
   }
 
-  function handleRemovePasskey(id: string) {
-    setPasskeys((prev) => prev.filter((p) => p.id !== id));
-    showToast('Passkey removed');
+  async function handleRemovePasskey(id: string) {
+    try {
+      const result = await deletePasskeyAction(id);
+      if (result.success) {
+        setPasskeys((prev) => prev.filter((p) => p.id !== id));
+        showToast('Passkey removed');
+      } else {
+        showToast(result.error || 'Failed to remove passkey');
+      }
+    } catch {
+      showToast('Failed to remove passkey');
+    }
   }
 
-  function handleConnect(providerId: string) {
+  async function handleConnect(providerId: 'google' | 'github') {
     if (pendingProvider) return;
     setPendingProvider(providerId);
-    setTimeout(() => {
-      setConnectedProviders((prev) => [...prev, providerId]);
+    try {
+      const result = await connectProviderAction(providerId);
+      if (result.success) {
+        if (result.url) {
+          window.location.href = result.url;
+          return;
+        }
+        setConnectedProviders((prev) =>
+          prev.includes(providerId) ? prev : [...prev, providerId],
+        );
+        showToast(
+          `${CONNECTED_ACCOUNTS.find((p) => p.id === providerId)?.label} connected`,
+        );
+      } else {
+        showToast(result.error || 'Failed to connect provider');
+      }
+    } catch {
+      showToast('Failed to connect provider');
+    } finally {
       setPendingProvider(null);
-      showToast(
-        `${CONNECTED_ACCOUNTS.find((p) => p.id === providerId)?.label} connected`,
-      );
-    }, 800);
+    }
   }
 
-  function handleDisconnect(providerId: string) {
+  async function handleDisconnect(providerId: 'google' | 'github') {
     if (pendingProvider) return;
-    setPendingProvider(providerId);
-    setTimeout(() => {
-      setConnectedProviders((prev) => prev.filter((id) => id !== providerId));
-      setPendingProvider(null);
+    if (connectedProviders.length <= 1) {
       showToast(
-        `${CONNECTED_ACCOUNTS.find((p) => p.id === providerId)?.label} disconnected`,
+        'At least one authentication provider must remain connected to prevent lockout.',
       );
-    }, 800);
+      return;
+    }
+    setPendingProvider(providerId);
+    try {
+      const result = await disconnectProviderAction(providerId);
+      if (result.success) {
+        setConnectedProviders((prev) =>
+          prev.filter((id) => id !== providerId),
+        );
+        showToast(
+          `${CONNECTED_ACCOUNTS.find((p) => p.id === providerId)?.label} disconnected`,
+        );
+      } else {
+        showToast(result.error || 'Failed to disconnect provider');
+      }
+    } catch {
+      showToast('Failed to disconnect provider');
+    } finally {
+      setPendingProvider(null);
+    }
   }
 
-  function handleSignOutSession(id: string) {
-    setSessions((prev) => prev.filter((s) => s.id !== id));
-    showToast('Session signed out');
+  async function handleSignOutSession(id: string) {
+    if (signingOutSessionId) return;
+    setSigningOutSessionId(id);
+    try {
+      const result = await signOutSessionAction(id);
+      if (result.success) {
+        if (result.redirect) {
+          window.location.href = result.redirect;
+          return;
+        }
+        setSessions((prev) => prev.filter((s) => s.id !== id));
+        showToast('Session signed out');
+      } else {
+        showToast(result.error || 'Failed to sign out session');
+      }
+    } catch {
+      showToast('Failed to sign out session');
+    } finally {
+      setSigningOutSessionId(null);
+    }
   }
 
-  function handleSignOutAll() {
-    setSessions([]);
-    showToast('Signed out of all sessions');
+  async function handleSignOutAll() {
+    if (isSigningOutAll) return;
+    setIsSigningOutAll(true);
+    try {
+      const result = await signOutAllSessionsAction();
+      if (result.success) {
+        showToast('Signed out of all sessions');
+        window.location.href = result.redirect || '/admin/login';
+      } else {
+        showToast(result.error || 'Failed to sign out all sessions');
+        setIsSigningOutAll(false);
+      }
+    } catch {
+      showToast('Failed to sign out all sessions');
+      setIsSigningOutAll(false);
+    }
   }
 
   return (
-    <div className="space-y-8 font-sans">
+    <div className="space-y-6 sm:space-y-8 font-sans">
       {/* Toast Notification */}
       <ToastView message={toastMessage} />
 
@@ -173,98 +320,110 @@ export function AccountManager({ userName, userEmail, userRole }: AccountManager
         </h2>
       </div>
 
-      <div className="max-w-4xl space-y-8">
-        <div className="grid gap-8 md:grid-cols-2">
-          {/* ── Sign-in & Authentication ── */}
-          <section>
-            <SectionHeading title="Sign-in & Authentication" />
-            <div className="mt-3 divide-y divide-tinted/20 overflow-hidden rounded-2xl border border-tinted/20 bg-post-card shadow-sm">
-              {/* Identity */}
-              <div className="flex items-center gap-3 px-5 py-4">
-                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-accent text-sm font-semibold text-paper">
-                  {getInitials(userName)}
-                </span>
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold text-paper">
-                    {userName}
-                  </p>
-                  <p className="mt-0.5 flex items-center gap-1.5 truncate text-xs text-gray-mid">
-                    <EnvelopeIcon className="h-3.5 w-3.5 shrink-0" />
-                    {userEmail}
-                  </p>
-                  <p className="mt-0.5 text-[10px] text-gray-mid capitalize">
-                    {userRole.replace('_', ' ')}
-                  </p>
-                </div>
-              </div>
-
-              {/* Passkeys header */}
-              <div className="flex items-center justify-between px-5 py-3 bg-night-soft/40">
-                <p className="text-xs font-semibold uppercase tracking-wider text-gray-mid">
-                  Passkeys
+      <div className="max-w-5xl space-y-6 sm:space-y-8">
+        {/* ── Identity with Profile Picture ── */}
+        <div className="rounded-2xl sm:rounded-3xl border border-tinted/20 bg-post-card p-4 sm:p-6 shadow-sm transition-all hover:border-tinted/30">
+          <div className="flex items-center gap-3.5 sm:gap-4 min-w-0">
+            <UserAvatar
+              src={userAvatarUrl}
+              name={userName}
+              size={56}
+            />
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="truncate font-serif text-lg sm:text-xl font-medium text-paper">
+                  {userName}
                 </p>
-                <span className="rounded-full bg-night px-2 py-0.5 text-[10px] font-semibold text-paper border border-tinted/20">
-                  {passkeys.length}
+                <span className="rounded-full bg-night-soft px-2.5 py-0.5 text-[10px] font-semibold text-gray-mid border border-tinted/20 capitalize tracking-wide">
+                  {userRole.replace('_', ' ')}
                 </span>
               </div>
+              <p className="mt-1 flex items-center gap-1.5 truncate text-xs text-gray-mid">
+                <EnvelopeIcon className="h-3.5 w-3.5 shrink-0" />
+                <span>{userEmail || 'admin@biranchikulesika.com'}</span>
+              </p>
+            </div>
+          </div>
+        </div>
 
-              {passkeys.map((passkey) => (
-                <div
-                  key={passkey.id}
-                  className="flex items-center justify-between gap-3 px-5 py-3"
-                >
-                  <div className="flex min-w-0 items-center gap-3">
-                    <IconChip>
-                      <FingerprintIcon className="h-4 w-4 text-teal" />
-                    </IconChip>
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-medium text-paper">
-                        {passkey.label}
-                      </p>
-                      <p className="mt-0.5 text-xs text-gray-mid">
-                        Last used {passkey.lastUsedAt}
-                      </p>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    title="Remove passkey"
-                    aria-label={`Remove ${passkey.label} passkey`}
-                    onClick={() => handleRemovePasskey(passkey.id)}
-                    className="shrink-0 rounded-full p-2 text-gray-mid transition-colors hover:bg-red-950/40 hover:text-red-400"
-                  >
-                    <TrashIcon className="h-4 w-4" />
-                  </button>
+        {/* ── 2-Column Grid for Authentication & Connected Accounts ── */}
+        <div className="grid gap-6 sm:gap-8 md:grid-cols-2">
+          {/* ── Sign-in & Authentication ── */}
+          <section className="flex flex-col">
+            <SectionHeading title="Sign-in & Authentication" />
+            <div className="mt-3 flex flex-1 flex-col justify-between divide-y divide-tinted/20 overflow-hidden rounded-2xl border border-tinted/20 bg-post-card shadow-sm">
+              <div>
+                {/* Passkeys header */}
+                <div className="flex items-center justify-between px-4 sm:px-5 py-3 bg-night-soft/40">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-gray-mid">
+                    Passkeys
+                  </p>
+                  <span className="rounded-full bg-night px-2 py-0.5 text-[10px] font-semibold text-paper border border-tinted/20">
+                    {passkeys.length}
+                  </span>
                 </div>
-              ))}
 
-              {passkeys.length === 0 && (
-                <NoContentState
-                  compact
-                  title="No passkeys registered"
-                  description="Add a passkey to sign in with your device instead of a password."
-                />
-              )}
+                {/* Passkeys List */}
+                <div className="divide-y divide-tinted/20">
+                  {passkeys.map((passkey) => (
+                    <div
+                      key={passkey.id}
+                      className="flex items-center justify-between gap-3 px-4 sm:px-5 py-3.5 transition-colors hover:bg-night-soft/30"
+                    >
+                      <div className="flex min-w-0 items-center gap-3">
+                        <IconChip>
+                          <FingerprintIcon className="h-4 w-4 text-teal" />
+                        </IconChip>
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-medium text-paper">
+                            {passkey.label}
+                          </p>
+                          <p className="mt-0.5 text-xs text-gray-mid">
+                            Last used {passkey.lastUsedAt}
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        title="Remove passkey"
+                        aria-label={`Remove ${passkey.label} passkey`}
+                        onClick={() => handleRemovePasskey(passkey.id)}
+                        className="shrink-0 rounded-full p-2 text-gray-mid transition-colors hover:bg-red-950/40 hover:text-red-400 active:scale-95"
+                      >
+                        <TrashIcon className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ))}
+
+                  {passkeys.length === 0 && (
+                    <NoContentState
+                      compact
+                      title="No passkeys registered"
+                      description="Add a passkey to sign in with your device biometrics or security key."
+                    />
+                  )}
+                </div>
+              </div>
 
               {/* Add passkey */}
-              <div className="px-5 py-4">
+              <div className="p-4 sm:p-5 bg-night-soft/20">
                 <button
                   type="button"
                   disabled={isRegistering}
                   onClick={handleAddPasskey}
-                  className="flex w-full items-center justify-center gap-1.5 rounded-full bg-accent py-2.5 text-xs font-semibold text-paper shadow-sm transition-colors hover:bg-accent-hover disabled:opacity-50"
+                  className="flex w-full items-center justify-center gap-1.5 rounded-full bg-accent py-2.5 text-xs font-semibold text-paper shadow-sm transition-all hover:bg-accent-hover active:scale-98 disabled:opacity-50"
                 >
                   <FingerprintIcon className="h-3.5 w-3.5" />
-                  {isRegistering ? 'Creating passkey…' : 'Add passkey'}
+                  <span>{isRegistering ? 'Creating passkey…' : 'Add passkey'}</span>
                 </button>
               </div>
             </div>
           </section>
 
           {/* ── Connected Accounts ── */}
-          <section>
+          <section className="flex flex-col">
             <SectionHeading title="Connected Accounts" />
-            <div className="mt-3 divide-y divide-tinted/20 overflow-hidden rounded-2xl border border-tinted/20 bg-post-card shadow-sm">
+            <div className="mt-3 flex flex-1 flex-col divide-y divide-tinted/20 overflow-hidden rounded-2xl border border-tinted/20 bg-post-card shadow-sm">
               {CONNECTED_ACCOUNTS.map((provider) => {
                 const isConnected = connectedProviders.includes(provider.id);
                 const isPending = pendingProvider === provider.id;
@@ -274,15 +433,22 @@ export function AccountManager({ userName, userEmail, userRole }: AccountManager
                 return (
                   <div
                     key={provider.id}
-                    className="flex items-center justify-between gap-3 px-5 py-4"
+                    className="flex items-center justify-between gap-3 px-4 sm:px-5 py-4 transition-colors hover:bg-night-soft/30"
                   >
                     <div className="flex min-w-0 items-center gap-3">
                       <IconChip>
                         <provider.Icon className="h-4 w-4" />
                       </IconChip>
-                      <p className="text-sm font-medium text-paper">
-                        {provider.label}
-                      </p>
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-paper">
+                          {provider.label}
+                        </p>
+                        {isConnected && !canDisconnect && (
+                          <p className="text-[10px] text-gray-mid">
+                            Primary login provider
+                          </p>
+                        )}
+                      </div>
                     </div>
 
                     {isConnected ? (
@@ -291,7 +457,7 @@ export function AccountManager({ userName, userEmail, userRole }: AccountManager
                           type="button"
                           disabled={isPending}
                           onClick={() => handleDisconnect(provider.id)}
-                          className="shrink-0 text-xs font-semibold text-red-400 transition-colors hover:text-red-300 disabled:cursor-wait disabled:opacity-50"
+                          className="shrink-0 rounded-full px-3 py-1 text-xs font-semibold text-red-400 transition-colors hover:bg-red-950/40 hover:text-red-300 disabled:cursor-wait disabled:opacity-50 active:scale-95"
                         >
                           {isPending ? 'Disconnecting…' : 'Disconnect'}
                         </button>
@@ -305,7 +471,7 @@ export function AccountManager({ userName, userEmail, userRole }: AccountManager
                         type="button"
                         disabled={isPending}
                         onClick={() => handleConnect(provider.id)}
-                        className="shrink-0 rounded-full bg-night-soft border border-tinted/20 px-3 py-1 text-xs font-semibold text-paper transition-colors hover:bg-accent hover:border-accent disabled:cursor-not-allowed disabled:opacity-50"
+                        className="shrink-0 rounded-full bg-night-soft border border-tinted/20 px-3 py-1 text-xs font-semibold text-paper transition-all hover:bg-accent hover:border-accent disabled:cursor-not-allowed disabled:opacity-50 active:scale-95"
                       >
                         {isPending ? 'Connecting…' : 'Connect'}
                       </button>
@@ -324,10 +490,11 @@ export function AccountManager({ userName, userEmail, userRole }: AccountManager
             {sessions.length > 0 && (
               <button
                 type="button"
+                disabled={isSigningOutAll}
                 onClick={handleSignOutAll}
-                className="text-xs font-semibold text-gray-mid transition-colors hover:text-red-400"
+                className="rounded-full px-3 py-1 text-xs font-semibold text-gray-mid border border-tinted/20 hover:border-red-500/30 hover:bg-red-950/30 hover:text-red-400 transition-all disabled:opacity-50 active:scale-95"
               >
-                Sign out all
+                {isSigningOutAll ? 'Signing out all…' : 'Sign out all'}
               </button>
             )}
           </div>
@@ -335,7 +502,7 @@ export function AccountManager({ userName, userEmail, userRole }: AccountManager
             {sessions.map((session) => (
               <div
                 key={session.id}
-                className="flex items-center justify-between gap-3 px-5 py-4"
+                className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-4 sm:px-5 py-4 transition-colors hover:bg-night-soft/30"
               >
                 <div className="flex min-w-0 items-center gap-3">
                   <IconChip>
@@ -346,26 +513,29 @@ export function AccountManager({ userName, userEmail, userRole }: AccountManager
                       <p className="text-sm font-medium text-paper">
                         {session.device}
                       </p>
-                      <span className="rounded-full bg-night px-2 py-0.5 text-[10px] font-semibold text-teal border border-tinted/20">
-                        This device
-                      </span>
+                      {session.isCurrent && (
+                        <span className="rounded-full bg-night px-2 py-0.5 text-[10px] font-semibold text-teal border border-tinted/20">
+                          This device
+                        </span>
+                      )}
                     </div>
                     <p className="mt-0.5 text-xs text-gray-mid">
                       {session.location} · Started {session.startedAt}
                     </p>
                   </div>
                 </div>
-                <div className="flex shrink-0 items-center gap-3">
+                <div className="flex shrink-0 items-center justify-between sm:justify-end gap-3 pl-12 sm:pl-0">
                   <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-400">
                     <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
                     Active
                   </span>
                   <button
                     type="button"
+                    disabled={signingOutSessionId === session.id}
                     onClick={() => handleSignOutSession(session.id)}
-                    className="text-xs font-semibold text-gray-mid transition-colors hover:text-red-400"
+                    className="rounded-lg px-2.5 py-1 text-xs font-semibold text-gray-mid hover:bg-red-950/40 hover:text-red-400 transition-colors disabled:opacity-50 active:scale-95"
                   >
-                    Sign out
+                    {signingOutSessionId === session.id ? 'Signing out…' : 'Sign out'}
                   </button>
                 </div>
               </div>
