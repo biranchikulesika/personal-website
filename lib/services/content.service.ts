@@ -41,9 +41,8 @@ const getCachedAllPosts = cache((repo: ContentRepository) => repo.getAllPosts())
 const getCachedAllNotes = cache((repo: ContentRepository) => repo.getAllNotes());
 const getCachedAllBooks = cache((repo: ContentRepository) => repo.getAllBooks());
 
-// Application layer for site content. Components and pages ask for content
-// by intent (getSiteContent, getWriting, ...) and never import the mock
-// database directly. The concrete repository is swappable.
+// Application layer for site content. Components and pages interact with content
+// via intent methods (getSiteContent, getWriting, ...).
 
 export class ContentService {
   constructor(private repo: ContentRepository = getContentRepository()) {}
@@ -214,7 +213,7 @@ export class ContentService {
     name?: string;
     email?: string;
     note?: string;
-    source?: 'razorpay' | 'mock';
+    source?: Contribution['source'];
   }): Promise<Contribution> {
     const {
       paymentId,
@@ -355,5 +354,25 @@ export class ContentService {
 
   setConnectedProviders(userId: string, providers: string[]): Promise<void> {
     return this.repo.setConnectedProviders(userId, providers);
+  }
+
+  async connectProvider(userId: string, provider: string): Promise<void> {
+    const current = await this.getConnectedProviders(userId);
+    if (!current.includes(provider)) {
+      await this.setConnectedProviders(userId, [...current, provider]);
+    }
+  }
+
+  async disconnectProvider(userId: string, provider: string): Promise<boolean> {
+    const current = await this.getConnectedProviders(userId);
+    if (!current.includes(provider)) return false;
+    if (current.length <= 1) {
+      throw new Error('At least one authentication provider must remain connected');
+    }
+    await this.setConnectedProviders(
+      userId,
+      current.filter((p) => p !== provider),
+    );
+    return true;
   }
 }

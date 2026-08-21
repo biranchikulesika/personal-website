@@ -276,7 +276,7 @@ export interface Contribution {
   email?: string;
   note?: string;
   createdAt: string;
-  source: "razorpay" | "mock";
+  source: "razorpay" | "manual";
 }
 
 // Admin Navigation -----------------------------------------------------------

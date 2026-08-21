@@ -266,7 +266,7 @@ export interface Database {
           email: string | null;
           note: string | null;
           created_at: string;
-          source: "razorpay" | "mock";
+          source: "razorpay" | "manual";
         };
         Insert: {
           id: string;
@@ -279,7 +279,7 @@ export interface Database {
           email?: string | null;
           note?: string | null;
           created_at?: string;
-          source?: "razorpay" | "mock";
+          source?: "razorpay" | "manual";
         };
         Update: {
           id?: string;
@@ -292,7 +292,7 @@ export interface Database {
           email?: string | null;
           note?: string | null;
           created_at?: string;
-          source?: "razorpay" | "mock";
+          source?: "razorpay" | "manual";
         };
         Relationships: [];
       };

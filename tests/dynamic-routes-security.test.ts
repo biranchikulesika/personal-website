@@ -1,20 +1,20 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { resetDatabase } from "../lib/data/mock-db";
 import { ContentService } from "../lib/services/content.service";
+import { InMemoryTestContentRepository } from "./in-memory-test-content-repository";
 
 // ── Dynamic Route: /p/[slug] ────────────────────────────────────────────────
 
 test("post page returns null for invalid slug", async () => {
-  resetDatabase();
-  const service = new ContentService();
+  const repo = new InMemoryTestContentRepository();
+  const service = new ContentService(repo);
   const post = await service.getPost("nonexistent-slug-xyz");
   assert.equal(post, null, "nonexistent post should return null");
 });
 
 test("post page handles unpublished posts correctly", async () => {
-  resetDatabase();
-  const service = new ContentService();
+  const repo = new InMemoryTestContentRepository();
+  const service = new ContentService(repo);
 
   // Create unpublished post
   const unpublished = {
@@ -46,8 +46,8 @@ test("post page handles unpublished posts correctly", async () => {
 });
 
 test("post page returns data for valid published slug", async () => {
-  resetDatabase();
-  const service = new ContentService();
+  const repo = new InMemoryTestContentRepository();
+  const service = new ContentService(repo);
 
   // Create a published post
   const testPost = {
@@ -74,8 +74,8 @@ test("post page returns data for valid published slug", async () => {
 });
 
 test("note page returns null for invalid slug", async () => {
-  resetDatabase();
-  const service = new ContentService();
+  const repo = new InMemoryTestContentRepository();
+  const service = new ContentService(repo);
   const note = await service.getNote("nonexistent-note-xyz");
   assert.equal(note, null, "nonexistent note should return null");
 });
@@ -83,15 +83,15 @@ test("note page returns null for invalid slug", async () => {
 // ── Security: User Roles ──────────────────────────────────────────────────
 
 test("getUserRole returns null for unknown user", async () => {
-  resetDatabase();
-  const service = new ContentService();
+  const repo = new InMemoryTestContentRepository();
+  const service = new ContentService(repo);
   const role = await service.getUserRole("unknown-user-id");
   assert.equal(role, null);
 });
 
 test("setUserRole and getUserRole work correctly", async () => {
-  resetDatabase();
-  const service = new ContentService();
+  const repo = new InMemoryTestContentRepository();
+  const service = new ContentService(repo);
 
   await service.setUserRole("user-1", "content_admin");
   const role = await service.getUserRole("user-1");
@@ -104,8 +104,8 @@ test("setUserRole and getUserRole work correctly", async () => {
 });
 
 test("getAllUserRoles returns all assigned roles", async () => {
-  resetDatabase();
-  const service = new ContentService();
+  const repo = new InMemoryTestContentRepository();
+  const service = new ContentService(repo);
 
   await service.setUserRole("user-1", "user");
   await service.setUserRole("user-2", "content_admin");
@@ -113,30 +113,6 @@ test("getAllUserRoles returns all assigned roles", async () => {
 
   const roles = await service.getAllUserRoles();
   assert.equal(roles.length, 3);
-});
-
-// ── Security: Environment Validation ────────────────────────────────────────
-
-test("getDataSource throws for production data sources", async () => {
-  const { getDataSource } = await import("../lib/config/env");
-
-  const original = process.env.DATA_SOURCE;
-  process.env.DATA_SOURCE = "postgres";
-  assert.throws(() => getDataSource(), /not allowed/);
-  process.env.DATA_SOURCE = "production";
-  assert.throws(() => getDataSource(), /not allowed/);
-  process.env.DATA_SOURCE = original ?? "mock";
-});
-
-test("getDataSource accepts mock and supabase", async () => {
-  const { getDataSource } = await import("../lib/config/env");
-
-  const original = process.env.DATA_SOURCE;
-  process.env.DATA_SOURCE = "mock";
-  assert.equal(getDataSource(), "mock");
-  process.env.DATA_SOURCE = "supabase";
-  assert.equal(getDataSource(), "supabase");
-  process.env.DATA_SOURCE = original ?? "mock";
 });
 
 // ── Proxy Middleware Admin Authentication Guard ────────────────────────────
@@ -182,8 +158,8 @@ test("proxy middleware allows access to /admin/login and /admin/auth/callback", 
 // ── Content Isolation ──────────────────────────────────────────────────────
 
 test("empty database returns empty content collections", async () => {
-  resetDatabase();
-  const service = new ContentService();
+  const repo = new InMemoryTestContentRepository();
+  const service = new ContentService(repo);
 
   const posts = await service.getAllPosts();
   assert.equal(posts.length, 0);
@@ -201,8 +177,8 @@ test("empty database returns empty content collections", async () => {
 // ── Post CRUD Security ─────────────────────────────────────────────────────
 
 test("savePost creates and retrieves a post", async () => {
-  resetDatabase();
-  const service = new ContentService();
+  const repo = new InMemoryTestContentRepository();
+  const service = new ContentService(repo);
 
   const testPost = {
     slug: "security-test-post",
@@ -227,8 +203,8 @@ test("savePost creates and retrieves a post", async () => {
 });
 
 test("deletePost removes a post", async () => {
-  resetDatabase();
-  const service = new ContentService();
+  const repo = new InMemoryTestContentRepository();
+  const service = new ContentService(repo);
 
   const testPost = {
     slug: "delete-test-post",
@@ -254,8 +230,8 @@ test("deletePost removes a post", async () => {
 // ── Note CRUD Security ─────────────────────────────────────────────────────
 
 test("saveNote creates and retrieves a note", async () => {
-  resetDatabase();
-  const service = new ContentService();
+  const repo = new InMemoryTestContentRepository();
+  const service = new ContentService(repo);
 
   const testNote = {
     id: "security-test-note",
@@ -278,8 +254,8 @@ test("saveNote creates and retrieves a note", async () => {
 });
 
 test("scribble entries exclude unpublished posts and notes", async () => {
-  resetDatabase();
-  const service = new ContentService();
+  const repo = new InMemoryTestContentRepository();
+  const service = new ContentService(repo);
 
   await service.savePost({
     slug: "draft-essay-scribble",

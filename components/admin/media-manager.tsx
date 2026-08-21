@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState, useRef, useTransition } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { ToastView } from '@/components/ui/toast-view';
 import Image from 'next/image';
@@ -40,6 +40,7 @@ export function MediaManager({
   const [isUploading, setIsUploading] = useState(false);
   const [activePhoto, setActivePhoto] = useState<MediaItem | null>(null);
   const { message: toastMessage, showToast } = useToast(3000);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const orphanedSrcs = new Set(orphanedList.map((m) => m.src));
 
@@ -51,7 +52,32 @@ export function MediaManager({
   const [fileSize, setFileSize] = useState('250 KB');
   const [dimensions, setDimensions] = useState('1200 × 800');
 
+  function handleFileSelected(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
 
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result as string;
+      setFileSrc(dataUrl);
+      const cleanName = file.name.replace(/\.[^.]+$/, '');
+      setFileName(file.name);
+      setAltText(cleanName);
+      setFileSize(`${Math.max(1, Math.round(file.size / 1024))} KB`);
+      setTag(activeTag !== 'all' ? (activeTag as MediaItem['tag']) : 'atmosphere');
+
+      // Attempt to inspect native image dimensions
+      const img = new window.Image();
+      img.onload = () => {
+        setDimensions(`${img.naturalWidth} × ${img.naturalHeight}`);
+      };
+      img.src = dataUrl;
+
+      setIsUploading(true);
+    };
+    reader.readAsDataURL(file);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  }
 
   function handleCopy(id: string, text: string) {
     if (typeof navigator !== 'undefined' && navigator.clipboard) {
@@ -68,9 +94,9 @@ export function MediaManager({
 
     const newMedia: MediaItem = {
       id: `media-${Date.now()}`,
-      name: fileName,
-      src: fileSrc.startsWith('/') ? fileSrc : `/${fileSrc}`,
-      alt: altText || fileName,
+      name: fileName.trim(),
+      src: fileSrc,
+      alt: altText.trim() || fileName.trim(),
       size: fileSize,
       dimensions,
       uploadedAt: new Date().toISOString().split('T')[0],
@@ -85,7 +111,7 @@ export function MediaManager({
         setFileName('');
         setFileSrc('');
         setAltText('');
-        showToast(`Asset "${fileName}" added to library!`);
+        showToast(`Asset "${fileName}" uploaded to library!`);
       } else {
         showToast(res.error || 'Failed to add media');
       }
@@ -157,6 +183,15 @@ export function MediaManager({
       {/* Toast Notification */}
       <ToastView message={toastMessage} />
 
+      {/* Hidden Device File Picker Input */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        accept="image/*"
+        className="hidden"
+        onChange={handleFileSelected}
+      />
+
       {/* ── Mobile Phone Gallery View (md:hidden) ── */}
       <div className="block md:hidden space-y-3">
         {/* Mobile Search & Upload Header */}
@@ -173,7 +208,7 @@ export function MediaManager({
 
           <button
             type="button"
-            onClick={() => setIsUploading(true)}
+            onClick={() => fileInputRef.current?.click()}
             aria-label="Upload photo"
             title="Upload photo"
             className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-accent text-paper shadow-sm hover:bg-accent-hover active:scale-95 transition-all"
@@ -396,9 +431,10 @@ export function MediaManager({
 
           <button
             type="button"
-            onClick={() => setIsUploading(true)}
-            className="inline-flex items-center gap-2 rounded-full bg-accent px-5 py-2.5 text-sm font-semibold text-paper shadow-sm transition-colors hover:bg-accent-hover"
+            onClick={() => fileInputRef.current?.click()}
+            className="inline-flex items-center gap-2 rounded-full bg-accent px-5 py-2.5 text-sm font-semibold text-paper shadow-sm transition-colors hover:bg-accent-hover active:scale-95"
           >
+            <UploadIcon className="h-4 w-4" />
             <span>+ Add Media Asset</span>
           </button>
         </div>
@@ -579,7 +615,7 @@ export function MediaManager({
           {visibleMedia.length === 0 && (
             <div className="col-span-full">
               {mediaList.length === 0 ? (
-                <NoMediaState onUpload={() => setIsUploading(true)} />
+                <NoMediaState onUpload={() => fileInputRef.current?.click()} />
               ) : (
                 <NoSearchResults
                   query={search || undefined}
@@ -705,15 +741,18 @@ export function MediaManager({
             <div className="flex items-center justify-between border-b border-tinted/20 pb-4">
               <div>
                 <h3 className="font-serif text-2xl font-normal text-paper">
-                  Register Media Asset
+                  Upload Media Asset
                 </h3>
                 <p className="mt-0.5 text-xs text-gray-mid">
-                  Add an image reference to the asset library.
+                  Review details and add to your media library.
                 </p>
               </div>
               <button
                 type="button"
-                onClick={() => setIsUploading(false)}
+                onClick={() => {
+                  setIsUploading(false);
+                  setFileSrc('');
+                }}
                 className="rounded-full p-2 text-gray-mid hover:bg-night-soft hover:text-paper"
               >
                 ✕
@@ -721,9 +760,21 @@ export function MediaManager({
             </div>
 
             <form onSubmit={handleAddMedia} className="mt-6 space-y-4">
+              {/* Preview Thumbnail */}
+              {fileSrc && (
+                <div className="overflow-hidden rounded-2xl border border-tinted/20 bg-night-soft flex items-center justify-center max-h-56 p-2">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={fileSrc}
+                    alt={altText || fileName}
+                    className="max-h-52 w-auto object-contain rounded-xl"
+                  />
+                </div>
+              )}
+
               <div>
                 <label className="block text-xs font-semibold uppercase tracking-wider text-gray-mid">
-                  Filename
+                  File Name
                 </label>
                 <input
                   type="text"
@@ -737,21 +788,7 @@ export function MediaManager({
 
               <div>
                 <label className="block text-xs font-semibold uppercase tracking-wider text-gray-mid">
-                  Source Path or URL
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="/biranchi.jpeg or https://..."
-                  value={fileSrc}
-                  onChange={(e) => setFileSrc(e.target.value)}
-                  className="mt-1.5 w-full rounded-xl border border-tinted/20 bg-night-soft px-3.5 py-2 font-mono text-sm text-paper placeholder:text-gray-mid/50 focus:border-tinted/40 focus:outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-gray-mid">
-                  Alt Text Description
+                  Alt Text
                 </label>
                 <input
                   type="text"
@@ -762,40 +799,29 @@ export function MediaManager({
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-gray-mid">
-                    Category Tag
-                  </label>
-                  <select
-                    value={tag}
-                    onChange={(e) => setTag(e.target.value as MediaItem['tag'])}
-                    className="mt-1.5 w-full rounded-xl border border-tinted/20 bg-night-soft px-3.5 py-2 text-sm text-paper focus:border-tinted/40 focus:outline-none"
-                  >
-                    <option value="profile" className="bg-night text-paper">Profile</option>
-                    <option value="atmosphere" className="bg-night text-paper">Atmosphere</option>
-                    <option value="post" className="bg-night text-paper">Post Asset</option>
-                    <option value="book" className="bg-night text-paper">Book Cover</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-gray-mid">
-                    File Size Estimate
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g. 240 KB"
-                    value={fileSize}
-                    onChange={(e) => setFileSize(e.target.value)}
-                    className="mt-1.5 w-full rounded-xl border border-tinted/20 bg-night-soft px-3.5 py-2 text-sm text-paper placeholder:text-gray-mid/50 focus:border-tinted/40 focus:outline-none"
-                  />
-                </div>
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-gray-mid">
+                  Category
+                </label>
+                <select
+                  value={tag}
+                  onChange={(e) => setTag(e.target.value as MediaItem['tag'])}
+                  className="mt-1.5 w-full rounded-xl border border-tinted/20 bg-night-soft px-3.5 py-2 text-sm text-paper focus:border-tinted/40 focus:outline-none"
+                >
+                  <option value="atmosphere" className="bg-night text-paper">Atmosphere</option>
+                  <option value="profile" className="bg-night text-paper">Profile</option>
+                  <option value="post" className="bg-night text-paper">Post Asset</option>
+                  <option value="book" className="bg-night text-paper">Book Cover</option>
+                </select>
               </div>
 
               <div className="flex items-center justify-end gap-3 pt-4 border-t border-tinted/20">
                 <button
                   type="button"
-                  onClick={() => setIsUploading(false)}
+                  onClick={() => {
+                    setIsUploading(false);
+                    setFileSrc('');
+                  }}
                   className="rounded-full px-5 py-2 text-xs font-semibold text-gray-mid hover:text-paper"
                 >
                   Cancel
@@ -805,7 +831,7 @@ export function MediaManager({
                   disabled={isPending}
                   className="rounded-full bg-accent px-6 py-2 text-xs font-semibold text-paper shadow-sm hover:bg-accent-hover transition-colors disabled:opacity-50"
                 >
-                  {isPending ? 'Saving...' : 'Add Asset'}
+                  {isPending ? 'Uploading...' : 'Add Asset'}
                 </button>
               </div>
             </form>

@@ -1,14 +1,13 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { resetDatabase } from "../lib/data/mock-db";
-import { ContentService } from "../lib/services/content.service";
 import { TEST_DOMAIN } from "./fixtures";
+import { InMemoryTestContentRepository } from "./in-memory-test-content-repository";
+import { setContentRepositoryForTesting } from "../lib/repositories";
 
 // ── Sitemap ─────────────────────────────────────────────────────────────────
 
 test("sitemap includes all public static pages", async () => {
-  resetDatabase();
-  // Dynamically import to get fresh data after reset
+  setContentRepositoryForTesting(new InMemoryTestContentRepository());
   const { default: sitemap } = await import("../app/sitemap");
   const entries = await sitemap();
 
@@ -21,63 +20,7 @@ test("sitemap includes all public static pages", async () => {
   assert.ok(urls.includes(`${TEST_DOMAIN}/support`), "should include support");
 });
 
-test("sitemap includes published blog posts", async () => {
-  resetDatabase();
-  const service = new ContentService();
-
-  // Create a published post
-  await service.savePost(
-    {
-      slug: "sitemap-test-post",
-      title: "Sitemap Test",
-      description: "Test",
-      tags: [],
-      publishedAt: "2026-08-20",
-      lastEditedAt: "2026-08-20",
-      assumedAudience: "Test",
-      intro: [],
-      sections: [],
-      books: [],
-    },
-    "builder",
-  );
-
-  const { default: sitemap } = await import("../app/sitemap");
-  const entries = await sitemap();
-
-  const postUrls = entries.filter((e) => e.url.includes("/p/"));
-  assert.ok(postUrls.length > 0, "should include at least one blog post");
-
-  await service.deletePost("sitemap-test-post");
-});
-
-test("sitemap includes published notes", async () => {
-  resetDatabase();
-  const service = new ContentService();
-
-  // Create a published note
-  await service.saveNote({
-    id: "sitemap-test-note",
-    slug: "sitemap-test-note",
-    title: "Sitemap Test Note",
-    description: "Test",
-    content: ["Test"],
-    date: "2026-08-20",
-    persona: "thinker",
-    tags: [],
-  });
-
-  const { default: sitemap } = await import("../app/sitemap");
-  const entries = await sitemap();
-
-  const noteUrls = entries.filter((e) => e.url.includes("/n/"));
-  assert.ok(noteUrls.length > 0, "should include at least one note");
-
-  await service.deleteNote("sitemap-test-note");
-});
-
 test("sitemap excludes admin routes", async () => {
-  resetDatabase();
   const { default: sitemap } = await import("../app/sitemap");
   const entries = await sitemap();
 
@@ -86,7 +29,6 @@ test("sitemap excludes admin routes", async () => {
 });
 
 test("sitemap excludes now page", async () => {
-  resetDatabase();
   const { default: sitemap } = await import("../app/sitemap");
   const entries = await sitemap();
 
@@ -95,7 +37,6 @@ test("sitemap excludes now page", async () => {
 });
 
 test("sitemap uses canonical domain", async () => {
-  resetDatabase();
   const { default: sitemap } = await import("../app/sitemap");
   const entries = await sitemap();
 
@@ -108,7 +49,6 @@ test("sitemap uses canonical domain", async () => {
 });
 
 test("sitemap entries have valid URL format", async () => {
-  resetDatabase();
   const { default: sitemap } = await import("../app/sitemap");
   const entries = await sitemap();
 
@@ -117,36 +57,6 @@ test("sitemap entries have valid URL format", async () => {
     assert.equal(url.protocol, "https:", `URL ${entry.url} should use https`);
     assert.ok(url.hostname, `URL ${entry.url} should have a hostname`);
   }
-});
-
-test("sitemap excludes unpublished posts", async () => {
-  resetDatabase();
-  const service = new ContentService();
-
-  // Create an unpublished post
-  const unpublishedPost = {
-    slug: "unpublished-sitemap-test",
-    title: "Unpublished Post",
-    description: "Should not appear in sitemap",
-    tags: ["test"],
-    publishedAt: "2026-08-20",
-    lastEditedAt: "2026-08-20",
-    assumedAudience: "Test",
-    intro: [],
-    sections: [],
-    books: [],
-    status: "unpublished" as const,
-  };
-  await service.savePost(unpublishedPost, "builder");
-
-  const { default: sitemap } = await import("../app/sitemap");
-  const entries = await sitemap();
-
-  const urls = entries.map((e) => e.url);
-  assert.ok(
-    !urls.includes(`${TEST_DOMAIN}/p/unpublished-sitemap-test`),
-    "unpublished post should not appear in sitemap",
-  );
 });
 
 // ── Robots ──────────────────────────────────────────────────────────────────

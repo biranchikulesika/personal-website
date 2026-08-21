@@ -380,6 +380,7 @@ export class SupabaseContentRepository implements ContentRepository {
     const { data, error } = await this.db
       .from("notes")
       .select("*")
+      .order("date", { ascending: false, nullsFirst: false })
       .order("created_at", { ascending: false });
 
     if (error) throw new Error(`Failed to load notes: ${error.message}`);
@@ -628,10 +629,45 @@ export class SupabaseContentRepository implements ContentRepository {
   }
 
   async addMedia(item: MediaItem): Promise<MediaItem> {
+    let finalSrc = item.src;
+
+    // If item.src is a Base64 data URL, upload to Supabase Storage if available
+    if (item.src.startsWith("data:")) {
+      try {
+        const matches = item.src.match(/^data:(image\/([a-zA-Z0-9+.-]+));base64,(.+)$/);
+        if (matches) {
+          const mimeType = matches[1];
+          const ext = matches[2] === "jpeg" ? "jpg" : matches[2];
+          const base64Data = matches[3];
+          const buffer = Buffer.from(base64Data, "base64");
+          const fileName = `${Date.now()}-${item.name.replace(/[^a-zA-Z0-9.-]/g, "_")}.${ext}`;
+          const storagePath = `uploads/${fileName}`;
+
+          const { data: uploadData, error: uploadError } = await this.db.storage
+            .from("media")
+            .upload(storagePath, buffer, {
+              contentType: mimeType,
+              upsert: true,
+            });
+
+          if (!uploadError && uploadData) {
+            const { data: publicUrlData } = this.db.storage
+              .from("media")
+              .getPublicUrl(storagePath);
+            if (publicUrlData?.publicUrl) {
+              finalSrc = publicUrlData.publicUrl;
+            }
+          }
+        }
+      } catch {
+        // Fallback to storing the data URL directly in database
+      }
+    }
+
     const row = {
       id: item.id,
       name: item.name,
-      src: item.src,
+      src: finalSrc,
       alt: item.alt,
       size: item.size,
       dimensions: item.dimensions ?? null,
@@ -644,7 +680,7 @@ export class SupabaseContentRepository implements ContentRepository {
       .upsert(row, { onConflict: "id" });
 
     if (error) throw new Error(`Failed to add media: ${error.message}`);
-    return item;
+    return { ...item, src: finalSrc };
   }
 
   async deleteMedia(id: string): Promise<boolean> {
@@ -843,7 +879,7 @@ export class SupabaseContentRepository implements ContentRepository {
       email: (d.email as string) ?? undefined,
       note: (d.note as string) ?? undefined,
       createdAt: d.created_at as string,
-      source: d.source as 'razorpay' | 'mock',
+      source: (d.source as Contribution['source']) ?? 'razorpay',
     }));
   }
 

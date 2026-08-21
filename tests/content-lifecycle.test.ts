@@ -1,13 +1,13 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { resetDatabase } from "../lib/data/mock-db";
 import { ContentService } from "../lib/services/content.service";
+import { InMemoryTestContentRepository } from "./in-memory-test-content-repository";
 
 // ── Publication Lifecycle ───────────────────────────────────────────────────
 
 test("unpublished posts are still accessible by slug (admin editing)", async () => {
-  resetDatabase();
-  const service = new ContentService();
+  const repo = new InMemoryTestContentRepository();
+  const service = new ContentService(repo);
 
   await service.savePost(
     {
@@ -34,8 +34,8 @@ test("unpublished posts are still accessible by slug (admin editing)", async () 
 });
 
 test("toggle post status switches between published and unpublished", async () => {
-  resetDatabase();
-  const service = new ContentService();
+  const repo = new InMemoryTestContentRepository();
+  const service = new ContentService(repo);
 
   await service.savePost(
     {
@@ -66,8 +66,8 @@ test("toggle post status switches between published and unpublished", async () =
 });
 
 test("default status is published when saving without explicit status", async () => {
-  resetDatabase();
-  const service = new ContentService();
+  const repo = new InMemoryTestContentRepository();
+  const service = new ContentService(repo);
 
   const saved = await service.savePost(
     {
@@ -92,8 +92,8 @@ test("default status is published when saving without explicit status", async ()
 // ── Slug Lifecycle ──────────────────────────────────────────────────────────
 
 test("slug is used as the URL identifier for posts", async () => {
-  resetDatabase();
-  const service = new ContentService();
+  const repo = new InMemoryTestContentRepository();
+  const service = new ContentService(repo);
 
   await service.savePost(
     {
@@ -125,8 +125,8 @@ test("slug is used as the URL identifier for posts", async () => {
 });
 
 test("slug is used as the URL identifier for notes", async () => {
-  resetDatabase();
-  const service = new ContentService();
+  const repo = new InMemoryTestContentRepository();
+  const service = new ContentService(repo);
 
   await service.saveNote({
     id: "slug-test-note",
@@ -153,8 +153,8 @@ test("slug is used as the URL identifier for notes", async () => {
 });
 
 test("slug change breaks URL (documented production concern)", async () => {
-  resetDatabase();
-  const service = new ContentService();
+  const repo = new InMemoryTestContentRepository();
+  const service = new ContentService(repo);
 
   await service.savePost(
     {
@@ -193,8 +193,8 @@ test("slug change breaks URL (documented production concern)", async () => {
 // ── Date Consistency ────────────────────────────────────────────────────────
 
 test("post dates are ISO format strings", async () => {
-  resetDatabase();
-  const service = new ContentService();
+  const repo = new InMemoryTestContentRepository();
+  const service = new ContentService(repo);
 
   await service.savePost(
     {
@@ -230,8 +230,8 @@ test("post dates are ISO format strings", async () => {
 // ── Content Integrity ───────────────────────────────────────────────────────
 
 test("every published post has required fields", async () => {
-  resetDatabase();
-  const service = new ContentService();
+  const repo = new InMemoryTestContentRepository();
+  const service = new ContentService(repo);
 
   await service.savePost(
     {
@@ -263,8 +263,8 @@ test("every published post has required fields", async () => {
 });
 
 test("scribble entries aggregate all content types", async () => {
-  resetDatabase();
-  const service = new ContentService();
+  const repo = new InMemoryTestContentRepository();
+  const service = new ContentService(repo);
 
   // Create one of each type
   await service.savePost(
@@ -321,8 +321,8 @@ test("scribble entries aggregate all content types", async () => {
 });
 
 test("delete operation removes content permanently", async () => {
-  resetDatabase();
-  const service = new ContentService();
+  const repo = new InMemoryTestContentRepository();
+  const service = new ContentService(repo);
 
   await service.savePost(
     {
@@ -348,8 +348,8 @@ test("delete operation removes content permanently", async () => {
 });
 
 test("media items have valid tag values", async () => {
-  resetDatabase();
-  const service = new ContentService();
+  const repo = new InMemoryTestContentRepository();
+  const service = new ContentService(repo);
   const media = await service.getMedia();
 
   const validTags = new Set(["profile", "atmosphere", "post", "book"]);

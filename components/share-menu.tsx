@@ -57,14 +57,14 @@ export function ShareMenu({ title, description }: ShareMenuProps) {
   };
 
   return (
-    <div className="inline-flex items-center gap-1 text-ink-soft">
+    <div className="inline-flex shrink-0 items-center gap-1 text-ink-soft">
       <a
         href={whatsappHref}
         target="_blank"
         rel="noopener noreferrer"
         aria-label="Share on WhatsApp"
         title="Share on WhatsApp"
-        className="inline-flex h-6 w-6 items-center justify-center rounded-full transition-colors hover:bg-night-soft hover:text-paper"
+        className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full transition-colors hover:bg-night-soft hover:text-paper"
       >
         <WhatsAppIcon className="h-3.5 w-3.5" />
       </a>
@@ -75,7 +75,7 @@ export function ShareMenu({ title, description }: ShareMenuProps) {
         rel="noopener noreferrer"
         aria-label="Share on LinkedIn"
         title="Share on LinkedIn"
-        className="inline-flex h-6 w-6 items-center justify-center rounded-full transition-colors hover:bg-night-soft hover:text-paper"
+        className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full transition-colors hover:bg-night-soft hover:text-paper"
       >
         <LinkedInIcon className="h-3.5 w-3.5" />
       </a>
@@ -86,7 +86,7 @@ export function ShareMenu({ title, description }: ShareMenuProps) {
         rel="noopener noreferrer"
         aria-label="Share on X"
         title="Share on X"
-        className="inline-flex h-6 w-6 items-center justify-center rounded-full transition-colors hover:bg-night-soft hover:text-paper"
+        className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full transition-colors hover:bg-night-soft hover:text-paper"
       >
         <TwitterIcon className="h-3.5 w-3.5" />
       </a>
@@ -96,7 +96,7 @@ export function ShareMenu({ title, description }: ShareMenuProps) {
         onClick={handleGenericShare}
         aria-label={copied ? 'Link copied to clipboard' : 'Share'}
         title={copied ? 'Link copied!' : 'Share'}
-        className="inline-flex h-6 w-6 items-center justify-center rounded-full transition-colors hover:bg-night-soft hover:text-paper"
+        className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full transition-colors hover:bg-night-soft hover:text-paper"
       >
         {copied ? (
           <CheckIcon className="h-3.5 w-3.5 text-accent" />

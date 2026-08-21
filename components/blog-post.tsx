@@ -57,13 +57,117 @@ function footnoteRefs(text: string): number[] {
 
 function Figure({ src, alt, caption }: PostFigure) {
   return (
-    <figure className="mt-8 lg:col-start-1">
-      {/* eslint-disable-next-line @next/next/no-img-element -- user-authored content may reference arbitrary image hosts */}
-      <img src={src} alt={alt} className="w-full rounded-lg shadow-md" loading="lazy" />
-      <figcaption className="mt-3 text-center text-sm text-ink-soft">
-        {caption}
-      </figcaption>
+    <figure className="my-8 block lg:col-start-1">
+      <div className="overflow-hidden rounded-xl border border-tinted/20 bg-post-card shadow-md">
+        {/* eslint-disable-next-line @next/next/no-img-element -- user-authored content may reference arbitrary image hosts */}
+        <img src={src} alt={alt} className="w-full h-auto max-h-[550px] object-cover object-center" loading="lazy" />
+      </div>
+      {(caption || alt) && (
+        <figcaption className="mt-2.5 text-center font-serif text-xs italic text-ink-soft">
+          {caption || alt}
+        </figcaption>
+      )}
     </figure>
+  );
+}
+
+/**
+ * Renders a post paragraph or rich markdown block (Image, Figure, YouTube, Alert, Quote).
+ */
+function renderParagraphOrFigure(
+  paragraph: string,
+  prefix: string,
+  footnotes?: string[],
+  isFirstIntroParagraph = false,
+) {
+  const trimmed = paragraph.trim();
+
+  // 1. Markdown Image block: ![alt](src) optionally with title or next-line *caption*
+  const mdImgMatch = trimmed.match(/^!\[([\s\S]*?)\]\(([\s\S]*?)\)(?:\s*\*([\s\S]*?)\*)?$/);
+  if (mdImgMatch) {
+    const alt = mdImgMatch[1];
+    let src = mdImgMatch[2].trim();
+    let caption = mdImgMatch[3] ? mdImgMatch[3].trim() : "";
+
+    const titleMatch = src.match(/^(.*?)\s+["'](.*?)["']$/);
+    if (titleMatch) {
+      src = titleMatch[1];
+      if (!caption) caption = titleMatch[2];
+    }
+
+    return <Figure key={prefix} src={src} alt={alt || "Document Image"} caption={caption} />;
+  }
+
+  // 2. MDX / HTML Image: <img ... /> or <Image ... />
+  const htmlImgMatch = trimmed.match(/^<(img|Image)\s+([^>]*?)\/?>$/i);
+  if (htmlImgMatch) {
+    const tagContent = htmlImgMatch[2];
+    const srcMatch = tagContent.match(/(?:src|path)=["']([^"']+)["']/i);
+    const altMatch = tagContent.match(/alt=["']([^"']+)["']/i);
+    const capMatch = tagContent.match(/caption=["']([^"']+)["']/i);
+
+    const src = srcMatch ? srcMatch[1] : "";
+    const alt = altMatch ? altMatch[1] : "Document Image";
+    const caption = capMatch ? capMatch[1] : "";
+
+    if (src) {
+      return <Figure key={prefix} src={src} alt={alt} caption={caption} />;
+    }
+  }
+
+  // 3. YouTube Embed: <YouTube id="..." />
+  const ytMatch = trimmed.match(/^<YouTube\s+([^>]*?)\/?>$/i);
+  if (ytMatch) {
+    const idMatch = ytMatch[1].match(/(?:id|src)=["']([^"']+)["']/i);
+    const cleanId = idMatch
+      ? idMatch[1].replace(/https?:\/\/(www\.)?youtube\.com\/watch\?v=/, "").replace(/https?:\/\/youtu\.be\//, "")
+      : "";
+    if (cleanId) {
+      return (
+        <div key={prefix} className="my-8 aspect-video w-full overflow-hidden rounded-xl border border-tinted/20 bg-black shadow-md lg:col-start-1">
+          <iframe
+            src={`https://www.youtube-nocookie.com/embed/${cleanId}`}
+            title="YouTube video player"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+            className="h-full w-full border-0"
+          />
+        </div>
+      );
+    }
+  }
+
+  // 4. GitHub-style alerts: > [!NOTE], etc.
+  if (trimmed.startsWith(">")) {
+    const alertMatch = trimmed.match(/^>\s*\[!(NOTE|TIP|WARNING|IMPORTANT|CAUTION)\]\s*(.*)$/im);
+    if (alertMatch) {
+      const alertType = alertMatch[1].toUpperCase();
+      const body = trimmed.replace(/^>\s*\[!.*?\]\s*/im, "").replace(/^>\s?/gm, "").trim();
+      return (
+        <div key={prefix} className="my-6 rounded-xl border border-tinted/20 bg-post-card p-5 shadow-2xs lg:col-start-1">
+          <span className="rounded bg-night px-2 py-0.5 text-[11px] font-bold uppercase tracking-wider text-accent border border-tinted/20">
+            {alertType}
+          </span>
+          <p className="mt-2 text-sm leading-relaxed text-paper/90 font-serif">
+            {renderInline(body, prefix, footnotes)}
+          </p>
+        </div>
+      );
+    }
+  }
+
+  // Regular text paragraph
+  return (
+    <p
+      key={prefix}
+      className={
+        isFirstIntroParagraph
+          ? "leading-[1.85] first-letter:float-left first-letter:mr-3 first-letter:mt-1 first-letter:font-serif first-letter:text-6xl first-letter:leading-[0.8] first-letter:text-paper lg:col-start-1"
+          : "leading-[1.85] lg:col-start-1"
+      }
+    >
+      {renderInline(paragraph, prefix, footnotes)}
+    </p>
   );
 }
 
@@ -220,18 +324,9 @@ export function BlogPostView({ post }: { post: BlogPost }) {
         <div className="lg:col-start-2 lg:col-span-2 lg:grid lg:grid-cols-[minmax(0,72ch)_1fr] lg:items-start lg:gap-8">
           {/* Intro — the first paragraph gets a drop cap */}
           <div className="mt-8 space-y-5 lg:col-start-1 text-paper/85">
-            {post.intro.map((paragraph, index) => (
-              <p
-                key={index}
-                className={
-                  index === 0
-                    ? "leading-[1.85] first-letter:float-left first-letter:mr-3 first-letter:mt-1 first-letter:font-serif first-letter:text-6xl first-letter:leading-[0.8] first-letter:text-paper"
-                    : "leading-[1.85]"
-                }
-              >
-                {renderInline(paragraph, `intro-${index}`, undefined)}
-              </p>
-            ))}
+            {post.intro.map((paragraph, index) =>
+              renderParagraphOrFigure(paragraph, `intro-${index}`, undefined, index === 0),
+            )}
           </div>
 
           {/* Sections */}
@@ -251,13 +346,11 @@ export function BlogPostView({ post }: { post: BlogPost }) {
                   const refs = section.footnotes ? footnoteRefs(paragraph) : [];
                   return (
                     <Fragment key={paragraphIndex}>
-                      <p className="leading-[1.85] lg:col-start-1">
-                        {renderInline(
-                          paragraph,
-                          `sec-${sectionIndex}`,
-                          section.footnotes,
-                        )}
-                      </p>
+                      {renderParagraphOrFigure(
+                        paragraph,
+                        `sec-${sectionIndex}-${paragraphIndex}`,
+                        section.footnotes,
+                      )}
                       {refs.length > 0 && (
                         <aside
                           className="hidden lg:block col-start-2 space-y-3 pt-1 border-l-2 border-tinted/20 pl-3"

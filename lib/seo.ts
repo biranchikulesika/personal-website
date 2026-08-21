@@ -180,7 +180,8 @@ export function websiteJsonLd() {
       sameAs: [
         'https://github.com/biranchikulesika',
         'https://x.com/BKulesika',
-        'https://www.linkedin.com/in/biranchikulesika',
+        'https://linkedin.com/in/biranchikulesika',
+        'https://instagram.com/biranchikulesika',
       ],
       knowsAbout: [
         'Software Engineering',

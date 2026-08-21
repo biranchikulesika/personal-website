@@ -13,6 +13,7 @@ import type {
   UserSession,
 } from '@/lib/types';
 import { getSupabaseServer } from '@/lib/supabase/server';
+import { getSupabaseUrl, getSupabasePublishableKey } from '@/lib/config/env';
 import {
   BlogPostSchema,
   NoteItemSchema,
@@ -456,8 +457,8 @@ export async function connectProviderAction(
   provider: 'google' | 'github',
 ): Promise<{ success: boolean; url?: string; error?: string }> {
   try {
-    const supabaseUrl = process.env.SUPABASE_URL;
-    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+    const supabaseUrl = getSupabaseUrl();
+    const supabaseKey = getSupabasePublishableKey();
 
     if (supabaseUrl && supabaseKey) {
       const supabase = await getSupabaseServer();
@@ -503,8 +504,8 @@ export async function disconnectProviderAction(
     const user = await getCurrentUser();
     const userId = user?.id || 'default';
 
-    const supabaseUrl = process.env.SUPABASE_URL;
-    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+    const supabaseUrl = getSupabaseUrl();
+    const supabaseKey = getSupabasePublishableKey();
 
     if (supabaseUrl && supabaseKey && user) {
       const identities = user.identities || [];

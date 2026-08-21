@@ -1,16 +1,53 @@
-// Environment configuration.
-//
-// Only "mock" and "supabase" are supported data sources.
-// Any other value causes a loud failure instead of a silent fallback.
+// Environment configuration & Supabase variable resolution.
 
-const ALLOWED_SOURCES = new Set(['mock', 'supabase']);
+/**
+ * Resolves the Supabase URL.
+ * Automatically checks NEXT_PUBLIC_SUPABASE_URL and SUPABASE_URL.
+ */
+export function getSupabaseUrl(): string | undefined {
+  return process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
+}
 
-export function getDataSource(): string {
-  const source = process.env.DATA_SOURCE ?? 'mock';
-  if (!ALLOWED_SOURCES.has(source)) {
-    throw new Error(
-      `DATA_SOURCE="${source}" is not allowed. Use "mock" or "supabase".`
-    );
-  }
-  return source;
+/**
+ * Resolves the Supabase Public / Anon / Publishable key.
+ * Automatically checks NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY, NEXT_PUBLIC_SUPABASE_ANON_KEY,
+ * SUPABASE_PUBLISHABLE_KEY, and SUPABASE_ANON_KEY.
+ */
+export function getSupabasePublishableKey(): string | undefined {
+  return (
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+    process.env.SUPABASE_PUBLISHABLE_KEY ||
+    process.env.SUPABASE_ANON_KEY
+  );
+}
+
+/**
+ * Resolves the Supabase Service Role / Secret Key (server-side only, bypasses RLS).
+ * Automatically checks SUPABASE_SERVICE_ROLE_KEY and SUPABASE_SECRET_KEY.
+ */
+export function getSupabaseSecretKey(): string | undefined {
+  return (
+    process.env.SUPABASE_SERVICE_ROLE_KEY ||
+    process.env.SUPABASE_SECRET_KEY
+  );
+}
+
+/**
+ * Resolves the Supabase JWT Secret.
+ */
+export function getSupabaseJwtSecret(): string | undefined {
+  return process.env.SUPABASE_JWT_SECRET;
+}
+
+/**
+ * Resolves the Postgres connection URL.
+ * Automatically checks POSTGRES_URL, POSTGRES_PRISMA_URL, and POSTGRES_URL_NON_POOLING.
+ */
+export function getPostgresUrl(): string | undefined {
+  return (
+    process.env.POSTGRES_URL ||
+    process.env.POSTGRES_PRISMA_URL ||
+    process.env.POSTGRES_URL_NON_POOLING
+  );
 }

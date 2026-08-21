@@ -71,6 +71,8 @@ function BookCover({ title, author }: { title: string; author?: string }) {
 
 function NoteCard({ entry }: { entry: ScribbleEntry }) {
   const snippet = formatNoteSnippet(entry.description, 180);
+  const isTruncated = snippet.endsWith('...read now');
+  const mainSnippet = isTruncated ? snippet.slice(0, -11) : snippet;
 
   return (
     <article className="py-2">
@@ -79,7 +81,12 @@ function NoteCard({ entry }: { entry: ScribbleEntry }) {
           {entry.title}
         </h3>
         <p className="mt-2 text-sm leading-relaxed text-gray-mid">
-          {snippet}
+          {mainSnippet}
+          {isTruncated && (
+            <span className="ml-1 inline font-medium text-accent/90 transition-colors group-hover:text-accent">
+              ...read now
+            </span>
+          )}
         </p>
         <CardMeta
           type={entry.type}

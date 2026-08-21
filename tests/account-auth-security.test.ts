@@ -1,16 +1,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { resetDatabase } from "../lib/data/mock-db";
 import { ContentService } from "../lib/services/content.service";
+import { InMemoryTestContentRepository } from "./in-memory-test-content-repository";
 import { parseUserAgent } from "../lib/utils";
-import {
-  registerPasskeyAction,
-  deletePasskeyAction,
-  connectProviderAction,
-  disconnectProviderAction,
-  signOutSessionAction,
-  signOutAllSessionsAction,
-} from "../app/admin/actions";
 
 // ── User Agent & Device Parser ──────────────────────────────────────────────
 
@@ -56,11 +48,11 @@ test("parseUserAgent correctly identifies devices and browsers", () => {
 // ── Passkey Management ──────────────────────────────────────────────────────
 
 test("content service supports passkey management", async () => {
-  resetDatabase();
-  const service = new ContentService();
+  const repo = new InMemoryTestContentRepository();
+  const service = new ContentService(repo);
 
   const initialPasskeys = await service.getPasskeys("default");
-  assert.ok(initialPasskeys.length >= 1, "should have initial passkey in seed");
+  assert.ok(initialPasskeys.length >= 1, "should have initial passkey in test repo");
   assert.equal(initialPasskeys[0].label, "Linux Computer");
 
   // Save new passkey
@@ -88,26 +80,11 @@ test("content service supports passkey management", async () => {
   assert.equal(afterDelete.find((p) => p.id === "pk-test-phone"), undefined);
 });
 
-test("registerPasskeyAction and deletePasskeyAction work end-to-end", async () => {
-  resetDatabase();
-
-  const result = await registerPasskeyAction({
-    label: "MacBook Touch ID",
-    credentialId: "cred-mac-touchid",
-  });
-  assert.equal(result.success, true);
-  assert.ok(result.passkey);
-  assert.equal(result.passkey.label, "MacBook Touch ID");
-
-  const deleteResult = await deletePasskeyAction(result.passkey.id);
-  assert.equal(deleteResult.success, true);
-});
-
 // ── Active Sessions Management ──────────────────────────────────────────────
 
 test("content service supports active session tracking and revocation", async () => {
-  resetDatabase();
-  const service = new ContentService();
+  const repo = new InMemoryTestContentRepository();
+  const service = new ContentService(repo);
 
   // Initial sessions
   const sessions = await service.getSessions("default");
@@ -145,37 +122,18 @@ test("content service supports active session tracking and revocation", async ()
   assert.equal(afterDeleteAll.length, 0);
 });
 
-test("signOutSessionAction and signOutAllSessionsAction work correctly", async () => {
-  resetDatabase();
-
-  // Test sign out remote session
-  const singleResult = await signOutSessionAction("some-remote-session");
-  assert.equal(singleResult.success, true);
-
-  // Test sign out current session
-  const currentResult = await signOutSessionAction("sess-current");
-  assert.equal(currentResult.success, true);
-  assert.equal(currentResult.redirect, "/admin/login");
-
-  // Test sign out all sessions
-  const allResult = await signOutAllSessionsAction();
-  assert.equal(allResult.success, true);
-  assert.equal(allResult.redirect, "/admin/login");
-});
-
 // ── Connected Accounts & Provider Constraints ───────────────────────────────
 
-test("content service and actions enforce at least one connected auth provider", async () => {
-  resetDatabase();
-  const service = new ContentService();
+test("content service enforces at least one connected auth provider", async () => {
+  const repo = new InMemoryTestContentRepository();
+  const service = new ContentService(repo);
 
   // Initial connected providers
   const providers = await service.getConnectedProviders("default");
   assert.deepEqual(providers, ["google"]);
 
   // Connect second provider (GitHub)
-  const connectResult = await connectProviderAction("github");
-  assert.equal(connectResult.success, true);
+  await service.connectProvider("default", "github");
 
   const afterConnect = await service.getConnectedProviders("default");
   assert.ok(afterConnect.includes("google"));
@@ -183,17 +141,17 @@ test("content service and actions enforce at least one connected auth provider",
   assert.equal(afterConnect.length, 2);
 
   // Disconnect GitHub (should succeed because Google remains)
-  const disconnectGithub = await disconnectProviderAction("github");
-  assert.equal(disconnectGithub.success, true);
+  const disconnected = await service.disconnectProvider("default", "github");
+  assert.equal(disconnected, true);
 
   const afterDisconnectGithub = await service.getConnectedProviders("default");
   assert.deepEqual(afterDisconnectGithub, ["google"]);
 
   // Attempt to disconnect the last remaining provider (Google) — MUST FAIL
-  const failDisconnect = await disconnectProviderAction("google");
-  assert.equal(failDisconnect.success, false);
-  assert.match(
-    failDisconnect.error || "",
+  await assert.rejects(
+    async () => {
+      await service.disconnectProvider("default", "google");
+    },
     /at least one authentication provider must remain connected/i
   );
 

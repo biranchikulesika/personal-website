@@ -94,7 +94,7 @@ CREATE TABLE public.contributions (
   email          TEXT,
   note           TEXT,
   created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  source         TEXT NOT NULL DEFAULT 'razorpay' CHECK (source IN ('razorpay', 'mock'))
+  source         TEXT NOT NULL DEFAULT 'razorpay' CHECK (source IN ('razorpay', 'manual'))
 );
 ```
 

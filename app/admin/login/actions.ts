@@ -2,6 +2,7 @@
 
 import { createServerClient } from "@supabase/ssr";
 import { cookies, headers } from "next/headers";
+import { getSupabaseUrl, getSupabasePublishableKey } from "@/lib/config/env";
 
 // ── Rate Limiting ──────────────────────────────────────────────────────────
 // Simple in-memory rate limiter: max 5 attempts per 5 minutes per IP.
@@ -38,9 +39,8 @@ function resetRateLimit(ip: string): void {
 // ── Supabase Client Helper ────────────────────────────────────────────────
 
 async function createAuthClient() {
-  const supabaseUrl = process.env.SUPABASE_URL;
-  const supabasePublishableKey =
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+  const supabaseUrl = getSupabaseUrl();
+  const supabasePublishableKey = getSupabasePublishableKey();
 
   if (!supabaseUrl || !supabasePublishableKey) {
     return null;
@@ -121,14 +121,13 @@ export async function signInWithPasskey(): Promise<{ error?: string }> {
   }
 
   const supabase = await createAuthClient();
-  if (supabase) {
-    const { error } = await supabase.auth.signInWithPasskey();
-    if (error) {
-      return { error: "Passkey authentication failed. Please try again." };
-    }
+  if (!supabase) return { error: "Authentication is not configured" };
+
+  const { error } = await supabase.auth.signInWithPasskey();
+  if (error) {
+    return { error: "Passkey authentication failed. Please try again." };
   }
 
-  // In mock environment or successful validation
   resetRateLimit(ip);
   return {};
 }
@@ -147,9 +146,7 @@ export async function verifyPasskeyLoginAction(params?: {
   }
 
   const supabase = await createAuthClient();
-  if (supabase && params?.credentialId) {
-    // If Supabase is active, session is handled by Supabase SDK
-  }
+  if (!supabase) return { success: false, error: "Authentication is not configured" };
 
   resetRateLimit(ip);
   return { success: true };

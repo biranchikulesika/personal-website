@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  addMediaAction,
   deleteNoteAction,
   deletePostAction,
   saveNoteAction,
@@ -801,9 +802,28 @@ export function ComposeWorkspace({
           onChange={(e) => {
             const file = e.target.files?.[0];
             if (file) {
-              const url = URL.createObjectURL(file);
-              insertBlock(`![${file.name}](${url})\n*${file.name}*`);
+              const reader = new FileReader();
+              reader.onload = async () => {
+                const dataUrl = reader.result as string;
+                insertBlock(`![${file.name}](${dataUrl})\n*${file.name}*`);
+                try {
+                  const mediaItem: MediaItem = {
+                    id: `media-${Date.now()}`,
+                    name: file.name,
+                    src: dataUrl,
+                    alt: file.name.replace(/\.[^.]+$/, ""),
+                    size: `${Math.max(1, Math.round(file.size / 1024))} KB`,
+                    uploadedAt: new Date().toISOString().split("T")[0],
+                    tag: "atmosphere",
+                  };
+                  await addMediaAction(mediaItem);
+                } catch {
+                  // Media item registration is non-blocking
+                }
+              };
+              reader.readAsDataURL(file);
             }
+            if (fileInputRef.current) fileInputRef.current.value = "";
           }}
         />
 

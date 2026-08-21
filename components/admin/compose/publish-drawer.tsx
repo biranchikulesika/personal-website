@@ -4,6 +4,7 @@ import { useState, useRef } from 'react';
 import Image from 'next/image';
 import type { MediaItem, Persona } from '@/lib/types';
 import { SITE_DOMAIN } from '@/lib/constants';
+import { addMediaAction } from '@/app/admin/actions';
 import { MediaInsertModal } from '../mdx-editor/media-insert-modal';
 
 interface PublishDrawerProps {
@@ -92,8 +93,27 @@ export function PublishDrawer({
   function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-    const objectUrl = URL.createObjectURL(file);
-    onCoverImageChange(objectUrl);
+    const reader = new FileReader();
+    reader.onload = async () => {
+      const dataUrl = reader.result as string;
+      onCoverImageChange(dataUrl);
+      try {
+        const mediaItem: MediaItem = {
+          id: `media-${Date.now()}`,
+          name: file.name,
+          src: dataUrl,
+          alt: file.name.replace(/\.[^.]+$/, ''),
+          size: `${Math.max(1, Math.round(file.size / 1024))} KB`,
+          uploadedAt: new Date().toISOString().split('T')[0],
+          tag: 'atmosphere',
+        };
+        await addMediaAction(mediaItem);
+      } catch {
+        // Media registration is non-blocking
+      }
+    };
+    reader.readAsDataURL(file);
+    if (fileInputRef.current) fileInputRef.current.value = '';
   }
 
   const liveUrlPrefix = isPost ? '/p/' : '/n/';

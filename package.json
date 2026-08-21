@@ -17,8 +17,7 @@
     "start": "next start",
     "lint": "eslint .",
     "test": "npx tsx --test tests/*.test.ts",
-    "clean": "next clean",
-    "db:reset": "npx tsx scripts/reset-db.ts"
+    "clean": "next clean"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.4",

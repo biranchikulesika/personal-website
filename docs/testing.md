@@ -7,7 +7,7 @@ The project uses Node.js's native test runner (`node:test`) paired with `node:as
 ## 1. Test Philosophy & Framework
 
 - **Zero-Config & Blazing Fast**: No Jest/Vitest overhead or complex Babel transformations. Tests execute directly against TypeScript source files using `tsx`.
-- **In-Memory Speed**: Mock database tests run in milliseconds without spin-up lag or database containers.
+- **In-Memory Speed**: Unit tests use lightweight in-memory test stubs in milliseconds without spin-up lag or database containers.
 - **Strict Invariant Testing**: Tests verify architectural rules, security boundaries, cryptographic signatures, schema integrity, and SEO compliance.
 
 ---
@@ -18,7 +18,7 @@ The project uses Node.js's native test runner (`node:test`) paired with `node:as
 | :--- | :--- |
 | **`tests/content-service.test.ts`** | CRUD operations on posts, notes, books, now timeline, orphaned media detection, and RBAC roles. |
 | **`tests/contributions-razorpay.test.ts`** | HMAC payment verification, webhook validation, event parsers, database idempotency, and API route responses. |
-| **`tests/dynamic-routes-security.test.ts`** | Proxy middleware admin authentication guards, invalid data source rejection, and 404 handlers. |
+| **`tests/dynamic-routes-security.test.ts`** | Proxy middleware admin authentication guards and 404 handlers. |
 | **`tests/mdx.test.ts`** | MDX AST transformations, section extraction, blockquote parsing, and footnotes. |
 | **`tests/schema.test.ts`** | Schema constraint verification and cross-collection slug collisions. |
 | **`tests/seo.test.ts`** | Metadata generation, canonical URLs, Twitter creator tags, and Schema.org JSON-LD structured data. |
@@ -52,13 +52,11 @@ Create a new test or add to an existing file in `tests/`:
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { ContentService } from "../lib/services/content.service";
-import { MockContentRepository } from "../lib/repositories/mock-content.repository";
-import { resetDatabase } from "../lib/data/mock-db";
+import { InMemoryTestContentRepository } from "./in-memory-test-content-repository";
 
 test("savePost creates and retrieves a post correctly", async () => {
-  // 1. Arrange: Clean mock database
-  const mockDb = resetDatabase();
-  const repo = new MockContentRepository(mockDb);
+  // 1. Arrange: Instantiate in-memory test repository
+  const repo = new InMemoryTestContentRepository();
   const service = new ContentService(repo);
 
   // 2. Act: Save post
