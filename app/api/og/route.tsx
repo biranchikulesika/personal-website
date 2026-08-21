@@ -65,28 +65,80 @@ export async function GET(request: NextRequest) {
   });
 }
 
-// ── Cover image resolution ──────────────────────────────────────────────────
+// ── Cover image resolution (SSRF-protected) ──────────────────────────────────
+
+const ALLOWED_IMAGE_HOSTS = new Set([
+  'upload.wikimedia.org',
+  'images.unsplash.com',
+  'lh3.googleusercontent.com',
+  'images.pexels.com',
+]);
+
+function isAllowedCoverHost(hostname: string): boolean {
+  if (ALLOWED_IMAGE_HOSTS.has(hostname)) return true;
+  if (hostname.endsWith('.supabase.co')) return true;
+  try {
+    const siteHost = new URL(SITE_URL).hostname;
+    if (hostname === siteHost) return true;
+    if (process.env.NODE_ENV === 'development' && (hostname === 'localhost' || hostname === '127.0.0.1')) {
+      return true;
+    }
+  } catch {
+    // Ignore URL parse error
+  }
+  return false;
+}
 
 /**
  * Fetch a cover image and convert to base64 data URL for server-side rendering.
- * Converts relative URLs to absolute using SITE_URL.
+ * Protected against SSRF: only fetches from trusted image CDNs or relative site paths.
  */
 async function resolveCoverImage(
   coverImage: string | undefined,
 ): Promise<string | null> {
-  if (!coverImage) return null;
+  if (!coverImage || typeof coverImage !== 'string') return null;
+  const trimmed = coverImage.trim();
+  if (!trimmed || trimmed.startsWith('//') || trimmed.startsWith('/\\')) return null;
+
   try {
-    const coverUrl = coverImage.startsWith('http')
-      ? coverImage
-      : `${SITE_URL}${coverImage}`;
-    const res = await fetch(coverUrl, { next: { revalidate: 86400 } });
+    let targetUrl: string;
+
+    if (trimmed.startsWith('/')) {
+      targetUrl = `${SITE_URL}${trimmed}`;
+    } else {
+      const parsed = new URL(trimmed);
+      if (parsed.protocol !== 'https:' && (process.env.NODE_ENV !== 'development' || parsed.protocol !== 'http:')) {
+        return null;
+      }
+      if (!isAllowedCoverHost(parsed.hostname)) {
+        return null;
+      }
+      targetUrl = trimmed;
+    }
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 4000);
+
+    const res = await fetch(targetUrl, {
+      signal: controller.signal,
+      next: { revalidate: 86400 },
+    });
+    clearTimeout(timeout);
+
     if (res.ok) {
+      const contentType = res.headers.get('content-type') || '';
+      if (!contentType.startsWith('image/')) {
+        return null;
+      }
       const buf = await res.arrayBuffer();
-      const contentType = res.headers.get('content-type') || 'image/webp';
+      // Enforce 5MB limit
+      if (buf.byteLength > 5 * 1024 * 1024) {
+        return null;
+      }
       return `data:${contentType};base64,${Buffer.from(buf).toString('base64')}`;
     }
   } catch {
-    // If cover fetch fails, proceed without artwork
+    // If cover fetch fails or is aborted, proceed without artwork
   }
   return null;
 }

@@ -1,3 +1,4 @@
+import { cache } from 'react';
 import type {
   AppRole,
   UserRole,
@@ -12,10 +13,31 @@ import type {
   SectionGroup,
   SiteContent,
   WritingItem,
+  Contribution,
 } from '@/lib/types';
+import {
+  verifyPaymentSignature,
+  verifyWebhookSignature,
+  parseRazorpayWebhookEvent,
+} from '@/lib/razorpay';
 import { getContentRepository } from '@/lib/repositories';
 import type { ContentRepository } from '@/lib/repositories/content.repository';
 import { SITE_CONFIG } from '@/lib/config/site';
+
+// ── Per-Request Memoization ────────────────────────────────────────────────
+// React.cache deduplicates identical read queries across Server Components and
+// generateMetadata in the same render pass, avoiding duplicate DB roundtrips.
+
+const getCachedPost = cache((repo: ContentRepository, slug: string) => repo.getPost(slug));
+const getCachedNote = cache((repo: ContentRepository, slug: string) => repo.getNote(slug));
+const getCachedHomeContent = cache((repo: ContentRepository) => repo.getHomeContent());
+const getCachedWriting = cache((repo: ContentRepository) => repo.getWriting());
+const getCachedLibrary = cache((repo: ContentRepository) => repo.getLibrary());
+const getCachedScribble = cache((repo: ContentRepository) => repo.getScribbleEntries());
+const getCachedNow = cache((repo: ContentRepository) => repo.getNowEntries());
+const getCachedAllPosts = cache((repo: ContentRepository) => repo.getAllPosts());
+const getCachedAllNotes = cache((repo: ContentRepository) => repo.getAllNotes());
+const getCachedAllBooks = cache((repo: ContentRepository) => repo.getAllBooks());
 
 // Application layer for site content. Components and pages ask for content
 // by intent (getSiteContent, getWriting, ...) and never import the mock
@@ -29,19 +51,19 @@ export class ContentService {
   }
 
   getHomeContent(): Promise<HomeContent> {
-    return this.repo.getHomeContent();
+    return getCachedHomeContent(this.repo);
   }
 
   getWriting(): Promise<SectionGroup<WritingItem>> {
-    return this.repo.getWriting();
+    return getCachedWriting(this.repo);
   }
 
   getLibrary(): Promise<SectionGroup<BookItem>> {
-    return this.repo.getLibrary();
+    return getCachedLibrary(this.repo);
   }
 
   getPost(slug: string): Promise<BlogPost | null> {
-    return this.repo.getPost(slug);
+    return getCachedPost(this.repo, slug);
   }
 
   getPostSlugs(): Promise<string[]> {
@@ -49,7 +71,7 @@ export class ContentService {
   }
 
   getAllPosts(): Promise<BlogPost[]> {
-    return this.repo.getAllPosts();
+    return getCachedAllPosts(this.repo);
   }
 
   savePost(post: BlogPost, persona?: Persona): Promise<BlogPost> {
@@ -65,7 +87,7 @@ export class ContentService {
   }
 
   getNote(slug: string): Promise<NoteItem | null> {
-    return this.repo.getNote(slug);
+    return getCachedNote(this.repo, slug);
   }
 
   getNoteSlugs(): Promise<string[]> {
@@ -73,7 +95,7 @@ export class ContentService {
   }
 
   getAllNotes(): Promise<NoteItem[]> {
-    return this.repo.getAllNotes();
+    return getCachedAllNotes(this.repo);
   }
 
   saveNote(note: NoteItem): Promise<NoteItem> {
@@ -89,7 +111,7 @@ export class ContentService {
   }
 
   getAllBooks(): Promise<BookItem[]> {
-    return this.repo.getAllBooks();
+    return getCachedAllBooks(this.repo);
   }
 
   saveBook(book: BookItem): Promise<BookItem> {
@@ -101,7 +123,7 @@ export class ContentService {
   }
 
   getNowEntries(): Promise<NowEntry[]> {
-    return this.repo.getNowEntries();
+    return getCachedNow(this.repo);
   }
 
   saveNowEntry(entry: NowEntry): Promise<NowEntry> {
@@ -113,7 +135,7 @@ export class ContentService {
   }
 
   getScribbleEntries(): Promise<ScribbleEntry[]> {
-    return this.repo.getScribbleEntries();
+    return getCachedScribble(this.repo);
   }
 
   getMedia(): Promise<MediaItem[]> {
@@ -162,5 +184,132 @@ export class ContentService {
 
   setFeaturedBooks(slugs: string[]): Promise<void> {
     return this.repo.setFeaturedBooks(slugs);
+  }
+
+  // ── Contributions & Patronage ───────────────────────────────────────────
+
+  getContribution(id: string): Promise<Contribution | null> {
+    return this.repo.getContribution(id);
+  }
+
+  getContributions(): Promise<Contribution[]> {
+    return this.repo.getContributions();
+  }
+
+  recordContribution(contribution: Contribution): Promise<Contribution> {
+    return this.repo.recordContribution(contribution);
+  }
+
+  /**
+   * Idempotently confirm a payment (from client checkout or server callback)
+   * and store the contribution record in the database.
+   */
+  async confirmPayment(params: {
+    paymentId: string;
+    orderId?: string;
+    signature?: string;
+    amount: number;
+    name?: string;
+    email?: string;
+    note?: string;
+    source?: 'razorpay' | 'mock';
+  }): Promise<Contribution> {
+    const {
+      paymentId,
+      orderId,
+      signature,
+      amount,
+      name = 'Anonymous Patron',
+      email,
+      note,
+      source = 'razorpay',
+    } = params;
+
+    // If signature verification is possible (Razorpay order checkout), verify signature
+    if (source === 'razorpay' && orderId && signature) {
+      const isValid = verifyPaymentSignature({
+        orderId,
+        paymentId,
+        signature,
+      });
+
+      if (process.env.RAZORPAY_KEY_SECRET && !isValid) {
+        throw new Error('Invalid Razorpay payment signature');
+      }
+    }
+
+    const contribution: Contribution = {
+      id: paymentId,
+      orderId,
+      paymentId,
+      amount,
+      currency: 'INR',
+      status: 'captured',
+      name: name.trim() || 'Anonymous Patron',
+      email: email?.trim(),
+      note: note?.trim(),
+      createdAt: new Date().toISOString(),
+      source,
+    };
+
+    return this.repo.recordContribution(contribution);
+  }
+
+  /**
+   * Process Razorpay webhook event with signature verification and idempotent recording.
+   */
+  async processRazorpayWebhook(
+    rawBody: string,
+    signature: string,
+  ): Promise<{
+    success: boolean;
+    event?: string;
+    contribution?: Contribution | null;
+    error?: string;
+  }> {
+    // 1. Verify webhook signature if secret is configured
+    if (process.env.RAZORPAY_WEBHOOK_SECRET) {
+      const isValid = verifyWebhookSignature({
+        rawBody,
+        signature,
+      });
+
+      if (!isValid) {
+        return {
+          success: false,
+          error: 'Invalid webhook signature',
+        };
+      }
+    }
+
+    // 2. Parse payload JSON
+    let parsed: Record<string, unknown>;
+    try {
+      parsed = JSON.parse(rawBody);
+    } catch {
+      return {
+        success: false,
+        error: 'Invalid JSON payload',
+      };
+    }
+
+    // 3. Extract event & contribution details
+    const { event, contribution } = parseRazorpayWebhookEvent(parsed);
+
+    // 4. Idempotently record contribution if valid
+    if (contribution) {
+      const saved = await this.repo.recordContribution(contribution);
+      return {
+        success: true,
+        event,
+        contribution: saved,
+      };
+    }
+
+    return {
+      success: true,
+      event,
+      contribution: null,
+    };
   }
 }

@@ -5,12 +5,14 @@ import type {
   AppRole,
   UserRole,
   MediaItem,
+  Contribution,
 } from "@/lib/types";
 
 export interface MockDatabase {
   media: MediaItem[];
   storage: string[];
   userRoles: UserRole[];
+  contributions: Contribution[];
 }
 
 let db: MockDatabase | null = null;
@@ -27,6 +29,7 @@ export function createDatabase(): MockDatabase {
     media: seedMedia(),
     storage: seedStorage(),
     userRoles: [],
+    contributions: [],
   };
 }
 

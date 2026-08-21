@@ -85,10 +85,13 @@ export function postMetadata(post: BlogPost): Metadata {
   // Use the dynamic OG route that resolves post data and generates a composed image
   const ogUrl = `${SITE_URL}/api/og?slug=${encodeURIComponent(post.slug)}`;
 
+  const isDraft = post.status === 'unpublished';
+
   return {
     title,
     description,
     alternates: { canonical: url },
+    robots: isDraft ? { index: false, follow: false } : undefined,
     openGraph: {
       type: 'article',
       title,
@@ -128,10 +131,13 @@ export function noteMetadata(note: NoteItem): Metadata {
   if (note.coverImage) noteOgParams.cover = note.coverImage;
   const noteOgUrl = ogImage(noteOgParams);
 
+  const isDraft = note.status === 'unpublished';
+
   return {
     title,
     description,
     alternates: { canonical: url },
+    robots: isDraft ? { index: false, follow: false } : undefined,
     openGraph: {
       type: 'article',
       title,
@@ -155,7 +161,7 @@ export function noteMetadata(note: NoteItem): Metadata {
 // ── Structured data (JSON-LD) ───────────────────────────────────────────────
 
 /**
- * JSON-LD for the website (Person + WebSite).
+ * JSON-LD for the website (Person + WebSite with social knowledge graph).
  * Place in the root layout.
  */
 export function websiteJsonLd() {
@@ -165,11 +171,41 @@ export function websiteJsonLd() {
     name: SITE_NAME,
     url: SITE_URL,
     description: SITE_DESCRIPTION,
+    inLanguage: 'en-US',
     author: {
       '@type': 'Person',
       name: SITE_NAME,
       url: SITE_URL,
+      jobTitle: 'Software Developer & Writer',
+      sameAs: [
+        'https://github.com/biranchikulesika',
+        'https://x.com/BKulesika',
+        'https://www.linkedin.com/in/biranchikulesika',
+      ],
+      knowsAbout: [
+        'Software Engineering',
+        'Web Architecture',
+        'Cybersecurity',
+        'Computer Science',
+        'Philosophy',
+      ],
     },
+  };
+}
+
+/**
+ * JSON-LD for breadcrumbs hierarchy.
+ */
+export function breadcrumbJsonLd(items: Array<{ name: string; url: string }>) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: items.map((item, index) => ({
+      '@type': 'ListItem',
+      position: index + 1,
+      name: item.name,
+      item: item.url.startsWith('http') ? item.url : `${SITE_URL}${item.url}`,
+    })),
   };
 }
 
@@ -180,18 +216,67 @@ export function articleJsonLd(post: BlogPost) {
   return {
     '@context': 'https://schema.org',
     '@type': 'Article',
+    mainEntityOfPage: {
+      '@type': 'WebPage',
+      '@id': `${SITE_URL}/p/${post.slug}`,
+    },
     headline: post.title,
-    description: post.description,
+    description: post.description || post.subtitle || '',
     author: {
       '@type': 'Person',
       name: SITE_NAME,
       url: SITE_URL,
     },
+    publisher: {
+      '@type': 'Person',
+      name: SITE_NAME,
+      url: SITE_URL,
+    },
     datePublished: post.publishedAt,
-    dateModified: post.lastEditedAt,
+    dateModified: post.lastEditedAt || post.publishedAt,
     url: `${SITE_URL}/p/${post.slug}`,
     image: post.coverImage || ogImage({ title: post.title, type: 'post' }),
     keywords: post.tags.join(', '),
-    inLanguage: 'en',
+    inLanguage: 'en-US',
   };
+}
+
+/**
+ * JSON-LD for an atomic note.
+ */
+export function noteJsonLd(note: NoteItem) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'Article',
+    mainEntityOfPage: {
+      '@type': 'WebPage',
+      '@id': `${SITE_URL}/n/${note.slug}`,
+    },
+    headline: note.title,
+    description: note.description || '',
+    author: {
+      '@type': 'Person',
+      name: SITE_NAME,
+      url: SITE_URL,
+    },
+    publisher: {
+      '@type': 'Person',
+      name: SITE_NAME,
+      url: SITE_URL,
+    },
+    datePublished: note.date,
+    dateModified: note.date,
+    url: `${SITE_URL}/n/${note.slug}`,
+    image: note.coverImage || ogImage({ title: note.title, type: 'note' }),
+    keywords: note.tags.join(', '),
+    inLanguage: 'en-US',
+  };
+}
+
+/**
+ * Safely serializes structured data into a JSON-LD string.
+ * Escapes `<` to `\u003c` to prevent </script> injection XSS attacks.
+ */
+export function safeJsonLd(data: unknown): string {
+  return JSON.stringify(data).replace(/</g, '\\u003c');
 }

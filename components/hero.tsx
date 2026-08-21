@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import type { HeroContent } from '@/lib/types';
 import { NewsletterForm } from './newsletter-form';
 
@@ -57,11 +58,13 @@ export function Hero({ hero }: HeroProps) {
           <circle cx="240" cy="240" r="240" fill="var(--color-night-soft)" />
         </svg>
         <div className="relative z-10 aspect-[4/5] w-full max-w-[360px] overflow-hidden rounded-2xl shadow-2xl ring-1 ring-tinted/20">
-          {/* eslint-disable-next-line @next/next/no-img-element -- plain img for the local hero portrait */}
-          <img
+          <Image
             src={hero.image.src}
             alt={hero.image.alt}
-            className="h-full w-full object-cover object-[center_60%]"
+            fill
+            priority
+            sizes="(min-width: 1024px) 360px, 100vw"
+            className="object-cover object-[center_60%]"
           />
         </div>
       </div>

@@ -18,6 +18,7 @@ test("sitemap includes all public static pages", async () => {
   assert.ok(urls.includes(`${TEST_DOMAIN}/about`), "should include about");
   assert.ok(urls.includes(`${TEST_DOMAIN}/library`), "should include library");
   assert.ok(urls.includes(`${TEST_DOMAIN}/scribble`), "should include scribble");
+  assert.ok(urls.includes(`${TEST_DOMAIN}/support`), "should include support");
 });
 
 test("sitemap includes published blog posts", async () => {
@@ -159,15 +160,20 @@ test("robots allows public pages", async () => {
   assert.equal(rules[0].allow, "/", "should allow all public pages");
 });
 
-test("robots disallows admin routes", async () => {
+test("robots never mentions or exposes admin routes", async () => {
   const { default: robots } = await import("../app/robots");
   const result = robots();
 
   const rules = Array.isArray(result.rules) ? result.rules : [result.rules];
   const rule = rules[0];
   assert.ok(rule, "rules should have at least one entry");
-  assert.ok(rule.disallow, "rule should have disallow");
-  assert.ok(rule.disallow.includes("/admin/"), "should disallow admin routes");
+  if (rule.disallow) {
+    const disallowed = Array.isArray(rule.disallow) ? rule.disallow : [rule.disallow];
+    assert.ok(
+      !disallowed.some((d) => d.includes("admin")),
+      "robots.txt must NEVER expose or mention admin routes",
+    );
+  }
 });
 
 test("robots disallows API routes", async () => {
@@ -181,7 +187,7 @@ test("robots disallows API routes", async () => {
   assert.ok(rule.disallow.includes("/api/"), "should disallow API routes");
 });
 
-test("robots includes sitemap URL", async () => {
+test("robots includes sitemap URL and host", async () => {
   const { default: robots } = await import("../app/robots");
   const result = robots();
 
@@ -197,4 +203,5 @@ test("robots includes sitemap URL", async () => {
     sitemapUrl.startsWith("https://"),
     "sitemap URL should use HTTPS",
   );
+  assert.equal(result.host, TEST_DOMAIN, "robots should have canonical host");
 });

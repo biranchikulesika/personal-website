@@ -12,6 +12,7 @@ import type {
   ScribbleEntry,
   SectionGroup,
   WritingItem,
+  Contribution,
 } from "@/lib/types";
 import type { ContentRepository } from "./content.repository";
 
@@ -318,5 +319,44 @@ export class MockContentRepository implements ContentRepository {
 
   async getAllUserRoles(): Promise<UserRole[]> {
     return [...this.db.userRoles];
+  }
+
+  // ── Contributions & Patronage ───────────────────────────────────────────
+
+  async recordContribution(contribution: Contribution): Promise<Contribution> {
+    // Idempotency: match by id, paymentId, or orderId
+    const existingIdx = this.db.contributions.findIndex(
+      (c) =>
+        c.id === contribution.id ||
+        (contribution.paymentId && c.paymentId === contribution.paymentId) ||
+        (contribution.orderId && c.orderId === contribution.orderId)
+    );
+
+    if (existingIdx >= 0) {
+      const existing = this.db.contributions[existingIdx];
+      const updated: Contribution = {
+        ...existing,
+        ...contribution,
+        createdAt: existing.createdAt || contribution.createdAt,
+        status: contribution.status === "captured" ? "captured" : existing.status,
+      };
+      this.db.contributions[existingIdx] = updated;
+      return updated;
+    }
+
+    this.db.contributions.unshift({ ...contribution });
+    return contribution;
+  }
+
+  async getContribution(id: string): Promise<Contribution | null> {
+    return (
+      this.db.contributions.find(
+        (c) => c.id === id || c.paymentId === id || c.orderId === id
+      ) ?? null
+    );
+  }
+
+  async getContributions(): Promise<Contribution[]> {
+    return [...this.db.contributions];
   }
 }

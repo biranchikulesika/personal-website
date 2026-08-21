@@ -14,14 +14,3 @@ export function getDataSource(): string {
   }
   return source;
 }
-
-// Authentication is permanently disabled on this branch.
-// Setting AUTH_ENABLED=true is not supported and throws an error.
-export function isAuthEnabled(): boolean {
-  if (process.env.AUTH_ENABLED === 'true') {
-    throw new Error(
-      'AUTH_ENABLED=true is not supported. Authentication is permanently disabled on this branch.'
-    );
-  }
-  return false;
-}

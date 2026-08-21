@@ -1,6 +1,15 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { rootMetadata, postMetadata, noteMetadata, websiteJsonLd, articleJsonLd } from "../lib/seo";
+import {
+  rootMetadata,
+  postMetadata,
+  noteMetadata,
+  websiteJsonLd,
+  articleJsonLd,
+  noteJsonLd,
+  breadcrumbJsonLd,
+  safeJsonLd,
+} from "../lib/seo";
 import type { BlogPost, NoteItem } from "../lib/types";
 
 // ── rootMetadata ────────────────────────────────────────────────────────────
@@ -105,7 +114,6 @@ test("postMetadata uses dedicated per-slug OG route", () => {
   const metadata = postMetadata(post);
   const og = metadata.openGraph as Record<string, unknown>;
   const images = og.images as Array<{ url: string }>;
-  // OG image uses the dynamic route with slug param that generates a composed image
   assert.ok(
     images[0].url.includes("/api/og?slug=test"),
     "OG image should use the dynamic endpoint with slug param",
@@ -149,6 +157,7 @@ test("websiteJsonLd returns valid Person + WebSite schema", () => {
   assert.equal(jsonLd.url, "https://biranchikulesika.com");
   assert.equal(jsonLd.author["@type"], "Person");
   assert.equal(jsonLd.author.name, "Biranchi Kulesika");
+  assert.ok(jsonLd.author.sameAs.length > 0);
 });
 
 // ── articleJsonLd ───────────────────────────────────────────────────────────
@@ -175,5 +184,51 @@ test("articleJsonLd returns valid Article schema", () => {
   assert.equal(jsonLd.dateModified, "2026-08-21");
   assert.equal(jsonLd.url, "https://biranchikulesika.com/p/test-article");
   assert.equal(jsonLd.keywords, "craft");
-  assert.equal(jsonLd.inLanguage, "en");
+  assert.ok(jsonLd.inLanguage.startsWith("en"));
+});
+
+// ── noteJsonLd & breadcrumbJsonLd ───────────────────────────────────────────
+
+test("noteJsonLd returns valid Article/Document schema for atomic note", () => {
+  const note: NoteItem = {
+    id: "note-1",
+    slug: "note-on-clarity",
+    title: "Note on Clarity",
+    description: "A short note on thinking clearly",
+    content: ["Writing is thinking."],
+    date: "2026-08-21",
+    persona: "thinker",
+    tags: ["clarity", "writing"],
+  };
+
+  const jsonLd = noteJsonLd(note);
+
+  assert.equal(jsonLd["@type"], "Article");
+  assert.equal(jsonLd.headline, "Note on Clarity");
+  assert.equal(jsonLd.datePublished, "2026-08-21");
+  assert.equal(jsonLd.url, "https://biranchikulesika.com/n/note-on-clarity");
+});
+
+test("breadcrumbJsonLd generates valid BreadcrumbList schema", () => {
+  const breadcrumbs = breadcrumbJsonLd([
+    { name: "Home", url: "/" },
+    { name: "Scribble", url: "/scribble" },
+    { name: "My Article", url: "/p/my-article" },
+  ]);
+
+  assert.equal(breadcrumbs["@type"], "BreadcrumbList");
+  assert.equal(breadcrumbs.itemListElement.length, 3);
+  assert.equal(breadcrumbs.itemListElement[0].name, "Home");
+  assert.equal(breadcrumbs.itemListElement[1].name, "Scribble");
+  assert.equal(breadcrumbs.itemListElement[2].name, "My Article");
+  assert.equal(breadcrumbs.itemListElement[2].position, 3);
+});
+
+test("safeJsonLd escapes < to prevent </script> tag injection breakout", () => {
+  const maliciousObject = {
+    title: "</script><script>alert('xss')</script>",
+  };
+  const serialized = safeJsonLd(maliciousObject);
+  assert.equal(serialized.includes("<"), false, "JSON-LD string must not contain raw < characters");
+  assert.ok(serialized.includes(String.raw`\u003c/script>`));
 });

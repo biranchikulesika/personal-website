@@ -5,10 +5,16 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: false,
   },
-  turbopack: {
-    root: process.cwd(),
-  },
   output: 'standalone',
+
+  // ── Redirects ─────────────────────────────────────────────────────────────
+  redirects: async () => [
+    {
+      source: '/fund',
+      destination: '/support',
+      permanent: true,
+    },
+  ],
 
   // ── Security headers ──────────────────────────────────────────────────────
   // Applied to every response. These protect against common web vulnerabilities.
@@ -41,6 +47,18 @@ const nextConfig: NextConfig = {
           key: 'Strict-Transport-Security',
           value: 'max-age=63072000; includeSubDomains; preload',
         },
+        {
+          key: 'X-DNS-Prefetch-Control',
+          value: 'on',
+        },
+        {
+          key: 'Cross-Origin-Opener-Policy',
+          value: 'same-origin',
+        },
+        {
+          key: 'Cross-Origin-Resource-Policy',
+          value: 'same-origin',
+        },
       ],
     },
     {
@@ -57,8 +75,7 @@ const nextConfig: NextConfig = {
 
   // ── Image optimization ────────────────────────────────────────────────────
   images: {
-    // Restrict to known image hosts. Expand this list when new external image
-    // sources are added, rather than using a wildcard.
+    formats: ['image/avif', 'image/webp'],
     remotePatterns: [
       {
         protocol: 'https',
@@ -71,6 +88,14 @@ const nextConfig: NextConfig = {
       {
         protocol: 'https',
         hostname: 'lh3.googleusercontent.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'images.pexels.com',
+      },
+      {
+        protocol: 'https',
+        hostname: '**.supabase.co',
       },
     ],
   },

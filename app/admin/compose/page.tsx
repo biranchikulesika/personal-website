@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
+import { redirect } from 'next/navigation';
 import { ContentService } from '@/lib/services/content.service';
+import { getSupabaseServer } from '@/lib/supabase/server';
 import { ComposeWorkspace } from './compose-workspace-loader';
 
 export const metadata: Metadata = {
@@ -19,6 +21,21 @@ interface ComposePageProps {
 }
 
 export default async function ComposePage({ searchParams }: ComposePageProps) {
+  let user = null;
+  try {
+    const supabase = await getSupabaseServer();
+    const {
+      data: { user: authUser },
+    } = await supabase.auth.getUser();
+    user = authUser;
+  } catch {
+    user = null;
+  }
+
+  if (!user) {
+    redirect('/admin/login?next=/admin/compose');
+  }
+
   const { slug, type } = await searchParams;
   const contentService = new ContentService();
 

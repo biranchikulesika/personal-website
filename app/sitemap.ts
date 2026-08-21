@@ -20,7 +20,7 @@ import { SITE_URL } from '@/lib/constants';
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const service = new ContentService();
 
-  // Static pages
+  // Static public pages
   const staticPages: MetadataRoute.Sitemap = [
     {
       url: SITE_URL,
@@ -46,29 +46,46 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: 'weekly',
       priority: 0.9,
     },
+    {
+      url: `${SITE_URL}/support`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.7,
+    },
   ];
 
-  // Published blog posts
+  // Published blog posts (dynamic)
   const posts = await service.getAllPosts();
   const postPages: MetadataRoute.Sitemap = posts
     .filter((post) => post.status !== 'unpublished')
-    .map((post) => ({
-      url: `${SITE_URL}/p/${post.slug}`,
-      lastModified: new Date(post.lastEditedAt),
-      changeFrequency: 'monthly' as const,
-      priority: 0.7,
-    }));
+    .map((post) => {
+      const dateStr = post.lastEditedAt || post.publishedAt;
+      const parsedDate = dateStr ? new Date(dateStr) : new Date();
+      const lastModified = Number.isNaN(parsedDate.getTime()) ? new Date() : parsedDate;
 
-  // Published notes
+      return {
+        url: `${SITE_URL}/p/${post.slug}`,
+        lastModified,
+        changeFrequency: 'monthly' as const,
+        priority: 0.7,
+      };
+    });
+
+  // Published notes (dynamic)
   const notes = await service.getAllNotes();
   const notePages: MetadataRoute.Sitemap = notes
     .filter((note) => note.status !== 'unpublished')
-    .map((note) => ({
-      url: `${SITE_URL}/n/${note.slug}`,
-      lastModified: new Date(note.date),
-      changeFrequency: 'monthly' as const,
-      priority: 0.6,
-    }));
+    .map((note) => {
+      const parsedDate = note.date ? new Date(note.date) : new Date();
+      const lastModified = Number.isNaN(parsedDate.getTime()) ? new Date() : parsedDate;
+
+      return {
+        url: `${SITE_URL}/n/${note.slug}`,
+        lastModified,
+        changeFrequency: 'monthly' as const,
+        priority: 0.6,
+      };
+    });
 
   return [...staticPages, ...postPages, ...notePages];
 }

@@ -52,7 +52,6 @@ interface AdminDashboardProps {
   initialNowEntries: NowEntry[];
   initialFeaturedPostSlugs: string[];
   initialFeaturedBookSlugs: string[];
-  authEnabled: boolean;
   userName: string;
   userEmail: string;
   userAvatarUrl: string | null;
@@ -70,7 +69,6 @@ export function AdminDashboard({
   initialNowEntries,
   initialFeaturedPostSlugs,
   initialFeaturedBookSlugs,
-  authEnabled,
   userName,
   userEmail,
   userAvatarUrl,
@@ -268,18 +266,16 @@ export function AdminDashboard({
             <span>View Public Site</span>
             <span>↗</span>
           </Link>
-          {authEnabled && (
-            <button
-              type="button"
-              onClick={async () => {
-                await logoutAction();
-                window.location.href = "/admin/login";
-              }}
-              className="flex w-full items-center justify-center gap-1.5 rounded-full border border-tinted/20 bg-night-soft py-2.5 text-xs font-semibold text-gray-mid transition-colors hover:border-red-500/30 hover:bg-red-500/10 hover:text-red-400"
-            >
-              Sign out
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={async () => {
+              await logoutAction();
+              window.location.href = "/admin/login";
+            }}
+            className="flex w-full items-center justify-center gap-1.5 rounded-full border border-tinted/20 bg-night-soft py-2.5 text-xs font-semibold text-gray-mid transition-colors hover:border-red-500/30 hover:bg-red-500/10 hover:text-red-400"
+          >
+            Sign out
+          </button>
         </div>
       </aside>
 

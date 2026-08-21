@@ -12,6 +12,53 @@ export function slugify(text: string): string {
     .replace(/^-+|-+$/g, '');
 }
 
+/**
+ * Validates whether a URL or path is safe to use in links / redirects.
+ * Rejects javascript:, data:, vbscript:, and relative protocol (//) exploits.
+ */
+export function isSafeUrl(url: string | null | undefined): boolean {
+  if (!url || typeof url !== 'string') return false;
+  const trimmed = url.trim();
+  if (!trimmed) return false;
+
+  // Disallow relative protocol URLs like //evil.com or /\evil.com
+  if (trimmed.startsWith('//') || trimmed.startsWith('/\\') || trimmed.startsWith('\\')) {
+    return false;
+  }
+
+  // Safe relative paths starting with /
+  if (trimmed.startsWith('/') && !trimmed.startsWith('/\\')) {
+    return true;
+  }
+
+  // Safe HTTP/HTTPS protocols
+  try {
+    const parsed = new URL(trimmed);
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Sanitizes a redirect path parameter to prevent open redirect vulnerabilities.
+ * Returns the sanitized relative path or the fallback path.
+ */
+export function sanitizeRedirectPath(
+  path: string | null | undefined,
+  fallback: string = '/admin',
+): string {
+  if (!path || typeof path !== 'string') return fallback;
+  const trimmed = path.trim();
+
+  // Must start with / and not contain protocol or double slashes
+  if (!trimmed.startsWith('/') || trimmed.startsWith('//') || trimmed.startsWith('/\\') || trimmed.includes(':')) {
+    return fallback;
+  }
+
+  return trimmed;
+}
+
 // Date utilities ---------------------------------------------------------------
 
 /**

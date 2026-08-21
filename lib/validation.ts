@@ -84,7 +84,13 @@ export const BookItemSchema = z.object({
   persona: PersonaEnum,
   tags: z.array(z.string()).max(20),
   cover: z.string().optional(),
-  link: z.string().url().optional().or(z.literal('')),
+  link: z
+    .string()
+    .refine((val) => !val || /^https?:\/\//i.test(val), {
+      message: 'Link must be a valid HTTP or HTTPS URL',
+    })
+    .optional()
+    .or(z.literal('')),
 });
 
 // Now Entry schema -------------------------------------------------------------
@@ -101,7 +107,12 @@ export const NowEntrySchema = z.object({
 export const MediaItemSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1).max(500),
-  src: z.string().min(1),
+  src: z
+    .string()
+    .min(1)
+    .refine((val) => (val.startsWith('/') && !val.startsWith('//') && !val.startsWith('/\\')) || /^https?:\/\//i.test(val), {
+      message: 'Media src must be a relative path or an HTTP/HTTPS URL',
+    }),
   alt: z.string().max(500),
   size: z.string(),
   dimensions: z.string().optional(),

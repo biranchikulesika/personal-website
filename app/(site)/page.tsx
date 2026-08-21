@@ -18,20 +18,19 @@ export const metadata: Metadata = {
 
 export default async function Home() {
   const service = new ContentService();
-  const [site, home, featuredPostSlugs, featuredBookSlugs] = await Promise.all([
+  const [site, home, featuredPostSlugs, featuredBookSlugs, allBooks] = await Promise.all([
     service.getSiteContent(),
     service.getHomeContent(),
     service.getFeaturedPosts(),
     service.getFeaturedBooks(),
+    service.getAllBooks(),
   ]);
 
-  // Resolve featured items from slugs
-  const allPosts = featuredPostSlugs.length > 0
-    ? await Promise.all(featuredPostSlugs.map((slug) => service.getPost(slug)))
-    : [];
-  const featuredPosts = allPosts.filter((p): p is NonNullable<typeof p> => p !== null);
+  const postResults = await Promise.all(
+    featuredPostSlugs.map((slug) => service.getPost(slug)),
+  );
 
-  const allBooks = featuredBookSlugs.length > 0 ? await service.getAllBooks() : [];
+  const featuredPosts = postResults.filter((p): p is NonNullable<typeof p> => p !== null);
   const featuredBookSet = new Set(featuredBookSlugs);
   const featuredBooks = allBooks.filter((b) => featuredBookSet.has(b.slug));
 

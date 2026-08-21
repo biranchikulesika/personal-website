@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { NotePageView } from '@/components/note-page';
 import { ContentService } from '@/lib/services/content.service';
-import { noteMetadata } from '@/lib/seo';
+import { noteMetadata, noteJsonLd, breadcrumbJsonLd, safeJsonLd } from '@/lib/seo';
 
 export async function generateStaticParams() {
   const service = new ContentService();
@@ -17,7 +17,12 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { slug } = await params;
   const note = await new ContentService().getNote(slug);
-  if (!note) return { title: 'Note not found' };
+  if (!note) {
+    return {
+      title: 'Note not found',
+      robots: { index: false, follow: false },
+    };
+  }
   return noteMetadata(note);
 }
 
@@ -29,5 +34,24 @@ export default async function NotePage({
   const { slug } = await params;
   const note = await new ContentService().getNote(slug);
   if (!note) notFound();
-  return <NotePageView note={note} />;
+
+  const breadcrumbs = breadcrumbJsonLd([
+    { name: 'Home', url: '/' },
+    { name: 'Scribble', url: '/scribble' },
+    { name: note.title, url: `/n/${note.slug}` },
+  ]);
+
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(noteJsonLd(note)) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(breadcrumbs) }}
+      />
+      <NotePageView note={note} />
+    </>
+  );
 }

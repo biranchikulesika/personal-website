@@ -1,3 +1,4 @@
+import Image from "next/image";
 import type { SiteContent, WritingItem } from "@/lib/types";
 import Link from "next/link";
 import { ArrowRightIcon } from "./icons";
@@ -81,39 +82,43 @@ export function AboutPageView({ site, featuredWriting }: AboutPageProps) {
 
         {/* Profile / Atmosphere mosaic grid */}
         <div className="grid grid-cols-2 gap-4">
-          <div className="group aspect-[4/5] w-full overflow-hidden rounded-2xl bg-night-soft shadow-2xl ring-1 ring-tinted/20">
-            {/* eslint-disable-next-line @next/next/no-img-element -- local photo asset */}
-            <img
+          <div className="group relative aspect-[4/5] w-full overflow-hidden rounded-2xl bg-night-soft shadow-2xl ring-1 ring-tinted/20">
+            <Image
               src="/selfiewithmiku.jpeg"
               alt="Biranchi with Miku"
-              className="h-full w-full object-cover object-center transition-transform duration-500 group-hover:scale-105"
+              fill
+              sizes="(min-width: 1024px) 240px, 45vw"
+              className="object-cover object-center transition-transform duration-500 group-hover:scale-105"
             />
           </div>
 
-          <div className="group aspect-[4/5] w-full overflow-hidden rounded-2xl bg-night-soft shadow-2xl ring-1 ring-tinted/20">
-            {/* eslint-disable-next-line @next/next/no-img-element -- local photo asset */}
-            <img
+          <div className="group relative aspect-[4/5] w-full overflow-hidden rounded-2xl bg-night-soft shadow-2xl ring-1 ring-tinted/20">
+            <Image
               src="/selfiewithblessie.jpeg"
               alt="Biranchi with Blessie"
-              className="h-full w-full object-cover object-center transition-transform duration-500 group-hover:scale-105"
+              fill
+              sizes="(min-width: 1024px) 240px, 45vw"
+              className="object-cover object-center transition-transform duration-500 group-hover:scale-105"
             />
           </div>
 
-          <div className="group aspect-[4/5] w-full overflow-hidden rounded-2xl bg-night-soft shadow-2xl ring-1 ring-tinted/20">
-            {/* eslint-disable-next-line @next/next/no-img-element -- local photo asset */}
-            <img
+          <div className="group relative aspect-[4/5] w-full overflow-hidden rounded-2xl bg-night-soft shadow-2xl ring-1 ring-tinted/20">
+            <Image
               src="/selfiewithfriends.jpeg"
               alt="Biranchi with friends"
-              className="h-full w-full object-cover object-center transition-transform duration-500 group-hover:scale-105"
+              fill
+              sizes="(min-width: 1024px) 240px, 45vw"
+              className="object-cover object-center transition-transform duration-500 group-hover:scale-105"
             />
           </div>
 
-          <div className="group aspect-[4/5] w-full overflow-hidden rounded-2xl bg-night-soft shadow-2xl ring-1 ring-tinted/20">
-            {/* eslint-disable-next-line @next/next/no-img-element -- local photo asset */}
-            <img
+          <div className="group relative aspect-[4/5] w-full overflow-hidden rounded-2xl bg-night-soft shadow-2xl ring-1 ring-tinted/20">
+            <Image
               src="/selfiewithbhabani.jpeg"
               alt="Biranchi with Bhabani"
-              className="h-full w-full object-cover object-center transition-transform duration-500 group-hover:scale-105"
+              fill
+              sizes="(min-width: 1024px) 240px, 45vw"
+              className="object-cover object-center transition-transform duration-500 group-hover:scale-105"
             />
           </div>
         </div>

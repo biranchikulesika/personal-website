@@ -79,14 +79,12 @@ This branch uses a **mock/local database only**.
 
 ## 4. Authentication Rules
 
-Authentication is **disabled** on this branch.
+Authentication is **compulsory for all administrative routes**.
 
-* Do not build a production authentication flow.
-* Do not add login/signup/auth middleware.
-* The application must be usable without authentication while UI and product
-  structure are developed.
-* `lib/config/env.ts` guards against enabling auth: setting `AUTH_ENABLED=true`
-  throws instead of enabling authentication.
+* All `/admin` routes require an active authenticated Supabase session.
+* Unauthenticated access to `/admin` routes is blocked by middleware (`proxy.ts`) and server-side redirects.
+* Public routes (`/`, `/about`, `/library`, `/scribble`, `/p/[slug]`, `/n/[slug]`, `/support`) remain open to everyone.
+* OAuth (Google, GitHub) and WebAuthn passkeys are supported for administrative access.
 
 ---
 
@@ -127,12 +125,10 @@ Current structure (provisional):
 
 The development environment must never silently fall back to production.
 
-* `DATA_SOURCE` must be `mock`. Any production value (`supabase`, `postgres`,
-  `production`) causes the app to throw.
-* `AUTH_ENABLED` must be `false`/unset.
+* `DATA_SOURCE` must be `mock` or `supabase`. Any invalid value causes the app to throw.
 * Do not add production credentials (Supabase, payment, AI keys, etc.) to
   `.env.example` or any committed file.
-* Do not connect to production services of any kind.
+* Do not connect to production services of any kind without valid environment configuration.
 
 The old `.env`/`.env.local` files from the previous implementation may still
 exist locally. They are gitignored and must not be loaded or referenced by new

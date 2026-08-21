@@ -288,7 +288,7 @@ export interface UnauthorizedStateProps {
   title?: string;
   description?: string;
   action?: ReactNode;
-  loginHref?: string;
+  homeHref?: string;
   compact?: boolean;
   className?: string;
 }
@@ -297,17 +297,17 @@ export function UnauthorizedState({
   title = 'Access restricted',
   description = 'You do not have permission to view this page.',
   action,
-  loginHref = '/admin/login',
+  homeHref = '/',
   compact = false,
   className,
 }: UnauthorizedStateProps) {
   const actionElement =
     action || (
       <Link
-        href={loginHref}
+        href={homeHref}
         className="inline-flex items-center rounded-full bg-accent px-5 py-2 text-xs font-semibold text-paper shadow-sm transition-colors hover:bg-accent-hover"
       >
-        Sign in
+        Return home
       </Link>
     );
 

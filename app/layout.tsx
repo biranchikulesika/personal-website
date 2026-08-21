@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { Space_Grotesk, Newsreader } from 'next/font/google';
 import './globals.css';
-import { rootMetadata, websiteJsonLd } from '@/lib/seo';
+import { rootMetadata, websiteJsonLd, safeJsonLd } from '@/lib/seo';
 
 const spaceGrotesk = Space_Grotesk({
   subsets: ['latin'],
@@ -36,7 +36,7 @@ export default function RootLayout({
         />
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd()) }}
+          dangerouslySetInnerHTML={{ __html: safeJsonLd(websiteJsonLd()) }}
         />
       </head>
       <body className="min-h-screen bg-night text-paper antialiased">

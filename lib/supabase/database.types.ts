@@ -251,6 +251,48 @@ export interface Database {
         };
         Relationships: [];
       };
+      contributions: {
+        Row: {
+          id: string;
+          order_id: string | null;
+          payment_id: string | null;
+          amount: number;
+          currency: string;
+          status: "pending" | "captured" | "failed";
+          name: string;
+          email: string | null;
+          note: string | null;
+          created_at: string;
+          source: "razorpay" | "mock";
+        };
+        Insert: {
+          id: string;
+          order_id?: string | null;
+          payment_id?: string | null;
+          amount: number;
+          currency?: string;
+          status: "pending" | "captured" | "failed";
+          name: string;
+          email?: string | null;
+          note?: string | null;
+          created_at?: string;
+          source?: "razorpay" | "mock";
+        };
+        Update: {
+          id?: string;
+          order_id?: string | null;
+          payment_id?: string | null;
+          amount?: number;
+          currency?: string;
+          status?: "pending" | "captured" | "failed";
+          name?: string;
+          email?: string | null;
+          note?: string | null;
+          created_at?: string;
+          source?: "razorpay" | "mock";
+        };
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;

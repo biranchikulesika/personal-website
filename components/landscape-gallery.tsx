@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 import { ChevronLeftIcon, ChevronRightIcon } from './icons';
 
 export interface GalleryImage {
@@ -36,11 +37,13 @@ export function LandscapeGallery({ images = [] }: LandscapeGalleryProps) {
     >
       {currentImage ? (
         <>
-          {/* eslint-disable-next-line @next/next/no-img-element -- local/remote dynamic gallery asset */}
-          <img
+          <Image
             src={currentImage.src}
             alt={currentImage.alt}
-            className="h-full w-full object-cover object-center transition-transform duration-500 group-hover:scale-105"
+            fill
+            sizes="(min-width: 1024px) 600px, 90vw"
+            className="object-cover object-center transition-transform duration-500 group-hover:scale-105"
+            loading="lazy"
           />
 
           {currentImage.caption && (

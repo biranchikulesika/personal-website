@@ -421,6 +421,28 @@ export function SupportPageView() {
       date: formattedDate,
     };
 
+    // Helper to persist contribution details idempotently
+    async function persistContribution(payload: {
+      paymentId: string;
+      orderId?: string;
+      signature?: string;
+      amount: number;
+      name: string;
+      email?: string;
+      note?: string;
+      source: 'razorpay' | 'mock';
+    }) {
+      try {
+        await fetch('/api/contributions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+      } catch {
+        // Webhook fallback ensures eventual consistency if client request drops
+      }
+    }
+
     // Load Razorpay Checkout dynamically if available
     try {
       const razorpayKey = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
@@ -458,10 +480,24 @@ export function SupportPageView() {
             theme: {
               color: '#d97706',
             },
-            handler: function (response: { razorpay_payment_id?: string }) {
+            handler: async function (response: {
+              razorpay_payment_id?: string;
+              razorpay_order_id?: string;
+              razorpay_signature?: string;
+            }) {
               if (response?.razorpay_payment_id) {
                 receiptPayload.id = response.razorpay_payment_id;
               }
+              await persistContribution({
+                paymentId: receiptPayload.id,
+                orderId: response?.razorpay_order_id,
+                signature: response?.razorpay_signature,
+                amount: numAmount,
+                name: receiptPayload.name,
+                email: receiptPayload.email,
+                note: receiptPayload.note,
+                source: 'razorpay',
+              });
               setIsProcessing(false);
               setIsModalOpen(false);
               setReceipt(receiptPayload);
@@ -482,7 +518,15 @@ export function SupportPageView() {
     }
 
     // Simulated payment completion (mock/local environment)
-    setTimeout(() => {
+    setTimeout(async () => {
+      await persistContribution({
+        paymentId: receiptPayload.id,
+        amount: numAmount,
+        name: receiptPayload.name,
+        email: receiptPayload.email,
+        note: receiptPayload.note,
+        source: 'mock',
+      });
       setIsProcessing(false);
       setIsModalOpen(false);
       setReceipt(receiptPayload);

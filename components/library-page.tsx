@@ -6,6 +6,8 @@ import { ChevronLeftIcon, ChevronRightIcon, SearchIcon } from './icons';
 import { PERSONA_LABELS, ALL_PERSONAS } from '@/lib/constants';
 import { NoSearchResults, NoContentState } from './ui/states';
 
+import { isSafeUrl } from '@/lib/utils';
+
 interface LibraryPageProps {
   books: BookItem[];
   title: string;
@@ -33,6 +35,8 @@ function BookCover({
       src={cover}
       alt={`${title} cover`}
       className="absolute inset-0 h-full w-full object-cover"
+      loading="lazy"
+      decoding="async"
     />
   ) : (
     <>
@@ -54,13 +58,15 @@ function BookCover({
     </>
   );
 
+  const safeLink = link && isSafeUrl(link) ? link : undefined;
+
   return (
     <div className="relative flex aspect-[2/3] w-full flex-col justify-between overflow-hidden rounded-lg border border-tinted/20 bg-post-card p-4 shadow-sm transition-all duration-300 group-hover:-translate-y-1 group-hover:shadow-md">
-      {link ? (
+      {safeLink ? (
         <a
-          href={link}
-          target={link.startsWith('http') ? '_blank' : undefined}
-          rel={link.startsWith('http') ? 'noopener noreferrer' : undefined}
+          href={safeLink}
+          target={safeLink.startsWith('http') ? '_blank' : undefined}
+          rel={safeLink.startsWith('http') ? 'noopener noreferrer' : undefined}
           className="absolute inset-0 block"
           aria-label={`Open ${title}`}
         >

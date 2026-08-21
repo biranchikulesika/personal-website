@@ -13,6 +13,7 @@ import type {
   BookCard,
   SectionGroup,
   WritingItem,
+  Contribution,
 } from "@/lib/types";
 import type { ContentRepository } from "./content.repository";
 import { getSupabaseAdmin } from "@/lib/supabase/server";
@@ -757,5 +758,75 @@ export class SupabaseContentRepository implements ContentRepository {
         .insert(rows);
       if (error) throw new Error(`Failed to set featured books: ${error.message}`);
     }
+  }
+
+  // ── Contributions & Patronage ───────────────────────────────────────────
+
+  async recordContribution(contribution: Contribution): Promise<Contribution> {
+    const row = {
+      id: contribution.id,
+      order_id: contribution.orderId ?? null,
+      payment_id: contribution.paymentId ?? null,
+      amount: contribution.amount,
+      currency: contribution.currency,
+      status: contribution.status,
+      name: contribution.name,
+      email: contribution.email ?? null,
+      note: contribution.note ?? null,
+      created_at: contribution.createdAt,
+      source: contribution.source,
+    };
+
+    const { error } = await this.db
+      .from("contributions")
+      .upsert(row, { onConflict: "id" });
+
+    if (error) throw new Error(`Failed to record contribution: ${error.message}`);
+    return contribution;
+  }
+
+  async getContribution(id: string): Promise<Contribution | null> {
+    const { data, error } = await this.db
+      .from("contributions")
+      .select("*")
+      .or(`id.eq.${id},payment_id.eq.${id},order_id.eq.${id}`)
+      .single();
+
+    if (error || !data) return null;
+    return {
+      id: data.id,
+      orderId: data.order_id ?? undefined,
+      paymentId: data.payment_id ?? undefined,
+      amount: data.amount,
+      currency: data.currency,
+      status: data.status,
+      name: data.name,
+      email: data.email ?? undefined,
+      note: data.note ?? undefined,
+      createdAt: data.created_at,
+      source: data.source,
+    };
+  }
+
+  async getContributions(): Promise<Contribution[]> {
+    const { data, error } = await this.db
+      .from("contributions")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (error) throw new Error(`Failed to load contributions: ${error.message}`);
+    return (data as Record<string, unknown>[]).map((d) => ({
+      id: d.id as string,
+      orderId: (d.order_id as string) ?? undefined,
+      paymentId: (d.payment_id as string) ?? undefined,
+      amount: d.amount as number,
+      currency: d.currency as string,
+      status: d.status as Contribution['status'],
+      name: d.name as string,
+      email: (d.email as string) ?? undefined,
+      note: (d.note as string) ?? undefined,
+      createdAt: d.created_at as string,
+      source: d.source as 'razorpay' | 'mock',
+    }));
   }
 }

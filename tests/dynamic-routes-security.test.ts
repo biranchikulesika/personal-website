@@ -139,27 +139,44 @@ test("getDataSource accepts mock and supabase", async () => {
   process.env.DATA_SOURCE = original ?? "mock";
 });
 
-test("isAuthEnabled permanently returns false and rejects AUTH_ENABLED=true", async () => {
-  const { isAuthEnabled } = await import("../lib/config/env");
+// ── Proxy Middleware Admin Authentication Guard ────────────────────────────
 
-  const original = process.env.AUTH_ENABLED;
+test("proxy middleware redirects unauthenticated requests on /admin to /admin/login", async () => {
+  const { default: proxy } = await import("../proxy");
+  const { NextRequest } = await import("next/server");
 
-  // Default / unset / false
-  delete process.env.AUTH_ENABLED;
-  assert.equal(isAuthEnabled(), false);
+  const request = new NextRequest("http://localhost:3000/admin");
+  const response = await proxy(request);
 
-  process.env.AUTH_ENABLED = "false";
-  assert.equal(isAuthEnabled(), false);
+  assert.equal(response.status, 307);
+  const location = response.headers.get("location");
+  assert.ok(location?.includes("/admin/login"));
+});
 
-  // Attempting to set AUTH_ENABLED=true must throw loudly
-  process.env.AUTH_ENABLED = "true";
-  assert.throws(() => isAuthEnabled(), /AUTH_ENABLED=true is not supported/);
+test("proxy middleware redirects unauthenticated requests on /admin/compose to /admin/login with next param", async () => {
+  const { default: proxy } = await import("../proxy");
+  const { NextRequest } = await import("next/server");
 
-  if (original !== undefined) {
-    process.env.AUTH_ENABLED = original;
-  } else {
-    delete process.env.AUTH_ENABLED;
-  }
+  const request = new NextRequest("http://localhost:3000/admin/compose");
+  const response = await proxy(request);
+
+  assert.equal(response.status, 307);
+  const location = response.headers.get("location");
+  assert.ok(location?.includes("/admin/login"));
+  assert.ok(location?.includes("next=%2Fadmin%2Fcompose") || location?.includes("next=/admin/compose"));
+});
+
+test("proxy middleware allows access to /admin/login and /admin/auth/callback", async () => {
+  const { default: proxy } = await import("../proxy");
+  const { NextRequest } = await import("next/server");
+
+  const loginReq = new NextRequest("http://localhost:3000/admin/login");
+  const loginRes = await proxy(loginReq);
+  assert.equal(loginRes.status, 200);
+
+  const callbackReq = new NextRequest("http://localhost:3000/admin/auth/callback");
+  const callbackRes = await proxy(callbackReq);
+  assert.equal(callbackRes.status, 200);
 });
 
 // ── Content Isolation ──────────────────────────────────────────────────────

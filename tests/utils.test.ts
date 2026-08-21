@@ -5,6 +5,8 @@ import {
   formatDisplayDate,
   sectionsToMarkdown,
   markdownToPostSections,
+  isSafeUrl,
+  sanitizeRedirectPath,
 } from "../lib/utils";
 
 // ── slugify ─────────────────────────────────────────────────────────────────
@@ -138,4 +140,38 @@ test("markdownToPostSections generates section IDs from headings", () => {
   const result = markdownToPostSections(md);
 
   assert.equal(result.sections[0].id, "my-section-title");
+});
+
+// ── Security URL & Redirect Utilities ────────────────────────────────────────
+
+test("isSafeUrl permits valid http, https, and internal relative paths", () => {
+  assert.equal(isSafeUrl("https://example.com"), true);
+  assert.equal(isSafeUrl("http://example.com/books/1"), true);
+  assert.equal(isSafeUrl("/scribble"), true);
+  assert.equal(isSafeUrl("/p/my-post"), true);
+});
+
+test("isSafeUrl rejects malicious schemes and relative protocol URLs", () => {
+  assert.equal(isSafeUrl("javascript:alert(1)"), false);
+  assert.equal(isSafeUrl("data:text/html,<script>alert(1)</script>"), false);
+  assert.equal(isSafeUrl("vbscript:msgbox(1)"), false);
+  assert.equal(isSafeUrl("//evil.com/phish"), false);
+  assert.equal(isSafeUrl("/\\evil.com"), false);
+  assert.equal(isSafeUrl(""), false);
+  assert.equal(isSafeUrl(null as unknown as string), false);
+});
+
+test("sanitizeRedirectPath permits safe internal relative paths", () => {
+  assert.equal(sanitizeRedirectPath("/admin"), "/admin");
+  assert.equal(sanitizeRedirectPath("/admin/compose"), "/admin/compose");
+  assert.equal(sanitizeRedirectPath("/scribble"), "/scribble");
+});
+
+test("sanitizeRedirectPath falls back on open redirect attempts", () => {
+  assert.equal(sanitizeRedirectPath("https://evil.com", "/admin"), "/admin");
+  assert.equal(sanitizeRedirectPath("//evil.com", "/admin"), "/admin");
+  assert.equal(sanitizeRedirectPath("/\\evil.com", "/admin"), "/admin");
+  assert.equal(sanitizeRedirectPath("javascript:alert(1)", "/admin"), "/admin");
+  assert.equal(sanitizeRedirectPath("", "/admin"), "/admin");
+  assert.equal(sanitizeRedirectPath(undefined, "/admin"), "/admin");
 });

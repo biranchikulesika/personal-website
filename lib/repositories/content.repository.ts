@@ -11,6 +11,7 @@ import type {
   HomeContent,
   SectionGroup,
   WritingItem,
+  Contribution,
 } from '@/lib/types';
 
 // Repository contract for content. The UI (via the service layer) asks for
@@ -60,4 +61,9 @@ export interface ContentRepository {
   getFeaturedBooks(): Promise<string[]>;
   setFeaturedPosts(slugs: string[]): Promise<void>;
   setFeaturedBooks(slugs: string[]): Promise<void>;
+
+  // Contributions & Patronage
+  recordContribution(contribution: Contribution): Promise<Contribution>;
+  getContribution(id: string): Promise<Contribution | null>;
+  getContributions(): Promise<Contribution[]>;
 }

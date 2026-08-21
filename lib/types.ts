@@ -229,3 +229,21 @@ export interface UserRole {
   userId: string;
   role: AppRole;
 }
+
+// Contributions & Patronage ---------------------------------------------------
+
+export type ContributionStatus = "pending" | "captured" | "failed";
+
+export interface Contribution {
+  id: string;
+  orderId?: string;
+  paymentId?: string;
+  amount: number;
+  currency: string;
+  status: ContributionStatus;
+  name: string;
+  email?: string;
+  note?: string;
+  createdAt: string;
+  source: "razorpay" | "mock";
+}
