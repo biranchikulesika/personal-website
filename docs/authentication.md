@@ -49,6 +49,7 @@ In a production environment connected to Supabase (`DATA_SOURCE="supabase"`):
 ## 3. Key Components
 
 ### 1. Supabase Client Configurations (`lib/supabase/server.ts`)
+
 - **`getSupabaseAdmin()`**:
   - Uses `SUPABASE_SECRET_KEY` (service-role key).
   - Bypasses RLS.
@@ -61,9 +62,11 @@ In a production environment connected to Supabase (`DATA_SOURCE="supabase"`):
   - Reads and writes user session tokens securely in HTTP-only cookies.
 
 ### 2. Role-Based Access Control (RBAC)
+
 User permissions are managed in the `public.user_roles` database table:
+
 ```typescript
-export type AppRole = 'user' | 'content_admin' | 'super_admin';
+export type AppRole = "user" | "content_admin" | "super_admin";
 
 export interface UserRole {
   userId: string;
