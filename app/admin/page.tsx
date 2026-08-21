@@ -107,6 +107,7 @@ export default async function AdminPage() {
     featuredBookSlugs,
     passkeys,
     sessions,
+    subscribers,
   ] = await Promise.all([
     contentService.getAllPosts(),
     contentService.getAllNotes(),
@@ -118,6 +119,7 @@ export default async function AdminPage() {
     contentService.getFeaturedBooks(),
     contentService.getPasskeys(user.id),
     contentService.getSessions(user.id, 'sess-current'),
+    contentService.getSubscribers(),
   ]);
 
   return (
@@ -130,6 +132,7 @@ export default async function AdminPage() {
       initialNowEntries={nowEntries}
       initialFeaturedPostSlugs={featuredPostSlugs}
       initialFeaturedBookSlugs={featuredBookSlugs}
+      initialSubscribers={subscribers}
       initialPasskeys={passkeys}
       initialConnectedProviders={connectedProviders}
       initialSessions={sessions}

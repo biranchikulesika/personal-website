@@ -138,3 +138,16 @@ export const SlugParamSchema = z.object({
 export const IdParamSchema = z.object({
   id: z.string().min(1),
 });
+
+// Newsletter subscription schema -----------------------------------------------
+
+export const NewsletterSubscriberSchema = z.object({
+  email: z
+    .string()
+    .trim()
+    .min(1, 'Email is required')
+    .max(320, 'Email is too long')
+    .email('Please enter a valid email address')
+    .toLowerCase(),
+  source: z.string().max(100).optional(),
+});

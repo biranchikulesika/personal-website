@@ -9,6 +9,7 @@ import type {
   PasskeyItem,
   UserSession,
   SidepanelTab,
+  NewsletterSubscriber,
 } from "@/lib/types";
 import { formatDisplayDate } from "@/lib/utils";
 import Image from "next/image";
@@ -48,6 +49,12 @@ const FeaturedManager = dynamic(
     loading: () => <LoadingState title="Loading featured…" />,
   },
 );
+const SubscriberManager = dynamic(
+  () => import("./subscriber-manager").then((m) => m.SubscriberManager),
+  {
+    loading: () => <LoadingState title="Loading subscribers…" />,
+  },
+);
 
 interface AdminDashboardProps {
   initialPosts: BlogPost[];
@@ -58,6 +65,7 @@ interface AdminDashboardProps {
   initialNowEntries: NowEntry[];
   initialFeaturedPostSlugs: string[];
   initialFeaturedBookSlugs: string[];
+  initialSubscribers?: NewsletterSubscriber[];
   initialPasskeys?: PasskeyItem[];
   initialConnectedProviders?: string[];
   initialSessions?: UserSession[];
@@ -76,6 +84,7 @@ export function AdminDashboard({
   initialNowEntries,
   initialFeaturedPostSlugs,
   initialFeaturedBookSlugs,
+  initialSubscribers = [],
   initialPasskeys = [],
   initialConnectedProviders = ["google"],
   initialSessions = [],
@@ -175,6 +184,27 @@ export function AdminDashboard({
         </svg>
       ),
       count: initialMedia.length,
+    },
+    {
+      id: "subscribers" as const,
+      label: "Subscribers",
+      icon: (
+        <svg
+          className="h-4 w-4"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={2}
+          aria-hidden="true"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75"
+          />
+        </svg>
+      ),
+      count: initialSubscribers.length,
     },
     {
       id: "account" as const,
@@ -301,6 +331,7 @@ export function AdminDashboard({
               nowEntries={initialNowEntries}
               featuredPostSlugs={initialFeaturedPostSlugs}
               featuredBookSlugs={initialFeaturedBookSlugs}
+              subscribers={initialSubscribers}
               userName={userName}
               userEmail={userEmail}
               userAvatarUrl={userAvatarUrl}
@@ -333,6 +364,9 @@ export function AdminDashboard({
               initialMedia={initialMedia}
               initialOrphanedMedia={initialOrphanedMedia}
             />
+          )}
+          {activeTab === "subscribers" && (
+            <SubscriberManager initialSubscribers={initialSubscribers} />
           )}
           {activeTab === "account" && (
             <AccountManager

@@ -255,6 +255,17 @@ CREATE INDEX IF NOT EXISTS idx_contributions_payment_id ON public.contributions(
 CREATE INDEX IF NOT EXISTS idx_contributions_order_id ON public.contributions(order_id);
 CREATE INDEX IF NOT EXISTS idx_contributions_created_at ON public.contributions(created_at DESC);
 
+CREATE TABLE IF NOT EXISTS public.subscribers (
+  id             TEXT PRIMARY KEY,
+  email          TEXT NOT NULL UNIQUE,
+  status         TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'unsubscribed')),
+  source         TEXT NOT NULL DEFAULT 'website',
+  created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_subscribers_email ON public.subscribers(email);
+CREATE INDEX IF NOT EXISTS idx_subscribers_created_at ON public.subscribers(created_at DESC);
+
 -- ── Row Level Security (RLS) ─────────────────────────────────────────────────
 
 ALTER TABLE public.user_roles ENABLE ROW LEVEL SECURITY;
@@ -266,8 +277,16 @@ ALTER TABLE public.media ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.featured_items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.storage_files ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.contributions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.subscribers ENABLE ROW LEVEL SECURITY;
 
--- ── Public Read Policies ─────────────────────────────────────────────────────
+-- ── Public Read & Insert Policies ────────────────────────────────────────────
+
+DROP POLICY IF EXISTS "Allow public newsletter subscriptions" ON public.subscribers;
+CREATE POLICY "Allow public newsletter subscriptions"
+  ON public.subscribers
+  FOR INSERT
+  TO anon, authenticated
+  WITH CHECK (true);
 
 DROP POLICY IF EXISTS "Public read all featured items" ON public.featured_items;
 CREATE POLICY "Public read all featured items"

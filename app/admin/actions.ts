@@ -22,6 +22,7 @@ import {
   MediaItemSchema,
   SlugParamSchema,
   IdParamSchema,
+  NewsletterSubscriberSchema,
 } from '@/lib/validation';
 
 const contentService = new ContentService();
@@ -550,5 +551,46 @@ export async function disconnectProviderAction(
     };
   }
 }
+
+// ── Newsletter Actions ──────────────────────────────────────────────────────
+
+export async function subscribeToNewsletterAction(formData: {
+  email: string;
+  source?: string;
+}) {
+  try {
+    const validated = validateInput(NewsletterSubscriberSchema, formData);
+    const result = await contentService.subscribeToNewsletter(
+      validated.email,
+      validated.source || 'website'
+    );
+    safeRevalidatePath('/admin');
+    return { success: true, message: result.message, subscriber: result.subscriber };
+  } catch (err: unknown) {
+    return {
+      success: false,
+      error: (err as Error).message || 'Subscription failed',
+    };
+  }
+}
+
+export async function deleteSubscriberAction(id: string) {
+  try {
+    const user = await getCurrentUser();
+    if (!user) {
+      return { success: false, error: 'Unauthorized' };
+    }
+    const validated = validateInput(IdParamSchema, { id });
+    const success = await contentService.deleteSubscriber(validated.id);
+    safeRevalidatePath('/admin');
+    return { success };
+  } catch (err: unknown) {
+    return {
+      success: false,
+      error: (err as Error).message || 'Failed to delete subscriber',
+    };
+  }
+}
+
 
 
