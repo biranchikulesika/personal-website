@@ -58,7 +58,7 @@ export const SITE_CONFIG: SiteContent = {
           { label: "Now", href: "/now" },
           { label: "About", href: "/about" },
           { label: "GitHub", href: "https://github.com/biranchikulesika" },
-          { label: "Email", href: "mailto:hello@biranchikulesika.com" },
+          { label: "Email", href: "mailto:hello@kulesika.in" },
         ],
       },
       {

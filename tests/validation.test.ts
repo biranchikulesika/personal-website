@@ -104,6 +104,13 @@ test("NoteItemSchema accepts valid note data", () => {
 
   const result = NoteItemSchema.safeParse(validNote);
   assert.ok(result.success, "valid note should pass validation");
+
+  const noteWithSubtitle = {
+    ...validNote,
+    subtitle: "A thoughtful subtitle",
+  };
+  const resultWithSubtitle = NoteItemSchema.safeParse(noteWithSubtitle);
+  assert.ok(resultWithSubtitle.success, "note with subtitle should pass validation");
 });
 
 test("NoteItemSchema rejects invalid persona", () => {

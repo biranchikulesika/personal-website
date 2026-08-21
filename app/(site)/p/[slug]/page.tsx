@@ -5,8 +5,9 @@ import { ContentService } from '@/lib/services/content.service';
 import { postMetadata, articleJsonLd, breadcrumbJsonLd, safeJsonLd } from '@/lib/seo';
 
 export async function generateStaticParams() {
-  const posts = await new ContentService().getAllPosts();
-  return posts.map((post) => ({ slug: post.slug }));
+  const service = new ContentService();
+  const slugs = await service.getPostSlugs();
+  return slugs.map((slug) => ({ slug }));
 }
 
 export async function generateMetadata({
@@ -16,8 +17,11 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { slug } = await params;
   const post = await new ContentService().getPost(slug);
-  if (!post) {
-    return {};
+  if (!post || post.status === 'unpublished') {
+    return {
+      title: 'Post not found',
+      robots: { index: false, follow: false },
+    };
   }
   return postMetadata(post);
 }
@@ -29,7 +33,7 @@ export default async function BlogPostPage({
 }) {
   const { slug } = await params;
   const post = await new ContentService().getPost(slug);
-  if (!post) notFound();
+  if (!post || post.status === 'unpublished') notFound();
 
   const breadcrumbs = breadcrumbJsonLd([
     { name: 'Home', url: '/' },

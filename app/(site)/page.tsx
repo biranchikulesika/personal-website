@@ -30,7 +30,9 @@ export default async function Home() {
     featuredPostSlugs.map((slug) => service.getPost(slug)),
   );
 
-  const featuredPosts = postResults.filter((p): p is NonNullable<typeof p> => p !== null);
+  const featuredPosts = postResults.filter(
+    (p): p is NonNullable<typeof p> => p !== null && p.status !== 'unpublished',
+  );
   const featuredBookSet = new Set(featuredBookSlugs);
   const featuredBooks = allBooks.filter((b) => featuredBookSet.has(b.slug));
 

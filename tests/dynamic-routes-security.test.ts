@@ -277,6 +277,44 @@ test("saveNote creates and retrieves a note", async () => {
   await service.deleteNote("security-note-slug");
 });
 
+test("scribble entries exclude unpublished posts and notes", async () => {
+  resetDatabase();
+  const service = new ContentService();
+
+  await service.savePost({
+    slug: "draft-essay-scribble",
+    title: "Draft Essay",
+    description: "Draft",
+    tags: ["test"],
+    publishedAt: "2026-08-20",
+    lastEditedAt: "2026-08-20",
+    assumedAudience: "Test",
+    intro: [],
+    sections: [],
+    books: [],
+    status: "unpublished",
+  });
+
+  await service.saveNote({
+    id: "draft-note-1",
+    slug: "draft-note-scribble",
+    title: "Draft Note",
+    description: "Draft",
+    content: ["Draft content"],
+    date: "2026-08-20",
+    persona: "thinker",
+    tags: ["test"],
+    status: "unpublished",
+  });
+
+  const scribble = await service.getScribbleEntries();
+  assert.ok(!scribble.some((e) => e.href === "/p/draft-essay-scribble"), "unpublished essay must not be in scribble");
+  assert.ok(!scribble.some((e) => e.href === "/n/draft-note-scribble"), "unpublished note must not be in scribble");
+
+  const noteSlugs = await service.getNoteSlugs();
+  assert.ok(!noteSlugs.includes("draft-note-scribble"), "unpublished note must not be in note slugs");
+});
+
 // ── 404 Not Found Handling ──────────────────────────────────────────────────
 
 test("not-found metadata sets robots to noindex", async () => {

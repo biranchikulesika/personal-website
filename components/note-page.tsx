@@ -31,9 +31,11 @@ export function NotePageView({ note }: { note: NoteItem }) {
             <h1 className="font-serif text-4xl font-normal leading-tight text-paper md:text-5xl">
               {note.title}
             </h1>
-            <p className="mt-4 text-lg leading-relaxed text-ink-soft md:text-xl">
-              {note.description}
-            </p>
+            {(note.subtitle || note.description) && (
+              <p className="mt-4 text-lg leading-relaxed text-ink-soft md:text-xl">
+                {note.subtitle || note.description}
+              </p>
+            )}
 
             <hr className="my-6 border-t border-tinted/20" />
 

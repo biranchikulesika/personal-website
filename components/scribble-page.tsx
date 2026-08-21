@@ -13,7 +13,7 @@ import {
   ChevronRightIcon,
   SearchIcon,
 } from './icons';
-import { formatDisplayDate } from '@/lib/utils';
+import { formatDisplayDate, formatNoteSnippet } from '@/lib/utils';
 import { PERSONA_LABELS, ALL_PERSONAS } from '@/lib/constants';
 import { EssayCover } from './ui/essay-cover';
 import { NoSearchResults, NoContentState } from './ui/states';
@@ -70,6 +70,8 @@ function BookCover({ title, author }: { title: string; author?: string }) {
 }
 
 function NoteCard({ entry }: { entry: ScribbleEntry }) {
+  const snippet = formatNoteSnippet(entry.description, 180);
+
   return (
     <article className="py-2">
       <Link href={entry.href} className="group block">
@@ -77,7 +79,7 @@ function NoteCard({ entry }: { entry: ScribbleEntry }) {
           {entry.title}
         </h3>
         <p className="mt-2 text-sm leading-relaxed text-gray-mid">
-          {entry.description}
+          {snippet}
         </p>
         <CardMeta
           type={entry.type}

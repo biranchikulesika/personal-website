@@ -1,6 +1,8 @@
 "use client";
 
 import {
+  deleteNoteAction,
+  deletePostAction,
   saveNoteAction,
   saveNowEntryAction,
   savePostAction,
@@ -102,7 +104,7 @@ export function ComposeWorkspace({
         docType: "note",
         slug: n.slug,
         title: n.title,
-        subtitle: "",
+        subtitle: n.subtitle || "",
         description: n.description,
         persona: n.persona,
         status: n.status || "published",
@@ -200,7 +202,7 @@ export function ComposeWorkspace({
     (updates: Partial<DocumentTab>) => {
       setTabs((prev) =>
         prev.map((tab) =>
-          tab.id === activeTabId ? { ...tab, ...updates, isDirty: true } : tab,
+          tab.id === activeTabId ? { ...tab, isDirty: true, ...updates } : tab,
         ),
       );
     },
@@ -353,7 +355,7 @@ export function ComposeWorkspace({
         docType: "note",
         slug: n.slug,
         title: n.title,
-        subtitle: "",
+        subtitle: n.subtitle || "",
         description: n.description,
         persona: n.persona,
         status: n.status || "published",
@@ -381,6 +383,24 @@ export function ComposeWorkspace({
 
     startTransition(async () => {
       if (activeTab.docType === "post") {
+        // Check slug collision against other items
+        const isTakenByPost = allPosts.some(
+          (p) => p.slug === cleanSlug && p.slug !== activeTab.rawPost?.slug,
+        );
+        const isTakenByNote = allNotes.some((n) => n.slug === cleanSlug);
+        const isTakenByBook = allBooks.some((b) => b.slug === cleanSlug);
+        if (isTakenByPost || isTakenByNote || isTakenByBook) {
+          showToast(
+            `Slug "${cleanSlug}" is already in use. Please choose a unique slug.`,
+          );
+          return;
+        }
+
+        // If existing post had a different slug, delete old slug
+        if (activeTab.rawPost?.slug && activeTab.rawPost.slug !== cleanSlug) {
+          await deletePostAction(activeTab.rawPost.slug);
+        }
+
         const { intro, sections } = markdownToPostSections(activeTab.content);
         const postPayload: BlogPost = {
           title: activeTab.title,
@@ -390,7 +410,9 @@ export function ComposeWorkspace({
             activeTab.description ||
             (intro[0] ? intro[0].slice(0, 150) : activeTab.title),
           tags: activeTab.tags.length > 0 ? activeTab.tags : ["essay"],
-          publishedAt: new Date().toISOString().split("T")[0],
+          publishedAt:
+            activeTab.rawPost?.publishedAt ||
+            new Date().toISOString().split("T")[0],
           lastEditedAt: new Date().toISOString().split("T")[0],
           assumedAudience: "Curious readers and builders",
           intro:
@@ -421,6 +443,7 @@ export function ComposeWorkspace({
           updateActiveTab({
             slug: cleanSlug,
             status: statusToSet,
+            rawPost: res.post,
             isDirty: false,
           });
           setIsPublishDrawerOpen(false);
@@ -449,6 +472,24 @@ export function ComposeWorkspace({
           showToast(res.error || "Failed to save now entry");
         }
       } else {
+        // Note collision check
+        const isTakenByNote = allNotes.some(
+          (n) => n.slug === cleanSlug && n.slug !== activeTab.rawNote?.slug,
+        );
+        const isTakenByPost = allPosts.some((p) => p.slug === cleanSlug);
+        const isTakenByBook = allBooks.some((b) => b.slug === cleanSlug);
+        if (isTakenByNote || isTakenByPost || isTakenByBook) {
+          showToast(
+            `Slug "${cleanSlug}" is already in use. Please choose a unique slug.`,
+          );
+          return;
+        }
+
+        // If existing note had a different slug, delete old slug
+        if (activeTab.rawNote?.slug && activeTab.rawNote.slug !== cleanSlug) {
+          await deleteNoteAction(activeTab.rawNote.slug);
+        }
+
         const paragraphs = activeTab.content
           .split("\n\n")
           .map((p) => p.trim())
@@ -458,11 +499,15 @@ export function ComposeWorkspace({
           id: activeTab.rawNote?.id || `note-${Date.now()}`,
           title: activeTab.title,
           slug: cleanSlug,
+          subtitle: activeTab.subtitle || undefined,
           description:
             activeTab.description ||
+            activeTab.subtitle ||
             (paragraphs[0] ? paragraphs[0].slice(0, 120) : activeTab.title),
           content: paragraphs.length > 0 ? paragraphs : [activeTab.title],
-          date: new Date().toISOString().split("T")[0],
+          date:
+            activeTab.rawNote?.date ||
+            new Date().toISOString().split("T")[0],
           persona: activeTab.persona || "builder",
           tags: activeTab.tags.length > 0 ? activeTab.tags : ["note"],
           coverImage: activeTab.coverImage,
@@ -474,6 +519,7 @@ export function ComposeWorkspace({
           updateActiveTab({
             slug: cleanSlug,
             status: statusToSet,
+            rawNote: res.note,
             isDirty: false,
           });
           setIsPublishDrawerOpen(false);
@@ -858,9 +904,17 @@ export function ComposeWorkspace({
               value={activeTab.title}
               onChange={(e) => {
                 const title = e.target.value;
+                const prevDefaultSlug = slugify(activeTab.title);
+                const isAutoSlug =
+                  !activeTab.slug ||
+                  activeTab.slug === "new-essay" ||
+                  activeTab.slug === "new-note" ||
+                  activeTab.slug.startsWith("untitled") ||
+                  activeTab.slug === prevDefaultSlug;
+
                 updateActiveTab({
                   title,
-                  slug: activeTab.isDirty ? activeTab.slug : slugify(title),
+                  slug: isAutoSlug ? slugify(title) : activeTab.slug,
                 });
               }}
               placeholder={
@@ -870,6 +924,25 @@ export function ComposeWorkspace({
               }
               className="flex-1 bg-transparent border-none outline-none text-paper font-medium placeholder-ink-soft/50 py-1 text-xs"
             />
+            {activeTab.docType !== "now" && (
+              <div
+                className="ml-2 flex items-center gap-1 rounded-md border border-tinted/20 bg-ink/70 px-2 py-0.5 text-[11px] font-mono text-ink-soft focus-within:border-accent/40 focus-within:text-paper shrink-0"
+                title="Edit Slug / Permalink"
+              >
+                <span className="select-none text-ink-soft/60">
+                  {activeTab.docType === "post" ? "/p/" : "/n/"}
+                </span>
+                <input
+                  type="text"
+                  value={activeTab.slug}
+                  onChange={(e) =>
+                    updateActiveTab({ slug: slugify(e.target.value) })
+                  }
+                  placeholder="slug"
+                  className="w-24 sm:w-36 focus:w-48 bg-transparent border-none outline-none text-paper font-mono placeholder-ink-soft/40 transition-all text-[11px]"
+                />
+              </div>
+            )}
           </div>
 
           {/* Subtitle Row */}

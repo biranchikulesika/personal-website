@@ -1,5 +1,5 @@
-import Image from "next/image";
 import type { SiteContent, WritingItem } from "@/lib/types";
+import Image from "next/image";
 import Link from "next/link";
 import { ArrowRightIcon } from "./icons";
 import { LandscapeGallery } from "./landscape-gallery";
@@ -268,7 +268,7 @@ export function AboutPageView({ site, featuredWriting }: AboutPageProps) {
             </Link>
             , or say hello via{" "}
             <a
-              href="mailto:hello@biranchikulesika.com"
+              href="mailto:hello@kulesika.in"
               className="text-paper underline decoration-tinted/40 underline-offset-4 transition-colors hover:text-accent hover:decoration-accent"
             >
               email
