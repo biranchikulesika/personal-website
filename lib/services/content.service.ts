@@ -1,0 +1,315 @@
+import { cache } from 'react';
+import type {
+  AppRole,
+  UserRole,
+  BlogPost,
+  BookItem,
+  MediaItem,
+  NoteItem,
+  NowEntry,
+  Persona,
+  ScribbleEntry,
+  HomeContent,
+  SectionGroup,
+  SiteContent,
+  WritingItem,
+  Contribution,
+} from '@/lib/types';
+import {
+  verifyPaymentSignature,
+  verifyWebhookSignature,
+  parseRazorpayWebhookEvent,
+} from '@/lib/razorpay';
+import { getContentRepository } from '@/lib/repositories';
+import type { ContentRepository } from '@/lib/repositories/content.repository';
+import { SITE_CONFIG } from '@/lib/config/site';
+
+// ── Per-Request Memoization ────────────────────────────────────────────────
+// React.cache deduplicates identical read queries across Server Components and
+// generateMetadata in the same render pass, avoiding duplicate DB roundtrips.
+
+const getCachedPost = cache((repo: ContentRepository, slug: string) => repo.getPost(slug));
+const getCachedNote = cache((repo: ContentRepository, slug: string) => repo.getNote(slug));
+const getCachedHomeContent = cache((repo: ContentRepository) => repo.getHomeContent());
+const getCachedWriting = cache((repo: ContentRepository) => repo.getWriting());
+const getCachedLibrary = cache((repo: ContentRepository) => repo.getLibrary());
+const getCachedScribble = cache((repo: ContentRepository) => repo.getScribbleEntries());
+const getCachedNow = cache((repo: ContentRepository) => repo.getNowEntries());
+const getCachedAllPosts = cache((repo: ContentRepository) => repo.getAllPosts());
+const getCachedAllNotes = cache((repo: ContentRepository) => repo.getAllNotes());
+const getCachedAllBooks = cache((repo: ContentRepository) => repo.getAllBooks());
+
+// Application layer for site content. Components and pages ask for content
+// by intent (getSiteContent, getWriting, ...) and never import the mock
+// database directly. The concrete repository is swappable.
+
+export class ContentService {
+  constructor(private repo: ContentRepository = getContentRepository()) {}
+
+  getSiteContent(): SiteContent {
+    return SITE_CONFIG;
+  }
+
+  getHomeContent(): Promise<HomeContent> {
+    return getCachedHomeContent(this.repo);
+  }
+
+  getWriting(): Promise<SectionGroup<WritingItem>> {
+    return getCachedWriting(this.repo);
+  }
+
+  getLibrary(): Promise<SectionGroup<BookItem>> {
+    return getCachedLibrary(this.repo);
+  }
+
+  getPost(slug: string): Promise<BlogPost | null> {
+    return getCachedPost(this.repo, slug);
+  }
+
+  getPostSlugs(): Promise<string[]> {
+    return this.repo.getPostSlugs();
+  }
+
+  getAllPosts(): Promise<BlogPost[]> {
+    return getCachedAllPosts(this.repo);
+  }
+
+  savePost(post: BlogPost, persona?: Persona): Promise<BlogPost> {
+    return this.repo.savePost(post, persona);
+  }
+
+  deletePost(slug: string): Promise<boolean> {
+    return this.repo.deletePost(slug);
+  }
+
+  togglePostStatus(slug: string): Promise<BlogPost | null> {
+    return this.repo.togglePostStatus(slug);
+  }
+
+  getNote(slug: string): Promise<NoteItem | null> {
+    return getCachedNote(this.repo, slug);
+  }
+
+  getNoteSlugs(): Promise<string[]> {
+    return this.repo.getNoteSlugs();
+  }
+
+  getAllNotes(): Promise<NoteItem[]> {
+    return getCachedAllNotes(this.repo);
+  }
+
+  saveNote(note: NoteItem): Promise<NoteItem> {
+    return this.repo.saveNote(note);
+  }
+
+  deleteNote(slug: string): Promise<boolean> {
+    return this.repo.deleteNote(slug);
+  }
+
+  toggleNoteStatus(slug: string): Promise<NoteItem | null> {
+    return this.repo.toggleNoteStatus(slug);
+  }
+
+  getAllBooks(): Promise<BookItem[]> {
+    return getCachedAllBooks(this.repo);
+  }
+
+  saveBook(book: BookItem): Promise<BookItem> {
+    return this.repo.saveBook(book);
+  }
+
+  deleteBook(slug: string): Promise<boolean> {
+    return this.repo.deleteBook(slug);
+  }
+
+  getNowEntries(): Promise<NowEntry[]> {
+    return getCachedNow(this.repo);
+  }
+
+  saveNowEntry(entry: NowEntry): Promise<NowEntry> {
+    return this.repo.saveNowEntry(entry);
+  }
+
+  deleteNowEntry(id: string): Promise<boolean> {
+    return this.repo.deleteNowEntry(id);
+  }
+
+  getScribbleEntries(): Promise<ScribbleEntry[]> {
+    return getCachedScribble(this.repo);
+  }
+
+  getMedia(): Promise<MediaItem[]> {
+    return this.repo.getMedia();
+  }
+
+  addMedia(item: MediaItem): Promise<MediaItem> {
+    return this.repo.addMedia(item);
+  }
+
+  deleteMedia(id: string): Promise<boolean> {
+    return this.repo.deleteMedia(id);
+  }
+
+  getOrphanedMedia(): Promise<MediaItem[]> {
+    return this.repo.getOrphanedMedia();
+  }
+
+  deleteStorageAssets(srcs: string[]): Promise<number> {
+    return this.repo.deleteStorageAssets(srcs);
+  }
+
+  getUserRole(userId: string): Promise<AppRole | null> {
+    return this.repo.getUserRole(userId);
+  }
+
+  setUserRole(userId: string, role: AppRole): Promise<void> {
+    return this.repo.setUserRole(userId, role);
+  }
+
+  getAllUserRoles(): Promise<UserRole[]> {
+    return this.repo.getAllUserRoles();
+  }
+
+  getFeaturedPosts(): Promise<string[]> {
+    return this.repo.getFeaturedPosts();
+  }
+
+  getFeaturedBooks(): Promise<string[]> {
+    return this.repo.getFeaturedBooks();
+  }
+
+  setFeaturedPosts(slugs: string[]): Promise<void> {
+    return this.repo.setFeaturedPosts(slugs);
+  }
+
+  setFeaturedBooks(slugs: string[]): Promise<void> {
+    return this.repo.setFeaturedBooks(slugs);
+  }
+
+  // ── Contributions & Patronage ───────────────────────────────────────────
+
+  getContribution(id: string): Promise<Contribution | null> {
+    return this.repo.getContribution(id);
+  }
+
+  getContributions(): Promise<Contribution[]> {
+    return this.repo.getContributions();
+  }
+
+  recordContribution(contribution: Contribution): Promise<Contribution> {
+    return this.repo.recordContribution(contribution);
+  }
+
+  /**
+   * Idempotently confirm a payment (from client checkout or server callback)
+   * and store the contribution record in the database.
+   */
+  async confirmPayment(params: {
+    paymentId: string;
+    orderId?: string;
+    signature?: string;
+    amount: number;
+    name?: string;
+    email?: string;
+    note?: string;
+    source?: 'razorpay' | 'mock';
+  }): Promise<Contribution> {
+    const {
+      paymentId,
+      orderId,
+      signature,
+      amount,
+      name = 'Anonymous Patron',
+      email,
+      note,
+      source = 'razorpay',
+    } = params;
+
+    // If signature verification is possible (Razorpay order checkout), verify signature
+    if (source === 'razorpay' && orderId && signature) {
+      const isValid = verifyPaymentSignature({
+        orderId,
+        paymentId,
+        signature,
+      });
+
+      if (process.env.RAZORPAY_KEY_SECRET && !isValid) {
+        throw new Error('Invalid Razorpay payment signature');
+      }
+    }
+
+    const contribution: Contribution = {
+      id: paymentId,
+      orderId,
+      paymentId,
+      amount,
+      currency: 'INR',
+      status: 'captured',
+      name: name.trim() || 'Anonymous Patron',
+      email: email?.trim(),
+      note: note?.trim(),
+      createdAt: new Date().toISOString(),
+      source,
+    };
+
+    return this.repo.recordContribution(contribution);
+  }
+
+  /**
+   * Process Razorpay webhook event with signature verification and idempotent recording.
+   */
+  async processRazorpayWebhook(
+    rawBody: string,
+    signature: string,
+  ): Promise<{
+    success: boolean;
+    event?: string;
+    contribution?: Contribution | null;
+    error?: string;
+  }> {
+    // 1. Verify webhook signature if secret is configured
+    if (process.env.RAZORPAY_WEBHOOK_SECRET) {
+      const isValid = verifyWebhookSignature({
+        rawBody,
+        signature,
+      });
+
+      if (!isValid) {
+        return {
+          success: false,
+          error: 'Invalid webhook signature',
+        };
+      }
+    }
+
+    // 2. Parse payload JSON
+    let parsed: Record<string, unknown>;
+    try {
+      parsed = JSON.parse(rawBody);
+    } catch {
+      return {
+        success: false,
+        error: 'Invalid JSON payload',
+      };
+    }
+
+    // 3. Extract event & contribution details
+    const { event, contribution } = parseRazorpayWebhookEvent(parsed);
+
+    // 4. Idempotently record contribution if valid
+    if (contribution) {
+      const saved = await this.repo.recordContribution(contribution);
+      return {
+        success: true,
+        event,
+        contribution: saved,
+      };
+    }
+
+    return {
+      success: true,
+      event,
+      contribution: null,
+    };
+  }
+}

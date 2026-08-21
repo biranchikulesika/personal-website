@@ -1,113 +1,163 @@
-# Multi-Persona Digital Garden & CMS
+# Biranchi Kulesika — Personal Website & Publishing Engine
 
-A high-performance, aesthetically refined digital space to capture, organize, and publish thoughts across multiple dimensions of life (personas). Built with modern web technologies, this platform serves as both a public-facing digital garden and a private, block-based content management system.
+A modern, high-performance personal website, digital garden, and publishing engine for **Biranchi Kulesika** ([biranchikulesika.com](https://biranchikulesika.com)).
 
-## 🌟 Key Features
+Built with **Next.js 16 (App Router)**, **React 19**, **TypeScript**, **Tailwind CSS v4**, and **PostgreSQL / Supabase**, featuring an editorial design system, an IDE-grade MDX composer, structured data for search engine & AI crawlability, and payment processing.
 
-*   **Multi-Persona Architecture:**
-    *   **Thinker:** A space for deep questions, isolated thought fragments, and book reviews.
-    *   **Wanderer:** An interactive, cyclical canvas for poetry, journal moments, and fleeting fragments.
-    *   **Builder:** A home for build logs, system architecture docs, and project statuses.
-    *   **Operator:** Dedicated specifically to current operational focuses and actionable goals.
-*   **TipTap-Powered WYSIWYG Editor:** A highly advanced, custom-built rich text editor inspired by Notion.
-    *   **Slash Commands (`/`)**: Instantly summon headings, code blocks, tables, toggle lists (`<details>`), and terminal blocks.
-    *   **Dynamic Typography**: The editor's font and layout adapt in real-time to match the selected persona (e.g., monospace for Operator, elegant serifs for Thinker).
-    *   **Custom Blocks**: Supports bespoke blocks like a MacOS-style Terminal with syntax highlighting and one-click copy.
-*   **Payments Integration:** Fully integrated Razorpay support for seamless transactions and webhook handling.
-*   **Next.js App Router:** Optimized for server components, automatic caching, and minimal client-side JavaScript.
-*   **Supabase Backend:** Utilizes Supabase for PostgreSQL database, secure user authentication, and robust image/bucket storage.
-*   **Elegant & Responsive UI:** Powered by Tailwind CSS v4 with bespoke animations utilizing `motion/react`. Uses precise typography pairings (Inter, JetBrains Mono, Space Grotesk).
-*   **Markdown Rendering:** Safely renders markdown components with `react-markdown`, `remark-gfm`, and `rehype-sanitize`.
-*   **Secure Actions:** End-to-end type-safe API operations guarded by `ensureAdmin()` checks and robust `Zod` validation schemas.
+---
 
-## 🛠 Tech Stack
+## Key Highlights
 
-*   **Framework:** [Next.js](https://nextjs.org/) (App Router, Server Actions)
-*   **Styling:** [Tailwind CSS v4](https://tailwindcss.com/)
-*   **Backend & DB:** [Supabase](https://supabase.com/) (PostgreSQL, Storage, Auth)
-*   **Payments:** [Razorpay](https://razorpay.com/)
-*   **Editor:** [TipTap](https://tiptap.dev/) (ProseMirror-based with `lowlight` syntax highlighting)
-*   **Validation:** [Zod](https://zod.dev/)
-*   **Animation:** [Motion (Framer Motion)](https://motion.dev/)
-*   **Typography:** Google Fonts (`next/font/google`), Tailwind Typography plugin
-*   **Icons:** [Lucide React](https://lucide.dev/)
+- **Editorial Design System**: Typography-first layout combining Space Grotesk and Newsreader serif fonts on a dark canvas (`#141413`). Clean horizontal-ruled ledgers replace card containers.
+- **4-Tier Decoupled Architecture**: Strict separation of concerns (`UI → Service → Repository → Database`), enabling seamless switching between an in-memory mock database and production Supabase PostgreSQL.
+- **IDE-Grade MDX Composer (`/admin/compose`)**: Full-screen workspace with bi-directional AST Markdown parsing, split live preview, visual character diff viewer, metadata management, and media drawer.
+- **SEO & AI Discoverability**: Automated canonical URLs, Open Graph dynamic banner generation (`/api/og`), BreadcrumbList schemas, Article/Note JSON-LD, dynamic `sitemap.xml`, and crawler isolation.
+- **Patronage & Payments**: Razorpay checkout integration and webhook receiver with constant-time HMAC-SHA256 signature verification and idempotent database persistence.
+- **Production-Hardened**: Node.js native test runner (120+ tests), standalone Docker-ready build output (`output: 'standalone'`), HTTP security headers (HSTS, CSP, X-Frame-Options), and strict Row-Level Security (RLS).
 
-## 🚀 Getting Started
+---
 
-### Prerequisites
+## Architecture Overview
 
-Ensure you have Node.js (version 24.16.0 or higher) installed on your machine.
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    1. Presentation / UI                     │
+│  (Next.js App Router: app/(site), app/admin, components/)   │
+└──────────────────────────────┬──────────────────────────────┘
+                               │ Calls
+                               ▼
+┌─────────────────────────────────────────────────────────────┐
+│               2. Application / Service Layer                │
+│                 (lib/services/content.service.ts)           │
+│    - Business operations, validations, aggregation, auth    │
+└──────────────────────────────┬──────────────────────────────┘
+                               │ Calls interface
+                               ▼
+┌─────────────────────────────────────────────────────────────┐
+│             3. Data Access / Repository Layer               │
+│               (lib/repositories/content.repository.ts)      │
+│    - Abstract interface: Mock vs Supabase implementations   │
+└──────────────────────────────┬──────────────────────────────┘
+                               │ Interacts with
+                               ▼
+┌─────────────────────────────────────────────────────────────┐
+│               4. Database / Persistence Layer               │
+│          (lib/data/mock-db.ts  OR  Supabase PostgreSQL)     │
+└─────────────────────────────────────────────────────────────┘
+```
 
-### 1. Clone & Install
+For in-depth architectural breakdowns, see [`docs/architecture.md`](./docs/architecture.md).
 
+---
+
+## Tech Stack
+
+| Layer | Technology |
+| :--- | :--- |
+| **Framework** | Next.js 16 (App Router, Server Actions, Server Components) |
+| **UI Library** | React 19, Tailwind CSS v4, `@tailwindcss/typography` |
+| **Language** | TypeScript (Strict mode) |
+| **Database** | PostgreSQL 16 via Supabase (`schema.sql`) |
+| **Storage** | Supabase Storage (`media` bucket) |
+| **Validation** | Zod v4 |
+| **Payments** | Razorpay (Checkout + Webhooks) |
+| **Testing** | Node.js Native Test Runner (`node:test`, `node:assert/strict` via `tsx`) |
+
+---
+
+## Project Structure
+
+```
+biranchi/
+├── app/                  # Next.js App Router (pages, layouts, API routes)
+│   ├── (site)/           # Public routes: /, /about, /library, /p/:slug, /n/:slug, /scribble, /support
+│   ├── admin/            # Admin dashboard and MDX composer
+│   └── api/              # API endpoints: contributions, webhooks, OG generator
+├── components/           # React presentation components & shared UI primitives
+├── docs/                 # Comprehensive technical documentation suite
+├── lib/                  # Services, repositories, Supabase client, validations, types, SEO
+├── public/               # Static assets & public media
+├── scripts/              # Database reset and maintenance scripts
+├── tests/                # Automated unit and integration test suite
+├── schema.sql            # Idempotent PostgreSQL/Supabase database schema
+└── next.config.ts        # Next.js production configuration & security headers
+```
+
+See [`docs/project-structure.md`](./docs/project-structure.md) for full directory documentation.
+
+---
+
+## Getting Started
+
+### 1. Prerequisites
+- **Node.js**: `>= 24.16.0` (Recommended: `nvm use 24.18.0`)
+- **Package Manager**: `npm`
+
+### 2. Installation
 ```bash
-# Install dependencies
+git clone https://github.com/biranchikulesika/biranchi.git
+cd biranchi
 npm install
 ```
 
-### 2. Configure Environment Variables
-
-Create a `.env.local` file at the root of the project by copying the example format. You will need your Supabase credentials to run this app locally:
-
-```env
-# .env.local
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
-NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your_supabase_publishable_key
-# Required for server-side elevated privilege (keep secret!)
-SUPABASE_SECRET_KEY=your_supabase_secret_key
-```
-
-### 3. Run the Development Server
-
-Start the local Next.js development server:
-
+### 3. Environment Configuration
+Create a local `.env.local` file:
 ```bash
-npm run dev
+DATA_SOURCE=mock
+NEXT_PUBLIC_SITE_URL=http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the outcome.
+For production environment variables (Supabase, Razorpay, etc.), refer to [`docs/environment.md`](./docs/environment.md) and `.env.production.example`.
 
-## 🏗 Directory Structure
+### 4. Available Commands
 
-*   **/app:** Next.js App Router routes (files here become URLs).
-    *   **/admin:** Protected dashboard — `actions/` holds the secure Server Actions (DB + auth), `login/` the auth flow, and `(dashboard)/` the content management pages (compose, posts, library, media, newsletter, settings, …).
-    *   **/actions:** Public-facing Server Actions (search, newsletter subscription, donations).
-    *   **/[builder|operator|thinker|wanderer]:** Persona route groups (home, about, blogs, newsletter). Each page is a thin wrapper around shared components in `components/<area>/shared/`.
-    *   **/api:** Route handlers — cron jobs, Razorpay webhooks, passkey registration, OG images, revalidation.
-    *   **/p/[slug]:** Public post pages. Sitemap/feed/robots routes live alongside.
-*   **/components:** Reusable React components, grouped by area.
-    *   **/ui:** Base-level UI elements (logo, skeletons, canvas).
-    *   **/admin:** Admin-only form validation and editor components.
-    *   **/blog, /newsletter, /builder, /thinker, /wanderer, /reading:** Persona/area-specific components; shared code in `<area>/shared/`.
-    *   **/mdx:** Markdown/MDX view components (content blocks + core element overrides).
-    *   **/post-renderer:** Client renderer for public post pages.
-    *   **/seo:** `JsonLd` structured data.
-*   **/hooks:** Shared React hooks (kebab-case filenames).
-*   **/lib:** Non-UI application code.
-    *   **/repositories:** Data-access layer — one `*.repository.supabase.ts` per table, plus a `registry.ts` factory.
-    *   **/services:** Business logic orchestrating repositories.
-    *   **/supabase:** Supabase clients (browser, server, admin, middleware) and storage/upload helpers.
-    *   **/auth:** Passkey/WebAuthn verification and server auth checks.
-    *   **/ai:** AI post-metadata generation (excerpts, tags, SEO).
-    *   **/mdx:** MDX compilation and rendering.
-    *   **/config:** Site/SEO configuration.
-    *   **/data:** Static content data (quotes, phrases).
-    *   `types.ts`: Domain TypeScript types. `schemas.ts`: Zod validation schemas.
-    *   `queries.ts`: Cached server-side query functions. `block-serializer.ts`: compose-editor block serialization.
-    *   `database.types.ts`: Generated Supabase types.
-*   **/scripts:** Standalone Node scripts (build-log generation, donation cleanup, passkey tests).
-*   **/supabase:** SQL schema (`schema.sql`), reset (`reset.sql`), storage setup (`storage.sql`), and local dev config (`config.toml`).
-*   **/tests:** Unit/integration tests (`npm test`).
-*   **/public:** Static assets (icons, images, manifest).
+| Command | Action |
+| :--- | :--- |
+| `npm run dev` | Start the local Next.js development server with hot reloading. |
+| `npm test` | Run the complete automated test suite via Node.js native test runner. |
+| `npm run lint` | Run ESLint across all TypeScript and React files. |
+| `npm run build` | Compile the optimized production build (`output: 'standalone'`). |
+| `npm start` | Start the production server. |
+| `npm run db:reset` | Reset and reseed the in-memory mock database. |
 
-## 🔐 Security Notes
+---
 
-This application strictly enforces security through several layers:
-1.  **Row Level Security (RLS)** is applied to the Supabase database.
-2.  Protected Server Actions validate user sessions explicitly (`verifyAuth`).
-3.  Zod strictly strips out unauthorized objects/properties during API calls.
-4.  User-generated Markdown is sanitized via `rehype-sanitize` to prevent XSS.
-5.  Storage endpoints enforce server-side validation of MIME types and size limits.
+## Database Setup
 
-## 📄 License
-This project is open-source. Feel free to fork and customize your own digital garden.
+The database schema is defined declaratively and idempotently in [`schema.sql`](./schema.sql).
+
+To initialize or migrate a Supabase database:
+1. Open the SQL Editor in your Supabase dashboard.
+2. Paste and run [`schema.sql`](./schema.sql).
+3. The script will automatically create all tables (`posts`, `notes`, `books`, `now_entries`, `media`, `featured_items`, `user_roles`, `contributions`, `storage_files`), cross-collection triggers, RLS policies, and the `media` storage bucket.
+
+For full database documentation, see [`docs/database.md`](./docs/database.md).
+
+---
+
+## Documentation Suite
+
+Detailed maintainer guides are available in the [`docs/`](./docs/) directory:
+
+- [**System Architecture**](./docs/architecture.md)
+- [**Project Structure**](./docs/project-structure.md)
+- [**Data Layer & Repositories**](./docs/data-layer.md)
+- [**Database Schema & RLS**](./docs/database.md)
+- [**Authentication & RBAC**](./docs/authentication.md)
+- [**Content System & MDX Engine**](./docs/content-system.md)
+- [**Admin Panel & Composer**](./docs/admin.md)
+- [**Media & Storage**](./docs/media.md)
+- [**SEO & AI Discoverability**](./docs/seo.md)
+- [**Routing & Server Boundaries**](./docs/routing.md)
+- [**Components & UI Primitives**](./docs/components.md)
+- [**Styling & Design System**](./docs/styling.md)
+- [**Environment Variables**](./docs/environment.md)
+- [**Testing Guidelines**](./docs/testing.md)
+- [**Production Deployment**](./docs/deployment.md)
+- [**Developer Contributing & How-To Guides**](./docs/contributing.md)
+
+---
+
+## License
+
+Private / All rights reserved © 2026 Biranchi Kulesika.

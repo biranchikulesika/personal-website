@@ -1,261 +1,249 @@
-import type { AuthenticatorTransportFuture, CredentialDeviceType } from '@simplewebauthn/server';
+// Provisional domain types.
+// Deliberately minimal — the product is still being defined.
+// Do not treat these as final. They exist only to prove the
+// service-layer architecture works end to end.
 
-export interface Post {
+// Navigation -----------------------------------------------------------------
+
+export interface NavLink {
+  label: string;
+  href: string;
+}
+
+// Identity -------------------------------------------------------------------
+
+export interface Identity {
+  name: string;
+  initials: string;
+}
+
+// Hero -----------------------------------------------------------------------
+
+export interface NewsletterConfig {
+  note: string;
+  placeholder: string;
+  button: string;
+}
+
+export interface HeroImage {
+  src: string;
+  alt: string;
+}
+
+export interface HeroContent {
+  greeting: string;
+  name: string;
+  headline: string;
+  supporting: string;
+  points: string[];
+  newsletter: NewsletterConfig;
+  image: HeroImage;
+}
+
+// Footer ---------------------------------------------------------------------
+
+export interface FooterLink {
+  label: string;
+  href: string;
+}
+
+export interface FooterColumn {
+  title: string;
+  links: FooterLink[];
+}
+
+export interface FooterContent {
+  bio: {
+    intro: string;
+    paragraphs: string[];
+  };
+  columns: FooterColumn[];
+  bottom: string;
+}
+
+// Site-level content ---------------------------------------------------------
+
+export interface SiteContent {
+  identity: Identity;
+  nav: {
+    links: NavLink[];
+  };
+  hero: HeroContent;
+  footer: FooterContent;
+}
+
+// Homepage sections ----------------------------------------------------------
+
+export type Persona = "builder" | "operator" | "thinker" | "wanderer";
+
+export interface WritingItem {
   id: string;
-  persona: string;
+  slug: string;
   title: string;
   subtitle?: string;
-  byline?: string;
-  slug: string;
-  oldSlugs?: string[];
-  status?: 'draft' | 'published' | 'archived';
-  excerpt?: string;
-  coverImageUrl?: string;
-  coverImageAlt?: string;
-  coverImageCaption?: string;
-  coverImageLocation?: string;
-  coverImageCredit?: string;
-  autoCoverImage: boolean;
-  content: string;
-  draftContent?: string;
+  description: string;
+  date: string;
+  persona: Persona;
   tags: string[];
-  readingTime?: number;
-  publishedAt?: string;
-  featured: boolean;
-  hidden: boolean;
-  autoOptimize?: boolean;
-  seoTitle?: string;
-  seoDescription?: string;
-  ogTitle?: string;
-  ogDescription?: string;
-  twitterTitle?: string;
-  twitterDescription?: string;
-  keywords?: string[];
-  manualOverrides?: string[];
-  aiMetadataStatus?: 'idle' | 'generating' | 'completed' | 'failed';
-  aiMetadataLastGeneratedAt?: string;
-  aiMetadataContentHash?: string;
-  aiMetadataError?: string;
-  createdAt: string;
-  updatedAt: string;
+  coverImage?: string;
+  status?: "published" | "unpublished";
 }
 
-export interface FieldNote {
+export interface NoteItem {
   id: string;
+  slug: string;
   title: string;
-  excerpt?: string;
-  content: string;
-  category: string;
-  publishedAt?: string;
-  featured: boolean;
-  hidden: boolean;
-  draft: boolean;
-  createdAt: string;
-  updatedAt: string;
+  description: string;
+  content: string[];
+  date: string;
+  persona: Persona;
+  tags: string[];
+  coverImage?: string;
+  status?: "published" | "unpublished";
 }
 
-export interface Question {
+export interface BookItem {
   id: string;
-  text: string;
-  question?: string;
-  context?: string;
-  order: number;
-  hidden: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface ThoughtFragment {
-  id: string;
-  text: string;
-  title?: string;
-  content?: string;
-  publishedAt?: string;
-  hidden: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface JournalMoment {
-  id: string;
-  title: string;
-  body: string;
-  timeLabel: string;
-  hidden: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface Fragment {
-  id: string;
-  quote: string;
-  source: string;
-  title?: string;
-  body?: string;
-  hidden: boolean;
-  order?: number;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface Book {
-  id: string;
+  slug: string;
   title: string;
   author: string;
-  coverImage?: string;
-  category: string;
-  status: 'reading' | 'finished' | 'paused' | 'wishlist';
-  notes?: string;
-  featured: boolean;
-  hidden?: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface BuilderStatus {
-  id: string;
-  operationalState: string;
-  statusText: string;
-  currentFocus: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface ActiveSystem {
-  id: string;
-  title: string;
   description: string;
-  status: string;
-  level?: string;
-  stack: string[];
-  updatedAt: string;
-  order: number;
-  hidden: boolean;
-  createdAt: string;
-}
-
-export interface BuildLog {
-  id: string;
-  title: string;
-  category?: string;
-  shortSummary?: string;
-  longSummary?: string;
-  description?: string;
   date: string;
-  source: 'manual' | 'automated';
-  aiGenerated: boolean;
-  generatedAt?: string;
-  generationModel?: string;
-  relatedCommits: string[];
-  relatedRepositories: string[];
-  hidden: boolean;
-  createdAt: string;
-  updatedAt: string;
+  persona: Persona;
+  tags: string[];
+  cover?: string;
+  link?: string;
 }
 
-export interface OperatorFocus {
-  id: string;
-  label: string;
-  value: string;
-  description?: string;
-  order: number;
-  hidden: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface RedistributionRecord {
-  id: string;
-  amount: number;
-  destination: string;
-  description: string;
-  proofUrl?: string;
-  internalNotes?: string | null;
-  donatedAt: string;
-  transactionReference?: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface NewsletterIssue {
-  id: string;
-  persona: string;
+export interface SectionGroup<T> {
   title: string;
-  subject?: string;
-  previewText?: string;
-  content: string;
-  publishedAt?: string;
-  hidden: boolean;
-  createdAt: string;
-  updatedAt: string;
+  href: string;
+  subheader: string;
+  items: T[];
 }
 
-export interface NewsletterProfile {
+export interface HomeContent {
+  writing: SectionGroup<WritingItem>;
+  notes: SectionGroup<NoteItem>;
+  library: SectionGroup<BookItem>;
+}
+
+// Scribble (aggregated index) -------------------------------------------------
+
+export type ScribbleEntryType = "essay" | "note" | "book";
+
+export interface ScribbleEntry {
   id: string;
-  persona: string;
+  type: ScribbleEntryType;
+  title: string;
   description: string;
-  frequencyText: string;
-  philosophyText: string;
-  expectationItems: string[];
-  createdAt: string;
-  updatedAt: string;
+  date: string;
+  persona: Persona;
+  topics: string[];
+  href: string;
+  author?: string;
+  coverImage?: string;
 }
 
-export interface Subscriber {
-  id: string;
-  email: string;
-  source?: string;
-  isVerified: boolean;
-  createdAt: string;
-  updatedAt: string;
+// Blog posts -----------------------------------------------------------------
+
+export interface PostFigure {
+  src: string;
+  alt: string;
+  caption: string;
 }
 
-export interface Subscription {
-  id: string;
-  subscriberId: string;
-  persona: string;
-  active: boolean;
-  createdAt: string;
-  updatedAt: string;
+export interface PostQuote {
+  text: string;
+  attribution?: string;
 }
 
-export interface Donation {
+export interface PostSection {
   id: string;
-  amount: number;
-  donorName?: string;
-  donorEmail?: string;
-  donorPhone?: string;
-  publicName?: string;
-  razorpayOrderId?: string;
-  razorpayPaymentId?: string;
-  status: string;
-  createdAt: string;
-  updatedAt: string;
+  heading: string;
+  paragraphs: string[];
+  figure?: PostFigure;
+  quote?: PostQuote;
+  footnotes?: string[];
 }
 
-export interface PasskeyCredential {
+export interface BookCard {
+  title: string;
+  author: string;
+  note: string;
+}
+
+export interface BlogPost {
+  slug: string;
+  title: string;
+  subtitle?: string;
+  description: string;
+  persona?: Persona;
+  tags: string[];
+  publishedAt: string;
+  lastEditedAt: string;
+  assumedAudience: string;
+  intro: string[];
+  sections: PostSection[];
+  books: BookCard[];
+  coverImage?: string;
+  status?: "published" | "unpublished";
+}
+
+// Now page timeline ----------------------------------------------------------
+
+export interface NowBook {
+  title: string;
+  author: string;
+  description: string;
+  year?: string;
+  cover?: string;
+  link?: string;
+}
+
+export interface NowEntry {
   id: string;
+  title: string;
+  date: string;
+  content: string;
+}
+
+// Media Resources -------------------------------------------------------------
+
+export interface MediaItem {
+  id: string;
+  name: string;
+  src: string;
+  alt: string;
+  size: string;
+  dimensions?: string;
+  uploadedAt: string;
+  tag: "profile" | "atmosphere" | "post" | "book";
+}
+
+// Admin & Security ------------------------------------------------------------
+
+export type AppRole = "user" | "content_admin" | "super_admin";
+
+export interface UserRole {
   userId: string;
-  credentialId: string;
-  publicKey: string;
-  counter: number;
-  deviceType: CredentialDeviceType;
-  backedUp: boolean;
-  transports: AuthenticatorTransportFuture[];
-  name: string;
-  aaguid?: string | null;
-  lastUsedAt?: string | null;
-  createdAt: string;
-  updatedAt: string;
+  role: AppRole;
 }
 
-export interface PasskeyListItem {
+// Contributions & Patronage ---------------------------------------------------
+
+export type ContributionStatus = "pending" | "captured" | "failed";
+
+export interface Contribution {
   id: string;
-  credentialId: string;
+  orderId?: string;
+  paymentId?: string;
+  amount: number;
+  currency: string;
+  status: ContributionStatus;
   name: string;
-  deviceType: CredentialDeviceType;
-  backedUp: boolean;
-  transports: AuthenticatorTransportFuture[];
+  email?: string;
+  note?: string;
   createdAt: string;
-  lastUsedAt?: string | null;
+  source: "razorpay" | "mock";
 }

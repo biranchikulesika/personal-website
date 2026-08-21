@@ -1,4 +1,8 @@
-# Dependencies
+# =============================================================================
+# GITIGNORE — Next.js, TypeScript, Tooling, Security & OS Guards
+# =============================================================================
+
+# ── Dependencies ─────────────────────────────────────────────────────────────
 node_modules/
 .pnp
 .pnp.js
@@ -8,71 +12,102 @@ node_modules/
 .yarn/cache/
 .yarn/unplugged/
 .yarn/build-state.yml
-.yarn/plugins/
-.yarn/releases/
+.pnpm-store/
 
-# Next.js
+# ── Production Builds & Framework Artifacts ─────────────────────────────────
 .next/
 out/
 build/
-
-# Environment variables (contain secrets)
-.env
-.env.local
-.env.development
-.env.production
-.env.test
-.env*.local
-.env*.keys
-.env.vault
-
-# Keep environment examples
-!.env.example
-!.env.template
-
-# Vercel
+dist/
+.turbo/
 .vercel
 .vercel/output/
 
-# TypeScript
+# ── TypeScript & Compiler Caches ─────────────────────────────────────────────
 *.tsbuildinfo
 next-env.d.ts
 
-# ESLint
+# ── Linters, Formatters & Tooling Caches ─────────────────────────────────────
 .eslintcache
-.eslintignore
-
-# Prettier
 .prettiercache
+.stylelintcache
+*.cache
 
-# Supabase CLI
+# ── Environment & Secret Files (CRITICAL: Never commit credentials) ──────────
+.env
+.env.local
+.env.development
+.env.development.local
+.env.production
+.env.production.local
+.env.test
+.env.test.local
+.env*.local
+.env*.keys
+.env.vault
+*.env
+
+# Keep explicit example / template configurations
+!.env.example
+!.env.production.example
+!.env.template
+
+# ── Certificates, Keys & Credentials ────────────────────────────────────────
+*.pem
+*.key
+*.cert
+*.crt
+*.p12
+*.pfx
+*.jks
+*.keystore
+
+# ── Local Databases & Storage Dumps ──────────────────────────────────────────
+*.sqlite
+*.sqlite3
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+*.dump
 supabase/.temp/
 supabase/.branches/
 
-# Testing
+# ── Testing & Coverage ───────────────────────────────────────────────────────
 coverage/
+.nyc_output/
+test-results/
+playwright-report/
+blob-report/
 
-# Debug logs
+# ── Logs & Debugging ─────────────────────────────────────────────────────────
+logs/
+*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
+lerna-debug.log*
 
-# PR description drafts (never commit these)
-PR_DESCRIPTION.md
-release-notes.md
-
-# Misc
-*.pem
+# ── Temporary & Scratch Files ────────────────────────────────────────────────
+tmp/
+temp/
+*.tmp
+*.temp
+*.bak
 *.orig
 *.rej
 *.swp
 *.swo
+*.swn
+*.sw?
 *~
-*.tmp
-*.temp
+*.patch
+*.diff
+PR_DESCRIPTION.md
+release-notes.md
 
-# Editor directories and files
+# ── IDEs & Code Editors ──────────────────────────────────────────────────────
 .idea/
 .vscode/*
 !.vscode/settings.json
@@ -83,8 +118,16 @@ release-notes.md
 *.ntvs*
 *.njsproj
 *.sln
-*.sw?
+*.sublime-project
+*.sublime-workspace
 
+# ── AI Agents & Local Assistants ─────────────────────────────────────────────
+.cursor/
+.claude/
+.aider*
+*.prompt.md
+
+# ── Operating System Artifacts ────────────────────────────────────────────────
 # macOS
 .DS_Store
 .AppleDouble
@@ -101,6 +144,7 @@ Icon
 
 # Windows
 Thumbs.db
+Thumbs.db:encryptable
 ehthumbs.db
 ehthumbs_vista.db
 [Dd]esktop.ini
@@ -111,3 +155,9 @@ $RECYCLE.BIN/
 *.msm
 *.msp
 *.lnk
+
+# Linux
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*

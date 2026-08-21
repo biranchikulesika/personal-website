@@ -2,66 +2,154 @@
 
 import { createServerClient } from '@supabase/ssr';
 import { cookies, headers } from 'next/headers';
-import { LRUCache } from 'lru-cache';
 
-// Professional In-Memory Rate Limiter
-// Max 5 attempts per 5 minutes per IP
-const rateLimitCache = new LRUCache<string, number>({
-  max: 5000,
-  ttl: 1000 * 60 * 5, // 5 minutes
-});
+// ── Rate Limiting ──────────────────────────────────────────────────────────
+// Simple in-memory rate limiter: max 5 attempts per 5 minutes per IP.
+// In production, consider using Redis or an external rate-limiting service.
 
-export async function authenticateUser(email: string, password: string) {
-  const headersList = await headers();
-  const ip = headersList.get('x-forwarded-for') || 
-             headersList.get('x-real-ip') || 
-             'unknown-ip';
+const attempts = new Map<string, { count: number; resetAt: number }>();
 
-  const currentAttempts = rateLimitCache.get(ip) || 0;
+function getRateLimitKey(ip: string): string {
+  return `login:${ip}`;
+}
 
-  // Brute force detected!
-  if (currentAttempts >= 5) {
-    // "False Hope": Instantly return a generic error.
-    // This perfectly mimics a failed Supabase login without ever calling the database.
-    return { error: { message: 'Invalid login credentials' } };
+function checkRateLimit(ip: string): boolean {
+  const key = getRateLimitKey(ip);
+  const now = Date.now();
+  const record = attempts.get(key);
+
+  if (!record || now > record.resetAt) {
+    attempts.set(key, { count: 1, resetAt: now + 5 * 60 * 1000 });
+    return true;
   }
 
-  // Increment attempts
-  rateLimitCache.set(ip, currentAttempts + 1);
+  if (record.count >= 5) {
+    return false;
+  }
+
+  record.count++;
+  return true;
+}
+
+function resetRateLimit(ip: string): void {
+  attempts.delete(getRateLimitKey(ip));
+}
+
+// ── Supabase Client Helper ────────────────────────────────────────────────
+
+async function createAuthClient() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabasePublishableKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+
+  if (!supabaseUrl || !supabasePublishableKey) {
+    return null;
+  }
 
   const cookieStore = await cookies();
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll();
-        },
-        setAll(cookiesToSet) {
-          try {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
-            );
-          } catch {
-            // The `setAll` method was called from a Server Component.
-          }
-        },
-      },
-    }
-  );
 
-  const { error } = await supabase.auth.signInWithPassword({
-    email,
-    password,
+  return createServerClient(supabaseUrl, supabasePublishableKey, {
+    auth: {
+      experimental: { passkey: true },
+    },
+    cookies: {
+      getAll() {
+        return cookieStore.getAll();
+      },
+      setAll(cookiesToSet) {
+        try {
+          cookiesToSet.forEach(({ name, value, options }) =>
+            cookieStore.set(name, value, options),
+          );
+        } catch {
+          // Server Action — safe to ignore.
+        }
+      },
+    },
+  });
+}
+
+// ── OAuth Actions ──────────────────────────────────────────────────────────
+
+export async function signInWithGoogle(): Promise<{ url?: string; error?: string }> {
+  const supabase = await createAuthClient();
+  if (!supabase) return { error: 'Authentication is not configured' };
+
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/admin/auth/callback?next=/admin`,
+    },
   });
 
-  if (error) {
-    // Return standard error message so attackers can't distinguish a ban from a bad password
-    return { error: { message: 'Invalid login credentials' } };
+  if (error) return { error: error.message };
+  return { url: data.url };
+}
+
+export async function signInWithGitHub(): Promise<{ url?: string; error?: string }> {
+  const supabase = await createAuthClient();
+  if (!supabase) return { error: 'Authentication is not configured' };
+
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: 'github',
+    options: {
+      redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/admin/auth/callback?next=/admin`,
+    },
+  });
+
+  if (error) return { error: error.message };
+  return { url: data.url };
+}
+
+// ── Passkey Actions ────────────────────────────────────────────────────────
+
+export async function signInWithPasskey(): Promise<{ error?: string }> {
+  const headersList = await headers();
+  const ip =
+    headersList.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+    headersList.get('x-real-ip') ||
+    'unknown';
+
+  if (!checkRateLimit(ip)) {
+    return { error: 'Too many attempts. Please try again later.' };
   }
 
-  // If successful, reset their attempts
-  rateLimitCache.delete(ip);
-  return { error: null };
+  const supabase = await createAuthClient();
+  if (!supabase) return { error: 'Authentication is not configured' };
+
+  const { error } = await supabase.auth.signInWithPasskey();
+
+  if (error) {
+    return { error: 'Passkey authentication failed. Please try again.' };
+  }
+
+  resetRateLimit(ip);
+  return {};
+}
+
+export async function startPasskeyRegistration(): Promise<{
+  options?: string;
+  error?: string;
+}> {
+  const supabase = await createAuthClient();
+  if (!supabase) return { error: 'Authentication is not configured' };
+
+  // Get current user
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: 'You must be signed in to register a passkey.' };
+
+  const { data, error } = await supabase.auth.registerPasskey();
+
+  if (error) return { error: error.message };
+  return { options: JSON.stringify(data) };
+}
+
+// ── Logout Action ──────────────────────────────────────────────────────────
+
+export async function logoutAction(): Promise<{ error?: string }> {
+  const supabase = await createAuthClient();
+  if (!supabase) return { error: 'Authentication is not configured' };
+
+  const { error } = await supabase.auth.signOut();
+  if (error) return { error: error.message };
+  return {};
 }

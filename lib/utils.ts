@@ -1,46 +1,163 @@
-import { clsx, type ClassValue } from "clsx"
-import { twMerge } from "tailwind-merge"
+import type { PostSection } from '@/lib/types';
 
-export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs))
-}
+// Text utilities ---------------------------------------------------------------
 
-export function getPersonaUrl(persona: 'builder' | 'operator' | 'wanderer' | 'thinker' | 'main', path: string = '') {
-  // If we're deployed on the actual domain, use subdomains
-  const useSubdomains = process.env.NEXT_PUBLIC_USE_SUBDOMAINS === 'true';
-  const baseDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'biranchikulesika.com';
-  const isDev = process.env.NODE_ENV === 'development';
-
-  if (useSubdomains && !isDev) {
-    if (persona === 'main') {
-      return `https://${baseDomain}${path}`;
-    }
-    return `https://${persona}.${baseDomain}${path}`;
-  }
-
-  if (persona === 'main') {
-    return path || '/';
-  }
-  return `/${persona}${path}`;
-}
-
-export function formatDate(date: string | Date | null | undefined): string {
-  if (!date) return '';
-  const d = new Date(date);
-  if (isNaN(d.getTime())) return '';
-  return `${d.getDate()} ${d.toLocaleString('en-US', { month: 'short' })}, ${d.getFullYear()}`;
-}
-
+/** Converts arbitrary text into a clean kebab-case slug. */
 export function slugify(text: string): string {
-  if (!text) return '';
   return text
-    .toString()
     .toLowerCase()
     .trim()
-    .replace(/\s+/g, '-') // Replace spaces with -
-    .replace(/&/g, '-and-') // Replace & with 'and'
-    .replace(/[^\w-]+/g, '') // Remove all non-word chars except hyphens
-    .replace(/--+/g, '-') // Replace multiple - with single -
-    .replace(/^-+/, '') // Trim - from start of text
-    .replace(/-+$/, ''); // Trim - from end of text
+    .replace(/[^\w\s-]/g, '')
+    .replace(/[\s_-]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+/**
+ * Validates whether a URL or path is safe to use in links / redirects.
+ * Rejects javascript:, data:, vbscript:, and relative protocol (//) exploits.
+ */
+export function isSafeUrl(url: string | null | undefined): boolean {
+  if (!url || typeof url !== 'string') return false;
+  const trimmed = url.trim();
+  if (!trimmed) return false;
+
+  // Disallow relative protocol URLs like //evil.com or /\evil.com
+  if (trimmed.startsWith('//') || trimmed.startsWith('/\\') || trimmed.startsWith('\\')) {
+    return false;
+  }
+
+  // Safe relative paths starting with /
+  if (trimmed.startsWith('/') && !trimmed.startsWith('/\\')) {
+    return true;
+  }
+
+  // Safe HTTP/HTTPS protocols
+  try {
+    const parsed = new URL(trimmed);
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Sanitizes a redirect path parameter to prevent open redirect vulnerabilities.
+ * Returns the sanitized relative path or the fallback path.
+ */
+export function sanitizeRedirectPath(
+  path: string | null | undefined,
+  fallback: string = '/admin',
+): string {
+  if (!path || typeof path !== 'string') return fallback;
+  const trimmed = path.trim();
+
+  // Must start with / and not contain protocol or double slashes
+  if (!trimmed.startsWith('/') || trimmed.startsWith('//') || trimmed.startsWith('/\\') || trimmed.includes(':')) {
+    return fallback;
+  }
+
+  return trimmed;
+}
+
+// Date utilities ---------------------------------------------------------------
+
+/**
+ * Formats a date string for display. Accepts either an ISO date
+ * ("2026-03-12") or a pre-formatted string ("Mar 12, 2026") and always
+ * renders the full day-month-year form.
+ */
+export function formatDisplayDate(value: string): string {
+  if (!value) return '';
+  const trimmed = value.trim();
+
+  // Already human-readable ("Mar 12, 2026", "2025").
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return trimmed;
+
+  const date = new Date(`${trimmed}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return trimmed;
+
+  return date.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+}
+
+// Markdown conversion ----------------------------------------------------------
+
+/** Converts post intro paragraphs and sections into an MDX markdown string. */
+export function sectionsToMarkdown(
+  intro: string[],
+  sections: PostSection[],
+): string {
+  const parts: string[] = [];
+  if (intro && intro.length > 0) {
+    parts.push(intro.join('\n\n'));
+  }
+  if (sections && sections.length > 0) {
+    sections.forEach((sec) => {
+      parts.push(`## ${sec.heading}`);
+      if (sec.paragraphs && sec.paragraphs.length > 0) {
+        parts.push(sec.paragraphs.join('\n\n'));
+      }
+      if (sec.figure) {
+        parts.push(`![${sec.figure.alt}](${sec.figure.src})\n*${sec.figure.caption}*`);
+      }
+      if (sec.quote) {
+        parts.push(`> ${sec.quote.text}\n> — ${sec.quote.attribution || ''}`);
+      }
+      if (sec.footnotes && sec.footnotes.length > 0) {
+        sec.footnotes.forEach((fn, idx) => {
+          parts.push(`[^${idx + 1}]: ${fn}`);
+        });
+      }
+    });
+  }
+  return parts.join('\n\n');
+}
+
+/** Converts MDX markdown back into structured intro paragraphs and PostSections. */
+export function markdownToPostSections(
+  md: string,
+): { intro: string[]; sections: PostSection[] } {
+  if (!md || !md.trim()) {
+    return { intro: [], sections: [] };
+  }
+
+  // Split by H2 headers (## Heading)
+  const parts = md.split(/^##\s+/m);
+  const introText = parts[0]?.trim() || '';
+  const intro = introText ? introText.split('\n\n').filter(Boolean) : [];
+
+  const sections: PostSection[] = [];
+  for (let i = 1; i < parts.length; i++) {
+    const chunk = parts[i];
+    const firstNewline = chunk.indexOf('\n');
+    const heading = (firstNewline > -1 ? chunk.slice(0, firstNewline) : chunk).trim();
+    const body = firstNewline > -1 ? chunk.slice(firstNewline).trim() : '';
+
+    // Extract footnote definitions: [^1]: text
+    const footnotes: string[] = [];
+    const bodyLines = body.split('\n');
+    const contentLines: string[] = [];
+    for (const line of bodyLines) {
+      const fnMatch = line.trim().match(/^\[\^(\d+)\]:\s*(.+)/);
+      if (fnMatch) {
+        footnotes[Number(fnMatch[1]) - 1] = fnMatch[2];
+      } else {
+        contentLines.push(line);
+      }
+    }
+
+    const paragraphs = contentLines.join('\n').split('\n\n').filter(Boolean);
+
+    sections.push({
+      id: slugify(heading) || `section-${i}`,
+      heading: heading || `Section ${i}`,
+      paragraphs: paragraphs.length > 0 ? paragraphs : [''],
+      ...(footnotes.length > 0 ? { footnotes } : {}),
+    });
+  }
+
+  return { intro, sections };
 }
