@@ -7,9 +7,9 @@
  * - Authenticated users visiting /admin/login are redirected to /admin.
  */
 
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
-import { createServerClient } from '@supabase/ssr';
+import { createServerClient } from "@supabase/ssr";
+import type { NextRequest } from "next/server";
+import { NextResponse } from "next/server";
 
 export default async function proxy(request: NextRequest) {
   let response = NextResponse.next({
@@ -20,17 +20,17 @@ export default async function proxy(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname;
   const isAuthRoute =
-    pathname === '/admin/login' || pathname.startsWith('/admin/auth');
+    pathname === "/admin/login" || pathname.startsWith("/admin/auth");
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseUrl = process.env.SUPABASE_URL;
   const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 
   // If Supabase credentials are missing and requesting protected admin route
   if (!supabaseUrl || !supabaseKey) {
     if (!isAuthRoute) {
-      const loginUrl = new URL('/admin/login', request.url);
-      loginUrl.searchParams.set('next', pathname);
-      loginUrl.searchParams.set('error', 'auth_not_configured');
+      const loginUrl = new URL("/admin/login", request.url);
+      loginUrl.searchParams.set("next", pathname);
+      loginUrl.searchParams.set("error", "auth_not_configured");
       return NextResponse.redirect(loginUrl);
     }
     return response;
@@ -60,15 +60,15 @@ export default async function proxy(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   // If user is authenticated and navigating to login page, redirect to dashboard
-  if (user && pathname === '/admin/login') {
-    const adminUrl = new URL('/admin', request.url);
+  if (user && pathname === "/admin/login") {
+    const adminUrl = new URL("/admin", request.url);
     return NextResponse.redirect(adminUrl);
   }
 
   // If user is unauthenticated and attempting to access a protected admin route, redirect to login
   if (!user && !isAuthRoute) {
-    const loginUrl = new URL('/admin/login', request.url);
-    loginUrl.searchParams.set('next', pathname);
+    const loginUrl = new URL("/admin/login", request.url);
+    loginUrl.searchParams.set("next", pathname);
     return NextResponse.redirect(loginUrl);
   }
 
@@ -76,5 +76,5 @@ export default async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/admin/:path*'],
+  matcher: ["/admin/:path*"],
 };

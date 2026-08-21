@@ -21,6 +21,7 @@ Next.js loads environment files in the following order of precedence (highest to
 ```
 
 ### Which File to Copy:
+
 - **Local Development**: Copy `.env.example` to `.env.local`:
   ```bash
   cp .env.example .env.local
@@ -34,6 +35,7 @@ Next.js loads environment files in the following order of precedence (highest to
 ---
 
 ### `DATA_SOURCE`
+
 1. **Variable name**: `DATA_SOURCE`
 2. **What it is**: Primary data adapter switch.
 3. **Why the app needs it**: Controls whether the application connects to the in-memory mock repository or the production Supabase PostgreSQL repository.
@@ -52,6 +54,7 @@ Next.js loads environment files in the following order of precedence (highest to
 ---
 
 ### `NEXT_PUBLIC_SITE_URL`
+
 1. **Variable name**: `NEXT_PUBLIC_SITE_URL`
 2. **What it is**: Canonical public base URL of the website.
 3. **Why the app needs it**: Generates canonical `<link rel="canonical">` tags, Open Graph image URLs, Schema.org JSON-LD IDs, `sitemap.xml` entries, and OAuth callback redirect URLs.
@@ -72,8 +75,9 @@ Next.js loads environment files in the following order of precedence (highest to
 
 ---
 
-### `NEXT_PUBLIC_SUPABASE_URL`
-1. **Variable name**: `NEXT_PUBLIC_SUPABASE_URL`
+### `SUPABASE_URL`
+
+1. **Variable name**: `SUPABASE_URL`
 2. **What it is**: Supabase project HTTPS API gateway URL.
 3. **Why the app needs it**: Connects `@supabase/supabase-js` and `@supabase/ssr` clients to your database and storage buckets.
 4. **Where to get it**:
@@ -93,6 +97,7 @@ Next.js loads environment files in the following order of precedence (highest to
 ---
 
 ### `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
+
 1. **Variable name**: `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
 2. **What it is**: Supabase anonymous public API key.
 3. **Why the app needs it**: Authorizes client-side and server-side public queries governed by Row-Level Security policies.
@@ -113,6 +118,7 @@ Next.js loads environment files in the following order of precedence (highest to
 ---
 
 ### `SUPABASE_SECRET_KEY`
+
 1. **Variable name**: `SUPABASE_SECRET_KEY`
 2. **What it is**: Supabase administrative service-role secret key.
 3. **Why the app needs it**: Authorizes `SupabaseContentRepository` to perform administrative queries, bypassing RLS on trusted server execution paths.
@@ -134,6 +140,7 @@ Next.js loads environment files in the following order of precedence (highest to
 ---
 
 ### `NEXT_PUBLIC_RAZORPAY_KEY_ID`
+
 1. **Variable name**: `NEXT_PUBLIC_RAZORPAY_KEY_ID`
 2. **What it is**: Public Razorpay Key ID for client checkout.
 3. **Why the app needs it**: Initializes the Razorpay Checkout modal on the `/support` page.
@@ -152,6 +159,7 @@ Next.js loads environment files in the following order of precedence (highest to
 ---
 
 ### `RAZORPAY_KEY_SECRET`
+
 1. **Variable name**: `RAZORPAY_KEY_SECRET`
 2. **What it is**: Private Razorpay API secret key.
 3. **Why the app needs it**: Cryptographically verifies payment signatures (`HMAC-SHA256(order_id + "|" + payment_id)`) on payment confirmations.
@@ -171,6 +179,7 @@ Next.js loads environment files in the following order of precedence (highest to
 ---
 
 ### `RAZORPAY_WEBHOOK_SECRET`
+
 1. **Variable name**: `RAZORPAY_WEBHOOK_SECRET`
 2. **What it is**: Webhook secret token for signature verification.
 3. **Why the app needs it**: Validates the `X-Razorpay-Signature` header on POST requests to `/api/webhooks/razorpay`.
@@ -191,6 +200,7 @@ Next.js loads environment files in the following order of precedence (highest to
 ---
 
 ### `PEXELS_API_KEY`
+
 1. **Variable name**: `PEXELS_API_KEY`
 2. **What it is**: API key for Pexels curated photo search.
 3. **Why the app needs it**: Fetches rotating high-resolution atmosphere wallpapers for `/admin/login`.
@@ -210,6 +220,7 @@ Next.js loads environment files in the following order of precedence (highest to
 ---
 
 ### `OPENAI_API_KEY` / `GROQ_API_KEY`
+
 1. **Variable name**: `OPENAI_API_KEY` or `GROQ_API_KEY`
 2. **What it is**: LLM provider API key for editorial metadata generation.
 3. **Why the app needs it**: Powers AI metadata suggestions (persona classification, SEO tags, summary) in the MDX Composer (`/admin/compose`).
@@ -233,7 +244,7 @@ Next.js loads environment files in the following order of precedence (highest to
 ```
 DATA_SOURCE=supabase
       │
-      ├── NEXT_PUBLIC_SUPABASE_URL
+      ├── SUPABASE_URL
       ├── NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ──► getSupabasePublic() / Client Queries (RLS)
       └── SUPABASE_SECRET_KEY                   ──► getSupabaseAdmin()  / Admin Operations (Bypasses RLS)
 
@@ -251,17 +262,20 @@ SEO & Social Sharing:
 ## 4. Credential Rotation Guidelines
 
 ### If `SUPABASE_SECRET_KEY` is Compromised:
+
 1. Go to Supabase Dashboard → Project Settings → **API**.
 2. Click **Generate new secret key** next to `service_role`.
 3. Update `SUPABASE_SECRET_KEY` immediately in your hosting environment variables.
 4. Redeploy the application.
 
 ### If `RAZORPAY_KEY_SECRET` is Compromised:
+
 1. Go to Razorpay Dashboard → Account & Settings → **API Keys**.
 2. Click **Regenerate Key**.
 3. Update `RAZORPAY_KEY_SECRET` in your hosting dashboard and redeploy.
 
 ### If `RAZORPAY_WEBHOOK_SECRET` is Compromised:
+
 1. Go to Razorpay Dashboard → Account & Settings → **Webhooks**.
 2. Edit the active webhook and generate a new Secret.
 3. Update `RAZORPAY_WEBHOOK_SECRET` in hosting settings.
