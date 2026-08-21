@@ -1071,7 +1071,7 @@ export function ComposeWorkspace({
                 placeholder="Search essays or notes by title..."
                 value={draftsSearchQuery}
                 onChange={(e) => setDraftsSearchQuery(e.target.value)}
-                className="w-full rounded-lg border border-tinted/20 bg-night-soft px-3.5 py-2 text-xs text-paper placeholder-ink-soft/50 focus:border-accent focus:outline-none"
+                className="w-full rounded-lg border border-tinted/20 bg-night-soft px-3.5 py-2 text-xs text-paper placeholder-ink-soft/50 focus:border-tinted/40 focus:outline-none"
               />
             </div>
 

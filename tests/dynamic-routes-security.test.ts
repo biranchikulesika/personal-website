@@ -139,6 +139,29 @@ test("getDataSource accepts mock and supabase", async () => {
   process.env.DATA_SOURCE = original ?? "mock";
 });
 
+test("isAuthEnabled permanently returns false and rejects AUTH_ENABLED=true", async () => {
+  const { isAuthEnabled } = await import("../lib/config/env");
+
+  const original = process.env.AUTH_ENABLED;
+
+  // Default / unset / false
+  delete process.env.AUTH_ENABLED;
+  assert.equal(isAuthEnabled(), false);
+
+  process.env.AUTH_ENABLED = "false";
+  assert.equal(isAuthEnabled(), false);
+
+  // Attempting to set AUTH_ENABLED=true must throw loudly
+  process.env.AUTH_ENABLED = "true";
+  assert.throws(() => isAuthEnabled(), /AUTH_ENABLED=true is not supported/);
+
+  if (original !== undefined) {
+    process.env.AUTH_ENABLED = original;
+  } else {
+    delete process.env.AUTH_ENABLED;
+  }
+});
+
 // ── Content Isolation ──────────────────────────────────────────────────────
 
 test("empty database returns empty content collections", async () => {

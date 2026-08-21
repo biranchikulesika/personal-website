@@ -41,8 +41,6 @@ export const SITE_CONFIG: SiteContent = {
       paragraphs: [
         "An aspiring software developer by day, a cybersecurity enthusiast by night, and a student of philosophy whenever I\u2019m confused.",
         "I build things to understand them, write things down so I don't forget them, and question things that seem too obvious to question.",
-        "I care about curiosity, independence, thoughtful technology, and making things with intention rather than simply making more things.",
-        "The web is already loud enough. I\u2019d rather make my little corner of it quieter.",
       ],
     },
     columns: [

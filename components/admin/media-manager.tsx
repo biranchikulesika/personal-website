@@ -219,7 +219,7 @@ export function MediaManager({
           placeholder="Search assets by name or tag..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full max-w-xs rounded-full border border-tinted/20 bg-night-soft px-4 py-1.5 text-xs text-paper placeholder:text-gray-mid/50 focus:border-accent focus:outline-none"
+          className="w-full max-w-xs rounded-full border border-tinted/20 bg-night-soft px-4 py-1.5 text-xs text-paper placeholder:text-gray-mid/50 focus:border-tinted/40 focus:outline-none"
         />
       </div>
 
@@ -441,7 +441,7 @@ export function MediaManager({
                   handleConfirmDelete();
                 }
               }}
-              className="mt-3 w-full rounded-xl border border-tinted/20 bg-night px-3.5 py-2 text-sm text-paper placeholder:text-gray-mid/50 focus:border-accent focus:outline-none"
+              className="mt-3 w-full rounded-xl border border-tinted/20 bg-night px-3.5 py-2 text-sm text-paper placeholder:text-gray-mid/50 focus:border-tinted/40 focus:outline-none"
             />
             <div className="mt-6 flex justify-end gap-3">
               <button
@@ -499,7 +499,7 @@ export function MediaManager({
                   placeholder="e.g. project-diagram.jpeg"
                   value={fileName}
                   onChange={(e) => setFileName(e.target.value)}
-                  className="mt-1.5 w-full rounded-xl border border-tinted/20 bg-night-soft px-3.5 py-2 text-sm text-paper placeholder:text-gray-mid/50 focus:border-accent focus:outline-none"
+                  className="mt-1.5 w-full rounded-xl border border-tinted/20 bg-night-soft px-3.5 py-2 text-sm text-paper placeholder:text-gray-mid/50 focus:border-tinted/40 focus:outline-none"
                 />
               </div>
 
@@ -513,7 +513,7 @@ export function MediaManager({
                   placeholder="/biranchi.jpeg or https://..."
                   value={fileSrc}
                   onChange={(e) => setFileSrc(e.target.value)}
-                  className="mt-1.5 w-full rounded-xl border border-tinted/20 bg-night-soft px-3.5 py-2 font-mono text-sm text-paper placeholder:text-gray-mid/50 focus:border-accent focus:outline-none"
+                  className="mt-1.5 w-full rounded-xl border border-tinted/20 bg-night-soft px-3.5 py-2 font-mono text-sm text-paper placeholder:text-gray-mid/50 focus:border-tinted/40 focus:outline-none"
                 />
               </div>
 
@@ -526,7 +526,7 @@ export function MediaManager({
                   placeholder="Accessible description of the image"
                   value={altText}
                   onChange={(e) => setAltText(e.target.value)}
-                  className="mt-1.5 w-full rounded-xl border border-tinted/20 bg-night-soft px-3.5 py-2 text-sm text-paper placeholder:text-gray-mid/50 focus:border-accent focus:outline-none"
+                  className="mt-1.5 w-full rounded-xl border border-tinted/20 bg-night-soft px-3.5 py-2 text-sm text-paper placeholder:text-gray-mid/50 focus:border-tinted/40 focus:outline-none"
                 />
               </div>
 
@@ -538,7 +538,7 @@ export function MediaManager({
                   <select
                     value={tag}
                     onChange={(e) => setTag(e.target.value as MediaItem['tag'])}
-                    className="mt-1.5 w-full rounded-xl border border-tinted/20 bg-night-soft px-3.5 py-2 text-sm text-paper focus:border-accent focus:outline-none"
+                    className="mt-1.5 w-full rounded-xl border border-tinted/20 bg-night-soft px-3.5 py-2 text-sm text-paper focus:border-tinted/40 focus:outline-none"
                   >
                     <option value="profile" className="bg-night text-paper">Profile</option>
                     <option value="atmosphere" className="bg-night text-paper">Atmosphere</option>
@@ -555,7 +555,7 @@ export function MediaManager({
                     placeholder="e.g. 240 KB"
                     value={fileSize}
                     onChange={(e) => setFileSize(e.target.value)}
-                    className="mt-1.5 w-full rounded-xl border border-tinted/20 bg-night-soft px-3.5 py-2 text-sm text-paper placeholder:text-gray-mid/50 focus:border-accent focus:outline-none"
+                    className="mt-1.5 w-full rounded-xl border border-tinted/20 bg-night-soft px-3.5 py-2 text-sm text-paper placeholder:text-gray-mid/50 focus:border-tinted/40 focus:outline-none"
                   />
                 </div>
               </div>

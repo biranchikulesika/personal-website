@@ -72,7 +72,7 @@ export default async function AdminPage() {
       initialNowEntries={nowEntries}
       initialFeaturedPostSlugs={featuredPostSlugs}
       initialFeaturedBookSlugs={featuredBookSlugs}
-      authEnabled={process.env.AUTH_ENABLED === 'true'}
+      authEnabled={false}
       userName={userName}
       userEmail={userEmail}
       userAvatarUrl={userAvatarUrl}

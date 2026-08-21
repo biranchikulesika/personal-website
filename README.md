@@ -3,8 +3,7 @@
 Experimental rebuild in progress on branch `experiment/rebuild-foundation`.
 
 This branch is a **technical reset**. Product requirements are intentionally
-incomplete and are being defined progressively. The previous implementation is
-preserved under `legacy/` for reference only.
+incomplete and are being defined progressively.
 
 ## Current state
 

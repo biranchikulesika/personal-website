@@ -41,7 +41,7 @@ This branch is a technical reset of the website implementation.
 
 The previous implementation (persona architecture, page structure, component
 hierarchy, database schema, service structure, authentication flow, UI design)
-is preserved under `legacy/` for reference but is **not** the source of truth.
+is removed and is **not** the source of truth.
 
 Do not assume any of the following is required:
 

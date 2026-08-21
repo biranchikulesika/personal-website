@@ -15,9 +15,13 @@ export function getDataSource(): string {
   return source;
 }
 
-// Authentication is controlled by the AUTH_ENABLED environment variable.
-// When using the mock database, auth defaults to disabled.
-// When using Supabase, set AUTH_ENABLED=true to enable admin protection.
+// Authentication is permanently disabled on this branch.
+// Setting AUTH_ENABLED=true is not supported and throws an error.
 export function isAuthEnabled(): boolean {
-  return process.env.AUTH_ENABLED === 'true';
+  if (process.env.AUTH_ENABLED === 'true') {
+    throw new Error(
+      'AUTH_ENABLED=true is not supported. Authentication is permanently disabled on this branch.'
+    );
+  }
+  return false;
 }

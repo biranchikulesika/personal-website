@@ -312,7 +312,7 @@ export function ScribblePage({ entries }: ScribblePageProps) {
             onChange={(event) => setSearch(event.target.value)}
             placeholder="Search Scribble"
             aria-label="Search Scribble"
-            className="w-full rounded-full border border-tinted/20 bg-night-soft py-2 pl-9 pr-4 text-sm text-paper placeholder:text-ink-soft/60 focus:border-accent focus:outline-none"
+            className="w-full rounded-full border border-tinted/20 bg-night-soft py-2 pl-9 pr-4 text-sm text-paper placeholder:text-ink-soft/60 focus:border-tinted/40 focus:outline-none"
           />
         </div>
       </header>

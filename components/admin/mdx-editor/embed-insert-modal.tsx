@@ -134,7 +134,7 @@ export function EmbedInsertModal({
               placeholder="Search title, author, or slug..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full max-w-xs rounded-full border border-tinted/20 bg-night px-4 py-1.5 text-xs text-paper placeholder:text-gray-mid/50 focus:border-accent focus:outline-none"
+              className="w-full max-w-xs rounded-full border border-tinted/20 bg-night px-4 py-1.5 text-xs text-paper placeholder:text-gray-mid/50 focus:border-tinted/40 focus:outline-none"
             />
           </div>
         </div>

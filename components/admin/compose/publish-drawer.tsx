@@ -116,7 +116,7 @@ export function PublishDrawer({
                 <select
                   value={persona}
                   onChange={(e) => onPersonaChange(e.target.value as Persona)}
-                  className="appearance-none rounded-md border border-tinted/20 bg-night-soft px-2.5 py-1 text-[10px] font-medium capitalize text-paper/80 focus:border-accent focus:outline-none cursor-pointer pr-5"
+                  className="appearance-none rounded-md border border-tinted/20 bg-night-soft px-2.5 py-1 text-[10px] font-medium capitalize text-paper/80 focus:border-tinted/40 focus:outline-none cursor-pointer pr-5"
                 >
                   <option value="builder" className="bg-ink text-paper">Builder</option>
                   <option value="operator" className="bg-ink text-paper">Operator</option>
@@ -205,7 +205,7 @@ export function PublishDrawer({
                   <button
                     type="button"
                     onClick={() => setIsMediaModalOpen(true)}
-                    className="flex items-center justify-center gap-2 rounded-lg border border-dashed border-tinted/30 bg-night-soft py-6 hover:border-accent/40 transition-colors"
+                    className="flex items-center justify-center gap-2 rounded-lg border border-dashed border-tinted/30 bg-night-soft py-6 hover:border-tinted/60 transition-colors"
                   >
                     <span className="text-lg opacity-50">📁</span>
                     <span className="text-[11px] text-accent">Media Library</span>
@@ -223,7 +223,7 @@ export function PublishDrawer({
                 type="month"
                 value={date || ''}
                 onChange={(e) => onDateChange?.(e.target.value)}
-                className="w-full rounded-lg border border-tinted/20 bg-night-soft px-3 py-2 text-xs font-mono text-paper focus:border-accent focus:outline-none"
+                className="w-full rounded-lg border border-tinted/20 bg-night-soft px-3 py-2 text-xs font-mono text-paper focus:border-tinted/40 focus:outline-none"
               />
               <p className="text-[10px] text-ink-soft">
                 Month shown on the Now page timeline.
@@ -237,7 +237,7 @@ export function PublishDrawer({
                   {liveUrlPrefix}{slug || '…'}
                 </span>
               </div>
-              <div className="flex items-center rounded-lg border border-tinted/20 bg-night-soft px-3 py-2 text-xs font-mono focus-within:border-accent">
+              <div className="flex items-center rounded-lg border border-tinted/20 bg-night-soft px-3 py-2 text-xs font-mono focus-within:border-tinted/40">
                 <span className="text-ink-soft select-none shrink-0">{liveUrlPrefix}</span>
                 <input
                   type="text"
@@ -262,7 +262,7 @@ export function PublishDrawer({
                   setTagInput(e.target.value);
                   syncTagsFromInput(e.target.value);
                 }}
-                className="w-full rounded-lg border border-tinted/20 bg-night-soft px-2.5 py-1.5 text-[11px] text-paper focus:border-accent focus:outline-none"
+                className="w-full rounded-lg border border-tinted/20 bg-night-soft px-2.5 py-1.5 text-[11px] text-paper focus:border-tinted/40 focus:outline-none"
               />
               {tags.length > 0 && (
                 <div className="flex flex-wrap gap-1">

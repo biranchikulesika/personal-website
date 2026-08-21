@@ -263,7 +263,7 @@ export function BookCoverPicker({
                   placeholder="Search media resources..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="w-full rounded-lg border border-tinted/20 bg-night-soft px-2.5 py-1.5 text-[11px] text-paper placeholder:text-gray-mid/50 focus:border-accent focus:outline-none"
+                  className="w-full rounded-lg border border-tinted/20 bg-night-soft px-2.5 py-1.5 text-[11px] text-paper placeholder:text-gray-mid/50 focus:border-tinted/40 focus:outline-none"
                 />
                 <div className="mt-2 grid max-h-40 grid-cols-3 gap-1.5 overflow-y-auto">
                   {filteredMedia.map((media) => {

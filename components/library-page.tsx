@@ -147,7 +147,7 @@ export function LibraryPageView({ books, title, subheader }: LibraryPageProps) {
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search books, authors, topics"
             aria-label="Search Library"
-            className="w-full rounded-full border border-tinted/20 bg-night-soft py-2 pl-9 pr-4 text-sm text-paper placeholder:text-ink-soft/60 focus:border-accent focus:outline-none"
+            className="w-full rounded-full border border-tinted/20 bg-night-soft py-2 pl-9 pr-4 text-sm text-paper placeholder:text-ink-soft/60 focus:border-tinted/40 focus:outline-none"
           />
         </div>
       </header>

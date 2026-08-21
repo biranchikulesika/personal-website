@@ -283,7 +283,7 @@ export function ComponentLibrarySidebar({
               placeholder="Search components..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-night-soft border border-tinted/20 rounded-md py-1.5 pl-8 pr-3 text-xs font-sans text-paper/80 focus:outline-none focus:border-accent transition-colors"
+              className="w-full bg-night-soft border border-tinted/20 rounded-md py-1.5 pl-8 pr-3 text-xs font-sans text-paper/80 focus:outline-none focus:border-tinted/40 transition-colors"
             />
           </div>
         )}

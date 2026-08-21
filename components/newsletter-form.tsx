@@ -40,7 +40,7 @@ export function NewsletterForm({
           required
           placeholder={newsletter.placeholder}
           aria-label="Email address"
-          className="w-full rounded-full border border-tinted/20 bg-night-soft px-5 py-3.5 text-base text-paper placeholder:text-ink-soft/60 shadow-sm transition-colors focus:border-accent focus:outline-none focus:ring-0"
+          className="w-full rounded-full border border-tinted/20 bg-night-soft px-5 py-3.5 text-base text-paper placeholder:text-ink-soft/60 shadow-sm transition-colors focus:border-tinted/40 focus:outline-none focus:ring-0"
         />
         <button
           type="submit"
@@ -53,7 +53,7 @@ export function NewsletterForm({
       {/* Desktop layout — compact pill */}
       <form
         onSubmit={handleSubmit}
-        className="hidden flex-col gap-2 rounded-2xl border border-tinted/20 bg-night-soft p-1.5 shadow-lg transition-colors focus-within:border-accent sm:flex sm:flex-row sm:items-center sm:rounded-full"
+        className="hidden flex-col gap-2 rounded-2xl border border-tinted/20 bg-night-soft p-1.5 shadow-lg transition-colors focus-within:border-tinted/40 sm:flex sm:flex-row sm:items-center sm:rounded-full"
       >
         <input
           type="email"

@@ -626,7 +626,7 @@ export function ContentManager({
             placeholder="Search by title, slug, or persona..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full rounded-full border border-tinted/20 bg-night-soft px-4 py-2 text-sm text-paper placeholder:text-gray-mid/50 focus:border-accent focus:outline-none"
+            className="w-full rounded-full border border-tinted/20 bg-night-soft px-4 py-2 text-sm text-paper placeholder:text-gray-mid/50 focus:border-tinted/40 focus:outline-none"
           />
         </div>
 
@@ -634,7 +634,7 @@ export function ContentManager({
         <select
           value={typeFilter}
           onChange={(e) => setTypeFilter(e.target.value as ContentFilterType)}
-          className="rounded-full border border-tinted/20 bg-night-soft px-3.5 py-2 text-xs font-medium text-paper focus:border-accent focus:outline-none"
+          className="rounded-full border border-tinted/20 bg-night-soft px-3.5 py-2 text-xs font-medium text-paper focus:border-tinted/40 focus:outline-none"
         >
           <option value="all" className="bg-night text-paper">
             All Types
@@ -659,7 +659,7 @@ export function ContentManager({
           onChange={(e) =>
             setPersonaFilter(e.target.value as PersonaFilterType)
           }
-          className="rounded-full border border-tinted/20 bg-night-soft px-3.5 py-2 text-xs font-medium text-paper focus:border-accent focus:outline-none"
+          className="rounded-full border border-tinted/20 bg-night-soft px-3.5 py-2 text-xs font-medium text-paper focus:border-tinted/40 focus:outline-none"
         >
           <option value="all" className="bg-night text-paper">
             All Personas
@@ -682,7 +682,7 @@ export function ContentManager({
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value as StatusFilterType)}
-          className="rounded-full border border-tinted/20 bg-night-soft px-3.5 py-2 text-xs font-medium text-paper focus:border-accent focus:outline-none"
+          className="rounded-full border border-tinted/20 bg-night-soft px-3.5 py-2 text-xs font-medium text-paper focus:border-tinted/40 focus:outline-none"
         >
           <option value="all" className="bg-night text-paper">
             All Status
@@ -1081,7 +1081,7 @@ export function ContentManager({
                     handleConfirmAction();
                   }
                 }}
-                className="mt-3 w-full rounded-xl border border-tinted/20 bg-night px-3.5 py-2 text-sm text-paper placeholder:text-gray-mid/50 focus:border-accent focus:outline-none"
+                className="mt-3 w-full rounded-xl border border-tinted/20 bg-night px-3.5 py-2 text-sm text-paper placeholder:text-gray-mid/50 focus:border-tinted/40 focus:outline-none"
               />
             )}
             <div className="mt-6 flex justify-end gap-3">
@@ -1159,7 +1159,7 @@ export function ContentManager({
                         setPostSlug(slugify(e.target.value));
                       }
                     }}
-                    className="mt-1.5 w-full rounded-xl border border-tinted/20 bg-night-soft px-3.5 py-2 text-sm text-paper placeholder:text-gray-mid/50 focus:border-accent focus:outline-none"
+                    className="mt-1.5 w-full rounded-xl border border-tinted/20 bg-night-soft px-3.5 py-2 text-sm text-paper placeholder:text-gray-mid/50 focus:border-tinted/40 focus:outline-none"
                   />
                 </div>
                 <div>
@@ -1173,7 +1173,7 @@ export function ContentManager({
                     placeholder="essay-slug-url"
                     value={postSlug}
                     onChange={(e) => setPostSlug(slugify(e.target.value))}
-                    className="mt-1.5 w-full rounded-xl border border-tinted/20 bg-night-soft px-3.5 py-2 font-mono text-sm text-paper placeholder:text-gray-mid/50 focus:border-accent focus:outline-none"
+                    className="mt-1.5 w-full rounded-xl border border-tinted/20 bg-night-soft px-3.5 py-2 font-mono text-sm text-paper placeholder:text-gray-mid/50 focus:border-tinted/40 focus:outline-none"
                   />
                 </div>
               </div>
@@ -1192,7 +1192,7 @@ export function ContentManager({
                         e.target.value as "published" | "unpublished",
                       )
                     }
-                    className="mt-1.5 w-full rounded-xl border border-tinted/20 bg-night-soft px-3.5 py-2 text-xs text-paper focus:border-accent focus:outline-none"
+                    className="mt-1.5 w-full rounded-xl border border-tinted/20 bg-night-soft px-3.5 py-2 text-xs text-paper focus:border-tinted/40 focus:outline-none"
                   >
                     <option value="published" className="bg-night text-paper">
                       Published
@@ -1210,7 +1210,7 @@ export function ContentManager({
                     id="post-persona"
                     value={postPersona}
                     onChange={(e) => setPostPersona(e.target.value as Persona)}
-                    className="mt-1.5 w-full rounded-xl border border-tinted/20 bg-night-soft px-3.5 py-2 text-xs text-paper focus:border-accent focus:outline-none"
+                    className="mt-1.5 w-full rounded-xl border border-tinted/20 bg-night-soft px-3.5 py-2 text-xs text-paper focus:border-tinted/40 focus:outline-none"
                   >
                     <option value="builder" className="bg-night text-paper">
                       Builder
@@ -1235,7 +1235,7 @@ export function ContentManager({
                     type="date"
                     value={postPlantedAt}
                     onChange={(e) => setPostPlantedAt(e.target.value)}
-                    className="mt-1.5 w-full rounded-xl border border-tinted/20 bg-night-soft px-3.5 py-2 text-xs text-paper focus:border-accent focus:outline-none"
+                    className="mt-1.5 w-full rounded-xl border border-tinted/20 bg-night-soft px-3.5 py-2 text-xs text-paper focus:border-tinted/40 focus:outline-none"
                   />
                 </div>
                 <div>
@@ -1248,7 +1248,7 @@ export function ContentManager({
                     placeholder="craft, tools, web"
                     value={postTagsInput}
                     onChange={(e) => setPostTagsInput(e.target.value)}
-                    className="mt-1.5 w-full rounded-xl border border-tinted/20 bg-night-soft px-3.5 py-2 text-xs text-paper placeholder:text-gray-mid/50 focus:border-accent focus:outline-none"
+                    className="mt-1.5 w-full rounded-xl border border-tinted/20 bg-night-soft px-3.5 py-2 text-xs text-paper placeholder:text-gray-mid/50 focus:border-tinted/40 focus:outline-none"
                   />
                 </div>
               </div>
@@ -1263,7 +1263,7 @@ export function ContentManager({
                   placeholder="Short one-line synopsis for cards..."
                   value={postDescription}
                   onChange={(e) => setPostDescription(e.target.value)}
-                  className="mt-1.5 w-full rounded-xl border border-tinted/20 bg-night-soft px-3.5 py-2 text-sm text-paper placeholder:text-gray-mid/50 focus:border-accent focus:outline-none"
+                  className="mt-1.5 w-full rounded-xl border border-tinted/20 bg-night-soft px-3.5 py-2 text-sm text-paper placeholder:text-gray-mid/50 focus:border-tinted/40 focus:outline-none"
                 />
               </div>
 
@@ -1350,7 +1350,7 @@ export function ContentManager({
                         setNoteSlug(slugify(e.target.value));
                       }
                     }}
-                    className="mt-1.5 w-full rounded-xl border border-tinted/20 bg-night-soft px-3.5 py-2 text-sm text-paper placeholder:text-gray-mid/50 focus:border-accent focus:outline-none"
+                    className="mt-1.5 w-full rounded-xl border border-tinted/20 bg-night-soft px-3.5 py-2 text-sm text-paper placeholder:text-gray-mid/50 focus:border-tinted/40 focus:outline-none"
                   />
                 </div>
                 <div>
@@ -1364,7 +1364,7 @@ export function ContentManager({
                     placeholder="note-slug"
                     value={noteSlug}
                     onChange={(e) => setNoteSlug(slugify(e.target.value))}
-                    className="mt-1.5 w-full rounded-xl border border-tinted/20 bg-night-soft px-3.5 py-2 font-mono text-sm text-paper placeholder:text-gray-mid/50 focus:border-accent focus:outline-none"
+                    className="mt-1.5 w-full rounded-xl border border-tinted/20 bg-night-soft px-3.5 py-2 font-mono text-sm text-paper placeholder:text-gray-mid/50 focus:border-tinted/40 focus:outline-none"
                   />
                 </div>
               </div>
@@ -1381,7 +1381,7 @@ export function ContentManager({
                         e.target.value as "published" | "unpublished",
                       )
                     }
-                    className="mt-1.5 w-full rounded-xl border border-tinted/20 bg-night-soft px-3.5 py-2 text-xs text-paper focus:border-accent focus:outline-none"
+                    className="mt-1.5 w-full rounded-xl border border-tinted/20 bg-night-soft px-3.5 py-2 text-xs text-paper focus:border-tinted/40 focus:outline-none"
                   >
                     <option value="published" className="bg-night text-paper">
                       Published
@@ -1398,7 +1398,7 @@ export function ContentManager({
                   <select
                     value={notePersona}
                     onChange={(e) => setNotePersona(e.target.value as Persona)}
-                    className="mt-1.5 w-full rounded-xl border border-tinted/20 bg-night-soft px-3.5 py-2 text-xs text-paper focus:border-accent focus:outline-none"
+                    className="mt-1.5 w-full rounded-xl border border-tinted/20 bg-night-soft px-3.5 py-2 text-xs text-paper focus:border-tinted/40 focus:outline-none"
                   >
                     <option value="builder" className="bg-night text-paper">
                       Builder
@@ -1422,7 +1422,7 @@ export function ContentManager({
                     type="date"
                     value={noteDate}
                     onChange={(e) => setNoteDate(e.target.value)}
-                    className="mt-1.5 w-full rounded-xl border border-tinted/20 bg-night-soft px-3.5 py-2 text-xs text-paper focus:border-accent focus:outline-none"
+                    className="mt-1.5 w-full rounded-xl border border-tinted/20 bg-night-soft px-3.5 py-2 text-xs text-paper focus:border-tinted/40 focus:outline-none"
                   />
                 </div>
                 <div>
@@ -1434,7 +1434,7 @@ export function ContentManager({
                     placeholder="philosophy, web"
                     value={noteTagsInput}
                     onChange={(e) => setNoteTagsInput(e.target.value)}
-                    className="mt-1.5 w-full rounded-xl border border-tinted/20 bg-night-soft px-3.5 py-2 text-xs text-paper placeholder:text-gray-mid/50 focus:border-accent focus:outline-none"
+                    className="mt-1.5 w-full rounded-xl border border-tinted/20 bg-night-soft px-3.5 py-2 text-xs text-paper placeholder:text-gray-mid/50 focus:border-tinted/40 focus:outline-none"
                   />
                 </div>
               </div>
@@ -1523,7 +1523,7 @@ export function ContentManager({
                       placeholder="Book Title"
                       value={bookTitle}
                       onChange={(e) => setBookTitle(e.target.value)}
-                      className="w-full rounded-xl border border-tinted/20 bg-night-soft px-3.5 py-2 text-sm text-paper placeholder:text-gray-mid/50 focus:border-accent focus:outline-none"
+                      className="w-full rounded-xl border border-tinted/20 bg-night-soft px-3.5 py-2 text-sm text-paper placeholder:text-gray-mid/50 focus:border-tinted/40 focus:outline-none"
                     />
                     <input
                       type="text"
@@ -1531,7 +1531,7 @@ export function ContentManager({
                       placeholder="Author Name"
                       value={bookAuthor}
                       onChange={(e) => setBookAuthor(e.target.value)}
-                      className="w-full rounded-xl border border-tinted/20 bg-night-soft px-3.5 py-2 text-sm text-paper placeholder:text-gray-mid/50 focus:border-accent focus:outline-none"
+                      className="w-full rounded-xl border border-tinted/20 bg-night-soft px-3.5 py-2 text-sm text-paper placeholder:text-gray-mid/50 focus:border-tinted/40 focus:outline-none"
                     />
                   </div>
 
@@ -1541,7 +1541,7 @@ export function ContentManager({
                       onChange={(e) =>
                         setBookPersona(e.target.value as Persona)
                       }
-                      className="w-full rounded-xl border border-tinted/20 bg-night-soft px-3.5 py-2 text-sm text-paper focus:border-accent focus:outline-none"
+                      className="w-full rounded-xl border border-tinted/20 bg-night-soft px-3.5 py-2 text-sm text-paper focus:border-tinted/40 focus:outline-none"
                     >
                       <option value="builder" className="bg-night text-paper">
                         Builder
@@ -1561,7 +1561,7 @@ export function ContentManager({
                       placeholder="Tags"
                       value={bookTagsInput}
                       onChange={(e) => setBookTagsInput(e.target.value)}
-                      className="w-full rounded-xl border border-tinted/20 bg-night-soft px-3.5 py-2 text-sm text-paper placeholder:text-gray-mid/50 focus:border-accent focus:outline-none"
+                      className="w-full rounded-xl border border-tinted/20 bg-night-soft px-3.5 py-2 text-sm text-paper placeholder:text-gray-mid/50 focus:border-tinted/40 focus:outline-none"
                     />
                   </div>
 
@@ -1570,7 +1570,7 @@ export function ContentManager({
                     placeholder="Note / Summary"
                     value={bookDescription}
                     onChange={(e) => setBookDescription(e.target.value)}
-                    className="w-full resize-none rounded-xl border border-tinted/20 bg-night-soft px-3.5 py-2 text-sm text-paper placeholder:text-gray-mid/50 focus:border-accent focus:outline-none"
+                    className="w-full resize-none rounded-xl border border-tinted/20 bg-night-soft px-3.5 py-2 text-sm text-paper placeholder:text-gray-mid/50 focus:border-tinted/40 focus:outline-none"
                   />
 
                   <input
@@ -1578,7 +1578,7 @@ export function ContentManager({
                     placeholder="External Link"
                     value={bookLink}
                     onChange={(e) => setBookLink(e.target.value)}
-                    className="w-full rounded-xl border border-tinted/20 bg-night-soft px-3.5 py-2 text-sm text-paper placeholder:text-gray-mid/50 focus:border-accent focus:outline-none"
+                    className="w-full rounded-xl border border-tinted/20 bg-night-soft px-3.5 py-2 text-sm text-paper placeholder:text-gray-mid/50 focus:border-tinted/40 focus:outline-none"
                   />
                 </div>
               </div>

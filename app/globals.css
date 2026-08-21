@@ -112,9 +112,19 @@ svg[role="button"] {
   outline-offset: 2px;
 }
 
-/* Remove default outline for mouse users */
-:focus:not(:focus-visible) {
-  outline: none;
+/* Remove default outline for mouse users and form inputs */
+:focus:not(:focus-visible),
+input,
+input:focus,
+input:focus-visible,
+textarea,
+textarea:focus,
+textarea:focus-visible,
+select,
+select:focus,
+select:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
 }
 
 body {
