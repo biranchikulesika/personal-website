@@ -7,6 +7,7 @@ import type {
   NoteItem,
   NowEntry,
   SidepanelTab,
+  NewsletterSubscriber,
 } from "@/lib/types";
 import { formatDisplayDate } from "@/lib/utils";
 import Link from "next/link";
@@ -20,6 +21,7 @@ interface HomeOverviewProps {
   nowEntries: NowEntry[];
   featuredPostSlugs: string[];
   featuredBookSlugs: string[];
+  subscribers?: NewsletterSubscriber[];
   userName: string;
   userEmail: string;
   userAvatarUrl: string | null;
@@ -33,6 +35,7 @@ export function HomeOverview({
   notes,
   books,
   nowEntries,
+  subscribers = [],
   userName,
   onNavigateTab,
   onTriggerCreateBook,
@@ -126,7 +129,14 @@ export function HomeOverview({
             {userName}
           </h1>
           <p className="mt-2 text-xs text-gray-mid tracking-wide">
-            {publishedPosts.length} published essays · {publishedNotes.length} notes · {books.length} books
+            {publishedPosts.length} published essays · {publishedNotes.length} notes · {books.length} books ·{" "}
+            <button
+              type="button"
+              onClick={() => onNavigateTab("subscribers")}
+              className="text-accent hover:underline focus:outline-none"
+            >
+              {subscribers.length} subscribers
+            </button>
           </p>
         </div>
 

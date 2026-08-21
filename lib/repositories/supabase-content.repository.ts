@@ -16,6 +16,7 @@ import type {
   Contribution,
   PasskeyItem,
   UserSession,
+  NewsletterSubscriber,
 } from "@/lib/types";
 import type { ContentRepository } from "./content.repository";
 import { getSupabaseAdmin } from "@/lib/supabase/server";
@@ -986,5 +987,67 @@ export class SupabaseContentRepository implements ContentRepository {
 
   async setConnectedProviders(_userId: string, _providers: string[]): Promise<void> {
     // Identity linking is managed directly via Supabase Auth OAuth flow
+  }
+
+  // ── Newsletter Subscribers ──────────────────────────────────────────────
+
+  async addSubscriber(email: string, source: string = "website"): Promise<NewsletterSubscriber> {
+    const normalizedEmail = email.trim().toLowerCase();
+    const id = `sub-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+
+    const { data, error } = await this.db
+      .from("subscribers")
+      .upsert(
+        {
+          id,
+          email: normalizedEmail,
+          status: "active",
+          source,
+          created_at: new Date().toISOString(),
+        },
+        { onConflict: "email" }
+      )
+      .select()
+      .single();
+
+    if (error) {
+      throw new Error(`Failed to save subscriber: ${error.message}`);
+    }
+
+    return {
+      id: data.id,
+      email: data.email,
+      createdAt: data.created_at,
+      status: data.status as "active" | "unsubscribed",
+      source: data.source,
+    };
+  }
+
+  async getSubscribers(): Promise<NewsletterSubscriber[]> {
+    const { data, error } = await this.db
+      .from("subscribers")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      throw new Error(`Failed to load subscribers: ${error.message}`);
+    }
+
+    return (data || []).map((row) => ({
+      id: row.id,
+      email: row.email,
+      createdAt: row.created_at,
+      status: row.status as "active" | "unsubscribed",
+      source: row.source,
+    }));
+  }
+
+  async deleteSubscriber(id: string): Promise<boolean> {
+    const { error } = await this.db
+      .from("subscribers")
+      .delete()
+      .eq("id", id);
+
+    return !error;
   }
 }

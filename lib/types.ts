@@ -279,6 +279,16 @@ export interface Contribution {
   source: "razorpay" | "manual";
 }
 
+// Newsletter -----------------------------------------------------------------
+
+export interface NewsletterSubscriber {
+  id: string;
+  email: string;
+  createdAt: string;
+  status: "active" | "unsubscribed";
+  source?: string;
+}
+
 // Admin Navigation -----------------------------------------------------------
 
-export type SidepanelTab = "home" | "featured" | "content" | "media" | "account";
+export type SidepanelTab = "home" | "featured" | "content" | "media" | "subscribers" | "account";

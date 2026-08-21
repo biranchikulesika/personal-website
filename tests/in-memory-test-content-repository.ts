@@ -14,6 +14,7 @@ import type {
   UserRole,
   UserSession,
   WritingItem,
+  NewsletterSubscriber,
 } from "../lib/types";
 import type { ContentRepository } from "../lib/repositories/content.repository";
 
@@ -31,6 +32,7 @@ export class InMemoryTestContentRepository implements ContentRepository {
   public connectedProviders: Record<string, string[]> = { default: ["google"] };
   public featuredPosts: string[] = [];
   public featuredBooks: string[] = [];
+  public subscribers: NewsletterSubscriber[] = [];
 
   constructor() {
     this.reset();
@@ -41,6 +43,7 @@ export class InMemoryTestContentRepository implements ContentRepository {
     this.notes = [];
     this.books = [];
     this.nowEntries = [];
+    this.subscribers = [];
     this.media = [
       {
         id: "media-001",
@@ -453,5 +456,34 @@ export class InMemoryTestContentRepository implements ContentRepository {
 
   async setConnectedProviders(userId: string, providers: string[]): Promise<void> {
     this.connectedProviders[userId] = [...providers];
+  }
+
+  async addSubscriber(email: string, source: string = "website"): Promise<NewsletterSubscriber> {
+    const normalizedEmail = email.trim().toLowerCase();
+    const existing = this.subscribers.find((s) => s.email === normalizedEmail);
+    if (existing) {
+      existing.status = "active";
+      return existing;
+    }
+    const item: NewsletterSubscriber = {
+      id: `sub-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+      email: normalizedEmail,
+      status: "active",
+      source,
+      createdAt: new Date().toISOString(),
+    };
+    this.subscribers.unshift(item);
+    return item;
+  }
+
+  async getSubscribers(): Promise<NewsletterSubscriber[]> {
+    return [...this.subscribers];
+  }
+
+  async deleteSubscriber(id: string): Promise<boolean> {
+    const index = this.subscribers.findIndex((s) => s.id === id);
+    if (index < 0) return false;
+    this.subscribers.splice(index, 1);
+    return true;
   }
 }

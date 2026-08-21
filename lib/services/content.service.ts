@@ -16,6 +16,7 @@ import type {
   Contribution,
   PasskeyItem,
   UserSession,
+  NewsletterSubscriber,
 } from '@/lib/types';
 import {
   verifyPaymentSignature,
@@ -374,5 +375,32 @@ export class ContentService {
       current.filter((p) => p !== provider),
     );
     return true;
+  }
+
+  // ── Newsletter Subscribers ──────────────────────────────────────────────
+
+  async subscribeToNewsletter(
+    email: string,
+    source: string = 'website'
+  ): Promise<{ success: boolean; message: string; subscriber: NewsletterSubscriber }> {
+    const trimmed = email.trim().toLowerCase();
+    if (!trimmed || !trimmed.includes('@') || !trimmed.includes('.')) {
+      throw new Error('Please provide a valid email address');
+    }
+
+    const subscriber = await this.repo.addSubscriber(trimmed, source);
+    return {
+      success: true,
+      message: 'Thank you for subscribing!',
+      subscriber,
+    };
+  }
+
+  getSubscribers(): Promise<NewsletterSubscriber[]> {
+    return this.repo.getSubscribers();
+  }
+
+  deleteSubscriber(id: string): Promise<boolean> {
+    return this.repo.deleteSubscriber(id);
   }
 }

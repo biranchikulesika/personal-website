@@ -14,6 +14,7 @@ import type {
   Contribution,
   PasskeyItem,
   UserSession,
+  NewsletterSubscriber,
 } from '@/lib/types';
 
 // Repository contract for data access. UI components call the service layer,
@@ -81,4 +82,9 @@ export interface ContentRepository {
   // Connected Accounts
   getConnectedProviders(userId: string): Promise<string[]>;
   setConnectedProviders(userId: string, providers: string[]): Promise<void>;
+
+  // Newsletter Subscribers
+  addSubscriber(email: string, source?: string): Promise<NewsletterSubscriber>;
+  getSubscribers(): Promise<NewsletterSubscriber[]>;
+  deleteSubscriber(id: string): Promise<boolean>;
 }
