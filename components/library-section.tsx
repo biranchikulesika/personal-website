@@ -8,10 +8,15 @@ import { isSafeUrl } from '@/lib/utils';
 interface LibrarySectionProps {
   library: SectionGroup<BookItem>;
   limit?: number;
+  featured?: BookItem[];
 }
 
-export function LibrarySection({ library, limit = 4 }: LibrarySectionProps) {
-  const items = limit ? library.items.slice(0, limit) : library.items;
+export function LibrarySection({ library, limit = 4, featured }: LibrarySectionProps) {
+  const items = featured && featured.length > 0
+    ? featured.slice(0, limit)
+    : limit
+      ? library.items.slice(0, limit)
+      : library.items;
 
   if (items.length === 0) {
     return null;
