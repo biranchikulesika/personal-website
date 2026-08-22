@@ -35,7 +35,7 @@ interface PostRow {
   tags: string[];
   published_at: string | null;
   last_edited_at: string | null;
-  assumed_audience: string;
+  target_audience: string;
   intro: string[];
   sections: PostSection[];
   books: BookCard[];
@@ -101,7 +101,7 @@ function postRowToDomain(row: PostRow): BlogPost {
     tags: row.tags ?? [],
     publishedAt: row.published_at ?? "",
     lastEditedAt: row.last_edited_at ?? "",
-    assumedAudience: row.assumed_audience ?? "",
+    targetAudience: row.target_audience ?? "",
     intro: (row.intro as string[]) ?? [],
     sections: (row.sections as unknown as PostSection[]) ?? [],
     books: (row.books as unknown as BookCard[]) ?? [],
@@ -317,7 +317,7 @@ export class SupabaseContentRepository implements ContentRepository {
       tags: post.tags,
       published_at: post.publishedAt || null,
       last_edited_at: post.lastEditedAt || null,
-      assumed_audience: post.assumedAudience,
+      target_audience: post.targetAudience,
       intro: post.intro,
       sections: post.sections,
       books: post.books,

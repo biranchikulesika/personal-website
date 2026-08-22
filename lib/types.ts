@@ -183,7 +183,7 @@ export interface BlogPost {
   tags: string[];
   publishedAt: string;
   lastEditedAt: string;
-  assumedAudience: string;
+  targetAudience: string;
   intro: string[];
   sections: PostSection[];
   books: BookCard[];

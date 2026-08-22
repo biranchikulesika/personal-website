@@ -39,7 +39,7 @@ const CURIOSITIES = [
 ];
 
 /**
- * About page view inspired by Nate Kadlac's aesthetic:
+ * About page view:
  * 1. Bold hero headline with introductory copy and 2-column image mosaic
  * 2. Dedicated newsletter card
  * 3. 3-column featured essays & focus grid

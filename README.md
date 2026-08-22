@@ -1,6 +1,6 @@
 # Biranchi Kulesika — Personal Website & Publishing Engine
 
-A modern, high-performance personal website, digital garden, and publishing engine for **Biranchi Kulesika** ([biranchikulesika.com](https://biranchikulesika.com)).
+A modern, high-performance personal website and publishing engine for **Biranchi Kulesika** ([biranchikulesika.com](https://biranchikulesika.com)).
 
 Built with **Next.js 16 (App Router)**, **React 19**, **TypeScript**, **Tailwind CSS v4**, and **PostgreSQL / Supabase**, featuring an editorial design system, an IDE-grade MDX composer, structured data for search engine & AI crawlability, and payment processing.
 

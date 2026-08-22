@@ -75,10 +75,10 @@ The Biranchi Kulesika platform follows a strict **4-tier layered architecture**.
 ## Data Flow Examples
 
 ### Read Request (Server Component Rendering an Essay)
-1. Browser requests `/p/digital-gardening`.
+1. Browser requests `/p/some-essay-slug`.
 2. Next.js executes `app/(site)/p/[slug]/page.tsx` (Server Component).
-3. `PostPage` calls `new ContentService().getPost('digital-gardening')`.
-4. `ContentService` delegates to `repository.getPost('digital-gardening')`.
+3. `PostPage` calls `new ContentService().getPost('some-essay-slug')`.
+4. `ContentService` delegates to `repository.getPost('some-essay-slug')`.
 5. `SupabaseContentRepository` queries the `posts` table and returns a typed `BlogPost`.
 6. `PostPage` generates JSON-LD structured data and renders `<BlogPostView post={post} />`.
 

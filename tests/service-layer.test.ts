@@ -42,7 +42,7 @@ test("content service supports full CRUD on posts and notes", async () => {
     tags: ["test", "admin"],
     publishedAt: "2026-08-20",
     lastEditedAt: "2026-08-20",
-    assumedAudience: "Testing suite",
+    targetAudience: "Testing suite",
     intro: ["Opening intro."],
     sections: [
       { id: "sec-1", heading: "Section 1", paragraphs: ["Body text"] },

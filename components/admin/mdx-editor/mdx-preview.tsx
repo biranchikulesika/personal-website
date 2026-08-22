@@ -15,7 +15,7 @@ interface MDXPreviewProps {
   persona?: Persona;
   date?: string;
   tags?: string[];
-  assumedAudience?: string;
+  targetAudience?: string;
   books?: BookCard[];
   className?: string;
 }
@@ -98,13 +98,13 @@ export function MDXPreview({
   persona,
   date,
   tags = ['craft', 'software'],
-  assumedAudience,
+  targetAudience,
   books = [],
   className = '',
 }: MDXPreviewProps) {
   const { introNodes, sections, parsedAudience, footnotes } = useMemo(() => {
-    return parseMdxDocument(content, assumedAudience);
-  }, [content, assumedAudience]);
+    return parseMdxDocument(content, targetAudience);
+  }, [content, targetAudience]);
 
   const sortedFootnotes = Array.from(footnotes.entries()).sort((a, b) => Number(a[0]) - Number(b[0]));
 
@@ -253,9 +253,9 @@ function parseMdxDocument(
       continue;
     }
 
-    // Check for Assumed Audience callout in markdown
-    if (trimmed.toLowerCase().startsWith('assumed audience:') || trimmed.toLowerCase().startsWith('> assumed audience:')) {
-      currentAudience = trimmed.replace(/^>?\s*assumed audience:\s*/i, '');
+    // Check for target audience callout in markdown
+    if (trimmed.toLowerCase().startsWith('target audience:') || trimmed.toLowerCase().startsWith('> target audience:')) {
+      currentAudience = trimmed.replace(/^>?\s*target audience:\s*/i, '');
       continue;
     }
 

@@ -67,7 +67,7 @@ test("savePost creates and retrieves a post correctly", async () => {
     tags: ["tech"],
     publishedAt: "2026-08-21",
     lastEditedAt: "2026-08-21",
-    assumedAudience: "Developers",
+    targetAudience: "Developers",
     intro: ["Hello world"],
     sections: [],
     books: [],

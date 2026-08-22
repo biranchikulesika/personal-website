@@ -86,7 +86,7 @@ CREATE TABLE IF NOT EXISTS public.posts (
   tags             TEXT[] DEFAULT '{}',
   published_at     DATE,
   last_edited_at   DATE,
-  assumed_audience TEXT DEFAULT '',
+  target_audience  TEXT DEFAULT '',
   intro            JSONB DEFAULT '[]'::jsonb,
   sections         JSONB DEFAULT '[]'::jsonb,
   books            JSONB DEFAULT '[]'::jsonb,

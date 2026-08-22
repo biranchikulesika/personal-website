@@ -420,7 +420,7 @@ export function ComposeWorkspace({
             activeTab.rawPost?.publishedAt ||
             new Date().toISOString().split("T")[0],
           lastEditedAt: new Date().toISOString().split("T")[0],
-          assumedAudience: "Curious readers and builders",
+          targetAudience: "Curious readers and builders",
           intro:
             intro.length > 0
               ? intro
@@ -1052,7 +1052,7 @@ export function ComposeWorkspace({
                   persona={activeTab.persona || "builder"}
                   tags={activeTab.tags}
                   books={activeTab.rawPost?.books}
-                  assumedAudience={activeTab.rawPost?.assumedAudience}
+                  targetAudience={activeTab.rawPost?.targetAudience}
                   className="h-full"
                 />
               </div>

@@ -133,7 +133,7 @@ export async function generateDocumentAiMetadata(input: {
     return heuristic;
   }
 
-  const systemPrompt = `You are an editorial assistant for a quiet, high-craft personal digital garden ("biranchikulesika.com").
+  const systemPrompt = `You are an editorial assistant for a quiet, high-craft personal website and publishing platform ("biranchikulesika.com").
 The author writes thoughtful essays, technical notes, and marginalia under four personas:
 - Builder (craft, software systems, tools, architecture)
 - Operator (execution, focus, business discipline, workflows)

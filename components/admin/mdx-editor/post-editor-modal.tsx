@@ -65,14 +65,14 @@ export function PostEditorModal({
   const [tagsInput, setTagsInput] = useState(
     editingPost ? editingPost.tags.join(', ') : 'craft, software, tools',
   );
-  const [plantedAt, setPlantedAt] = useState(
+  const [publishedAt, setPublishedAt] = useState(
     editingPost?.publishedAt ?? new Date().toISOString().split('T')[0],
   );
-  const [lastTendedAt, setLastTendedAt] = useState(
+  const [lastEditedAt, setLastEditedAt] = useState(
     editingPost?.lastEditedAt ?? new Date().toISOString().split('T')[0],
   );
-  const [assumedAudience, setAssumedAudience] = useState(
-    editingPost?.assumedAudience ?? 'Curious technologists and builders',
+  const [targetAudience, setTargetAudience] = useState(
+    editingPost?.targetAudience ?? 'Curious technologists and builders',
   );
   const [mdxContent, setMdxContent] = useState(
     editingPost
@@ -110,9 +110,9 @@ export function PostEditorModal({
       description:
         description || (intro[0] ? intro[0].slice(0, 150) : title),
       tags: parsedTags.length > 0 ? parsedTags : ['essay'],
-      publishedAt: plantedAt || new Date().toISOString().split('T')[0],
-      lastEditedAt: lastTendedAt || new Date().toISOString().split('T')[0],
-      assumedAudience,
+      publishedAt: publishedAt || new Date().toISOString().split('T')[0],
+      lastEditedAt: lastEditedAt || new Date().toISOString().split('T')[0],
+      targetAudience,
       intro: intro.length > 0 ? intro : [description],
       sections:
         sections.length > 0
@@ -251,14 +251,14 @@ export function PostEditorModal({
               </select>
             </div>
             <div>
-              <label htmlFor="post-planted-date" className="block text-xs font-semibold uppercase tracking-wider text-gray-mid">
-                Planted Date
+              <label htmlFor="post-published-date" className="block text-xs font-semibold uppercase tracking-wider text-gray-mid">
+                Published Date
               </label>
               <input
-                id="post-planted-date"
+                id="post-published-date"
                 type="date"
-                value={plantedAt}
-                onChange={(e) => setPlantedAt(e.target.value)}
+                value={publishedAt}
+                onChange={(e) => setPublishedAt(e.target.value)}
                 className="mt-1.5 w-full rounded-xl border border-tinted/20 bg-night-soft px-3.5 py-2 text-xs text-paper focus:border-tinted/40 focus:outline-none"
               />
             </div>
@@ -301,7 +301,7 @@ export function PostEditorModal({
               title={title}
               subtitle={description}
               persona={persona}
-              date={plantedAt}
+              date={publishedAt}
               mediaItems={mediaItems}
               embedBooks={allBooks}
               embedPosts={allPosts}
