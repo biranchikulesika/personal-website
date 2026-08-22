@@ -15,7 +15,7 @@ export interface Database {
           tags: string[];
           published_at: string | null;
           last_edited_at: string | null;
-          assumed_audience: string;
+          target_audience: string;
           intro: unknown;
           sections: unknown;
           books: unknown;
@@ -34,7 +34,7 @@ export interface Database {
           tags?: string[];
           published_at?: string | null;
           last_edited_at?: string | null;
-          assumed_audience?: string;
+          target_audience?: string;
           intro?: unknown;
           sections?: unknown;
           books?: unknown;
@@ -51,7 +51,7 @@ export interface Database {
           tags?: string[];
           published_at?: string | null;
           last_edited_at?: string | null;
-          assumed_audience?: string;
+          target_audience?: string;
           intro?: unknown;
           sections?: unknown;
           books?: unknown;

@@ -49,7 +49,7 @@ export const BlogPostSchema = z.object({
   tags: z.array(z.string()).max(20),
   publishedAt: z.string().min(1),
   lastEditedAt: z.string().min(1),
-  assumedAudience: z.string().max(500),
+  targetAudience: z.string().max(500),
   intro: z.array(z.string()),
   sections: z.array(PostSectionSchema),
   books: z.array(BookCardSchema),

@@ -25,7 +25,7 @@ export function createTestPost(
     tags: ["test"],
     publishedAt: "2026-08-20",
     lastEditedAt: "2026-08-20",
-    assumedAudience: "Test audience",
+    targetAudience: "Test audience",
     intro: ["This is the intro paragraph."],
     sections: [
       {

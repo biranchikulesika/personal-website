@@ -14,7 +14,7 @@ interface MDXEditorProps {
   persona?: Persona;
   date?: string;
   tags?: string[];
-  assumedAudience?: string;
+  targetAudience?: string;
   books?: BookCard[];
   mediaItems?: MediaItem[];
   embedBooks?: BookItem[];
@@ -49,7 +49,7 @@ export function MDXEditor({
   persona,
   date,
   tags,
-  assumedAudience,
+  targetAudience,
   books,
   mediaItems = [],
   embedBooks = [],
@@ -462,7 +462,7 @@ export function MDXEditor({
               persona={persona}
               date={date}
               tags={tags}
-              assumedAudience={assumedAudience}
+              targetAudience={targetAudience}
               books={books}
             />
           </div>

@@ -2,7 +2,7 @@
 
 import { useMemo, useRef, useState } from 'react';
 import type { BookItem, Persona } from '@/lib/types';
-import { ChevronLeftIcon, ChevronRightIcon, SearchIcon } from './icons';
+import { ChevronLeftIcon, ChevronRightIcon, ExternalLinkIcon, SearchIcon } from './icons';
 import { PERSONA_LABELS, ALL_PERSONAS } from '@/lib/constants';
 import { NoSearchResults, NoContentState } from './ui/states';
 
@@ -75,6 +75,11 @@ function BookCover({
       ) : (
         inner
       )}
+      {/* Hover View button */}
+      <span className="absolute left-1/2 top-[34%] z-10 -translate-x-1/2 -translate-y-1/2 rounded-full bg-accent/90 px-4 py-1.5 text-sm font-semibold text-paper shadow-lg opacity-0 transition-opacity duration-300 group-hover:opacity-100 backdrop-blur-sm">
+        View
+        <ExternalLinkIcon className="ml-1 inline h-3.5 w-3.5" />
+      </span>
     </div>
   );
 }

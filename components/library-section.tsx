@@ -3,6 +3,7 @@ import type { BookItem, SectionGroup } from '@/lib/types';
 import { SectionHeading } from './section-heading';
 import { ExternalLinkIcon } from './icons';
 import { BookCover } from './ui/book-cover';
+import { isSafeUrl } from '@/lib/utils';
 
 interface LibrarySectionProps {
   library: SectionGroup<BookItem>;
@@ -27,43 +28,49 @@ export function LibrarySection({ library, limit = 4 }: LibrarySectionProps) {
 
       {/* Desktop Mode: 4 columns grid */}
       <div className="hidden sm:grid sm:grid-cols-2 md:grid-cols-4 sm:gap-6">
-        {items.map((item) => (
-          <article key={item.slug} className="group relative">
-            <Link href={library.href} className="block">
-              <span className="absolute left-1/2 top-[34%] z-10 -translate-x-1/2 -translate-y-1/2 rounded-full bg-accent px-3.5 py-1 text-xs font-semibold text-paper shadow-lg opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-                View
-                <ExternalLinkIcon className="ml-1 inline h-[12px] w-[12px]" />
-              </span>
-              <BookCover title={item.title} cover={item.cover} />
-              <span className="mt-3 block transition-transform duration-300 group-hover:translate-y-1">
-                <p className="font-sans text-base font-normal leading-snug text-paper transition-colors duration-300 group-hover:text-accent">
-                  {item.title}
-                </p>
-                <p className="mt-1 text-xs text-gray-mid">{item.author}</p>
-              </span>
-            </Link>
-          </article>
-        ))}
+        {items.map((item) => {
+          const safeLink = item.link && isSafeUrl(item.link) ? item.link : null;
+          return (
+            <article key={item.slug} className="group relative">
+              <Link href={safeLink ?? library.href} {...(safeLink ? { target: '_blank', rel: 'noopener noreferrer' } : {})} className="block">
+                <span className="absolute left-1/2 top-[34%] z-10 -translate-x-1/2 -translate-y-1/2 rounded-full bg-accent px-3.5 py-1 text-xs font-semibold text-paper shadow-lg opacity-0 transition-opacity duration-300 group-hover:opacity-100 backdrop-blur-sm">
+                  View
+                  <ExternalLinkIcon className="ml-1 inline h-[12px] w-[12px]" />
+                </span>
+                <BookCover title={item.title} cover={item.cover} />
+                <span className="mt-3 block transition-transform duration-300 group-hover:translate-y-1">
+                  <p className="font-sans text-base font-normal leading-snug text-paper transition-colors duration-300 group-hover:text-accent">
+                    {item.title}
+                  </p>
+                  <p className="mt-1 text-xs text-gray-mid">{item.author}</p>
+                </span>
+              </Link>
+            </article>
+          );
+        })}
       </div>
 
       {/* Mobile Mode: Sideways Scroll with End Card */}
       <div className="no-scrollbar -mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-1 sm:hidden">
-        {items.map((item) => (
-          <article
-            key={item.slug}
-            className="group relative w-[42%] shrink-0 snap-start"
-          >
-            <Link href={library.href} className="block">
-              <BookCover title={item.title} cover={item.cover} />
-              <span className="mt-3 block">
-                <p className="font-sans text-sm font-normal leading-snug text-paper transition-colors duration-300 group-hover:text-accent">
-                  {item.title}
-                </p>
-                <p className="mt-1 text-xs text-gray-mid">{item.author}</p>
-              </span>
-            </Link>
-          </article>
-        ))}
+        {items.map((item) => {
+          const safeLink = item.link && isSafeUrl(item.link) ? item.link : null;
+          return (
+            <article
+              key={item.slug}
+              className="group relative w-[42%] shrink-0 snap-start"
+            >
+              <Link href={safeLink ?? library.href} {...(safeLink ? { target: '_blank', rel: 'noopener noreferrer' } : {})} className="block">
+                <BookCover title={item.title} cover={item.cover} />
+                <span className="mt-3 block">
+                  <p className="font-sans text-sm font-normal leading-snug text-paper transition-colors duration-300 group-hover:text-accent">
+                    {item.title}
+                  </p>
+                  <p className="mt-1 text-xs text-gray-mid">{item.author}</p>
+                </span>
+              </Link>
+            </article>
+          );
+        })}
 
         {/* Mobile "Browse the Library" end card */}
         {items.length > 0 && (

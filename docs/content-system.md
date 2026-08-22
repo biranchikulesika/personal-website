@@ -20,7 +20,7 @@ The website features an editorial content engine supporting long-form essays, at
     tags: string[];
     publishedAt: string;
     lastEditedAt: string;
-    assumedAudience: string;
+    targetAudience: string;
     intro: string[];
     sections: PostSection[];
     books: BookCard[];
