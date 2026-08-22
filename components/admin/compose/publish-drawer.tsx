@@ -32,6 +32,8 @@ interface PublishDrawerProps {
   docType: 'post' | 'note' | 'now';
   date?: string;
   onDateChange?: (date: string) => void;
+  hasUnpublishedChanges?: boolean;
+  onDiscard?: () => void;
 }
 
 export function PublishDrawer({
@@ -41,6 +43,7 @@ export function PublishDrawer({
   slug,
   onSlugChange,
   description,
+  onDescriptionChange,
   persona,
   onPersonaChange,
   tags,
@@ -56,6 +59,8 @@ export function PublishDrawer({
   status,
   date,
   onDateChange,
+  hasUnpublishedChanges = false,
+  onDiscard,
 }: PublishDrawerProps) {
   const [tagInput, setTagInput] = useState('');
   const [isMediaModalOpen, setIsMediaModalOpen] = useState(false);
@@ -448,6 +453,17 @@ export function PublishDrawer({
 
           {/* Action Buttons */}
           <div className="px-5 py-3 flex items-center gap-2">
+            {hasUnpublishedChanges && onDiscard && (
+              <button
+                type="button"
+                disabled={isSaving}
+                onClick={onDiscard}
+                className="rounded-lg border border-rose-800/40 bg-rose-950/30 text-rose-300 hover:bg-rose-950/60 px-3.5 py-2 text-[11px] font-medium transition-colors shrink-0"
+                title="Discard unpublished changes"
+              >
+                Discard Edits
+              </button>
+            )}
             {!isNow && (
               <button
                 type="button"

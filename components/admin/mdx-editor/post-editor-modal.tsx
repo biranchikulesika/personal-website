@@ -80,6 +80,34 @@ export function PostEditorModal({
       : defaultPostContent(),
   );
 
+  const hasChanges = Boolean(
+    editingPost &&
+      (title !== editingPost.title ||
+        slug !== editingPost.slug ||
+        description !== editingPost.description ||
+        tagsInput !== editingPost.tags.join(', ') ||
+        publishedAt !== (editingPost.publishedAt || '') ||
+        lastEditedAt !== (editingPost.lastEditedAt || '') ||
+        targetAudience !== (editingPost.targetAudience || '') ||
+        status !== (editingPost.status || 'published') ||
+        mdxContent !== sectionsToMarkdown(editingPost.intro, editingPost.sections)),
+  );
+
+  function handleDiscard() {
+    if (!editingPost) return;
+    setTitle(editingPost.title);
+    setSlug(editingPost.slug);
+    setDescription(editingPost.description);
+    setPersona('builder');
+    setStatus(editingPost.status || 'published');
+    setTagsInput(editingPost.tags.join(', '));
+    setPublishedAt(editingPost.publishedAt || new Date().toISOString().split('T')[0]);
+    setLastEditedAt(editingPost.lastEditedAt || new Date().toISOString().split('T')[0]);
+    setTargetAudience(editingPost.targetAudience || 'Curious technologists and builders');
+    setMdxContent(sectionsToMarkdown(editingPost.intro, editingPost.sections));
+    showToast(`Unpublished changes discarded for "${editingPost.title}". Reverted to published version.`);
+  }
+
   function handleSave(e: React.FormEvent) {
     e.preventDefault();
     if (!title.trim() || !slug.trim()) return;
@@ -311,21 +339,36 @@ export function PostEditorModal({
             />
           </div>
 
-          <div className="flex items-center justify-end gap-3 pt-4 border-t border-tinted/20">
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded-full px-5 py-2 text-xs font-semibold text-gray-mid hover:text-paper"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={isPending}
-              className="rounded-full bg-accent px-6 py-2.5 text-xs font-semibold text-paper shadow-sm hover:bg-accent-hover transition-colors disabled:opacity-50"
-            >
-              {isPending ? 'Saving Essay...' : 'Save Essay'}
-            </button>
+          <div className="flex items-center justify-between gap-3 pt-4 border-t border-tinted/20">
+            <div>
+              {hasChanges && (
+                <button
+                  type="button"
+                  onClick={handleDiscard}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-rose-800/40 bg-rose-950/20 px-4 py-2 text-xs font-semibold text-rose-300 hover:bg-rose-950/50 transition-colors"
+                  title="Discard unpublished modifications"
+                >
+                  <span>↺</span>
+                  <span>Discard Changes</span>
+                </button>
+              )}
+            </div>
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={onClose}
+                className="rounded-full px-5 py-2 text-xs font-semibold text-gray-mid hover:text-paper"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={isPending}
+                className="rounded-full bg-accent px-6 py-2.5 text-xs font-semibold text-paper shadow-sm hover:bg-accent-hover transition-colors disabled:opacity-50"
+              >
+                {isPending ? 'Saving Essay...' : 'Save Essay'}
+              </button>
+            </div>
           </div>
         </form>
       </div>

@@ -64,7 +64,7 @@ export const SITE_CONFIG: SiteContent = {
       {
         title: "Social",
         links: [
-          { label: "X", href: "https://x.com/BKulesika" },
+          { label: "X/Twitter", href: "https://x.com/BKulesika" },
           { label: "LinkedIn", href: "https://linkedin.com/in/biranchikulesika" },
           { label: "Instagram", href: "https://instagram.com/biranchikulesika" },
         ],

@@ -1,197 +1,173 @@
-# AGENTS.md — Experimental Rebuild Branch
+# AGENTS.md — Agent & Developer Operating Manual
 
-This file is the source of truth for agents working on this branch.
-
----
-
-## 1. Branch Rules
-
-This branch is **experimental and isolated**.
-
-* Branch name: `experiment/rebuild-foundation`
-* It must **never** be merged into `develop`, `main`, or `production`.
-* It must **never** be pushed to remote unless the repository owner explicitly asks.
-* Never directly modify `develop`, `main`, or `production`.
-* Do not create accidental merge paths into protected branches.
-* Do not cherry-pick commits from this branch into protected branches.
-* This branch may eventually replace the existing implementation, but that
-  decision is made later — not now.
-
-The decision to promote anything from this branch is the repository owner's
-alone. Do not create Pull Requests targeting protected branches from this
-branch.
+This file is the single source of truth for AI agents and developers working on this repository. Every rule outlined below must be strictly adhered to without exception.
 
 ---
 
-## 2. Product-Development Rules
+## 1. Branch Management & Git Workflow
 
-The product requirements for this website are **intentionally incomplete** and
-will be defined progressively by the repository owner.
+### Production Branch Isolation
+* **`production` is strictly untouchable.**
+* Never check out, commit to, rebase onto, merge into, or push to the `production` branch.
+* Behave as if the `production` branch does not exist for daily development. Only the repository owner manages production releases.
 
-* Do **not** invent major product requirements.
-* Do **not** prematurely lock architecture around assumptions.
-* Prefer flexible, replaceable architecture over fixed decisions.
-* The owner will progressively define the product while development continues.
-* Existing product decisions from the previous implementation are **not**
-  authoritative. Do not reuse them unless the owner asks.
+### Develop Branch Policy
+* **`develop` is the base development branch.**
+* **Never make direct commits or edits on `develop`.**
+* All development, refactoring, bugfixes, and documentation updates must happen on an isolated feature branch off `develop`.
 
-### Technical reset
+### Single Active Branch Rule
+* **Rule of One:** At any point in time, there must **never be more than 1 active branch off `develop`**.
+* Before beginning any task:
+  1. Check the existing branch list (`git branch`).
+  2. If an active feature/working branch already exists (other than `develop` and `production`), **switch to and continue working on that branch**.
+  3. If no working branch exists (only `develop` and `production` exist), create a new branch from `develop`:
+     ```bash
+     git checkout develop
+     git checkout -b <type>/<short-description>
+     ```
+     *(e.g., `feat/patron-tier-management`, `fix/slug-collision-handler`, `docs/update-agents-md`)*
 
-This branch is a technical reset of the website implementation.
-
-The previous implementation (persona architecture, page structure, component
-hierarchy, database schema, service structure, authentication flow, UI design)
-is removed and is **not** the source of truth.
-
-Do not assume any of the following is required:
-
-* the existing page structure
-* the existing persona system
-* the existing component hierarchy
-* the existing database schema
-* the existing service structure
-* the existing authentication flow
-* the existing UI design
-
-Reuse existing dependencies or infrastructure only when technically useful.
-
----
-
-## 3. Database Rules
-
-This repository uses **Supabase PostgreSQL** as its single, authoritative database.
-
-* All dynamic application data (posts, notes, books, now entries, media, roles, contributions) lives in Supabase.
-* Schema migrations live in `supabase/migrations/`.
-* Direct data queries go through `SupabaseContentRepository`.
+### Merge & Pruning Workflow
+* Keep working and committing on the active feature branch.
+* **Do NOT merge into `develop` until explicitly instructed by the repository owner.**
+* When and only when the repository owner gives explicit instruction to merge (e.g., via PR or squash merge):
+  1. Squash merge the active branch into `develop`.
+  2. Immediately prune (delete) the feature branch locally (and remotely if tracking) so that only `develop` (with new changes) and `production` (untouched) remain.
+  3. Verify that the repository is clean and ready for the next task.
 
 ---
 
-## 4. Authentication Rules
+## 2. System Architecture & Layer Boundaries
 
-Authentication is **compulsory for all administrative routes**.
-
-* All `/admin` routes require an active authenticated Supabase session.
-* Unauthenticated access to `/admin` routes is blocked by middleware (`proxy.ts`) and server-side redirects.
-* Public routes (`/`, `/about`, `/library`, `/scribble`, `/p/[slug]`, `/n/[slug]`, `/support`) remain open to everyone.
-* OAuth (Google, GitHub) and WebAuthn passkeys are supported for administrative access.
-
----
-
-## 5. Architecture Rules
-
-Keep clean separation between the application/UI and data access:
+The platform strictly follows a **4-tier layered architecture**. Maintain clean, unambiguous separation between UI, business logic, data abstraction, and database persistence.
 
 ```text
-UI (React / Next.js app)
-        ↓
-Application / service layer   →  lib/services/
-        ↓
-Data access / repository layer →  lib/repositories/
-        ↓
-Supabase PostgreSQL           →  public.* tables
+┌─────────────────────────────────────────────────────────────┐
+│                    1. Presentation / UI                     │
+│  (Next.js App Router: app/(site), app/admin, components/)   │
+└──────────────────────────────┬──────────────────────────────┘
+                               │ Calls (Server Actions / async components)
+                               ▼
+┌─────────────────────────────────────────────────────────────┐
+│               2. Application / Service Layer                │
+│             (lib/services/content.service.ts)               │
+│    - Business operations, validations, aggregation, auth    │
+└──────────────────────────────┬──────────────────────────────┘
+                               │ Calls interface contract
+                               ▼
+┌─────────────────────────────────────────────────────────────┐
+│             3. Data Access / Repository Layer               │
+│      (lib/repositories/supabase-content.repository.ts)      │
+│    - Typed database queries, row mappers, Supabase access   │
+└──────────────────────────────┬──────────────────────────────┘
+                               │ Interacts with
+                               ▼
+┌─────────────────────────────────────────────────────────────┐
+│               4. Database / Persistence Layer               │
+│                    (Supabase PostgreSQL)                    │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-Rules:
-
-* UI components must **not** query the database directly.
-* UI components should call the service layer.
-* The service layer contains application/business operations.
-* The repository layer abstracts data access with Supabase.
-* Keep the architecture simple. Do not over-engineer.
-
-Current structure:
-
-* `lib/types.ts` — domain types
-* `lib/repositories/` — Supabase data access layer
-* `lib/services/` — application service layer
-* `lib/config/env.ts` — environment configuration & Supabase credential resolvers
-
----
-
-## 6. Environment Rules
-
-* Do not add production credentials (Supabase, payment, AI keys, etc.) to `.env.example` or any committed file.
-* Required variables are configured in `.env.local` for development and in hosting provider settings for production.
-
-The old `.env`/`.env.local` files from the previous implementation may still
-exist locally. They are gitignored and must not be loaded or referenced by new
-code on this branch.
+### Architectural Guardrails
+* **UI Components (`components/**`, `app/**`)**:
+  * Must **NEVER** import database clients, execute SQL queries, or access `@supabase/supabase-js` directly.
+  * Must always call the Service Layer (`lib/services/`) or Server Actions (`app/admin/actions.ts`).
+* **Service Layer (`lib/services/`)**:
+  * Encapsulates domain logic, validation coordination, cross-collection aggregation (e.g. scribble feed), cryptographic operations (Razorpay HMAC-SHA256 signature verification), and cache revalidation (`revalidatePath`).
+  * Never contains JSX markup or direct database drivers; operates exclusively on domain models (`lib/types.ts`).
+* **Repository Layer (`lib/repositories/`)**:
+  * Declared in `content.repository.ts` interface and implemented in `supabase-content.repository.ts`.
+  * Handles database queries, row mapping to domain types, slug uniqueness, and CRUD operations.
+  * Does not contain business rules (e.g., does not calculate taxes or verify payment signatures).
+* **Domain Types & Validations**:
+  * Domain models live in `lib/types.ts`.
+  * Zod schemas for runtime input validation live in `lib/validation.ts`.
+  * Environment variables and credentials are resolved via `lib/config/env.ts`.
 
 ---
 
-## 7. Implementation Strategy — Desktop First
+## 3. Database Rules (Supabase PostgreSQL)
 
-The website is built in this order:
-
-* **Phase 1:** Desktop experience.
-* **Phase 2:** Mobile experience.
-
-While building Phase 1:
-
-* Keep the layout technically responsive.
-* Use responsive primitives and sensible layout constraints.
-* Do not build desktop components in a way that makes mobile implementation
-  unnecessarily difficult.
-* Do **not** spend the current phase perfecting mobile UI.
-
----
-
-## 8. Design System
-
-Do not finalize the design system yet.
-
-Do not lock:
-
-* colors
-* typography
-* spacing scale
-* persona themes
-* animation language
-* page hierarchy
-* navigation structure
-* content taxonomy
-
-unless required by the current implementation. These decisions are discovered
-progressively. Build the technical foundation so these can change easily.
+* **Supabase PostgreSQL** is the single, authoritative database for all dynamic data.
+* All dynamic entities live in Supabase:
+  * **Posts / Essays** (`public.posts`)
+  * **Notes** (`public.notes`)
+  * **Books / Reading Catalog** (`public.books`)
+  * **Now Timeline** (`public.now_entries`)
+  * **Media & Asset Tracking** (`public.media`)
+  * **User Roles & Access** (`public.user_roles`)
+  * **Contributions / Patronage** (`public.contributions`)
+  * **Newsletter Subscribers** (`public.newsletter_subscribers`)
+* **Schema Integrity & Migrations**:
+  * Master schema lives in `schema.sql`.
+  * Migration files live in `supabase/migrations/`.
+  * All database scripts must be **idempotent** (`CREATE TABLE IF NOT EXISTS`, `CREATE INDEX IF NOT EXISTS`, `DROP POLICY IF EXISTS`).
+  * Row Level Security (RLS) is compulsory on all public tables with explicit policies.
+  * Direct data queries must always route through `SupabaseContentRepository`.
 
 ---
 
-## 9. Do Not Overbuild
+## 4. Authentication & Security Rules
 
-At this stage, do **not**:
-
-* build every page
-* invent missing features
-* create unnecessary APIs
-* create unnecessary database tables
-* implement authentication
-* connect production services
-* optimize prematurely
-* create complicated abstractions
-* preserve old product decisions just for compatibility
+* **Compulsory Admin Authentication**:
+  * All administrative routes (`/admin/**`) require an active, authenticated Supabase session.
+  * Unauthenticated requests to `/admin` routes are intercepted and redirected to `/admin/login` by proxy middleware (`proxy.ts`) and server-side checks.
+  * Supported auth methods: OAuth (Google, GitHub), Email OTP, and WebAuthn Passkeys.
+* **Public Routes**:
+  * Public surfaces (`/`, `/about`, `/library`, `/scribble`, `/p/[slug]`, `/n/[slug]`, `/support`, `/fund`, `/now`) remain globally accessible.
+* **Absolute Admin Isolation**:
+  * Admin routes (`/admin`) must **NEVER** be exposed or linked in public sitemaps (`app/sitemap.ts`), robots.txt (`app/robots.ts`), navigation headers, footers, or JSON-LD structured schemas.
 
 ---
 
-## 10. Commands
+## 5. Design System & Editorial Guidelines
 
-* Dev server: `npm run dev`
-* Build: `npm run build`
-* Lint: `npm run lint`
-* Tests: `npm test`
-
-Node version: `>=24.16.0` (use nvm: `nvm use 24.18.0`).
+* **Editorial Ledger Aesthetic**:
+  * Typographic, horizontal-ruled ledger design with high-contrast dark tones (`bg-night`, `text-paper`, `border-tinted/20`).
+  * Typography uses Newsreader serif for long-form prose and Space Grotesk for technical metadata and UI elements.
+  * **No boxed container cards with drop shadows**: Preserve the clean, horizontal ledger format.
+* **Responsive & Accessible**:
+  * Desktop-first editorial layout that scales cleanly to tablet and mobile viewports via responsive Tailwind CSS v4 utilities.
+  * Ensure full keyboard navigability, semantic HTML, and correct ARIA states (`role="status"`, `aria-expanded`, etc.).
 
 ---
 
-## 11. Dev Server Rule
+## 6. Environment & Secret Management
 
-**Never kill or restart the dev server.** The dev server may be running in the
-background.
+* **No Committed Secrets**:
+  * Never commit `.env`, `.env.local`, API keys, or production credentials.
+  * Document all environment variables in `.env.production.example` and `docs/environment.md`.
+* **Server-Side Isolation**:
+  * Private keys (`SUPABASE_SERVICE_ROLE_KEY`, `RAZORPAY_KEY_SECRET`, `ADMIN_PASSWORD_HASH`) must never use the `NEXT_PUBLIC_` prefix and must never be imported into Client Components.
+  * Always use `lib/config/env.ts` helper methods (`getSupabaseUrl()`, `getSupabaseSecretKey()`, `getSupabasePublishableKey()`) to safely resolve runtime credentials.
 
-* Do **not** kill any `next dev`, `next-server`, or related process.
-* Do **not** delete or clear the `.next` directory — doing so kills the server.
-* Do **not** run `npm run clean` or anything that removes build artifacts.
-* On change, the server reloads automatically (hot reload). Let it do its job.
-* Do nothing that would kill the server. If a restart is genuinely required,
-  stop and ask — only the repository owner starts and stops the dev server.
+---
+
+## 7. Development Commands & Verification
+
+* **Dev Server**: `npm run dev`
+* **Build**: `npm run build`
+* **Linting**: `npm run lint`
+* **Automated Tests**: `npm test` *(runs native test suite via `npx tsx --test tests/*.test.ts`)*
+* **Node Version**: `>=24.16.0` *(enforced via `.nvmrc`: `24.18.0`)*
+
+### Verification Mandate
+Always run the full test suite and linter before declaring any task complete:
+```bash
+npm test
+npm run lint
+```
+All tests must pass with zero errors and zero warnings.
+
+---
+
+## 8. Dev Server Rule (CRITICAL)
+
+**Never kill or restart the dev server.** The dev server is running in the background.
+
+* Do **not** kill any `next dev`, `next-server`, or related Node.js process.
+* Do **not** delete or clear the `.next` directory — doing so breaks the running server.
+* Do **not** run `npm run clean` or any command that removes build artifacts.
+* Next.js Fast Refresh automatically detects and reloads file changes. Let it do its job.
+* If a server restart is genuinely required, stop and ask — only the repository owner starts and stops the dev server.
