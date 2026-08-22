@@ -3,6 +3,7 @@ import { test } from "node:test";
 import {
   slugify,
   formatDisplayDate,
+  formatNoteSnippet,
   sectionsToMarkdown,
   markdownToPostSections,
   isSafeUrl,
@@ -174,4 +175,24 @@ test("sanitizeRedirectPath falls back on open redirect attempts", () => {
   assert.equal(sanitizeRedirectPath("javascript:alert(1)", "/admin"), "/admin");
   assert.equal(sanitizeRedirectPath("", "/admin"), "/admin");
   assert.equal(sanitizeRedirectPath(undefined, "/admin"), "/admin");
+});
+
+// ── formatNoteSnippet ───────────────────────────────────────────────────────
+
+test("formatNoteSnippet returns full string if within limit", () => {
+  assert.equal(formatNoteSnippet("Short note text", 50), "Short note text");
+  assert.equal(formatNoteSnippet(["Short", "paragraph"], 50), "Short paragraph");
+});
+
+test("formatNoteSnippet truncates cleanly and appends ...read now when limit exceeded", () => {
+  const longText = "This is a longer atomic note discussing architecture design principles and systems thinking across modern web applications.";
+  const formatted = formatNoteSnippet(longText, 60);
+  assert.ok(formatted.endsWith("...read now"), "snippet must end with ...read now");
+  assert.ok(!formatted.includes("applications"), "exceeded text should be trimmed");
+});
+
+test("formatNoteSnippet handles empty input gracefully", () => {
+  assert.equal(formatNoteSnippet(""), "");
+  assert.equal(formatNoteSnippet([]), "");
+  assert.equal(formatNoteSnippet(undefined), "");
 });

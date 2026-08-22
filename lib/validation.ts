@@ -49,7 +49,7 @@ export const BlogPostSchema = z.object({
   tags: z.array(z.string()).max(20),
   publishedAt: z.string().min(1),
   lastEditedAt: z.string().min(1),
-  assumedAudience: z.string().max(500),
+  targetAudience: z.string().max(500),
   intro: z.array(z.string()),
   sections: z.array(PostSectionSchema),
   books: z.array(BookCardSchema),
@@ -63,6 +63,7 @@ export const NoteItemSchema = z.object({
   id: z.string().min(1),
   slug: SlugField,
   title: z.string().min(1, 'Title is required').max(500),
+  subtitle: z.string().max(500).optional(),
   description: z.string().min(1).max(1000),
   content: z.array(z.string()),
   date: z.string().min(1),
@@ -110,9 +111,15 @@ export const MediaItemSchema = z.object({
   src: z
     .string()
     .min(1)
-    .refine((val) => (val.startsWith('/') && !val.startsWith('//') && !val.startsWith('/\\')) || /^https?:\/\//i.test(val), {
-      message: 'Media src must be a relative path or an HTTP/HTTPS URL',
-    }),
+    .refine(
+      (val) =>
+        (val.startsWith('/') && !val.startsWith('//') && !val.startsWith('/\\')) ||
+        /^https?:\/\//i.test(val) ||
+        /^data:image\/[a-zA-Z0-9+.-]+;base64,/i.test(val),
+      {
+        message: 'Media src must be a relative path, HTTP/HTTPS URL, or image data URL',
+      },
+    ),
   alt: z.string().max(500),
   size: z.string(),
   dimensions: z.string().optional(),
@@ -130,4 +137,17 @@ export const SlugParamSchema = z.object({
 
 export const IdParamSchema = z.object({
   id: z.string().min(1),
+});
+
+// Newsletter subscription schema -----------------------------------------------
+
+export const NewsletterSubscriberSchema = z.object({
+  email: z
+    .string()
+    .trim()
+    .min(1, 'Email is required')
+    .max(320, 'Email is too long')
+    .email('Please enter a valid email address')
+    .toLowerCase(),
+  source: z.string().max(100).optional(),
 });

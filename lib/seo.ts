@@ -120,7 +120,7 @@ export function postMetadata(post: BlogPost): Metadata {
 export function noteMetadata(note: NoteItem): Metadata {
   const url = `${SITE_URL}/n/${note.slug}`;
   const title = note.title;
-  const description = note.description || '';
+  const description = note.subtitle || note.description || '';
   const personaLabel = PERSONA_LABELS[note.persona];
   const noteOgParams: { title: string; description: string; type: string; persona?: string; cover?: string } = {
     title,
@@ -180,7 +180,8 @@ export function websiteJsonLd() {
       sameAs: [
         'https://github.com/biranchikulesika',
         'https://x.com/BKulesika',
-        'https://www.linkedin.com/in/biranchikulesika',
+        'https://linkedin.com/in/biranchikulesika',
+        'https://instagram.com/biranchikulesika',
       ],
       knowsAbout: [
         'Software Engineering',

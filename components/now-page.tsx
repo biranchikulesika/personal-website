@@ -268,7 +268,7 @@ export function NowPageView({ entries }: NowPageViewProps) {
             Now
           </h1>
           <h2 className="mt-3 font-serif text-xl font-light italic leading-relaxed text-ink-soft md:text-2xl">
-            A sporadically updated log of what I’m reading, exploring, and thinking about
+            What I’m reading, exploring, working on, and thinking about these days.
           </h2>
         </header>
 

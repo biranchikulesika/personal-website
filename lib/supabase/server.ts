@@ -2,12 +2,11 @@ import { createServerClient } from "@supabase/ssr";
 import { createClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
 import type { Database } from "./database.types";
-
-// ── Configuration ───────────────────────────────────────────────────────────
-
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabasePublishableKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
-const supabaseSecretKey = process.env.SUPABASE_SECRET_KEY;
+import {
+  getSupabaseUrl,
+  getSupabasePublishableKey,
+  getSupabaseSecretKey,
+} from "@/lib/config/env";
 
 // ── Admin Client (service-role, bypasses RLS) ──────────────────────────────
 // Used by the repository layer for all admin operations.
@@ -17,9 +16,12 @@ const supabaseSecretKey = process.env.SUPABASE_SECRET_KEY;
 let adminClient: ReturnType<typeof createClient<Database>> | null = null;
 
 export function getSupabaseAdmin() {
+  const supabaseUrl = getSupabaseUrl();
+  const supabaseSecretKey = getSupabaseSecretKey();
+
   if (!supabaseUrl || !supabaseSecretKey) {
     throw new Error(
-      "Missing Supabase configuration. Set SUPABASE_URL and SUPABASE_SECRET_KEY in your environment.",
+      "Missing Supabase configuration. Set SUPABASE_URL / NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY / SUPABASE_SECRET_KEY in your environment.",
     );
   }
 
@@ -43,9 +45,12 @@ export function getSupabaseAdmin() {
 let publicClient: ReturnType<typeof createClient<Database>> | null = null;
 
 export function getSupabasePublic() {
+  const supabaseUrl = getSupabaseUrl();
+  const supabasePublishableKey = getSupabasePublishableKey();
+
   if (!supabaseUrl || !supabasePublishableKey) {
     throw new Error(
-      "Missing Supabase configuration. Set SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY in your environment.",
+      "Missing Supabase configuration. Set SUPABASE_URL / NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY / NEXT_PUBLIC_SUPABASE_ANON_KEY in your environment.",
     );
   }
 
@@ -66,9 +71,12 @@ export function getSupabasePublic() {
 // and Route Handlers.
 
 export async function getSupabaseServer() {
+  const supabaseUrl = getSupabaseUrl();
+  const supabasePublishableKey = getSupabasePublishableKey();
+
   if (!supabaseUrl || !supabasePublishableKey) {
     throw new Error(
-      "Missing Supabase configuration. Set SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY in your environment.",
+      "Missing Supabase configuration. Set SUPABASE_URL / NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY / NEXT_PUBLIC_SUPABASE_ANON_KEY in your environment.",
     );
   }
 

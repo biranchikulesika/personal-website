@@ -12,12 +12,13 @@ import type {
   SectionGroup,
   WritingItem,
   Contribution,
+  PasskeyItem,
+  UserSession,
+  NewsletterSubscriber,
 } from '@/lib/types';
 
-// Repository contract for content. The UI (via the service layer) asks for
-// content by intent and never knows whether it comes from the mock database
-// or a real one. Swapping data sources later means swapping this
-// implementation, nothing else.
+// Repository contract for data access. UI components call the service layer,
+// which interacts with Supabase through this interface.
 
 export interface ContentRepository {
   getHomeContent(): Promise<HomeContent>;
@@ -66,4 +67,24 @@ export interface ContentRepository {
   recordContribution(contribution: Contribution): Promise<Contribution>;
   getContribution(id: string): Promise<Contribution | null>;
   getContributions(): Promise<Contribution[]>;
+
+  // Passkeys & Auth
+  getPasskeys(userId: string): Promise<PasskeyItem[]>;
+  savePasskey(userId: string, passkey: PasskeyItem): Promise<PasskeyItem>;
+  deletePasskey(userId: string, passkeyId: string): Promise<boolean>;
+
+  // Active Sessions
+  getSessions(userId: string, currentSessionId?: string): Promise<UserSession[]>;
+  recordSession(session: UserSession): Promise<UserSession>;
+  deleteSession(userId: string, sessionId: string): Promise<boolean>;
+  deleteAllSessions(userId: string): Promise<boolean>;
+
+  // Connected Accounts
+  getConnectedProviders(userId: string): Promise<string[]>;
+  setConnectedProviders(userId: string, providers: string[]): Promise<void>;
+
+  // Newsletter Subscribers
+  addSubscriber(email: string, source?: string): Promise<NewsletterSubscriber>;
+  getSubscribers(): Promise<NewsletterSubscriber[]>;
+  deleteSubscriber(id: string): Promise<boolean>;
 }

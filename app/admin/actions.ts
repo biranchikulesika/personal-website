@@ -9,7 +9,11 @@ import type {
   NoteItem,
   NowEntry,
   Persona,
+  PasskeyItem,
+  UserSession,
 } from '@/lib/types';
+import { getSupabaseServer } from '@/lib/supabase/server';
+import { getSupabaseUrl, getSupabasePublishableKey } from '@/lib/config/env';
 import {
   BlogPostSchema,
   NoteItemSchema,
@@ -18,6 +22,7 @@ import {
   MediaItemSchema,
   SlugParamSchema,
   IdParamSchema,
+  NewsletterSubscriberSchema,
 } from '@/lib/validation';
 
 const contentService = new ContentService();
@@ -29,6 +34,14 @@ const contentService = new ContentService();
  */
 function validateInput<T>(schema: { parse: (v: unknown) => T }, input: unknown): T {
   return schema.parse(input);
+}
+
+function safeRevalidatePath(path: string) {
+  try {
+    revalidatePath(path);
+  } catch {
+    // revalidatePath throws when called outside Next.js request context (e.g. tests)
+  }
 }
 
 // Post Actions ----------------------------------------------------------------
@@ -44,9 +57,9 @@ export async function savePostAction(
   try {
     const validated = validateInput(BlogPostSchema, post);
     const saved = await contentService.savePost(validated, persona);
-    revalidatePath('/admin');
-    revalidatePath('/scribble');
-    revalidatePath(`/p/${post.slug}`);
+    safeRevalidatePath('/admin');
+    safeRevalidatePath('/scribble');
+    safeRevalidatePath(`/p/${post.slug}`);
     return { success: true, post: saved };
   } catch (err: unknown) {
     return { success: false, error: (err as Error).message || 'Failed to save post' };
@@ -60,9 +73,9 @@ export async function togglePostStatusAction(
     const { slug: validSlug } = validateInput(SlugParamSchema, { slug });
     const toggled = await contentService.togglePostStatus(validSlug);
     if (!toggled) return { success: false, error: 'Post not found' };
-    revalidatePath('/admin');
-    revalidatePath('/scribble');
-    revalidatePath(`/p/${slug}`);
+    safeRevalidatePath('/admin');
+    safeRevalidatePath('/scribble');
+    safeRevalidatePath(`/p/${slug}`);
     return { success: true, post: toggled };
   } catch (err: unknown) {
     return { success: false, error: (err as Error).message || 'Failed to toggle status' };
@@ -75,8 +88,8 @@ export async function deletePostAction(
   try {
     const { slug: validSlug } = validateInput(SlugParamSchema, { slug });
     const deleted = await contentService.deletePost(validSlug);
-    revalidatePath('/admin');
-    revalidatePath('/scribble');
+    safeRevalidatePath('/admin');
+    safeRevalidatePath('/scribble');
     return { success: deleted };
   } catch (err: unknown) {
     return { success: false, error: (err as Error).message || 'Failed to delete post' };
@@ -95,9 +108,9 @@ export async function saveNoteAction(
   try {
     const validated = validateInput(NoteItemSchema, note);
     const saved = await contentService.saveNote(validated);
-    revalidatePath('/admin');
-    revalidatePath('/scribble');
-    revalidatePath(`/n/${note.slug}`);
+    safeRevalidatePath('/admin');
+    safeRevalidatePath('/scribble');
+    safeRevalidatePath(`/n/${note.slug}`);
     return { success: true, note: saved };
   } catch (err: unknown) {
     return { success: false, error: (err as Error).message || 'Failed to save note' };
@@ -111,9 +124,9 @@ export async function toggleNoteStatusAction(
     const { slug: validSlug } = validateInput(SlugParamSchema, { slug });
     const toggled = await contentService.toggleNoteStatus(validSlug);
     if (!toggled) return { success: false, error: 'Note not found' };
-    revalidatePath('/admin');
-    revalidatePath('/scribble');
-    revalidatePath(`/n/${slug}`);
+    safeRevalidatePath('/admin');
+    safeRevalidatePath('/scribble');
+    safeRevalidatePath(`/n/${slug}`);
     return { success: true, note: toggled };
   } catch (err: unknown) {
     return { success: false, error: (err as Error).message || 'Failed to toggle status' };
@@ -126,8 +139,8 @@ export async function deleteNoteAction(
   try {
     const { slug: validSlug } = validateInput(SlugParamSchema, { slug });
     const deleted = await contentService.deleteNote(validSlug);
-    revalidatePath('/admin');
-    revalidatePath('/scribble');
+    safeRevalidatePath('/admin');
+    safeRevalidatePath('/scribble');
     return { success: deleted };
   } catch (err: unknown) {
     return { success: false, error: (err as Error).message || 'Failed to delete note' };
@@ -146,9 +159,9 @@ export async function saveBookAction(
   try {
     const validated = validateInput(BookItemSchema, book);
     const saved = await contentService.saveBook(validated);
-    revalidatePath('/admin');
-    revalidatePath('/library');
-    revalidatePath('/scribble');
+    safeRevalidatePath('/admin');
+    safeRevalidatePath('/library');
+    safeRevalidatePath('/scribble');
     return { success: true, book: saved };
   } catch (err: unknown) {
     return { success: false, error: (err as Error).message || 'Failed to save book' };
@@ -161,9 +174,9 @@ export async function deleteBookAction(
   try {
     const { slug: validSlug } = validateInput(SlugParamSchema, { slug });
     const deleted = await contentService.deleteBook(validSlug);
-    revalidatePath('/admin');
-    revalidatePath('/library');
-    revalidatePath('/scribble');
+    safeRevalidatePath('/admin');
+    safeRevalidatePath('/library');
+    safeRevalidatePath('/scribble');
     return { success: deleted };
   } catch (err: unknown) {
     return { success: false, error: (err as Error).message || 'Failed to delete book' };
@@ -182,8 +195,8 @@ export async function saveNowEntryAction(
   try {
     const validated = validateInput(NowEntrySchema, entry);
     const saved = await contentService.saveNowEntry(validated);
-    revalidatePath('/admin');
-    revalidatePath('/now');
+    safeRevalidatePath('/admin');
+    safeRevalidatePath('/now');
     return { success: true, entry: saved };
   } catch (err: unknown) {
     return { success: false, error: (err as Error).message || 'Failed to save now entry' };
@@ -196,8 +209,8 @@ export async function deleteNowEntryAction(
   try {
     const { id: validId } = validateInput(IdParamSchema, { id });
     const deleted = await contentService.deleteNowEntry(validId);
-    revalidatePath('/admin');
-    revalidatePath('/now');
+    safeRevalidatePath('/admin');
+    safeRevalidatePath('/now');
     return { success: deleted };
   } catch (err: unknown) {
     return { success: false, error: (err as Error).message || 'Failed to delete now entry' };
@@ -216,7 +229,7 @@ export async function addMediaAction(
   try {
     const validated = validateInput(MediaItemSchema, item);
     const added = await contentService.addMedia(validated);
-    revalidatePath('/admin');
+    safeRevalidatePath('/admin');
     return { success: true, media: added };
   } catch (err: unknown) {
     return { success: false, error: (err as Error).message || 'Failed to add media' };
@@ -229,7 +242,7 @@ export async function deleteMediaAction(
   try {
     const { id: validId } = validateInput(IdParamSchema, { id });
     const deleted = await contentService.deleteMedia(validId);
-    revalidatePath('/admin');
+    safeRevalidatePath('/admin');
     return { success: deleted };
   } catch (err: unknown) {
     return { success: false, error: (err as Error).message || 'Failed to delete media' };
@@ -241,7 +254,7 @@ export async function deleteOrphanedMediaAction(
 ): Promise<{ success: boolean; deletedCount?: number; error?: string }> {
   try {
     const deletedCount = await contentService.deleteStorageAssets(srcs);
-    revalidatePath('/admin');
+    safeRevalidatePath('/admin');
     return { success: deletedCount > 0, deletedCount };
   } catch (err: unknown) {
     return {
@@ -287,8 +300,8 @@ export async function setFeaturedPostsAction(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     await contentService.setFeaturedPosts(slugs.slice(0, 4));
-    revalidatePath('/');
-    revalidatePath('/admin');
+    safeRevalidatePath('/');
+    safeRevalidatePath('/admin');
     return { success: true };
   } catch (err: unknown) {
     return { success: false, error: (err as Error).message || 'Failed to set featured posts' };
@@ -300,10 +313,284 @@ export async function setFeaturedBooksAction(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     await contentService.setFeaturedBooks(slugs.slice(0, 4));
-    revalidatePath('/');
-    revalidatePath('/admin');
+    safeRevalidatePath('/');
+    safeRevalidatePath('/admin');
     return { success: true };
   } catch (err: unknown) {
     return { success: false, error: (err as Error).message || 'Failed to set featured books' };
   }
 }
+
+// Account & Security Actions --------------------------------------------------
+
+async function getCurrentUser() {
+  try {
+    const supabase = await getSupabaseServer();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    return user;
+  } catch {
+    return null;
+  }
+}
+
+export async function getPasskeysAction(): Promise<PasskeyItem[]> {
+  const user = await getCurrentUser();
+  const userId = user?.id || 'default';
+  return await contentService.getPasskeys(userId);
+}
+
+export async function registerPasskeyAction(params: {
+  label: string;
+  credentialId?: string;
+}): Promise<{ success: boolean; passkey?: PasskeyItem; error?: string }> {
+  try {
+    const user = await getCurrentUser();
+    const userId = user?.id || 'default';
+    const newPasskey: PasskeyItem = {
+      id: `pk-${Date.now()}`,
+      label: params.label || 'Security Key / Passkey',
+      createdAt: new Date().toISOString(),
+      lastUsedAt: new Date().toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+      }),
+      credentialId: params.credentialId,
+    };
+
+    const saved = await contentService.savePasskey(userId, newPasskey);
+    safeRevalidatePath('/admin');
+    return { success: true, passkey: saved };
+  } catch (err: unknown) {
+    return {
+      success: false,
+      error: (err as Error).message || 'Failed to register passkey',
+    };
+  }
+}
+
+export async function deletePasskeyAction(
+  passkeyId: string,
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const user = await getCurrentUser();
+    const userId = user?.id || 'default';
+    const deleted = await contentService.deletePasskey(userId, passkeyId);
+    safeRevalidatePath('/admin');
+    return { success: deleted };
+  } catch (err: unknown) {
+    return {
+      success: false,
+      error: (err as Error).message || 'Failed to remove passkey',
+    };
+  }
+}
+
+export async function getSessionsAction(): Promise<UserSession[]> {
+  const user = await getCurrentUser();
+  const userId = user?.id || 'default';
+  return await contentService.getSessions(userId);
+}
+
+export async function signOutSessionAction(
+  sessionId: string,
+): Promise<{ success: boolean; redirect?: string; error?: string }> {
+  try {
+    const user = await getCurrentUser();
+    const userId = user?.id || 'default';
+
+    await contentService.deleteSession(userId, sessionId);
+
+    if (
+      sessionId === 'sess-current' ||
+      sessionId === 'session-primary' ||
+      sessionId.startsWith('sess-curr')
+    ) {
+      try {
+        const supabase = await getSupabaseServer();
+        await supabase.auth.signOut({ scope: 'local' });
+      } catch {
+        // Safe to ignore
+      }
+      return { success: true, redirect: '/admin/login' };
+    }
+
+    safeRevalidatePath('/admin');
+    return { success: true };
+  } catch (err: unknown) {
+    return {
+      success: false,
+      error: (err as Error).message || 'Failed to sign out session',
+    };
+  }
+}
+
+export async function signOutAllSessionsAction(): Promise<{
+  success: boolean;
+  redirect?: string;
+  error?: string;
+}> {
+  try {
+    const user = await getCurrentUser();
+    const userId = user?.id || 'default';
+
+    await contentService.deleteAllSessions(userId);
+
+    try {
+      const supabase = await getSupabaseServer();
+      await supabase.auth.signOut({ scope: 'global' });
+    } catch {
+      // Safe to ignore
+    }
+
+    return { success: true, redirect: '/admin/login' };
+  } catch (err: unknown) {
+    return {
+      success: false,
+      error: (err as Error).message || 'Failed to sign out of all sessions',
+    };
+  }
+}
+
+export async function connectProviderAction(
+  provider: 'google' | 'github',
+): Promise<{ success: boolean; url?: string; error?: string }> {
+  try {
+    const supabaseUrl = getSupabaseUrl();
+    const supabaseKey = getSupabasePublishableKey();
+
+    if (supabaseUrl && supabaseKey) {
+      const supabase = await getSupabaseServer();
+      const { data, error } = await supabase.auth.linkIdentity({
+        provider,
+        options: {
+          redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/admin/auth/callback?next=/admin`,
+        },
+      });
+
+      if (error) {
+        return { success: false, error: error.message };
+      }
+
+      if (data?.url) {
+        return { success: true, url: data.url };
+      }
+    }
+
+    const user = await getCurrentUser();
+    const userId = user?.id || 'default';
+    const current = await contentService.getConnectedProviders(userId);
+    if (!current.includes(provider)) {
+      await contentService.setConnectedProviders(userId, [
+        ...current,
+        provider,
+      ]);
+    }
+    safeRevalidatePath('/admin');
+    return { success: true };
+  } catch (err: unknown) {
+    return {
+      success: false,
+      error: (err as Error).message || 'Failed to connect account',
+    };
+  }
+}
+
+export async function disconnectProviderAction(
+  provider: 'google' | 'github',
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const user = await getCurrentUser();
+    const userId = user?.id || 'default';
+
+    const supabaseUrl = getSupabaseUrl();
+    const supabaseKey = getSupabasePublishableKey();
+
+    if (supabaseUrl && supabaseKey && user) {
+      const identities = user.identities || [];
+      const providers = identities.map((i) => i.provider);
+      if (providers.length <= 1) {
+        return {
+          success: false,
+          error:
+            'At least one authentication provider must remain connected to prevent account lockout.',
+        };
+      }
+
+      const targetIdentity = identities.find((i) => i.provider === provider);
+      if (!targetIdentity) {
+        return { success: false, error: 'Identity not found' };
+      }
+
+      const supabase = await getSupabaseServer();
+      const { error } = await supabase.auth.unlinkIdentity(targetIdentity);
+      if (error) {
+        return { success: false, error: error.message };
+      }
+    } else {
+      const providers = await contentService.getConnectedProviders(userId);
+      if (providers.length <= 1) {
+        return {
+          success: false,
+          error:
+            'At least one authentication provider must remain connected to prevent account lockout.',
+        };
+      }
+      const updated = providers.filter((p) => p !== provider);
+      await contentService.setConnectedProviders(userId, updated);
+    }
+
+    safeRevalidatePath('/admin');
+    return { success: true };
+  } catch (err: unknown) {
+    return {
+      success: false,
+      error: (err as Error).message || 'Failed to disconnect account',
+    };
+  }
+}
+
+// ── Newsletter Actions ──────────────────────────────────────────────────────
+
+export async function subscribeToNewsletterAction(formData: {
+  email: string;
+  source?: string;
+}) {
+  try {
+    const validated = validateInput(NewsletterSubscriberSchema, formData);
+    const result = await contentService.subscribeToNewsletter(
+      validated.email,
+      validated.source || 'website'
+    );
+    safeRevalidatePath('/admin');
+    return { success: true, message: result.message, subscriber: result.subscriber };
+  } catch (err: unknown) {
+    return {
+      success: false,
+      error: (err as Error).message || 'Subscription failed',
+    };
+  }
+}
+
+export async function deleteSubscriberAction(id: string) {
+  try {
+    const user = await getCurrentUser();
+    if (!user) {
+      return { success: false, error: 'Unauthorized' };
+    }
+    const validated = validateInput(IdParamSchema, { id });
+    const success = await contentService.deleteSubscriber(validated.id);
+    safeRevalidatePath('/admin');
+    return { success };
+  } catch (err: unknown) {
+    return {
+      success: false,
+      error: (err as Error).message || 'Failed to delete subscriber',
+    };
+  }
+}
+
+
+

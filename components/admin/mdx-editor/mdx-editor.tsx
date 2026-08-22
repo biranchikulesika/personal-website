@@ -14,7 +14,7 @@ interface MDXEditorProps {
   persona?: Persona;
   date?: string;
   tags?: string[];
-  assumedAudience?: string;
+  targetAudience?: string;
   books?: BookCard[];
   mediaItems?: MediaItem[];
   embedBooks?: BookItem[];
@@ -26,6 +26,22 @@ interface MDXEditorProps {
 
 type ViewMode = 'split' | 'editor' | 'preview';
 
+/**
+ * Internal hook that debounces a string value. Returns the debounced value
+ * that updates `delay` ms after the last change to `value`. The initial
+ * value is used as-is (no delay on first render).
+ */
+function useDebouncedValue(value: string, delay: number): string {
+  const [debounced, setDebounced] = useState(value);
+
+  useEffect(() => {
+    const id = setTimeout(() => setDebounced(value), delay);
+    return () => clearTimeout(id);
+  }, [value, delay]);
+
+  return debounced;
+}
+
 export function MDXEditor({
   initialContent,
   title,
@@ -33,7 +49,7 @@ export function MDXEditor({
   persona,
   date,
   tags,
-  assumedAudience,
+  targetAudience,
   books,
   mediaItems = [],
   embedBooks = [],
@@ -42,7 +58,32 @@ export function MDXEditor({
   onChange,
   className = '',
 }: MDXEditorProps) {
+  // --- Fix 4: Removed the useEffect(() => setContent(initialContent), [initialContent]).
+  // The initial content is set via useState(initialContent). When the parent
+  // opens a different document, it will remount this component (the key or the
+  // conditional rendering changes), so a fresh mount picks up the new
+  // initialContent automatically. If the parent ever updates initialContent
+  // while the component stays mounted (e.g. switching tabs), we handle it
+  // below with a ref-based guard that only syncs on genuine external changes.
   const [content, setContent] = useState(initialContent);
+  const contentRef = useRef(content);
+  const onChangeRef = useRef(onChange);
+
+  // Keep refs current so the effect below doesn't re-run on every keystroke.
+  contentRef.current = content;
+  onChangeRef.current = onChange;
+
+  // Sync external content changes (e.g. switching between documents).
+  // This only fires when initialContent changes to a *different* value than
+  // what the editor currently holds, avoiding the redundant double-set loop.
+  useEffect(() => {
+    if (initialContent !== contentRef.current) {
+      setContent(initialContent);
+    }
+    // Only react when the parent provides a new document; ignore the
+    // onChange-driven loop because contentRef tracks internal state.
+  }, [initialContent]);
+
   const [viewMode, setViewMode] = useState<ViewMode>('split');
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isMediaModalOpen, setIsMediaModalOpen] = useState(false);
@@ -50,11 +91,6 @@ export function MDXEditor({
   const [embedModalKind, setEmbedModalKind] = useState<'book' | 'post' | 'note'>('book');
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-
-  // Sync external changes
-  useEffect(() => {
-    setContent(initialContent);
-  }, [initialContent]);
 
   const handleContentChange = useCallback(
     (newVal: string) => {
@@ -64,8 +100,16 @@ export function MDXEditor({
     [onChange]
   );
 
-  // Stats calculation
-  const stats = calculateStats(content);
+  // --- Fix 1: Debounced preview content ---
+  // The preview only receives content after the user pauses typing for ~250ms.
+  // During active typing the textarea stays fully responsive because `content`
+  // (the real editor state) updates instantly.
+  const previewContent = useDebouncedValue(content, 250);
+
+  // --- Fix 2: Debounced stats ---
+  // Stats are also derived from the debounced value so the expensive O(n)
+  // string splits in calculateStats only run when typing pauses.
+  const stats = calculateStats(previewContent);
 
   // Keyboard shortcut handler
   function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
@@ -266,7 +310,7 @@ export function MDXEditor({
           <button
             type="button"
             onClick={() => insertLinePrefix('> ')}
-            className="rounded-lg px-2 py-1 font-serif text-xs italic text-paper hover:bg-post-card hover:border hover:border-tinted/30"
+            className="rounded-lg px-2 py-1 text-xs font-serif italic text-paper hover:bg-post-card hover:border hover:border-tinted/30"
             title="Blockquote"
           >
             Quote
@@ -408,24 +452,24 @@ export function MDXEditor({
           </div>
         )}
 
-        {/* Live Preview Pane */}
+        {/* Live Preview Pane — receives debounced content */}
         {(viewMode === 'preview' || viewMode === 'split') && (
           <div className={`h-full flex-1 min-w-0 bg-night ${viewMode === 'split' ? 'w-1/2' : 'w-full'}`}>
             <MDXPreview
-              content={content}
+              content={previewContent}
               title={title}
               subtitle={subtitle}
               persona={persona}
               date={date}
               tags={tags}
-              assumedAudience={assumedAudience}
+              targetAudience={targetAudience}
               books={books}
             />
           </div>
         )}
       </div>
 
-      {/* 3. Footer Stats Bar */}
+      {/* 3. Footer Stats Bar — driven by debounced content */}
       <div className="flex flex-wrap items-center justify-between border-t border-tinted/20 bg-night-soft px-4 py-2 text-[11px] text-gray-mid">
         <div className="flex items-center gap-4">
           <span><b className="text-paper">{stats.words}</b> words</span>

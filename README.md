@@ -1,6 +1,6 @@
 # Biranchi Kulesika — Personal Website & Publishing Engine
 
-A modern, high-performance personal website, digital garden, and publishing engine for **Biranchi Kulesika** ([biranchikulesika.com](https://biranchikulesika.com)).
+A modern, high-performance personal website and publishing engine for **Biranchi Kulesika** ([biranchikulesika.com](https://biranchikulesika.com)).
 
 Built with **Next.js 16 (App Router)**, **React 19**, **TypeScript**, **Tailwind CSS v4**, and **PostgreSQL / Supabase**, featuring an editorial design system, an IDE-grade MDX composer, structured data for search engine & AI crawlability, and payment processing.
 
@@ -9,11 +9,11 @@ Built with **Next.js 16 (App Router)**, **React 19**, **TypeScript**, **Tailwind
 ## Key Highlights
 
 - **Editorial Design System**: Typography-first layout combining Space Grotesk and Newsreader serif fonts on a dark canvas (`#141413`). Clean horizontal-ruled ledgers replace card containers.
-- **4-Tier Decoupled Architecture**: Strict separation of concerns (`UI → Service → Repository → Database`), enabling seamless switching between an in-memory mock database and production Supabase PostgreSQL.
+- **Decoupled Service Architecture**: Strict separation of concerns (`UI → Service → Repository → Database`), querying production Supabase PostgreSQL with typed schemas.
 - **IDE-Grade MDX Composer (`/admin/compose`)**: Full-screen workspace with bi-directional AST Markdown parsing, split live preview, visual character diff viewer, metadata management, and media drawer.
 - **SEO & AI Discoverability**: Automated canonical URLs, Open Graph dynamic banner generation (`/api/og`), BreadcrumbList schemas, Article/Note JSON-LD, dynamic `sitemap.xml`, and crawler isolation.
 - **Patronage & Payments**: Razorpay checkout integration and webhook receiver with constant-time HMAC-SHA256 signature verification and idempotent database persistence.
-- **Production-Hardened**: Node.js native test runner (120+ tests), standalone Docker-ready build output (`output: 'standalone'`), HTTP security headers (HSTS, CSP, X-Frame-Options), and strict Row-Level Security (RLS).
+- **Production-Hardened**: Node.js native test runner (140+ tests), standalone Docker-ready build output (`output: 'standalone'`), HTTP security headers (HSTS, CSP, X-Frame-Options), and strict Row-Level Security (RLS).
 
 ---
 
@@ -35,14 +35,14 @@ Built with **Next.js 16 (App Router)**, **React 19**, **TypeScript**, **Tailwind
                                ▼
 ┌─────────────────────────────────────────────────────────────┐
 │             3. Data Access / Repository Layer               │
-│               (lib/repositories/content.repository.ts)      │
-│    - Abstract interface: Mock vs Supabase implementations   │
+│               (lib/repositories/supabase-content.repository.ts)
+│    - Typed database queries, row mappers, storage           │
 └──────────────────────────────┬──────────────────────────────┘
                                │ Interacts with
                                ▼
 ┌─────────────────────────────────────────────────────────────┐
 │               4. Database / Persistence Layer               │
-│          (lib/data/mock-db.ts  OR  Supabase PostgreSQL)     │
+│                    (Supabase PostgreSQL)                    │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -77,7 +77,6 @@ biranchi/
 ├── docs/                 # Comprehensive technical documentation suite
 ├── lib/                  # Services, repositories, Supabase client, validations, types, SEO
 ├── public/               # Static assets & public media
-├── scripts/              # Database reset and maintenance scripts
 ├── tests/                # Automated unit and integration test suite
 ├── schema.sql            # Idempotent PostgreSQL/Supabase database schema
 └── next.config.ts        # Next.js production configuration & security headers
@@ -101,10 +100,12 @@ npm install
 ```
 
 ### 3. Environment Configuration
-Create a local `.env.local` file:
+Create a local `.env.local` file from `.env.example` and fill in your Supabase credentials:
 ```bash
-DATA_SOURCE=mock
 NEXT_PUBLIC_SITE_URL=http://localhost:3000
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOi...
+SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOi...
 ```
 
 For production environment variables (Supabase, Razorpay, etc.), refer to [`docs/environment.md`](./docs/environment.md) and `.env.production.example`.
@@ -118,7 +119,6 @@ For production environment variables (Supabase, Razorpay, etc.), refer to [`docs
 | `npm run lint` | Run ESLint across all TypeScript and React files. |
 | `npm run build` | Compile the optimized production build (`output: 'standalone'`). |
 | `npm start` | Start the production server. |
-| `npm run db:reset` | Reset and reseed the in-memory mock database. |
 
 ---
 

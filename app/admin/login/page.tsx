@@ -3,8 +3,8 @@
 import { Suspense, useEffect, useState } from 'react';
 import Image from 'next/image';
 import { useSearchParams } from 'next/navigation';
-import { signInWithGoogle, signInWithGitHub, signInWithPasskey } from './actions';
-
+import { signInWithGoogle, signInWithGitHub, signInWithPasskey, verifyPasskeyLoginAction } from './actions';
+import { getSupabaseBrowser } from '@/lib/supabase/client';
 
 interface DailyBackground {
   imageUrl: string;
@@ -60,6 +60,55 @@ function LoginForm() {
     setPasskeyLoading(true);
 
     try {
+      // 1. If Supabase browser client is available, attempt Supabase passkey sign-in
+      const supabase = getSupabaseBrowser();
+      if (supabase) {
+        try {
+          const { data, error: passkeyErr } = await supabase.auth.signInWithPasskey();
+          if (!passkeyErr && data?.user) {
+            window.location.href = '/admin';
+            return;
+          }
+        } catch {
+          // Fall through to standard WebAuthn or server action
+        }
+      }
+
+      // 2. Standard WebAuthn ceremony in browser
+      if (typeof window !== 'undefined' && window.PublicKeyCredential && navigator.credentials) {
+        try {
+          const challenge = new Uint8Array(32);
+          window.crypto.getRandomValues(challenge);
+          const credential = await navigator.credentials.get({
+            publicKey: {
+              challenge,
+              timeout: 60000,
+              userVerification: 'preferred',
+            },
+          });
+
+          if (credential) {
+            const verifyResult = await verifyPasskeyLoginAction({
+              credentialId: credential.id,
+            });
+            if (verifyResult.error) {
+              setError(verifyResult.error);
+              return;
+            }
+            window.location.href = '/admin';
+            return;
+          }
+        } catch (webauthnErr: unknown) {
+          const errName = (webauthnErr as { name?: string })?.name;
+          if (errName === 'NotAllowedError' || errName === 'AbortError') {
+            setError('Passkey prompt cancelled or timed out.');
+            return;
+          }
+          // Fallback to server action
+        }
+      }
+
+      // 3. Fallback server action
       const result = await signInWithPasskey();
       if (result.error) {
         setError(result.error);
@@ -67,7 +116,7 @@ function LoginForm() {
         window.location.href = '/admin';
       }
     } catch {
-      setError('An unexpected error occurred');
+      setError('Passkey authentication failed. Please try again.');
     } finally {
       setPasskeyLoading(false);
     }

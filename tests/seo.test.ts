@@ -55,7 +55,7 @@ test("postMetadata generates correct metadata for a blog post", () => {
     tags: ["craft", "tools"],
     publishedAt: "2026-03-03",
     lastEditedAt: "2026-08-21",
-    assumedAudience: "Developers",
+    targetAudience: "Developers",
     intro: ["Intro"],
     sections: [],
     books: [],
@@ -85,7 +85,7 @@ test("postMetadata includes twitter:creator", () => {
     tags: [],
     publishedAt: "2026-08-20",
     lastEditedAt: "2026-08-20",
-    assumedAudience: "Test",
+    targetAudience: "Test",
     intro: [],
     sections: [],
     books: [],
@@ -104,7 +104,7 @@ test("postMetadata uses dedicated per-slug OG route", () => {
     tags: [],
     publishedAt: "2026-08-20",
     lastEditedAt: "2026-08-20",
-    assumedAudience: "Test",
+    targetAudience: "Test",
     intro: [],
     sections: [],
     books: [],
@@ -145,6 +145,13 @@ test("noteMetadata generates correct metadata for a note", () => {
   assert.equal(og.type, "article");
   assert.ok((og.tags as string[]).includes("philosophy"));
   assert.ok((og.tags as string[]).includes("Thinker"));
+
+  const noteWithSubtitle: NoteItem = {
+    ...note,
+    subtitle: "Custom Note Subtitle",
+  };
+  const metaWithSubtitle = noteMetadata(noteWithSubtitle);
+  assert.equal(metaWithSubtitle.description, "Custom Note Subtitle");
 });
 
 // ── websiteJsonLd ───────────────────────────────────────────────────────────
@@ -170,7 +177,7 @@ test("articleJsonLd returns valid Article schema", () => {
     tags: ["craft"],
     publishedAt: "2026-03-03",
     lastEditedAt: "2026-08-21",
-    assumedAudience: "Test",
+    targetAudience: "Test",
     intro: [],
     sections: [],
     books: [],

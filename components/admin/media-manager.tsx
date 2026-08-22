@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState, useRef, useTransition } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { ToastView } from '@/components/ui/toast-view';
 import Image from 'next/image';
@@ -9,7 +9,7 @@ import {
   addMediaAction,
   deleteOrphanedMediaAction,
 } from '@/app/admin/actions';
-import { TrashIcon } from '@/components/icons';
+import { TrashIcon, UploadIcon } from '@/components/icons';
 import { NoMediaState, NoSearchResults } from '@/components/ui/states';
 
 interface MediaManagerProps {
@@ -38,7 +38,9 @@ export function MediaManager({
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const [isUploading, setIsUploading] = useState(false);
+  const [activePhoto, setActivePhoto] = useState<MediaItem | null>(null);
   const { message: toastMessage, showToast } = useToast(3000);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const orphanedSrcs = new Set(orphanedList.map((m) => m.src));
 
@@ -50,7 +52,32 @@ export function MediaManager({
   const [fileSize, setFileSize] = useState('250 KB');
   const [dimensions, setDimensions] = useState('1200 × 800');
 
+  function handleFileSelected(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
 
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result as string;
+      setFileSrc(dataUrl);
+      const cleanName = file.name.replace(/\.[^.]+$/, '');
+      setFileName(file.name);
+      setAltText(cleanName);
+      setFileSize(`${Math.max(1, Math.round(file.size / 1024))} KB`);
+      setTag(activeTag !== 'all' ? (activeTag as MediaItem['tag']) : 'atmosphere');
+
+      // Attempt to inspect native image dimensions
+      const img = new window.Image();
+      img.onload = () => {
+        setDimensions(`${img.naturalWidth} × ${img.naturalHeight}`);
+      };
+      img.src = dataUrl;
+
+      setIsUploading(true);
+    };
+    reader.readAsDataURL(file);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  }
 
   function handleCopy(id: string, text: string) {
     if (typeof navigator !== 'undefined' && navigator.clipboard) {
@@ -67,9 +94,9 @@ export function MediaManager({
 
     const newMedia: MediaItem = {
       id: `media-${Date.now()}`,
-      name: fileName,
-      src: fileSrc.startsWith('/') ? fileSrc : `/${fileSrc}`,
-      alt: altText || fileName,
+      name: fileName.trim(),
+      src: fileSrc,
+      alt: altText.trim() || fileName.trim(),
       size: fileSize,
       dimensions,
       uploadedAt: new Date().toISOString().split('T')[0],
@@ -84,7 +111,7 @@ export function MediaManager({
         setFileName('');
         setFileSrc('');
         setAltText('');
-        showToast(`Asset "${fileName}" added to library!`);
+        showToast(`Asset "${fileName}" uploaded to library!`);
       } else {
         showToast(res.error || 'Failed to add media');
       }
@@ -152,42 +179,58 @@ export function MediaManager({
     : filteredMedia;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 font-sans">
       {/* Toast Notification */}
       <ToastView message={toastMessage} />
 
-      {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h2 className="font-serif text-2xl font-normal text-paper md:text-3xl">
-            Media & Asset Resources
-          </h2>
+      {/* Hidden Device File Picker Input */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        accept="image/*"
+        className="hidden"
+        onChange={handleFileSelected}
+      />
+
+      {/* ── Mobile Phone Gallery View (md:hidden) ── */}
+      <div className="block md:hidden space-y-3">
+        {/* Mobile Search & Upload Header */}
+        <div className="flex items-center gap-2">
+          <div className="relative flex-1">
+            <input
+              type="text"
+              placeholder="Search photos..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full rounded-full border border-tinted/20 bg-night-soft px-4 py-2 text-xs text-paper placeholder:text-gray-mid/50 focus:border-tinted/40 focus:outline-none"
+            />
+          </div>
+
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            aria-label="Upload photo"
+            title="Upload photo"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-accent text-paper shadow-sm hover:bg-accent-hover active:scale-95 transition-all"
+          >
+            <UploadIcon className="h-4 w-4" />
+          </button>
         </div>
 
-        <button
-          type="button"
-          onClick={() => setIsUploading(true)}
-          className="inline-flex items-center gap-2 rounded-full bg-accent px-5 py-2.5 text-sm font-semibold text-paper shadow-sm transition-colors hover:bg-accent-hover"
-        >
-          <span>+ Add Media Asset</span>
-        </button>
-      </div>
-
-      {/* Filter & Search Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-2">
+        {/* Mobile Horizontal Filter Pills */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
           {['all', 'profile', 'atmosphere', 'post', 'book'].map((t) => (
             <button
-              key={t}
+              key={`mob-filter-${t}`}
               type="button"
               onClick={() => {
                 setActiveTag(t);
                 setShowOrphanedOnly(false);
               }}
-              className={`rounded-full px-3.5 py-1 text-xs font-semibold uppercase tracking-wider transition-all ${
+              className={`rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-wider shrink-0 transition-all ${
                 activeTag === t
                   ? 'bg-accent text-paper shadow-xs'
-                  : 'bg-night-soft text-gray-mid border border-tinted/20 hover:text-paper'
+                  : 'bg-night-soft text-gray-mid border border-tinted/20'
               }`}
             >
               {t}
@@ -201,12 +244,10 @@ export function MediaManager({
                 setShowOrphanedOnly((v) => !v);
                 setActiveTag('all');
               }}
-              title="Media assets in the storage bucket that are not used anywhere on the site"
-              aria-pressed={showOrphanedOnly}
-              className={`rounded-full px-3.5 py-1 text-xs font-semibold uppercase tracking-wider transition-all ${
+              className={`rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-wider shrink-0 transition-all ${
                 showOrphanedOnly
                   ? 'bg-amber-600 text-white shadow-xs'
-                  : 'bg-amber-950/40 text-amber-400 border border-amber-800/40 hover:bg-amber-950/60'
+                  : 'bg-amber-950/40 text-amber-400 border border-amber-800/40'
               }`}
             >
               {orphanedSrcs.size} orphaned
@@ -214,41 +255,25 @@ export function MediaManager({
           )}
         </div>
 
-        <input
-          type="text"
-          placeholder="Search assets by name or tag..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-full max-w-xs rounded-full border border-tinted/20 bg-night-soft px-4 py-1.5 text-xs text-paper placeholder:text-gray-mid/50 focus:border-tinted/40 focus:outline-none"
-        />
-      </div>
-
-      {/* Media Grid */}
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {visibleMedia.map((media) => {
-          const markdownSnippet = `![${media.alt}](${media.src})`;
-          const isOrphaned = orphanedSrcs.has(media.src);
-          const isSelected = selectedOrphanedIds.has(media.id);
-          return (
-            <div
-              key={media.id}
-              className={`group flex flex-col overflow-hidden rounded-2xl border bg-post-card shadow-sm transition-all hover:shadow-md ${
-                isSelected
-                  ? 'border-amber-500 ring-1 ring-amber-400'
-                  : 'border-tinted/20 hover:border-accent/40'
-              }`}
-            >
-              {/* Thumbnail Preview */}
-              <div className="relative aspect-4/3 w-full overflow-hidden bg-night">
+        {/* 3-Column Square Gallery Grid */}
+        <div className="grid grid-cols-3 gap-1 sm:gap-1.5">
+          {visibleMedia.map((media) => {
+            const isOrphaned = orphanedSrcs.has(media.src);
+            return (
+              <button
+                key={`mob-photo-${media.id}`}
+                type="button"
+                onClick={() => setActivePhoto(media)}
+                className="group relative aspect-square w-full overflow-hidden rounded-lg bg-night focus:outline-none active:scale-95 transition-transform"
+              >
                 {isOrphaned ? (
-                  <div className="flex h-full w-full flex-col items-center justify-center gap-2 bg-amber-950/20">
+                  <div className="flex h-full w-full flex-col items-center justify-center bg-amber-950/30 p-1 text-center">
                     <svg
-                      className="h-8 w-8 text-amber-500"
+                      className="h-5 w-5 text-amber-400"
                       fill="none"
                       viewBox="0 0 24 24"
                       stroke="currentColor"
                       strokeWidth={1.5}
-                      aria-hidden
                     >
                       <path
                         strokeLinecap="round"
@@ -256,8 +281,8 @@ export function MediaManager({
                         d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z"
                       />
                     </svg>
-                    <span className="text-[10px] font-semibold uppercase tracking-wider text-amber-400">
-                      In bucket · unreferenced
+                    <span className="mt-0.5 text-[8px] font-bold uppercase text-amber-400">
+                      Orphan
                     </span>
                   </div>
                 ) : (
@@ -265,106 +290,349 @@ export function MediaManager({
                     src={media.src}
                     alt={media.alt}
                     fill
-                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-                    className="object-cover transition-transform duration-300 group-hover:scale-105"
+                    sizes="33vw"
+                    className="object-cover transition-transform duration-200 group-hover:scale-105"
+                    unoptimized
                   />
                 )}
-
-                {isOrphaned && (
-                  <button
-                    type="button"
-                    onClick={() => toggleOrphanedSelection(media.id)}
-                    aria-label={
-                      isSelected
-                        ? `Deselect ${media.name}`
-                        : `Select ${media.name}`
-                    }
-                    aria-pressed={isSelected}
-                    className={`absolute top-2 left-2 flex h-5 w-5 items-center justify-center rounded-full ring-1 transition-colors ${
-                      isSelected
-                        ? 'bg-amber-600 text-white ring-amber-600'
-                        : 'bg-night text-transparent ring-tinted/40 hover:ring-amber-500'
-                    }`}
-                  >
-                    <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
-                    </svg>
-                  </button>
-                )}
-
-                <span className="absolute top-2 right-2 rounded bg-night/80 border border-tinted/20 px-2 py-0.5 text-[10px] font-semibold tracking-wider text-paper uppercase backdrop-blur-xs">
+                <span className="absolute bottom-1 right-1 rounded bg-black/70 px-1 py-0.2 text-[8px] font-semibold uppercase text-paper/90 backdrop-blur-xs">
                   {media.tag}
                 </span>
+              </button>
+            );
+          })}
+        </div>
+
+        {visibleMedia.length === 0 && (
+          <div className="rounded-2xl border border-tinted/20 bg-post-card p-6 text-center">
+            <p className="font-serif text-base text-paper">No photos found</p>
+            <p className="mt-1 text-xs text-gray-mid">No media items match your search or filter.</p>
+          </div>
+        )}
+      </div>
+
+      {/* ── Fullscreen Phone Gallery Lightbox Modal ── */}
+      {activePhoto && (
+        <div className="fixed inset-0 z-50 flex flex-col justify-between bg-black/95 p-4 backdrop-blur-md animate-in fade-in duration-200 md:hidden">
+          {/* Lightbox Header */}
+          <div className="flex items-center justify-between border-b border-tinted/20 pb-3">
+            <div className="min-w-0 flex-1 pr-3">
+              <h4 className="truncate font-mono text-xs font-semibold text-paper">
+                {activePhoto.name}
+              </h4>
+              <div className="mt-0.5 flex items-center gap-2 text-[11px] text-gray-mid">
+                <span className="rounded bg-night px-1.5 py-0.5 text-[9px] font-semibold uppercase text-gray-mid border border-tinted/20">
+                  {activePhoto.tag}
+                </span>
+                <span>{activePhoto.dimensions || 'Image'}</span>
+                <span>·</span>
+                <span>{activePhoto.size}</span>
               </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setActivePhoto(null)}
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-night-soft text-paper hover:bg-post-card shrink-0"
+              aria-label="Close photo preview"
+            >
+              ✕
+            </button>
+          </div>
 
-              {/* Metadata & Actions */}
-              <div className="flex flex-1 flex-col justify-between p-4">
-                <div>
-                  <h4 className="truncate font-mono text-xs font-semibold text-paper">
-                    {media.name}
-                  </h4>
-                  <p className="mt-1 truncate text-xs text-gray-mid">
-                    {media.alt}
-                  </p>
-                  <div className="mt-2 flex items-center justify-between text-[11px] text-gray-mid/80">
-                    <span>{media.dimensions || 'Image'}</span>
-                    <span>{media.size}</span>
-                  </div>
-                </div>
+          {/* Lightbox Image Stage with Previous & Next controls */}
+          <div className="relative flex flex-1 items-center justify-center overflow-hidden py-4">
+            <div className="relative h-full w-full max-h-[65vh] max-w-full">
+              <Image
+                src={activePhoto.src}
+                alt={activePhoto.alt}
+                fill
+                className="object-contain"
+                unoptimized
+              />
+            </div>
 
-                <div className="mt-4 flex flex-col gap-1.5 pt-3 border-t border-tinted/20">
+            {/* Nav Controls */}
+            {visibleMedia.length > 1 && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const idx = visibleMedia.findIndex((m) => m.id === activePhoto.id);
+                    if (idx > 0) setActivePhoto(visibleMedia[idx - 1]);
+                    else setActivePhoto(visibleMedia[visibleMedia.length - 1]);
+                  }}
+                  className="absolute left-2 flex h-10 w-10 items-center justify-center rounded-full bg-black/60 text-paper text-xl backdrop-blur-xs hover:bg-black/80 active:scale-95"
+                  aria-label="Previous photo"
+                >
+                  ‹
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const idx = visibleMedia.findIndex((m) => m.id === activePhoto.id);
+                    if (idx < visibleMedia.length - 1) setActivePhoto(visibleMedia[idx + 1]);
+                    else setActivePhoto(visibleMedia[0]);
+                  }}
+                  className="absolute right-2 flex h-10 w-10 items-center justify-center rounded-full bg-black/60 text-paper text-xl backdrop-blur-xs hover:bg-black/80 active:scale-95"
+                  aria-label="Next photo"
+                >
+                  ›
+                </button>
+              </>
+            )}
+          </div>
+
+          {/* Lightbox Bottom Action Bar */}
+          <div className="border-t border-tinted/20 pt-3 space-y-2">
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => handleCopy(`url-${activePhoto.id}`, activePhoto.src)}
+                className="flex items-center justify-center rounded-xl bg-night-soft border border-tinted/20 py-2.5 text-xs font-medium text-paper active:scale-95 transition-all"
+              >
+                {copiedId === `url-${activePhoto.id}` ? '✓ Copied URL' : 'Copy URL'}
+              </button>
+              <button
+                type="button"
+                onClick={() => handleCopy(`md-${activePhoto.id}`, `![${activePhoto.alt}](${activePhoto.src})`)}
+                className="flex items-center justify-center rounded-xl bg-night-soft border border-tinted/20 py-2.5 text-xs font-medium text-paper active:scale-95 transition-all"
+              >
+                {copiedId === `md-${activePhoto.id}` ? '✓ Copied MD' : 'Copy Markdown'}
+              </button>
+            </div>
+
+            {orphanedSrcs.has(activePhoto.src) && (
+              <button
+                type="button"
+                onClick={() => {
+                  const target = activePhoto;
+                  setActivePhoto(null);
+                  requestDelete([target]);
+                }}
+                className="flex w-full items-center justify-center gap-1.5 rounded-xl bg-red-950/50 border border-red-800/40 py-2 text-xs font-semibold text-red-400"
+              >
+                <TrashIcon className="h-3.5 w-3.5" />
+                <span>Delete from bucket</span>
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── Desktop View (hidden md:block) ── */}
+      <div className="hidden md:block space-y-6">
+        {/* Header */}
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="font-serif text-2xl font-normal text-paper md:text-3xl">
+              Media & Asset Resources
+            </h2>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            className="inline-flex items-center gap-2 rounded-full bg-accent px-5 py-2.5 text-sm font-semibold text-paper shadow-sm transition-colors hover:bg-accent-hover active:scale-95"
+          >
+            <UploadIcon className="h-4 w-4" />
+            <span>+ Add Media Asset</span>
+          </button>
+        </div>
+
+        {/* Filter & Search Bar */}
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-2">
+            {['all', 'profile', 'atmosphere', 'post', 'book'].map((t) => (
+              <button
+                key={t}
+                type="button"
+                onClick={() => {
+                  setActiveTag(t);
+                  setShowOrphanedOnly(false);
+                }}
+                className={`rounded-full px-3.5 py-1 text-xs font-semibold uppercase tracking-wider transition-all ${
+                  activeTag === t
+                    ? 'bg-accent text-paper shadow-xs'
+                    : 'bg-night-soft text-gray-mid border border-tinted/20 hover:text-paper'
+                }`}
+              >
+                {t}
+              </button>
+            ))}
+
+            {orphanedSrcs.size > 0 && (
+              <button
+                type="button"
+                onClick={() => {
+                  setShowOrphanedOnly((v) => !v);
+                  setActiveTag('all');
+                }}
+                title="Media assets in the storage bucket that are not used anywhere on the site"
+                aria-pressed={showOrphanedOnly}
+                className={`rounded-full px-3.5 py-1 text-xs font-semibold uppercase tracking-wider transition-all ${
+                  showOrphanedOnly
+                    ? 'bg-amber-600 text-white shadow-xs'
+                    : 'bg-amber-950/40 text-amber-400 border border-amber-800/40 hover:bg-amber-950/60'
+                }`}
+              >
+                {orphanedSrcs.size} orphaned
+              </button>
+            )}
+          </div>
+
+          <input
+            type="text"
+            placeholder="Search assets by name or tag..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full max-w-xs rounded-full border border-tinted/20 bg-night-soft px-4 py-1.5 text-xs text-paper placeholder:text-gray-mid/50 focus:border-tinted/40 focus:outline-none"
+          />
+        </div>
+
+        {/* Media Grid */}
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {visibleMedia.map((media) => {
+            const markdownSnippet = `![${media.alt}](${media.src})`;
+            const isOrphaned = orphanedSrcs.has(media.src);
+            const isSelected = selectedOrphanedIds.has(media.id);
+            return (
+              <div
+                key={media.id}
+                className={`group flex flex-col overflow-hidden rounded-2xl border bg-post-card shadow-sm transition-all hover:shadow-md ${
+                  isSelected
+                    ? 'border-amber-500 ring-1 ring-amber-400'
+                    : 'border-tinted/20 hover:border-accent/40'
+                }`}
+              >
+                {/* Thumbnail Preview */}
+                <div className="relative aspect-4/3 w-full overflow-hidden bg-night">
+                  {isOrphaned ? (
+                    <div className="flex h-full w-full flex-col items-center justify-center gap-2 bg-amber-950/20">
+                      <svg
+                        className="h-8 w-8 text-amber-500"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth={1.5}
+                        aria-hidden
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z"
+                        />
+                      </svg>
+                      <span className="text-[10px] font-semibold uppercase tracking-wider text-amber-400">
+                        In bucket · unreferenced
+                      </span>
+                    </div>
+                  ) : (
+                    <Image
+                      src={media.src}
+                      alt={media.alt}
+                      fill
+                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                      className="object-cover transition-transform duration-300 group-hover:scale-105"
+                      unoptimized
+                    />
+                  )}
+
                   {isOrphaned && (
                     <button
                       type="button"
-                      onClick={() => requestDelete([media])}
-                      className="flex items-center justify-center gap-1.5 rounded-lg bg-red-950/40 py-1.5 text-[11px] font-semibold text-red-400 border border-red-800/40 transition-colors hover:bg-red-900/60"
+                      onClick={() => toggleOrphanedSelection(media.id)}
+                      aria-label={
+                        isSelected
+                          ? `Deselect ${media.name}`
+                          : `Select ${media.name}`
+                      }
+                      aria-pressed={isSelected}
+                      className={`absolute top-2 left-2 flex h-5 w-5 items-center justify-center rounded-full ring-1 transition-colors ${
+                        isSelected
+                          ? 'bg-amber-600 text-white ring-amber-600'
+                          : 'bg-night text-transparent ring-tinted/40 hover:ring-amber-500'
+                      }`}
                     >
-                      <TrashIcon className="h-3.5 w-3.5" />
-                      Delete from bucket
+                      <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+                      </svg>
                     </button>
                   )}
-                  <div className="grid grid-cols-2 gap-1.5">
-                    <button
-                      type="button"
-                      onClick={() => handleCopy(`url-${media.id}`, media.src)}
-                      className="rounded-lg bg-night-soft border border-tinted/20 py-1.5 text-[11px] font-medium text-gray-mid transition-colors hover:bg-post-card hover:text-paper"
-                    >
-                      {copiedId === `url-${media.id}` ? '✓ Copied' : 'Copy URL'}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleCopy(`md-${media.id}`, markdownSnippet)}
-                      className="rounded-lg bg-night-soft border border-tinted/20 py-1.5 text-[11px] font-medium text-gray-mid transition-colors hover:bg-post-card hover:text-paper"
-                    >
-                      {copiedId === `md-${media.id}` ? '✓ Copied' : 'Copy MD'}
-                    </button>
+
+                  <span className="absolute top-2 right-2 rounded bg-night/80 border border-tinted/20 px-2 py-0.5 text-[10px] font-semibold tracking-wider text-paper uppercase backdrop-blur-xs">
+                    {media.tag}
+                  </span>
+                </div>
+
+                {/* Metadata & Actions */}
+                <div className="flex flex-1 flex-col justify-between p-4">
+                  <div>
+                    <h4 className="truncate font-mono text-xs font-semibold text-paper">
+                      {media.name}
+                    </h4>
+                    <p className="mt-1 truncate text-xs text-gray-mid">
+                      {media.alt}
+                    </p>
+                    <div className="mt-2 flex items-center justify-between text-[11px] text-gray-mid/80">
+                      <span>{media.dimensions || 'Image'}</span>
+                      <span>{media.size}</span>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 flex flex-col gap-1.5 pt-3 border-t border-tinted/20">
+                    {isOrphaned && (
+                      <button
+                        type="button"
+                        onClick={() => requestDelete([media])}
+                        className="flex items-center justify-center gap-1.5 rounded-lg bg-red-950/40 py-1.5 text-[11px] font-semibold text-red-400 border border-red-800/40 transition-colors hover:bg-red-900/60"
+                      >
+                        <TrashIcon className="h-3.5 w-3.5" />
+                        Delete from bucket
+                      </button>
+                    )}
+                    <div className="grid grid-cols-2 gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => handleCopy(`url-${media.id}`, media.src)}
+                        className="rounded-lg bg-night-soft border border-tinted/20 py-1.5 text-[11px] font-medium text-gray-mid transition-colors hover:bg-post-card hover:text-paper"
+                      >
+                        {copiedId === `url-${media.id}` ? '✓ Copied' : 'Copy URL'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleCopy(`md-${media.id}`, markdownSnippet)}
+                        className="rounded-lg bg-night-soft border border-tinted/20 py-1.5 text-[11px] font-medium text-gray-mid transition-colors hover:bg-post-card hover:text-paper"
+                      >
+                        {copiedId === `md-${media.id}` ? '✓ Copied' : 'Copy MD'}
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })}
 
-        {visibleMedia.length === 0 && (
-          <div className="col-span-full">
-            {mediaList.length === 0 ? (
-              <NoMediaState onUpload={() => setIsUploading(true)} />
-            ) : (
-              <NoSearchResults
-                query={search || undefined}
-                onReset={
-                  search || activeTag !== 'all'
-                    ? () => {
-                        setSearch('');
-                        setActiveTag('all');
-                      }
-                    : undefined
-                }
-                resetLabel="Reset filters"
-              />
-            )}
-          </div>
-        )}
+          {visibleMedia.length === 0 && (
+            <div className="col-span-full">
+              {mediaList.length === 0 ? (
+                <NoMediaState onUpload={() => fileInputRef.current?.click()} />
+              ) : (
+                <NoSearchResults
+                  query={search || undefined}
+                  onReset={
+                    search || activeTag !== 'all'
+                      ? () => {
+                          setSearch('');
+                          setActiveTag('all');
+                        }
+                      : undefined
+                  }
+                  resetLabel="Reset filters"
+                />
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Bulk action bar for selected orphaned assets */}
@@ -473,15 +741,18 @@ export function MediaManager({
             <div className="flex items-center justify-between border-b border-tinted/20 pb-4">
               <div>
                 <h3 className="font-serif text-2xl font-normal text-paper">
-                  Register Media Asset
+                  Upload Media Asset
                 </h3>
                 <p className="mt-0.5 text-xs text-gray-mid">
-                  Add an image reference to the asset library.
+                  Review details and add to your media library.
                 </p>
               </div>
               <button
                 type="button"
-                onClick={() => setIsUploading(false)}
+                onClick={() => {
+                  setIsUploading(false);
+                  setFileSrc('');
+                }}
                 className="rounded-full p-2 text-gray-mid hover:bg-night-soft hover:text-paper"
               >
                 ✕
@@ -489,9 +760,21 @@ export function MediaManager({
             </div>
 
             <form onSubmit={handleAddMedia} className="mt-6 space-y-4">
+              {/* Preview Thumbnail */}
+              {fileSrc && (
+                <div className="overflow-hidden rounded-2xl border border-tinted/20 bg-night-soft flex items-center justify-center max-h-56 p-2">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={fileSrc}
+                    alt={altText || fileName}
+                    className="max-h-52 w-auto object-contain rounded-xl"
+                  />
+                </div>
+              )}
+
               <div>
                 <label className="block text-xs font-semibold uppercase tracking-wider text-gray-mid">
-                  Filename
+                  File Name
                 </label>
                 <input
                   type="text"
@@ -505,21 +788,7 @@ export function MediaManager({
 
               <div>
                 <label className="block text-xs font-semibold uppercase tracking-wider text-gray-mid">
-                  Source Path or URL
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="/biranchi.jpeg or https://..."
-                  value={fileSrc}
-                  onChange={(e) => setFileSrc(e.target.value)}
-                  className="mt-1.5 w-full rounded-xl border border-tinted/20 bg-night-soft px-3.5 py-2 font-mono text-sm text-paper placeholder:text-gray-mid/50 focus:border-tinted/40 focus:outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-gray-mid">
-                  Alt Text Description
+                  Alt Text
                 </label>
                 <input
                   type="text"
@@ -530,40 +799,29 @@ export function MediaManager({
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-gray-mid">
-                    Category Tag
-                  </label>
-                  <select
-                    value={tag}
-                    onChange={(e) => setTag(e.target.value as MediaItem['tag'])}
-                    className="mt-1.5 w-full rounded-xl border border-tinted/20 bg-night-soft px-3.5 py-2 text-sm text-paper focus:border-tinted/40 focus:outline-none"
-                  >
-                    <option value="profile" className="bg-night text-paper">Profile</option>
-                    <option value="atmosphere" className="bg-night text-paper">Atmosphere</option>
-                    <option value="post" className="bg-night text-paper">Post Asset</option>
-                    <option value="book" className="bg-night text-paper">Book Cover</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-gray-mid">
-                    File Size Estimate
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g. 240 KB"
-                    value={fileSize}
-                    onChange={(e) => setFileSize(e.target.value)}
-                    className="mt-1.5 w-full rounded-xl border border-tinted/20 bg-night-soft px-3.5 py-2 text-sm text-paper placeholder:text-gray-mid/50 focus:border-tinted/40 focus:outline-none"
-                  />
-                </div>
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-gray-mid">
+                  Category
+                </label>
+                <select
+                  value={tag}
+                  onChange={(e) => setTag(e.target.value as MediaItem['tag'])}
+                  className="mt-1.5 w-full rounded-xl border border-tinted/20 bg-night-soft px-3.5 py-2 text-sm text-paper focus:border-tinted/40 focus:outline-none"
+                >
+                  <option value="atmosphere" className="bg-night text-paper">Atmosphere</option>
+                  <option value="profile" className="bg-night text-paper">Profile</option>
+                  <option value="post" className="bg-night text-paper">Post Asset</option>
+                  <option value="book" className="bg-night text-paper">Book Cover</option>
+                </select>
               </div>
 
               <div className="flex items-center justify-end gap-3 pt-4 border-t border-tinted/20">
                 <button
                   type="button"
-                  onClick={() => setIsUploading(false)}
+                  onClick={() => {
+                    setIsUploading(false);
+                    setFileSrc('');
+                  }}
                   className="rounded-full px-5 py-2 text-xs font-semibold text-gray-mid hover:text-paper"
                 >
                   Cancel
@@ -573,7 +831,7 @@ export function MediaManager({
                   disabled={isPending}
                   className="rounded-full bg-accent px-6 py-2 text-xs font-semibold text-paper shadow-sm hover:bg-accent-hover transition-colors disabled:opacity-50"
                 >
-                  {isPending ? 'Saving...' : 'Add Asset'}
+                  {isPending ? 'Uploading...' : 'Add Asset'}
                 </button>
               </div>
             </form>

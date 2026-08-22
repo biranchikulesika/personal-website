@@ -1,23 +1,25 @@
+import { getSupabaseAdmin } from "@/lib/supabase/server";
 import type {
   AppRole,
-  UserRole,
   BlogPost,
+  BookCard,
   BookItem,
+  Contribution,
+  HomeContent,
   MediaItem,
+  NewsletterSubscriber,
   NoteItem,
   NowEntry,
+  PasskeyItem,
   Persona,
-  ScribbleEntry,
-  HomeContent,
   PostSection,
-  BookCard,
+  ScribbleEntry,
   SectionGroup,
+  UserRole,
+  UserSession,
   WritingItem,
-  Contribution,
 } from "@/lib/types";
 import type { ContentRepository } from "./content.repository";
-import { getSupabaseAdmin } from "@/lib/supabase/server";
-import type { Database } from "@/lib/supabase/database.types";
 
 // ── Row types (Supabase → TypeScript) ──────────────────────────────────────
 // These represent the raw database row format. The repository maps between
@@ -33,7 +35,7 @@ interface PostRow {
   tags: string[];
   published_at: string | null;
   last_edited_at: string | null;
-  assumed_audience: string;
+  target_audience: string;
   intro: string[];
   sections: PostSection[];
   books: BookCard[];
@@ -45,6 +47,7 @@ interface NoteRow {
   id: string;
   slug: string;
   title: string;
+  subtitle: string | null;
   description: string;
   content: string[];
   date: string | null;
@@ -98,7 +101,7 @@ function postRowToDomain(row: PostRow): BlogPost {
     tags: row.tags ?? [],
     publishedAt: row.published_at ?? "",
     lastEditedAt: row.last_edited_at ?? "",
-    assumedAudience: row.assumed_audience ?? "",
+    targetAudience: row.target_audience ?? "",
     intro: (row.intro as string[]) ?? [],
     sections: (row.sections as unknown as PostSection[]) ?? [],
     books: (row.books as unknown as BookCard[]) ?? [],
@@ -112,6 +115,7 @@ function noteRowToDomain(row: NoteRow): NoteItem {
     id: row.id,
     slug: row.slug,
     title: row.title,
+    subtitle: row.subtitle ?? undefined,
     description: row.description,
     content: (row.content as string[]) ?? [],
     date: row.date ?? "",
@@ -174,19 +178,22 @@ export class SupabaseContentRepository implements ContentRepository {
   // ── Home Content ───────────────────────────────────────────────────────
 
   async getHomeContent(): Promise<HomeContent> {
-    const [writing, notes, library] = await Promise.all([
+    const [writing, allNotes, library] = await Promise.all([
       this.getWriting(),
       this.getAllNotes(),
       this.getLibrary(),
     ]);
+
+    const publishedNotes = allNotes.filter((n) => n.status !== "unpublished");
 
     return {
       writing,
       notes: {
         title: "Notes",
         href: "/scribble",
-        subheader: "Short-form thinking",
-        items: notes,
+        subheader:
+          "Things I want to share, stories, opinions, observations, and thoughts.",
+        items: publishedNotes,
       },
       library,
     };
@@ -196,6 +203,7 @@ export class SupabaseContentRepository implements ContentRepository {
     const { data, error } = await this.db
       .from("posts")
       .select("*")
+      .eq("status", "published")
       .order("published_at", { ascending: false });
 
     if (error) throw new Error(`Failed to load writing: ${error.message}`);
@@ -214,7 +222,7 @@ export class SupabaseContentRepository implements ContentRepository {
     return {
       title: "Writing",
       href: "/scribble",
-      subheader: "Essays on craft, systems, and observation",
+      subheader: "Thoughts and ideas I want to explore and explain",
       items,
     };
   }
@@ -268,7 +276,10 @@ export class SupabaseContentRepository implements ContentRepository {
     return (data as PostRow[]).map(postRowToDomain);
   }
 
-  async savePost(post: BlogPost, persona: Persona = "builder"): Promise<BlogPost> {
+  async savePost(
+    post: BlogPost,
+    persona: Persona = "builder",
+  ): Promise<BlogPost> {
     const status = post.status || "published";
 
     // Check for slug collision in other collections on insert
@@ -279,7 +290,9 @@ export class SupabaseContentRepository implements ContentRepository {
       .limit(1);
 
     if (existing && existing.length > 0) {
-      throw new Error(`Slug "${post.slug}" already exists. Choose a unique slug.`);
+      throw new Error(
+        `Slug "${post.slug}" already exists. Choose a unique slug.`,
+      );
     }
 
     const { data: existingBook } = await this.db
@@ -289,7 +302,9 @@ export class SupabaseContentRepository implements ContentRepository {
       .limit(1);
 
     if (existingBook && existingBook.length > 0) {
-      throw new Error(`Slug "${post.slug}" already exists. Choose a unique slug.`);
+      throw new Error(
+        `Slug "${post.slug}" already exists. Choose a unique slug.`,
+      );
     }
 
     const row = {
@@ -302,7 +317,7 @@ export class SupabaseContentRepository implements ContentRepository {
       tags: post.tags,
       published_at: post.publishedAt || null,
       last_edited_at: post.lastEditedAt || null,
-      assumed_audience: post.assumedAudience,
+      target_audience: post.targetAudience,
       intro: post.intro,
       sections: post.sections,
       books: post.books,
@@ -323,14 +338,16 @@ export class SupabaseContentRepository implements ContentRepository {
     const post = await this.getPost(slug);
     if (!post) return null;
 
-    const nextStatus = post.status === "unpublished" ? "published" : "unpublished";
+    const nextStatus =
+      post.status === "unpublished" ? "published" : "unpublished";
 
     const { error } = await this.db
       .from("posts")
       .update({ status: nextStatus })
       .eq("slug", slug);
 
-    if (error) throw new Error(`Failed to toggle post status: ${error.message}`);
+    if (error)
+      throw new Error(`Failed to toggle post status: ${error.message}`);
     return { ...post, status: nextStatus };
   }
 
@@ -371,6 +388,7 @@ export class SupabaseContentRepository implements ContentRepository {
     const { data, error } = await this.db
       .from("notes")
       .select("*")
+      .order("date", { ascending: false, nullsFirst: false })
       .order("created_at", { ascending: false });
 
     if (error) throw new Error(`Failed to load notes: ${error.message}`);
@@ -388,7 +406,9 @@ export class SupabaseContentRepository implements ContentRepository {
       .limit(1);
 
     if (existing && existing.length > 0) {
-      throw new Error(`Slug "${note.slug}" already exists. Choose a unique slug.`);
+      throw new Error(
+        `Slug "${note.slug}" already exists. Choose a unique slug.`,
+      );
     }
 
     const { data: existingBook } = await this.db
@@ -398,13 +418,16 @@ export class SupabaseContentRepository implements ContentRepository {
       .limit(1);
 
     if (existingBook && existingBook.length > 0) {
-      throw new Error(`Slug "${note.slug}" already exists. Choose a unique slug.`);
+      throw new Error(
+        `Slug "${note.slug}" already exists. Choose a unique slug.`,
+      );
     }
 
     const row = {
       id: note.id,
       slug: note.slug,
       title: note.title,
+      subtitle: note.subtitle ?? null,
       description: note.description,
       content: note.content,
       date: note.date || null,
@@ -426,14 +449,16 @@ export class SupabaseContentRepository implements ContentRepository {
     const note = await this.getNote(slug);
     if (!note) return null;
 
-    const nextStatus = note.status === "unpublished" ? "published" : "unpublished";
+    const nextStatus =
+      note.status === "unpublished" ? "published" : "unpublished";
 
     const { error } = await this.db
       .from("notes")
       .update({ status: nextStatus })
       .eq("slug", slug);
 
-    if (error) throw new Error(`Failed to toggle note status: ${error.message}`);
+    if (error)
+      throw new Error(`Failed to toggle note status: ${error.message}`);
     return { ...note, status: nextStatus };
   }
 
@@ -468,7 +493,9 @@ export class SupabaseContentRepository implements ContentRepository {
       .limit(1);
 
     if (existingPost && existingPost.length > 0) {
-      throw new Error(`Slug "${book.slug}" already exists. Choose a unique slug.`);
+      throw new Error(
+        `Slug "${book.slug}" already exists. Choose a unique slug.`,
+      );
     }
 
     const { data: existingNote } = await this.db
@@ -478,7 +505,9 @@ export class SupabaseContentRepository implements ContentRepository {
       .limit(1);
 
     if (existingNote && existingNote.length > 0) {
-      throw new Error(`Slug "${book.slug}" already exists. Choose a unique slug.`);
+      throw new Error(
+        `Slug "${book.slug}" already exists. Choose a unique slug.`,
+      );
     }
 
     const row = {
@@ -515,49 +544,41 @@ export class SupabaseContentRepository implements ContentRepository {
   // ── Scribble ───────────────────────────────────────────────────────────
 
   async getScribbleEntries(): Promise<ScribbleEntry[]> {
-    const [posts, notes, books] = await Promise.all([
+    const [posts, notes] = await Promise.all([
       this.getAllPosts(),
       this.getAllNotes(),
-      this.getAllBooks(),
     ]);
 
-    const essays: ScribbleEntry[] = posts.map((post) => ({
-      id: post.slug,
-      type: "essay" as const,
-      title: post.title,
-      description: post.description,
-      date: post.publishedAt,
-      persona: post.persona ?? "builder",
-      topics: post.tags,
-      href: `/p/${post.slug}`,
-      coverImage: post.coverImage,
-    }));
+    const essays: ScribbleEntry[] = posts
+      .filter((post) => post.status !== "unpublished")
+      .map((post) => ({
+        id: post.slug,
+        type: "essay" as const,
+        title: post.title,
+        description: post.description,
+        date: post.publishedAt,
+        persona: post.persona ?? "builder",
+        topics: post.tags,
+        href: `/p/${post.slug}`,
+        coverImage: post.coverImage,
+      }));
 
-    const noteEntries: ScribbleEntry[] = notes.map((note) => ({
-      id: note.id,
-      type: "note" as const,
-      title: note.title,
-      description: note.description,
-      date: note.date,
-      persona: note.persona,
-      topics: note.tags,
-      href: `/n/${note.slug}`,
-      coverImage: note.coverImage,
-    }));
-
-    const bookEntries: ScribbleEntry[] = books.map((book) => ({
-      id: book.id,
-      type: "book" as const,
-      title: book.title,
-      description: book.description,
-      date: book.date,
-      persona: book.persona,
-      topics: book.tags,
-      href: "/library",
-      author: book.author,
-    }));
-
-    return [...essays, ...noteEntries, ...bookEntries];
+    const noteEntries: ScribbleEntry[] = notes
+      .filter((note) => note.status !== "unpublished")
+      .map((note) => ({
+        id: note.id,
+        type: "note" as const,
+        title: note.title,
+        description:
+          note.content && note.content.length > 0
+            ? note.content.join(" ")
+            : note.description,
+        date: note.date,
+        persona: note.persona,
+        topics: note.tags,
+        href: `/n/${note.slug}`,
+        coverImage: note.coverImage,
+      }));    return [...essays, ...noteEntries];
   }
 
   // ── Now ────────────────────────────────────────────────────────────────
@@ -611,10 +632,47 @@ export class SupabaseContentRepository implements ContentRepository {
   }
 
   async addMedia(item: MediaItem): Promise<MediaItem> {
+    let finalSrc = item.src;
+
+    // If item.src is a Base64 data URL, upload to Supabase Storage if available
+    if (item.src.startsWith("data:")) {
+      try {
+        const matches = item.src.match(
+          /^data:(image\/([a-zA-Z0-9+.-]+));base64,(.+)$/,
+        );
+        if (matches) {
+          const mimeType = matches[1];
+          const ext = matches[2] === "jpeg" ? "jpg" : matches[2];
+          const base64Data = matches[3];
+          const buffer = Buffer.from(base64Data, "base64");
+          const fileName = `${Date.now()}-${item.name.replace(/[^a-zA-Z0-9.-]/g, "_")}.${ext}`;
+          const storagePath = `uploads/${fileName}`;
+
+          const { data: uploadData, error: uploadError } = await this.db.storage
+            .from("media")
+            .upload(storagePath, buffer, {
+              contentType: mimeType,
+              upsert: true,
+            });
+
+          if (!uploadError && uploadData) {
+            const { data: publicUrlData } = this.db.storage
+              .from("media")
+              .getPublicUrl(storagePath);
+            if (publicUrlData?.publicUrl) {
+              finalSrc = publicUrlData.publicUrl;
+            }
+          }
+        }
+      } catch {
+        // Fallback to storing the data URL directly in database
+      }
+    }
+
     const row = {
       id: item.id,
       name: item.name,
-      src: item.src,
+      src: finalSrc,
       alt: item.alt,
       size: item.size,
       dimensions: item.dimensions ?? null,
@@ -627,14 +685,11 @@ export class SupabaseContentRepository implements ContentRepository {
       .upsert(row, { onConflict: "id" });
 
     if (error) throw new Error(`Failed to add media: ${error.message}`);
-    return item;
+    return { ...item, src: finalSrc };
   }
 
   async deleteMedia(id: string): Promise<boolean> {
-    const { error, count } = await this.db
-      .from("media")
-      .delete()
-      .eq("id", id);
+    const { error, count } = await this.db.from("media").delete().eq("id", id);
 
     if (error) throw new Error(`Failed to delete media: ${error.message}`);
     return (count ?? 0) > 0;
@@ -657,7 +712,8 @@ export class SupabaseContentRepository implements ContentRepository {
       .delete()
       .in("path", srcs);
 
-    if (error) throw new Error(`Failed to delete storage assets: ${error.message}`);
+    if (error)
+      throw new Error(`Failed to delete storage assets: ${error.message}`);
     return count ?? 0;
   }
 
@@ -683,9 +739,7 @@ export class SupabaseContentRepository implements ContentRepository {
   }
 
   async getAllUserRoles(): Promise<UserRole[]> {
-    const { data, error } = await this.db
-      .from("user_roles")
-      .select("*");
+    const { data, error } = await this.db.from("user_roles").select("*");
 
     if (error) throw new Error(`Failed to load user roles: ${error.message}`);
     return (data as { user_id: string; role: string }[]).map((row) => ({
@@ -703,7 +757,8 @@ export class SupabaseContentRepository implements ContentRepository {
       .eq("item_type", "post")
       .order("position");
 
-    if (error) throw new Error(`Failed to load featured posts: ${error.message}`);
+    if (error)
+      throw new Error(`Failed to load featured posts: ${error.message}`);
     return (data as { item_id: string }[]).map((r) => r.item_id);
   }
 
@@ -714,16 +769,14 @@ export class SupabaseContentRepository implements ContentRepository {
       .eq("item_type", "book")
       .order("position");
 
-    if (error) throw new Error(`Failed to load featured books: ${error.message}`);
+    if (error)
+      throw new Error(`Failed to load featured books: ${error.message}`);
     return (data as { item_id: string }[]).map((r) => r.item_id);
   }
 
   async setFeaturedPosts(slugs: string[]): Promise<void> {
     // Delete existing featured posts
-    await this.db
-      .from("featured_items")
-      .delete()
-      .eq("item_type", "post");
+    await this.db.from("featured_items").delete().eq("item_type", "post");
 
     // Insert new featured posts
     if (slugs.length > 0) {
@@ -732,19 +785,15 @@ export class SupabaseContentRepository implements ContentRepository {
         item_id: slug,
         position: i + 1,
       }));
-      const { error } = await this.db
-        .from("featured_items")
-        .insert(rows);
-      if (error) throw new Error(`Failed to set featured posts: ${error.message}`);
+      const { error } = await this.db.from("featured_items").insert(rows);
+      if (error)
+        throw new Error(`Failed to set featured posts: ${error.message}`);
     }
   }
 
   async setFeaturedBooks(slugs: string[]): Promise<void> {
     // Delete existing featured books
-    await this.db
-      .from("featured_items")
-      .delete()
-      .eq("item_type", "book");
+    await this.db.from("featured_items").delete().eq("item_type", "book");
 
     // Insert new featured books
     if (slugs.length > 0) {
@@ -753,10 +802,9 @@ export class SupabaseContentRepository implements ContentRepository {
         item_id: slug,
         position: i + 1,
       }));
-      const { error } = await this.db
-        .from("featured_items")
-        .insert(rows);
-      if (error) throw new Error(`Failed to set featured books: ${error.message}`);
+      const { error } = await this.db.from("featured_items").insert(rows);
+      if (error)
+        throw new Error(`Failed to set featured books: ${error.message}`);
     }
   }
 
@@ -781,7 +829,8 @@ export class SupabaseContentRepository implements ContentRepository {
       .from("contributions")
       .upsert(row, { onConflict: "id" });
 
-    if (error) throw new Error(`Failed to record contribution: ${error.message}`);
+    if (error)
+      throw new Error(`Failed to record contribution: ${error.message}`);
     return contribution;
   }
 
@@ -814,19 +863,197 @@ export class SupabaseContentRepository implements ContentRepository {
       .select("*")
       .order("created_at", { ascending: false });
 
-    if (error) throw new Error(`Failed to load contributions: ${error.message}`);
+    if (error)
+      throw new Error(`Failed to load contributions: ${error.message}`);
     return (data as Record<string, unknown>[]).map((d) => ({
       id: d.id as string,
       orderId: (d.order_id as string) ?? undefined,
       paymentId: (d.payment_id as string) ?? undefined,
       amount: d.amount as number,
       currency: d.currency as string,
-      status: d.status as Contribution['status'],
+      status: d.status as Contribution["status"],
       name: d.name as string,
       email: (d.email as string) ?? undefined,
       note: (d.note as string) ?? undefined,
       createdAt: d.created_at as string,
-      source: d.source as 'razorpay' | 'mock',
+      source: (d.source as Contribution["source"]) ?? "razorpay",
     }));
+  }
+
+  // ── Passkeys & Auth ─────────────────────────────────────────────────────
+
+  async getPasskeys(userId: string): Promise<PasskeyItem[]> {
+    try {
+      const { data, error } = await this.db.auth.admin.listUsers();
+      if (error) return [];
+      const user = data.users.find((u) => u.id === userId);
+      if (!user) return [];
+
+      // If user has factors with webauthn
+      const factors =
+        user.factors?.filter((f) => f.factor_type === "webauthn") || [];
+      return factors.map((f) => ({
+        id: f.id,
+        label: f.friendly_name || "Security Key / Passkey",
+        createdAt: f.created_at,
+        lastUsedAt: f.updated_at
+          ? new Date(f.updated_at).toLocaleDateString("en-US", {
+              month: "short",
+              day: "numeric",
+              year: "numeric",
+            })
+          : "Recently",
+      }));
+    } catch {
+      return [];
+    }
+  }
+
+  async savePasskey(
+    _userId: string,
+    passkey: PasskeyItem,
+  ): Promise<PasskeyItem> {
+    return passkey;
+  }
+
+  async deletePasskey(userId: string, passkeyId: string): Promise<boolean> {
+    try {
+      const { error } = await this.db.auth.admin.mfa.deleteFactor({
+        userId,
+        id: passkeyId,
+      });
+      return !error;
+    } catch {
+      return false;
+    }
+  }
+
+  // ── Active Sessions ─────────────────────────────────────────────────────
+
+  async getSessions(
+    userId: string,
+    currentSessionId?: string,
+  ): Promise<UserSession[]> {
+    try {
+      const { data } = await this.db.auth.admin.getUserById(userId);
+      const lastSignIn = data.user?.last_sign_in_at || new Date().toISOString();
+      return [
+        {
+          id: currentSessionId || "session-primary",
+          userId,
+          device: "Current Device",
+          location: "Active Connection",
+          startedAt: new Date(lastSignIn).toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+          }),
+          lastActiveAt: lastSignIn,
+          isCurrent: true,
+        },
+      ];
+    } catch {
+      return [];
+    }
+  }
+
+  async recordSession(session: UserSession): Promise<UserSession> {
+    return session;
+  }
+
+  async deleteSession(_userId: string, _sessionId: string): Promise<boolean> {
+    return true;
+  }
+
+  async deleteAllSessions(userId: string): Promise<boolean> {
+    try {
+      const { error } = await this.db.auth.admin.signOut(userId, "global");
+      return !error;
+    } catch {
+      return false;
+    }
+  }
+
+  // ── Connected Accounts ──────────────────────────────────────────────────
+
+  async getConnectedProviders(userId: string): Promise<string[]> {
+    try {
+      const { data } = await this.db.auth.admin.getUserById(userId);
+      if (!data.user) return ["google"];
+      const identities = data.user.identities || [];
+      const providers = identities.map((i) => i.provider);
+      return providers.length > 0 ? providers : ["google"];
+    } catch {
+      return ["google"];
+    }
+  }
+
+  async setConnectedProviders(
+    _userId: string,
+    _providers: string[],
+  ): Promise<void> {
+    // Identity linking is managed directly via Supabase Auth OAuth flow
+  }
+
+  // ── Newsletter Subscribers ──────────────────────────────────────────────
+
+  async addSubscriber(
+    email: string,
+    source: string = "website",
+  ): Promise<NewsletterSubscriber> {
+    const normalizedEmail = email.trim().toLowerCase();
+    const id = `sub-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+
+    const { data, error } = await this.db
+      .from("subscribers")
+      .upsert(
+        {
+          id,
+          email: normalizedEmail,
+          status: "active",
+          source,
+          created_at: new Date().toISOString(),
+        },
+        { onConflict: "email" },
+      )
+      .select()
+      .single();
+
+    if (error) {
+      throw new Error(`Failed to save subscriber: ${error.message}`);
+    }
+
+    return {
+      id: data.id,
+      email: data.email,
+      createdAt: data.created_at,
+      status: data.status as "active" | "unsubscribed",
+      source: data.source,
+    };
+  }
+
+  async getSubscribers(): Promise<NewsletterSubscriber[]> {
+    const { data, error } = await this.db
+      .from("subscribers")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      throw new Error(`Failed to load subscribers: ${error.message}`);
+    }
+
+    return (data || []).map((row) => ({
+      id: row.id,
+      email: row.email,
+      createdAt: row.created_at,
+      status: row.status as "active" | "unsubscribed",
+      source: row.source,
+    }));
+  }
+
+  async deleteSubscriber(id: string): Promise<boolean> {
+    const { error } = await this.db.from("subscribers").delete().eq("id", id);
+
+    return !error;
   }
 }

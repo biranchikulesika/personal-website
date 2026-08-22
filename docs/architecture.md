@@ -22,14 +22,14 @@ The Biranchi Kulesika platform follows a strict **4-tier layered architecture**.
                                ▼
 ┌─────────────────────────────────────────────────────────────┐
 │             3. Data Access / Repository Layer               │
-│               (lib/repositories/content.repository.ts)      │
-│    - Abstract interface: Mock vs Supabase implementations   │
+│               (lib/repositories/supabase-content.repository.ts)
+│    - Typed database queries, row mappers, Supabase queries  │
 └──────────────────────────────┬──────────────────────────────┘
                                │ Interacts with
                                ▼
 ┌─────────────────────────────────────────────────────────────┐
 │               4. Database / Persistence Layer               │
-│          (lib/data/mock-db.ts  OR  Supabase PostgreSQL)     │
+│                    (Supabase PostgreSQL)                    │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -59,9 +59,8 @@ The Biranchi Kulesika platform follows a strict **4-tier layered architecture**.
 - **Location**: `lib/repositories/`
 - **Files**:
   - `content.repository.ts`: TypeScript interface defining all data operations.
-  - `mock-content.repository.ts`: In-memory implementation used for local development and lightning-fast test suites.
-  - `supabase-content.repository.ts`: Production PostgreSQL implementation mapping database rows to domain types.
-  - `index.ts`: Factory resolving the concrete repository based on `DATA_SOURCE` (`mock` or `supabase`).
+  - `supabase-content.repository.ts`: Supabase PostgreSQL implementation mapping database rows to domain types.
+  - `index.ts`: Repository export providing `getContentRepository()`.
 - **Responsibilities**:
   - Execute database queries, upserts, deletes, and transactions.
   - Map raw database rows to domain entities (`BlogPost`, `NoteItem`, `BookItem`, `Contribution`).
@@ -69,19 +68,18 @@ The Biranchi Kulesika platform follows a strict **4-tier layered architecture**.
 - **Strict Boundary**: Repositories do not perform business operations (e.g., they do not verify webhook signatures or calculate payment taxes); they only store and retrieve.
 
 ### Tier 4: Database / Persistence Layer
-- **Mock**: In-memory database in `lib/data/mock-db.ts`.
-- **Production**: Supabase PostgreSQL with schema defined in [`schema.sql`](file:///home/biranchikulesika/Projects/biranchi/schema.sql).
+- **Database**: Supabase PostgreSQL with schema defined in [`schema.sql`](file:///home/biranchikulesika/Projects/biranchi/schema.sql).
 
 ---
 
 ## Data Flow Examples
 
 ### Read Request (Server Component Rendering an Essay)
-1. Browser requests `/p/digital-gardening`.
+1. Browser requests `/p/some-essay-slug`.
 2. Next.js executes `app/(site)/p/[slug]/page.tsx` (Server Component).
-3. `PostPage` calls `new ContentService().getPost('digital-gardening')`.
-4. `ContentService` delegates to `repository.getPost('digital-gardening')`.
-5. `SupabaseContentRepository` (or `MockContentRepository`) queries the `posts` table and returns a typed `BlogPost`.
+3. `PostPage` calls `new ContentService().getPost('some-essay-slug')`.
+4. `ContentService` delegates to `repository.getPost('some-essay-slug')`.
+5. `SupabaseContentRepository` queries the `posts` table and returns a typed `BlogPost`.
 6. `PostPage` generates JSON-LD structured data and renders `<BlogPostView post={post} />`.
 
 ### Write Request (Admin Saves a Post via Server Action)

@@ -33,7 +33,7 @@ export async function POST(request: Request) {
       name,
       email,
       note,
-      source: source || (orderId || signature ? 'razorpay' : 'mock'),
+      source: source || 'razorpay',
     });
 
     return NextResponse.json({

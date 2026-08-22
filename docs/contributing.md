@@ -33,7 +33,7 @@ npm run build
 ## 2. Core Architectural Rules
 
 1. **Layer Separation**: UI components (`components/`) must **never** connect to databases directly. Always go through `ContentService`.
-2. **Repository Consistency**: Every data operation must be declared in `ContentRepository` and implemented in both `MockContentRepository` and `SupabaseContentRepository`.
+2. **Repository Consistency**: Every data operation must be declared in `ContentRepository` and implemented in `SupabaseContentRepository`.
 3. **Admin Privacy**: Never expose admin routes (`/admin`) in public sitemaps, robots.txt, navigation headers, or JSON-LD.
 4. **Idempotency**: All database changes in `schema.sql` and payment/webhook mutations must be idempotent.
 5. **No Card Boxes**: Adhere to the editorial, horizontal-ruled ledger aesthetic. Do not introduce boxed container cards with arbitrary shadows.
@@ -120,9 +120,8 @@ export interface ProjectItem {
 #### Step 3: Update `lib/supabase/database.types.ts`
 Add the row and insert types for `projects` under `Database['public']['Tables']`.
 
-#### Step 4: Update Repositories & Service
+#### Step 4: Update Repository & Service
 - Add `getProjects()` to `lib/repositories/content.repository.ts`.
-- Implement in `lib/repositories/mock-content.repository.ts`.
 - Implement in `lib/repositories/supabase-content.repository.ts`.
 - Expose via `lib/services/content.service.ts`.
 

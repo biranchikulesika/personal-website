@@ -20,7 +20,7 @@ test("BlogPostSchema accepts valid post data", () => {
     tags: ["test"],
     publishedAt: "2026-08-20",
     lastEditedAt: "2026-08-20",
-    assumedAudience: "Developers",
+    targetAudience: "Developers",
     intro: ["Intro paragraph"],
     sections: [
       { id: "sec-1", heading: "Section", paragraphs: ["Body"] },
@@ -40,7 +40,7 @@ test("BlogPostSchema rejects empty title", () => {
     tags: [],
     publishedAt: "2026-08-20",
     lastEditedAt: "2026-08-20",
-    assumedAudience: "Test",
+    targetAudience: "Test",
     intro: [],
     sections: [],
     books: [],
@@ -58,7 +58,7 @@ test("BlogPostSchema rejects invalid slug format", () => {
     tags: [],
     publishedAt: "2026-08-20",
     lastEditedAt: "2026-08-20",
-    assumedAudience: "Test",
+    targetAudience: "Test",
     intro: [],
     sections: [],
     books: [],
@@ -78,7 +78,7 @@ test("BlogPostSchema accepts valid persona values", () => {
       tags: [],
       publishedAt: "2026-08-20",
       lastEditedAt: "2026-08-20",
-      assumedAudience: "Test",
+      targetAudience: "Test",
       intro: [],
       sections: [],
       books: [],
@@ -104,6 +104,13 @@ test("NoteItemSchema accepts valid note data", () => {
 
   const result = NoteItemSchema.safeParse(validNote);
   assert.ok(result.success, "valid note should pass validation");
+
+  const noteWithSubtitle = {
+    ...validNote,
+    subtitle: "A thoughtful subtitle",
+  };
+  const resultWithSubtitle = NoteItemSchema.safeParse(noteWithSubtitle);
+  assert.ok(resultWithSubtitle.success, "note with subtitle should pass validation");
 });
 
 test("NoteItemSchema rejects invalid persona", () => {
@@ -185,6 +192,21 @@ test("MediaItemSchema accepts valid media", () => {
 
   const result = MediaItemSchema.safeParse(valid);
   assert.ok(result.success, "valid media should pass");
+});
+
+test("MediaItemSchema accepts valid image data URL", () => {
+  const validDataUrl = {
+    id: "media-2",
+    name: "upload.png",
+    src: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+    alt: "Uploaded PNG",
+    size: "120 KB",
+    uploadedAt: "2026-08-22",
+    tag: "post" as const,
+  };
+
+  const result = MediaItemSchema.safeParse(validDataUrl);
+  assert.ok(result.success, "valid data URL media should pass");
 });
 
 test("MediaItemSchema rejects invalid tag", () => {

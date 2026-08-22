@@ -2,6 +2,7 @@ import { sanitizeRedirectPath } from "@/lib/utils";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
+import { getSupabaseUrl, getSupabasePublishableKey } from "@/lib/config/env";
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
@@ -27,9 +28,8 @@ export async function GET(request: Request) {
   // Exchange the authorization code for a session.
   if (code) {
     const cookieStore = await cookies();
-    const supabaseUrl = process.env.SUPABASE_URL;
-    const supabasePublishableKey =
-      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+    const supabaseUrl = getSupabaseUrl();
+    const supabasePublishableKey = getSupabasePublishableKey();
 
     if (!supabaseUrl || !supabasePublishableKey) {
       return NextResponse.redirect(

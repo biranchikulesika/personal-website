@@ -15,7 +15,7 @@ export interface Database {
           tags: string[];
           published_at: string | null;
           last_edited_at: string | null;
-          assumed_audience: string;
+          target_audience: string;
           intro: unknown;
           sections: unknown;
           books: unknown;
@@ -34,7 +34,7 @@ export interface Database {
           tags?: string[];
           published_at?: string | null;
           last_edited_at?: string | null;
-          assumed_audience?: string;
+          target_audience?: string;
           intro?: unknown;
           sections?: unknown;
           books?: unknown;
@@ -51,7 +51,7 @@ export interface Database {
           tags?: string[];
           published_at?: string | null;
           last_edited_at?: string | null;
-          assumed_audience?: string;
+          target_audience?: string;
           intro?: unknown;
           sections?: unknown;
           books?: unknown;
@@ -65,6 +65,7 @@ export interface Database {
           id: string;
           slug: string;
           title: string;
+          subtitle: string | null;
           description: string;
           content: unknown;
           date: string | null;
@@ -79,6 +80,7 @@ export interface Database {
           id: string;
           slug: string;
           title: string;
+          subtitle?: string | null;
           description?: string;
           content?: unknown;
           date?: string | null;
@@ -91,6 +93,7 @@ export interface Database {
           id?: string;
           slug?: string;
           title?: string;
+          subtitle?: string | null;
           description?: string;
           content?: unknown;
           date?: string | null;
@@ -263,7 +266,7 @@ export interface Database {
           email: string | null;
           note: string | null;
           created_at: string;
-          source: "razorpay" | "mock";
+          source: "razorpay" | "manual";
         };
         Insert: {
           id: string;
@@ -276,7 +279,7 @@ export interface Database {
           email?: string | null;
           note?: string | null;
           created_at?: string;
-          source?: "razorpay" | "mock";
+          source?: "razorpay" | "manual";
         };
         Update: {
           id?: string;
@@ -289,7 +292,31 @@ export interface Database {
           email?: string | null;
           note?: string | null;
           created_at?: string;
-          source?: "razorpay" | "mock";
+          source?: "razorpay" | "manual";
+        };
+        Relationships: [];
+      };
+      subscribers: {
+        Row: {
+          id: string;
+          email: string;
+          status: "active" | "unsubscribed";
+          source: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          email: string;
+          status?: "active" | "unsubscribed";
+          source?: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          email?: string;
+          status?: "active" | "unsubscribed";
+          source?: string;
+          created_at?: string;
         };
         Relationships: [];
       };

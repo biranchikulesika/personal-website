@@ -7,10 +7,10 @@ interface HeroProps {
 }
 
 /**
- * Homepage hero. Kadlac-inspired layout: a two-column grid with the
- * headline, supporting copy, bullet points, and newsletter CTA on the
- * left, and a photo with a soft circle behind it on the right. Styled with
- * the site's current serif aesthetic.
+ * Homepage hero: a two-column grid with the headline, supporting copy,
+ * bullet points, and newsletter CTA on the left, and a photo with a soft
+ * circle behind it on the right. Styled with the site's editorial serif
+ * aesthetic.
  */
 export function Hero({ hero }: HeroProps) {
   return (

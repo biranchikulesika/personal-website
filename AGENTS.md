@@ -59,21 +59,11 @@ Reuse existing dependencies or infrastructure only when technically useful.
 
 ## 3. Database Rules
 
-This branch uses a **mock/local database only**.
+This repository uses **Supabase PostgreSQL** as its single, authoritative database.
 
-* Use the in-memory mock database (`lib/data/mock-db.ts`).
-* Do **not** connect to production data.
-* Do **not** modify the production database.
-* Do **not** treat the previous production schema as immutable.
-* The schema is expected to evolve while requirements become clearer.
-* Database changes must remain easy to modify or replace.
-
-### Mock database
-
-* Location: `lib/data/mock-db.ts`
-* Reseed: `npm run db:reset` (runs `scripts/reset-db.ts`)
-* The database is in-memory: it resets on process restart.
-* Schema is deliberately provisional. Change it freely; keep it small.
+* All dynamic application data (posts, notes, books, now entries, media, roles, contributions) lives in Supabase.
+* Schema migrations live in `supabase/migrations/`.
+* Direct data queries go through `SupabaseContentRepository`.
 
 ---
 
@@ -99,7 +89,7 @@ Application / service layer   →  lib/services/
         ↓
 Data access / repository layer →  lib/repositories/
         ↓
-Mock database                  →  lib/data/
+Supabase PostgreSQL           →  public.* tables
 ```
 
 Rules:
@@ -107,28 +97,22 @@ Rules:
 * UI components must **not** query the database directly.
 * UI components should call the service layer.
 * The service layer contains application/business operations.
-* The repository layer abstracts data access.
-* Replacing the mock database later must not require rewriting the UI.
+* The repository layer abstracts data access with Supabase.
 * Keep the architecture simple. Do not over-engineer.
 
-Current structure (provisional):
+Current structure:
 
-* `lib/types.ts` — provisional domain types
-* `lib/data/mock-db.ts` — mock database
-* `lib/repositories/` — data access layer
-* `lib/services/` — application layer
-* `lib/config/env.ts` — environment / safety guards
+* `lib/types.ts` — domain types
+* `lib/repositories/` — Supabase data access layer
+* `lib/services/` — application service layer
+* `lib/config/env.ts` — environment configuration & Supabase credential resolvers
 
 ---
 
 ## 6. Environment Rules
 
-The development environment must never silently fall back to production.
-
-* `DATA_SOURCE` must be `mock` or `supabase`. Any invalid value causes the app to throw.
-* Do not add production credentials (Supabase, payment, AI keys, etc.) to
-  `.env.example` or any committed file.
-* Do not connect to production services of any kind without valid environment configuration.
+* Do not add production credentials (Supabase, payment, AI keys, etc.) to `.env.example` or any committed file.
+* Required variables are configured in `.env.local` for development and in hosting provider settings for production.
 
 The old `.env`/`.env.local` files from the previous implementation may still
 exist locally. They are gitignored and must not be loaded or referenced by new
@@ -195,7 +179,6 @@ At this stage, do **not**:
 * Build: `npm run build`
 * Lint: `npm run lint`
 * Tests: `npm test`
-* Reset mock db: `npm run db:reset`
 
 Node version: `>=24.16.0` (use nvm: `nvm use 24.18.0`).
 

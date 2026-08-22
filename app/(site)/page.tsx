@@ -4,7 +4,7 @@ import { ContentService } from '@/lib/services/content.service';
 import { SITE_URL, SITE_NAME, SITE_DESCRIPTION } from '@/lib/constants';
 
 export const metadata: Metadata = {
-  title: SITE_NAME,
+  title: { absolute: SITE_NAME },
   description: SITE_DESCRIPTION,
   alternates: { canonical: SITE_URL },
   openGraph: {
@@ -30,7 +30,9 @@ export default async function Home() {
     featuredPostSlugs.map((slug) => service.getPost(slug)),
   );
 
-  const featuredPosts = postResults.filter((p): p is NonNullable<typeof p> => p !== null);
+  const featuredPosts = postResults.filter(
+    (p): p is NonNullable<typeof p> => p !== null && p.status !== 'unpublished',
+  );
   const featuredBookSet = new Set(featuredBookSlugs);
   const featuredBooks = allBooks.filter((b) => featuredBookSet.has(b.slug));
 

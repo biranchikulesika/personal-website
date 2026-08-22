@@ -1,6 +1,6 @@
 # Data Layer Architecture
 
-The data layer provides a clean abstraction between application operations and underlying storage engines. UI components and Server Actions interact solely with the **Service Layer**, which delegates to an abstract **Repository Contract**.
+The data layer provides a clean abstraction between application operations and underlying storage engines. UI components and Server Actions interact solely with the **Service Layer**, which delegates to the **Supabase Repository**.
 
 ---
 
@@ -9,19 +9,21 @@ The data layer provides a clean abstraction between application operations and u
 ```
 ┌────────────────────────────────────────────────────────┐
 │               ContentService (Application)             │
+│                 lib/services/content.service.ts        │
 └───────────────────────────┬────────────────────────────┘
-                            │ Calls interface methods
+                            │ Calls repository methods
                             ▼
 ┌────────────────────────────────────────────────────────┐
 │          ContentRepository (Interface Contract)        │
 │          lib/repositories/content.repository.ts        │
-└──────────────┬───────────────────────────┬─────────────┘
-               │ Implements                │ Implements
-               ▼                           ▼
-┌───────────────────────────────┐ ┌───────────────────────────────┐
-│     MockContentRepository     │ │   SupabaseContentRepository   │
-│   (In-memory, test database)  │ │   (PostgreSQL / Supabase)     │
-└───────────────────────────────┘ └───────────────────────────────┘
+└───────────────────────────┬────────────────────────────┘
+                            │ Implemented by
+                            ▼
+┌────────────────────────────────────────────────────────┐
+│               SupabaseContentRepository                │
+│       lib/repositories/supabase-content.repository.ts  │
+│                 (PostgreSQL / Supabase)                │
+└────────────────────────────────────────────────────────┘
 ```
 
 The repository contract (`lib/repositories/content.repository.ts`) defines all data access methods:
@@ -84,30 +86,22 @@ export interface ContentRepository {
 
 ---
 
-## 2. Implementations
+## 2. Supabase Implementation (`SupabaseContentRepository`)
 
-### In-Memory Mock (`MockContentRepository`)
-- **Location**: `lib/repositories/mock-content.repository.ts`
-- **Data Source**: `lib/data/mock-db.ts`
-- **Use Case**: Local development without database dependencies, and running unit tests in milliseconds.
-- **Behavior**: Stores records in memory arrays. Resets on process restart or via `resetDatabase()`.
-
-### Supabase PostgreSQL (`SupabaseContentRepository`)
 - **Location**: `lib/repositories/supabase-content.repository.ts`
 - **Data Source**: Live PostgreSQL instance via Supabase client.
 - **Client**: Uses `getSupabaseAdmin()` (service-role key) to execute operations with full consistency.
 - **Row Mapping**: Explicitly maps PostgreSQL snake_case columns (e.g. `published_at`, `cover_image`) to camelCase domain models (`publishedAt`, `coverImage`).
 
-### Dynamic Repository Factory
-`lib/repositories/index.ts` determines which repository to instantiate based on `getDataSource()`:
+### Repository Export
+`lib/repositories/index.ts` provides `getContentRepository()`:
 
 ```typescript
 export function getContentRepository(): ContentRepository {
-  const source = getDataSource();
-  if (source === 'supabase') {
-    return new SupabaseContentRepository();
+  if (!repository) {
+    repository = new SupabaseContentRepository();
   }
-  return new MockContentRepository(getDatabase());
+  return repository;
 }
 ```
 
@@ -133,16 +127,7 @@ export interface ContentRepository {
 }
 ```
 
-#### Step 3: Implement in `MockContentRepository`
-```typescript
-async addSubscriber(email: string): Promise<NewsletterSubscriber> {
-  const subscriber = { email, subscribedAt: new Date().toISOString() };
-  this.db.subscribers.push(subscriber);
-  return subscriber;
-}
-```
-
-#### Step 4: Implement in `SupabaseContentRepository`
+#### Step 3: Implement in `SupabaseContentRepository`
 ```typescript
 async addSubscriber(email: string): Promise<NewsletterSubscriber> {
   const { data, error } = await this.db
@@ -156,11 +141,14 @@ async addSubscriber(email: string): Promise<NewsletterSubscriber> {
 }
 ```
 
-#### Step 5: Expose via `ContentService` (`lib/services/content.service.ts`)
+#### Step 4: Expose via `ContentService` (`lib/services/content.service.ts`)
 ```typescript
-async subscribeToNewsletter(email: string): Promise<NewsletterSubscriber> {
-  // Validate business rules (e.g. email format)
-  if (!email.includes('@')) throw new Error('Invalid email format');
-  return this.repo.addSubscriber(email);
+export class ContentService {
+  // ...
+  async subscribeToNewsletter(email: string): Promise<NewsletterSubscriber> {
+    // Validate business rules (e.g. email format)
+    if (!email.includes('@')) throw new Error('Invalid email format');
+    return this.repo.addSubscriber(email);
+  }
 }
 ```

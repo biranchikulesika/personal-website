@@ -6,6 +6,10 @@ import type {
   MediaItem,
   NoteItem,
   NowEntry,
+  PasskeyItem,
+  UserSession,
+  SidepanelTab,
+  NewsletterSubscriber,
 } from "@/lib/types";
 import { formatDisplayDate } from "@/lib/utils";
 import Image from "next/image";
@@ -14,6 +18,9 @@ import dynamic from "next/dynamic";
 import { useState } from "react";
 import { logoutAction } from "@/app/admin/login/actions";
 import { LoadingState } from "@/components/ui/states";
+import { UserAvatar } from "@/components/ui/user-avatar";
+
+import { HomeOverview } from "./home-overview";
 
 // Lazy-load tab-specific managers. They are only needed when their tab is
 // active, so splitting them into separate chunks reduces the initial admin
@@ -36,10 +43,11 @@ const AccountManager = dynamic(
     loading: () => <LoadingState title="Loading account…" />,
   },
 );
-const FeaturedManager = dynamic(
-  () => import("./featured-manager").then((m) => m.FeaturedManager),
+
+const SubscriberManager = dynamic(
+  () => import("./subscriber-manager").then((m) => m.SubscriberManager),
   {
-    loading: () => <LoadingState title="Loading featured…" />,
+    loading: () => <LoadingState title="Loading subscribers…" />,
   },
 );
 
@@ -50,15 +58,15 @@ interface AdminDashboardProps {
   initialMedia: MediaItem[];
   initialOrphanedMedia: MediaItem[];
   initialNowEntries: NowEntry[];
-  initialFeaturedPostSlugs: string[];
-  initialFeaturedBookSlugs: string[];
+  initialSubscribers?: NewsletterSubscriber[];
+  initialPasskeys?: PasskeyItem[];
+  initialConnectedProviders?: string[];
+  initialSessions?: UserSession[];
   userName: string;
   userEmail: string;
   userAvatarUrl: string | null;
   userRole: string;
 }
-
-type SidepanelTab = "home" | "featured" | "content" | "media" | "account";
 
 export function AdminDashboard({
   initialPosts,
@@ -67,14 +75,18 @@ export function AdminDashboard({
   initialMedia,
   initialOrphanedMedia,
   initialNowEntries,
-  initialFeaturedPostSlugs,
-  initialFeaturedBookSlugs,
+  initialSubscribers = [],
+  initialPasskeys = [],
+  initialConnectedProviders = ["google"],
+  initialSessions = [],
   userName,
   userEmail,
   userAvatarUrl,
   userRole,
 }: AdminDashboardProps) {
   const [activeTab, setActiveTab] = useState<SidepanelTab>("home");
+  const [isComposeOpen, setIsComposeOpen] = useState(false);
+  const [createBookTrigger, setCreateBookTrigger] = useState(0);
 
   const totalContentCount =
     initialPosts.length + initialNotes.length + initialNowEntries.length;
@@ -96,27 +108,6 @@ export function AdminDashboard({
             strokeLinecap="round"
             strokeLinejoin="round"
             d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
-          />
-        </svg>
-      ),
-      count: undefined,
-    },
-    {
-      id: "featured" as const,
-      label: "Featured",
-      icon: (
-        <svg
-          className="h-4 w-4"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          strokeWidth={2}
-          aria-hidden="true"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z"
           />
         </svg>
       ),
@@ -165,6 +156,27 @@ export function AdminDashboard({
       count: initialMedia.length,
     },
     {
+      id: "subscribers" as const,
+      label: "Subscribers",
+      icon: (
+        <svg
+          className="h-4 w-4"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={2}
+          aria-hidden="true"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75"
+          />
+        </svg>
+      ),
+      count: initialSubscribers.length,
+    },
+    {
       id: "account" as const,
       label: "Account",
       icon: (
@@ -188,21 +200,18 @@ export function AdminDashboard({
   ];
 
   return (
-    <div className="flex min-h-screen w-full bg-night text-paper font-sans">
-      {/* 1. Left Fixed / Sticky Sidebar */}
-      <aside className="sticky top-0 h-screen w-64 md:w-72 shrink-0 border-r border-tinted/20 bg-night-soft flex flex-col justify-between p-5 overflow-y-auto">
+    <div className="flex min-h-screen w-full flex-col md:flex-row bg-night text-paper font-sans">
+      {/* ── 1. Desktop Left Fixed Sidebar ── */}
+      <aside className="sticky top-0 hidden h-screen w-64 md:w-72 shrink-0 border-r border-tinted/20 bg-night-soft md:flex flex-col justify-between p-5 overflow-y-auto">
         <div className="space-y-6">
           {/* Workspace Branding / User Header */}
           <div className="flex items-center gap-3 border-b border-tinted/20 pb-4">
-            <div className="relative h-10 w-10 overflow-hidden rounded-full border border-tinted/20 bg-post-card shadow-xs">
-              <Image
-                src={userAvatarUrl || "/biranchi.jpeg"}
-                alt={userName}
-                fill
-                className="object-cover"
-              />
-            </div>
-            <div className="min-w-0 flex-1">
+            <UserAvatar
+              src={userAvatarUrl}
+              name={userName}
+              size={40}
+            />
+            <div className="min-w-0">
               <div className="truncate font-serif text-base font-medium text-paper">
                 {userName}
               </div>
@@ -279,245 +288,27 @@ export function AdminDashboard({
         </div>
       </aside>
 
-      {/* 2. Main Scrollable Workspace Area */}
-      <main className="flex-1 min-w-0 overflow-y-auto p-6 sm:p-10 lg:p-12 bg-night">
+      {/* ── 2. Main Scrollable Workspace Area ── */}
+      <main className="flex-1 min-w-0 overflow-y-auto p-4 sm:p-8 lg:p-12 pb-28 md:pb-12 bg-night">
         <div className="mx-auto max-w-6xl">
           {activeTab === "home" && (
-            <div className="space-y-8">
-              {/* Header */}
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-tinted/20 pb-6">
-                <div>
-                  <h2 className="font-serif text-3xl font-normal text-paper md:text-4xl">
-                    Welcome back, {userName.split(" ")[0]}
-                  </h2>
-                </div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setActiveTab("content")}
-                    className="rounded-full bg-accent px-4 py-2 text-xs font-semibold text-paper shadow-sm hover:bg-accent-hover transition-colors"
-                  >
-                    Manage Content
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setActiveTab("content")}
-                    className="rounded-full bg-post-card border border-tinted/20 px-4 py-2 text-xs font-semibold text-paper hover:bg-night-soft"
-                  >
-                    + Add Book
-                  </button>
-                </div>
-              </div>
-
-              {/* Metric Summary Cards */}
-              <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-                <button
-                  type="button"
-                  onClick={() => setActiveTab("content")}
-                  className="flex flex-col items-start rounded-3xl border border-tinted/20 bg-post-card p-5 text-left shadow-sm transition-all hover:border-accent/40 hover:shadow-md"
-                >
-                  <span className="text-xs font-semibold uppercase tracking-wider text-gray-mid">
-                    Essays
-                  </span>
-                  <span className="mt-2 font-serif text-3xl font-normal text-paper">
-                    {initialPosts.length}
-                  </span>
-                  <span className="mt-2 text-xs text-teal underline decoration-teal/40 underline-offset-4 hover:text-accent">
-                    Manage Essays →
-                  </span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setActiveTab("content")}
-                  className="flex flex-col items-start rounded-3xl border border-tinted/20 bg-post-card p-5 text-left shadow-sm transition-all hover:border-accent/40 hover:shadow-md"
-                >
-                  <span className="text-xs font-semibold uppercase tracking-wider text-gray-mid">
-                    Notes
-                  </span>
-                  <span className="mt-2 font-serif text-3xl font-normal text-paper">
-                    {initialNotes.length}
-                  </span>
-                  <span className="mt-2 text-xs text-teal underline decoration-teal/40 underline-offset-4 hover:text-accent">
-                    Manage Notes →
-                  </span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setActiveTab("content")}
-                  className="flex flex-col items-start rounded-3xl border border-tinted/20 bg-post-card p-5 text-left shadow-sm transition-all hover:border-accent/40 hover:shadow-md"
-                >
-                  <span className="text-xs font-semibold uppercase tracking-wider text-gray-mid">
-                    Library Books
-                  </span>
-                  <span className="mt-2 font-serif text-3xl font-normal text-paper">
-                    {initialBooks.length}
-                  </span>
-                  <span className="mt-2 text-xs text-teal underline decoration-teal/40 underline-offset-4 hover:text-accent">
-                    Manage Shelf →
-                  </span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setActiveTab("media")}
-                  className="flex flex-col items-start rounded-3xl border border-tinted/20 bg-post-card p-5 text-left shadow-sm transition-all hover:border-accent/40 hover:shadow-md"
-                >
-                  <span className="text-xs font-semibold uppercase tracking-wider text-gray-mid">
-                    Media Assets
-                  </span>
-                  <span className="mt-2 font-serif text-3xl font-normal text-paper">
-                    {initialMedia.length}
-                  </span>
-                  <span className="mt-2 text-xs text-teal underline decoration-teal/40 underline-offset-4 hover:text-accent">
-                    Browse Assets →
-                  </span>
-                </button>
-              </div>
-
-              {/* Recent Content Lists */}
-              <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
-                {/* Latest Essays */}
-                <div className="rounded-3xl border border-tinted/20 bg-post-card p-5 shadow-sm">
-                  <div className="flex items-center justify-between border-b border-tinted/20 pb-3">
-                    <h3 className="font-serif text-base font-normal text-paper">
-                      Recent Essays
-                    </h3>
-                    <button
-                      type="button"
-                      onClick={() => setActiveTab("content")}
-                      className="text-xs font-semibold text-gray-mid hover:text-accent"
-                    >
-                      View all ({initialPosts.length})
-                    </button>
-                  </div>
-
-                  <ul className="mt-3 divide-y divide-tinted/20">
-                    {initialPosts.slice(0, 3).map((post) => (
-                      <li
-                        key={post.slug}
-                        className="py-2.5 first:pt-0 last:pb-0"
-                      >
-                        <div className="flex items-center justify-between gap-2">
-                          <div className="min-w-0">
-                            <h4 className="truncate text-xs font-medium text-paper">
-                              {post.title}
-                            </h4>
-                            <p className="text-[10px] text-gray-mid">
-                              {post.publishedAt}
-                            </p>
-                          </div>
-                          <Link
-                            href={`/p/${post.slug}`}
-                            target="_blank"
-                            className="shrink-0 rounded-full bg-night-soft border border-tinted/20 px-2 py-0.5 text-[10px] font-semibold text-paper hover:bg-accent hover:border-accent"
-                          >
-                            ↗
-                          </Link>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-
-                {/* Latest Notes */}
-                <div className="rounded-3xl border border-tinted/20 bg-post-card p-5 shadow-sm">
-                  <div className="flex items-center justify-between border-b border-tinted/20 pb-3">
-                    <h3 className="font-serif text-base font-normal text-paper">
-                      Recent Notes
-                    </h3>
-                    <button
-                      type="button"
-                      onClick={() => setActiveTab("content")}
-                      className="text-xs font-semibold text-gray-mid hover:text-accent"
-                    >
-                      View all ({initialNotes.length})
-                    </button>
-                  </div>
-
-                  <ul className="mt-3 divide-y divide-tinted/20">
-                    {initialNotes.slice(0, 3).map((note) => (
-                      <li
-                        key={note.slug}
-                        className="py-2.5 first:pt-0 last:pb-0"
-                      >
-                        <div className="flex items-center justify-between gap-2">
-                          <div className="min-w-0">
-                            <h4 className="truncate text-xs font-medium text-paper">
-                              {note.title}
-                            </h4>
-                            <p className="text-[10px] text-gray-mid">
-                              {formatDisplayDate(note.date)}
-                            </p>
-                          </div>
-                          <Link
-                            href={`/n/${note.slug}`}
-                            target="_blank"
-                            className="shrink-0 rounded-full bg-night-soft border border-tinted/20 px-2 py-0.5 text-[10px] font-semibold text-paper hover:bg-accent hover:border-accent"
-                          >
-                            ↗
-                          </Link>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-
-                {/* Latest Books */}
-                <div className="rounded-3xl border border-tinted/20 bg-post-card p-5 shadow-sm">
-                  <div className="flex items-center justify-between border-b border-tinted/20 pb-3">
-                    <h3 className="font-serif text-base font-normal text-paper">
-                      Library Shelf
-                    </h3>
-                    <button
-                      type="button"
-                      onClick={() => setActiveTab("content")}
-                      className="text-xs font-semibold text-gray-mid hover:text-accent"
-                    >
-                      View all ({initialBooks.length})
-                    </button>
-                  </div>
-
-                  <ul className="mt-3 divide-y divide-tinted/20">
-                    {initialBooks.slice(0, 3).map((book) => (
-                      <li
-                        key={book.slug}
-                        className="py-2.5 first:pt-0 last:pb-0"
-                      >
-                        <div className="flex items-center justify-between gap-2">
-                          <div className="min-w-0">
-                            <h4 className="truncate text-xs font-medium text-paper">
-                              {book.title}
-                            </h4>
-                            <p className="text-[10px] text-gray-mid truncate">
-                              by {book.author}
-                            </p>
-                          </div>
-                          <Link
-                            href="/library"
-                            target="_blank"
-                            className="shrink-0 rounded-full bg-night-soft border border-tinted/20 px-2 py-0.5 text-[10px] font-semibold text-paper hover:bg-accent hover:border-accent"
-                          >
-                            ↗
-                          </Link>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {activeTab === "featured" && (
-            <FeaturedManager
+            <HomeOverview
               posts={initialPosts}
+              notes={initialNotes}
               books={initialBooks}
-              initialFeaturedPostSlugs={initialFeaturedPostSlugs}
-              initialFeaturedBookSlugs={initialFeaturedBookSlugs}
+              media={initialMedia}
+              orphanedMedia={initialOrphanedMedia}
+              nowEntries={initialNowEntries}
+              subscribers={initialSubscribers}
+              userName={userName}
+              userEmail={userEmail}
+              userAvatarUrl={userAvatarUrl}
+              userRole={userRole}
+              onNavigateTab={(tab) => setActiveTab(tab)}
+              onTriggerCreateBook={() => setCreateBookTrigger((prev) => prev + 1)}
             />
           )}
+
           {activeTab === "content" && (
             <ContentManager
               initialPosts={initialPosts}
@@ -525,6 +316,7 @@ export function AdminDashboard({
               initialBooks={initialBooks}
               initialNowEntries={initialNowEntries}
               mediaItems={initialMedia}
+              openCreateBookTrigger={createBookTrigger}
             />
           )}
           {activeTab === "media" && (
@@ -533,15 +325,190 @@ export function AdminDashboard({
               initialOrphanedMedia={initialOrphanedMedia}
             />
           )}
+          {activeTab === "subscribers" && (
+            <SubscriberManager initialSubscribers={initialSubscribers} />
+          )}
           {activeTab === "account" && (
             <AccountManager
               userName={userName}
               userEmail={userEmail}
+              userAvatarUrl={userAvatarUrl}
               userRole={userRole}
+              initialPasskeys={initialPasskeys}
+              initialConnectedProviders={initialConnectedProviders}
+              initialSessions={initialSessions}
             />
           )}
         </div>
       </main>
+
+      {/* ── Mobile Compose Semicircle Overlay & Backdrop ── */}
+      {isComposeOpen && (
+        <div
+          className="fixed inset-0 z-30 bg-black/60 backdrop-blur-xs transition-opacity animate-in fade-in duration-200 md:hidden"
+          onClick={() => setIsComposeOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+
+      {/* ── 3. Mobile Bottom Tab Bar ── */}
+      <nav
+        aria-label="Mobile Bottom Navigation"
+        className="fixed bottom-0 left-0 right-0 z-35 flex md:hidden items-center justify-around border-t border-tinted/20 bg-night-soft/95 px-2 py-1.5 backdrop-blur-lg pb-[max(0.375rem,env(safe-area-inset-bottom))]"
+      >
+        {/* Semicircle Options Menu floating directly above Compose button */}
+        {isComposeOpen && (
+          <div className="absolute bottom-16 left-1/2 -translate-x-1/2 flex items-center justify-center pointer-events-none z-40">
+            {/* Now Option */}
+            <Link
+              href="/admin/compose?type=now"
+              onClick={() => setIsComposeOpen(false)}
+              className="pointer-events-auto absolute flex flex-col items-center justify-center rounded-2xl border border-tinted/30 bg-post-card px-3 py-2 text-paper shadow-2xl transition-all duration-300 hover:bg-night-soft hover:scale-105 active:scale-95 animate-in zoom-in-75"
+              style={{ transform: "translate(-86px, -36px)" }}
+            >
+              <span className="text-sm">⏱</span>
+              <span className="text-[10px] font-semibold tracking-tight text-paper mt-0.5">Now</span>
+            </Link>
+
+            {/* Note Option */}
+            <Link
+              href="/admin/compose?type=note"
+              onClick={() => setIsComposeOpen(false)}
+              className="pointer-events-auto absolute flex flex-col items-center justify-center rounded-2xl border border-tinted/30 bg-post-card px-3 py-2 text-paper shadow-2xl transition-all duration-300 hover:bg-night-soft hover:scale-105 active:scale-95 animate-in zoom-in-75"
+              style={{ transform: "translate(-32px, -82px)" }}
+            >
+              <span className="text-sm">📝</span>
+              <span className="text-[10px] font-semibold tracking-tight text-paper mt-0.5">Note</span>
+            </Link>
+
+            {/* Post Option */}
+            <Link
+              href="/admin/compose?type=post"
+              onClick={() => setIsComposeOpen(false)}
+              className="pointer-events-auto absolute flex flex-col items-center justify-center rounded-2xl border border-tinted/30 bg-post-card px-3 py-2 text-paper shadow-2xl transition-all duration-300 hover:bg-night-soft hover:scale-105 active:scale-95 animate-in zoom-in-75"
+              style={{ transform: "translate(32px, -82px)" }}
+            >
+              <span className="text-sm">📄</span>
+              <span className="text-[10px] font-semibold tracking-tight text-paper mt-0.5">Post</span>
+            </Link>
+
+            {/* Book Option */}
+            <button
+              type="button"
+              onClick={() => {
+                setActiveTab("content");
+                setCreateBookTrigger((prev) => prev + 1);
+                setIsComposeOpen(false);
+              }}
+              className="pointer-events-auto absolute flex flex-col items-center justify-center rounded-2xl border border-tinted/30 bg-post-card px-3 py-2 text-paper shadow-2xl transition-all duration-300 hover:bg-night-soft hover:scale-105 active:scale-95 animate-in zoom-in-75"
+              style={{ transform: "translate(86px, -36px)" }}
+            >
+              <span className="text-sm">📚</span>
+              <span className="text-[10px] font-semibold tracking-tight text-paper mt-0.5">Book</span>
+            </button>
+          </div>
+        )}
+
+        {/* Home Tab */}
+        <button
+          type="button"
+          aria-label="Home"
+          onClick={() => {
+            setActiveTab("home");
+            setIsComposeOpen(false);
+          }}
+          className={`flex h-11 w-11 items-center justify-center rounded-full transition-all ${
+            activeTab === "home"
+              ? "bg-post-card text-accent border border-tinted/30 shadow-xs"
+              : "text-gray-mid hover:bg-post-card/50 hover:text-paper"
+          }`}
+        >
+          <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+          </svg>
+        </button>
+
+        {/* Content Tab */}
+        <button
+          type="button"
+          aria-label="Content"
+          onClick={() => {
+            setActiveTab("content");
+            setIsComposeOpen(false);
+          }}
+          className={`relative flex h-11 w-11 items-center justify-center rounded-full transition-all ${
+            activeTab === "content"
+              ? "bg-post-card text-accent border border-tinted/30 shadow-xs"
+              : "text-gray-mid hover:bg-post-card/50 hover:text-paper"
+          }`}
+        >
+          <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+          </svg>
+          {totalContentCount > 0 && (
+            <span className="absolute 1 top-0.5 right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-accent px-1 text-[9px] font-bold text-paper">
+              {totalContentCount}
+            </span>
+          )}
+        </button>
+
+        {/* Center Compose Action Button */}
+        <button
+          type="button"
+          onClick={() => setIsComposeOpen((prev) => !prev)}
+          className="flex items-center justify-center focus:outline-none"
+          aria-label={isComposeOpen ? "Close compose options" : "Open compose options"}
+          aria-expanded={isComposeOpen}
+        >
+          <div
+            className={`flex h-11 w-11 items-center justify-center rounded-full shadow-lg transition-all duration-200 border-2 border-night active:scale-90 ${
+              isComposeOpen
+                ? "bg-night-soft text-paper border-tinted/40 rotate-45"
+                : "bg-accent text-paper hover:bg-accent-hover"
+            }`}
+          >
+            <span className="text-2xl leading-none font-light">+</span>
+          </div>
+        </button>
+
+        {/* Media Tab */}
+        <button
+          type="button"
+          aria-label="Media"
+          onClick={() => {
+            setActiveTab("media");
+            setIsComposeOpen(false);
+          }}
+          className={`flex h-11 w-11 items-center justify-center rounded-full transition-all ${
+            activeTab === "media"
+              ? "bg-post-card text-accent border border-tinted/30 shadow-xs"
+              : "text-gray-mid hover:bg-post-card/50 hover:text-paper"
+          }`}
+        >
+          <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+          </svg>
+        </button>
+
+        {/* Account Tab */}
+        <button
+          type="button"
+          aria-label="Account"
+          onClick={() => {
+            setActiveTab("account");
+            setIsComposeOpen(false);
+          }}
+          className={`flex h-11 w-11 items-center justify-center rounded-full transition-all ${
+            activeTab === "account"
+              ? "bg-post-card text-accent border border-tinted/30 shadow-xs"
+              : "text-gray-mid hover:bg-post-card/50 hover:text-paper"
+          }`}
+        >
+          <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+          </svg>
+        </button>
+      </nav>
     </div>
   );
 }

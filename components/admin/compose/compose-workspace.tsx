@@ -1,6 +1,9 @@
 "use client";
 
 import {
+  addMediaAction,
+  deleteNoteAction,
+  deletePostAction,
   saveNoteAction,
   saveNowEntryAction,
   savePostAction,
@@ -102,7 +105,7 @@ export function ComposeWorkspace({
         docType: "note",
         slug: n.slug,
         title: n.title,
-        subtitle: "",
+        subtitle: n.subtitle || "",
         description: n.description,
         persona: n.persona,
         status: n.status || "published",
@@ -133,10 +136,12 @@ export function ComposeWorkspace({
 
     const docType = initialDocument?.docType || "post";
     if (docType === "now") {
+      tabCounterRef.current += 1;
+      const n = tabCounterRef.current;
       return {
-        id: `tab-new-now-${Date.now()}`,
+        id: `tab-new-now-${n}`,
         docType: "now",
-        slug: `now-${Date.now()}`,
+        slug: `now-${n}`,
         title: "",
         subtitle: "",
         description: "",
@@ -150,8 +155,10 @@ export function ComposeWorkspace({
     }
 
     const isNote = docType === "note";
+    tabCounterRef.current += 1;
+    const n = tabCounterRef.current;
     return {
-      id: `tab-new-${Date.now()}`,
+      id: `tab-new-${n}`,
       docType: isNote ? "note" : "post",
       slug: isNote ? "new-note" : "new-essay",
       title: isNote ? "Untitled Note" : "Untitled Essay",
@@ -192,6 +199,7 @@ export function ComposeWorkspace({
   const containerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const isDraggingRef = useRef(false);
+  const tabCounterRef = useRef(0);
 
 
 
@@ -200,7 +208,7 @@ export function ComposeWorkspace({
     (updates: Partial<DocumentTab>) => {
       setTabs((prev) =>
         prev.map((tab) =>
-          tab.id === activeTabId ? { ...tab, ...updates, isDirty: true } : tab,
+          tab.id === activeTabId ? { ...tab, isDirty: true, ...updates } : tab,
         ),
       );
     },
@@ -208,16 +216,21 @@ export function ComposeWorkspace({
   );
 
   // Keyboard shortcut listener for Ctrl+S / Cmd+S
+  // Use a ref so the effect only registers/unregisters the listener once,
+  // while always calling the latest save handler.
+  const handleSaveRef = useRef(handleSaveDocument);
+  handleSaveRef.current = handleSaveDocument;
+
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
       if ((e.metaKey || e.ctrlKey) && e.key === "s") {
         e.preventDefault();
-        handleSaveDocument("published");
+        handleSaveRef.current("published");
       }
     }
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  });
+  }, []);
 
   // Resizable split view handlers
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
@@ -353,7 +366,7 @@ export function ComposeWorkspace({
         docType: "note",
         slug: n.slug,
         title: n.title,
-        subtitle: "",
+        subtitle: n.subtitle || "",
         description: n.description,
         persona: n.persona,
         status: n.status || "published",
@@ -381,6 +394,24 @@ export function ComposeWorkspace({
 
     startTransition(async () => {
       if (activeTab.docType === "post") {
+        // Check slug collision against other items
+        const isTakenByPost = allPosts.some(
+          (p) => p.slug === cleanSlug && p.slug !== activeTab.rawPost?.slug,
+        );
+        const isTakenByNote = allNotes.some((n) => n.slug === cleanSlug);
+        const isTakenByBook = allBooks.some((b) => b.slug === cleanSlug);
+        if (isTakenByPost || isTakenByNote || isTakenByBook) {
+          showToast(
+            `Slug "${cleanSlug}" is already in use. Please choose a unique slug.`,
+          );
+          return;
+        }
+
+        // If existing post had a different slug, delete old slug
+        if (activeTab.rawPost?.slug && activeTab.rawPost.slug !== cleanSlug) {
+          await deletePostAction(activeTab.rawPost.slug);
+        }
+
         const { intro, sections } = markdownToPostSections(activeTab.content);
         const postPayload: BlogPost = {
           title: activeTab.title,
@@ -390,9 +421,11 @@ export function ComposeWorkspace({
             activeTab.description ||
             (intro[0] ? intro[0].slice(0, 150) : activeTab.title),
           tags: activeTab.tags.length > 0 ? activeTab.tags : ["essay"],
-          publishedAt: new Date().toISOString().split("T")[0],
+          publishedAt:
+            activeTab.rawPost?.publishedAt ||
+            new Date().toISOString().split("T")[0],
           lastEditedAt: new Date().toISOString().split("T")[0],
-          assumedAudience: "Curious readers and builders",
+          targetAudience: "Curious readers and builders",
           intro:
             intro.length > 0
               ? intro
@@ -421,6 +454,7 @@ export function ComposeWorkspace({
           updateActiveTab({
             slug: cleanSlug,
             status: statusToSet,
+            rawPost: res.post,
             isDirty: false,
           });
           setIsPublishDrawerOpen(false);
@@ -449,6 +483,24 @@ export function ComposeWorkspace({
           showToast(res.error || "Failed to save now entry");
         }
       } else {
+        // Note collision check
+        const isTakenByNote = allNotes.some(
+          (n) => n.slug === cleanSlug && n.slug !== activeTab.rawNote?.slug,
+        );
+        const isTakenByPost = allPosts.some((p) => p.slug === cleanSlug);
+        const isTakenByBook = allBooks.some((b) => b.slug === cleanSlug);
+        if (isTakenByNote || isTakenByPost || isTakenByBook) {
+          showToast(
+            `Slug "${cleanSlug}" is already in use. Please choose a unique slug.`,
+          );
+          return;
+        }
+
+        // If existing note had a different slug, delete old slug
+        if (activeTab.rawNote?.slug && activeTab.rawNote.slug !== cleanSlug) {
+          await deleteNoteAction(activeTab.rawNote.slug);
+        }
+
         const paragraphs = activeTab.content
           .split("\n\n")
           .map((p) => p.trim())
@@ -458,11 +510,15 @@ export function ComposeWorkspace({
           id: activeTab.rawNote?.id || `note-${Date.now()}`,
           title: activeTab.title,
           slug: cleanSlug,
+          subtitle: activeTab.subtitle || undefined,
           description:
             activeTab.description ||
+            activeTab.subtitle ||
             (paragraphs[0] ? paragraphs[0].slice(0, 120) : activeTab.title),
           content: paragraphs.length > 0 ? paragraphs : [activeTab.title],
-          date: new Date().toISOString().split("T")[0],
+          date:
+            activeTab.rawNote?.date ||
+            new Date().toISOString().split("T")[0],
           persona: activeTab.persona || "builder",
           tags: activeTab.tags.length > 0 ? activeTab.tags : ["note"],
           coverImage: activeTab.coverImage,
@@ -474,6 +530,7 @@ export function ComposeWorkspace({
           updateActiveTab({
             slug: cleanSlug,
             status: statusToSet,
+            rawNote: res.note,
             isDirty: false,
           });
           setIsPublishDrawerOpen(false);
@@ -510,7 +567,7 @@ export function ComposeWorkspace({
       <ToastView message={toastMessage} />
 
       {/* 1. Multi-Tab Bar with + button and Folder Icon */}
-      <div className="flex h-[35px] shrink-0 bg-ink border-b border-tinted/20 overflow-x-auto relative select-none">
+      <div className="flex h-8.75 shrink-0 bg-ink border-b border-tinted/20 overflow-x-auto relative select-none">
         {/* Navigation back to Admin */}
         <Link
           href="/admin"
@@ -530,7 +587,7 @@ export function ComposeWorkspace({
             <div
               key={tab.id}
               onClick={() => setActiveTabId(tab.id)}
-              className={`flex items-center h-full px-3.5 cursor-pointer min-w-[150px] max-w-[240px] group transition-colors border-r border-tinted/20 text-xs ${
+              className={`flex items-center h-full px-3.5 cursor-pointer min-w-37.5 max-w-60 group transition-colors border-r border-tinted/20 text-xs ${
                 isSelected
                   ? "bg-night-soft text-paper font-medium"
                   : "bg-ink/80 text-ink-soft hover:bg-night-soft hover:text-paper/90"
@@ -755,9 +812,28 @@ export function ComposeWorkspace({
           onChange={(e) => {
             const file = e.target.files?.[0];
             if (file) {
-              const url = URL.createObjectURL(file);
-              insertBlock(`![${file.name}](${url})\n*${file.name}*`);
+              const reader = new FileReader();
+              reader.onload = async () => {
+                const dataUrl = reader.result as string;
+                insertBlock(`![${file.name}](${dataUrl})\n*${file.name}*`);
+                try {
+                  const mediaItem: MediaItem = {
+                    id: `media-${Date.now()}`,
+                    name: file.name,
+                    src: dataUrl,
+                    alt: file.name.replace(/\.[^.]+$/, ""),
+                    size: `${Math.max(1, Math.round(file.size / 1024))} KB`,
+                    uploadedAt: new Date().toISOString().split("T")[0],
+                    tag: "atmosphere",
+                  };
+                  await addMediaAction(mediaItem);
+                } catch {
+                  // Media item registration is non-blocking
+                }
+              };
+              reader.readAsDataURL(file);
             }
+            if (fileInputRef.current) fileInputRef.current.value = "";
           }}
         />
 
@@ -827,7 +903,7 @@ export function ComposeWorkspace({
       <div className="flex flex-1 min-h-0 relative">
         <div className="flex-1 min-w-0 flex flex-col relative h-full">
           {/* Breadcrumbs Row: Persona + Title */}
-          <div className="flex items-center min-h-[34px] bg-night-soft px-4 text-paper/80 shrink-0 text-xs font-sans border-b border-tinted/20 z-10">
+          <div className="flex items-center min-h-8.5 bg-night-soft px-4 text-paper/80 shrink-0 text-xs font-sans border-b border-tinted/20 z-10">
             {activeTab.docType !== "now" && (
               <>
                 <select
@@ -858,9 +934,17 @@ export function ComposeWorkspace({
               value={activeTab.title}
               onChange={(e) => {
                 const title = e.target.value;
+                const prevDefaultSlug = slugify(activeTab.title);
+                const isAutoSlug =
+                  !activeTab.slug ||
+                  activeTab.slug === "new-essay" ||
+                  activeTab.slug === "new-note" ||
+                  activeTab.slug.startsWith("untitled") ||
+                  activeTab.slug === prevDefaultSlug;
+
                 updateActiveTab({
                   title,
-                  slug: activeTab.isDirty ? activeTab.slug : slugify(title),
+                  slug: isAutoSlug ? slugify(title) : activeTab.slug,
                 });
               }}
               placeholder={
@@ -870,10 +954,29 @@ export function ComposeWorkspace({
               }
               className="flex-1 bg-transparent border-none outline-none text-paper font-medium placeholder-ink-soft/50 py-1 text-xs"
             />
+            {activeTab.docType !== "now" && (
+              <div
+                className="ml-2 flex items-center gap-1 rounded-md border border-tinted/20 bg-ink/70 px-2 py-0.5 text-[11px] font-mono text-ink-soft focus-within:border-accent/40 focus-within:text-paper shrink-0"
+                title="Edit Slug / Permalink"
+              >
+                <span className="select-none text-ink-soft/60">
+                  {activeTab.docType === "post" ? "/p/" : "/n/"}
+                </span>
+                <input
+                  type="text"
+                  value={activeTab.slug}
+                  onChange={(e) =>
+                    updateActiveTab({ slug: slugify(e.target.value) })
+                  }
+                  placeholder="slug"
+                  className="w-24 sm:w-36 focus:w-48 bg-transparent border-none outline-none text-paper font-mono placeholder-ink-soft/40 transition-all text-[11px]"
+                />
+              </div>
+            )}
           </div>
 
           {/* Subtitle Row */}
-          <div className="flex items-center min-h-[30px] bg-ink px-4 text-paper/80 shrink-0 border-b border-tinted/20 justify-between">
+          <div className="flex items-center min-h-7.5 bg-ink px-4 text-paper/80 shrink-0 border-b border-tinted/20 justify-between">
             {activeTab.docType === "now" ? (
               <div className="flex items-center gap-2 flex-1">
                 <span className="text-[10px] uppercase tracking-wider text-ink-soft shrink-0">
@@ -954,7 +1057,7 @@ export function ComposeWorkspace({
                   persona={activeTab.persona || "builder"}
                   tags={activeTab.tags}
                   books={activeTab.rawPost?.books}
-                  assumedAudience={activeTab.rawPost?.assumedAudience}
+                  targetAudience={activeTab.rawPost?.targetAudience}
                   className="h-full"
                 />
               </div>
@@ -976,7 +1079,7 @@ export function ComposeWorkspace({
       </div>
 
       {/* 4. Bottom Status Bar */}
-      <div className="flex h-[26px] items-center justify-between border-t border-tinted/20 bg-ink px-4 text-[11px] text-ink-soft select-none">
+      <div className="flex h-6.5 items-center justify-between border-t border-tinted/20 bg-ink px-4 text-[11px] text-ink-soft select-none">
         <div className="flex items-center gap-4 font-mono">
           <span className="capitalize text-paper/80">
             {activeTab.docType === "now"

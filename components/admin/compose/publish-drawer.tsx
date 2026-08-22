@@ -4,6 +4,7 @@ import { useState, useRef } from 'react';
 import Image from 'next/image';
 import type { MediaItem, Persona } from '@/lib/types';
 import { SITE_DOMAIN } from '@/lib/constants';
+import { addMediaAction } from '@/app/admin/actions';
 import { MediaInsertModal } from '../mdx-editor/media-insert-modal';
 
 interface PublishDrawerProps {
@@ -92,8 +93,27 @@ export function PublishDrawer({
   function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-    const objectUrl = URL.createObjectURL(file);
-    onCoverImageChange(objectUrl);
+    const reader = new FileReader();
+    reader.onload = async () => {
+      const dataUrl = reader.result as string;
+      onCoverImageChange(dataUrl);
+      try {
+        const mediaItem: MediaItem = {
+          id: `media-${Date.now()}`,
+          name: file.name,
+          src: dataUrl,
+          alt: file.name.replace(/\.[^.]+$/, ''),
+          size: `${Math.max(1, Math.round(file.size / 1024))} KB`,
+          uploadedAt: new Date().toISOString().split('T')[0],
+          tag: 'atmosphere',
+        };
+        await addMediaAction(mediaItem);
+      } catch {
+        // Media registration is non-blocking
+      }
+    };
+    reader.readAsDataURL(file);
+    if (fileInputRef.current) fileInputRef.current.value = '';
   }
 
   const liveUrlPrefix = isPost ? '/p/' : '/n/';
@@ -320,7 +340,7 @@ export function PublishDrawer({
               {previewTab === 'card' && (
                 <div className="rounded-xl border border-tinted/20 bg-post-card overflow-hidden">
                   {hasCoverImage ? (
-                    <div className="relative min-h-[140px] overflow-hidden">
+                    <div className="relative min-h-35 overflow-hidden">
                       <Image
                         src={coverImage || ''}
                         alt="Card cover preview"
@@ -330,7 +350,7 @@ export function PublishDrawer({
                       />
                     </div>
                   ) : (
-                    <div className="flex min-h-[140px] items-center justify-center overflow-hidden bg-[radial-gradient(ellipse_at_center,rgba(250,249,245,0.08)_15%,transparent_75%)]">
+                    <div className="flex min-h-35 items-center justify-center overflow-hidden bg-[radial-gradient(ellipse_at_center,rgba(250,249,245,0.08)_15%,transparent_75%)]">
                       <span className="font-serif text-4xl italic text-paper/40">
                         {(title || 'P').charAt(0)}
                       </span>
@@ -369,7 +389,7 @@ export function PublishDrawer({
                         </div>
                       )}
                       <div className="flex flex-1 flex-col justify-center px-5">
-                        <h3 className="font-serif text-[28px] font-normal leading-[1.05] tracking-[-0.025em] text-[#FAF9F5] line-clamp-3">
+                        <h3 className="font-serif text-[28px] font-normal leading-[1.05] tracking-tight text-[#FAF9F5] line-clamp-3">
                           {title || 'Page Title'}
                         </h3>
                         {description && (

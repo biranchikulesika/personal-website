@@ -7,8 +7,8 @@ import {
   parseRazorpayWebhookEvent,
 } from "../lib/razorpay";
 import { ContentService } from "../lib/services/content.service";
-import { MockContentRepository } from "../lib/repositories/mock-content.repository";
-import { resetDatabase } from "../lib/data/mock-db";
+import { InMemoryTestContentRepository } from "./in-memory-test-content-repository";
+import { setContentRepositoryForTesting } from "../lib/repositories";
 
 // ── Cryptographic Signature Verification ───────────────────────────────────
 
@@ -158,8 +158,7 @@ test("parseRazorpayWebhookEvent extracts payment.captured event details", () => 
 // ── Service Layer & Idempotent Database Storage ────────────────────────────
 
 test("confirmPayment idempotently stores contribution in database", async () => {
-  const mockDb = resetDatabase();
-  const repo = new MockContentRepository(mockDb);
+  const repo = new InMemoryTestContentRepository();
   const service = new ContentService(repo);
 
   const paymentId = "pay_IDEMPOTENT_001";
@@ -169,7 +168,7 @@ test("confirmPayment idempotently stores contribution in database", async () => 
     name: "Biranchi Supporter",
     email: "supporter@example.com",
     note: "Great work",
-    source: "mock" as const,
+    source: "manual" as const,
   };
 
   // First confirmation
@@ -195,8 +194,7 @@ test("confirmPayment idempotently stores contribution in database", async () => 
 });
 
 test("processRazorpayWebhook idempotently processes events and stores to DB", async () => {
-  const mockDb = resetDatabase();
-  const repo = new MockContentRepository(mockDb);
+  const repo = new InMemoryTestContentRepository();
   const service = new ContentService(repo);
 
   const webhookSecret = "secret_webhook_test";
@@ -255,8 +253,7 @@ test("processRazorpayWebhook idempotently processes events and stores to DB", as
 });
 
 test("getContribution retrieves contribution by id, paymentId, or orderId", async () => {
-  const mockDb = resetDatabase();
-  const repo = new MockContentRepository(mockDb);
+  const repo = new InMemoryTestContentRepository();
   const service = new ContentService(repo);
 
   await service.recordContribution({
@@ -287,7 +284,8 @@ test("getContribution retrieves contribution by id, paymentId, or orderId", asyn
 // ── API Route Handler Tests ────────────────────────────────────────────────
 
 test("POST /api/contributions accepts valid payment and confirms", async () => {
-  resetDatabase();
+  const repo = new InMemoryTestContentRepository();
+  setContentRepositoryForTesting(repo);
   const { POST } = await import("../app/api/contributions/route");
 
   const request = new Request("http://localhost:3000/api/contributions", {
@@ -299,7 +297,7 @@ test("POST /api/contributions accepts valid payment and confirms", async () => {
       name: "API Tester",
       email: "tester@example.com",
       note: "Testing API route",
-      source: "mock",
+      source: "manual",
     }),
   });
 
@@ -313,6 +311,8 @@ test("POST /api/contributions accepts valid payment and confirms", async () => {
 });
 
 test("POST /api/contributions rejects invalid requests", async () => {
+  const repo = new InMemoryTestContentRepository();
+  setContentRepositoryForTesting(repo);
   const { POST } = await import("../app/api/contributions/route");
 
   const request = new Request("http://localhost:3000/api/contributions", {
@@ -329,7 +329,8 @@ test("POST /api/contributions rejects invalid requests", async () => {
 });
 
 test("POST /api/webhooks/razorpay processes valid webhook request", async () => {
-  resetDatabase();
+  const repo = new InMemoryTestContentRepository();
+  setContentRepositoryForTesting(repo);
   const { POST } = await import("../app/api/webhooks/razorpay/route");
 
   const webhookSecret = "secret_route_test";
@@ -407,15 +408,16 @@ test("GET /api/contributions forbids unauthenticated full data dumps", async () 
 });
 
 test("GET /api/contributions?id=... sanitizes PII and excludes donor email", async () => {
-  resetDatabase();
-  const service = new ContentService();
+  const repo = new InMemoryTestContentRepository();
+  setContentRepositoryForTesting(repo);
+  const service = new ContentService(repo);
   await service.confirmPayment({
     paymentId: "pay_SEC_001",
     amount: 1000,
     name: "Secret Donor",
     email: "secret_donor@private.org",
     note: "Confidential note",
-    source: "mock",
+    source: "manual",
   });
 
   const { GET } = await import("../app/api/contributions/route");

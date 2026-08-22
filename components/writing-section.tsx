@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import type { SectionGroup, WritingItem } from '@/lib/types';
+import type { BlogPost, SectionGroup, WritingItem } from '@/lib/types';
 import { SectionHeading } from './section-heading';
 import { formatDisplayDate } from '@/lib/utils';
 import { EssayCover } from './ui/essay-cover';
@@ -7,6 +7,7 @@ import { EssayCover } from './ui/essay-cover';
 interface WritingSectionProps {
   writing: SectionGroup<WritingItem>;
   limit?: number;
+  featured?: BlogPost[];
 }
 
 function EssayCard({ item }: { item: WritingItem }) {
@@ -45,8 +46,21 @@ function EssayCard({ item }: { item: WritingItem }) {
   );
 }
 
-export function WritingSection({ writing, limit = 4 }: WritingSectionProps) {
-  const items = limit ? writing.items.slice(0, limit) : writing.items;
+export function WritingSection({ writing, limit = 4, featured }: WritingSectionProps) {
+  const items = featured && featured.length > 0
+    ? featured.slice(0, limit).map((post) => ({
+        id: post.slug,
+        slug: post.slug,
+        title: post.title,
+        description: post.description,
+        date: post.publishedAt,
+        persona: post.persona ?? 'builder',
+        tags: post.tags,
+        coverImage: post.coverImage,
+      }))
+    : limit
+      ? writing.items.slice(0, limit)
+      : writing.items;
 
   return (
     <section aria-labelledby="home-writing-heading">

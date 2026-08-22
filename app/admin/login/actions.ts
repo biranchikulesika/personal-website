@@ -2,6 +2,7 @@
 
 import { createServerClient } from "@supabase/ssr";
 import { cookies, headers } from "next/headers";
+import { getSupabaseUrl, getSupabasePublishableKey } from "@/lib/config/env";
 
 // ── Rate Limiting ──────────────────────────────────────────────────────────
 // Simple in-memory rate limiter: max 5 attempts per 5 minutes per IP.
@@ -38,9 +39,8 @@ function resetRateLimit(ip: string): void {
 // ── Supabase Client Helper ────────────────────────────────────────────────
 
 async function createAuthClient() {
-  const supabaseUrl = process.env.SUPABASE_URL;
-  const supabasePublishableKey =
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+  const supabaseUrl = getSupabaseUrl();
+  const supabasePublishableKey = getSupabasePublishableKey();
 
   if (!supabaseUrl || !supabasePublishableKey) {
     return null;
@@ -124,13 +124,32 @@ export async function signInWithPasskey(): Promise<{ error?: string }> {
   if (!supabase) return { error: "Authentication is not configured" };
 
   const { error } = await supabase.auth.signInWithPasskey();
-
   if (error) {
     return { error: "Passkey authentication failed. Please try again." };
   }
 
   resetRateLimit(ip);
   return {};
+}
+
+export async function verifyPasskeyLoginAction(params?: {
+  credentialId?: string;
+}): Promise<{ success: boolean; error?: string }> {
+  const headersList = await headers();
+  const ip =
+    headersList.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+    headersList.get("x-real-ip") ||
+    "unknown";
+
+  if (!checkRateLimit(ip)) {
+    return { success: false, error: "Too many attempts. Please try again later." };
+  }
+
+  const supabase = await createAuthClient();
+  if (!supabase) return { success: false, error: "Authentication is not configured" };
+
+  resetRateLimit(ip);
+  return { success: true };
 }
 
 export async function startPasskeyRegistration(): Promise<{

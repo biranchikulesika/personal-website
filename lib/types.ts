@@ -93,6 +93,7 @@ export interface NoteItem {
   id: string;
   slug: string;
   title: string;
+  subtitle?: string;
   description: string;
   content: string[];
   date: string;
@@ -182,7 +183,7 @@ export interface BlogPost {
   tags: string[];
   publishedAt: string;
   lastEditedAt: string;
-  assumedAudience: string;
+  targetAudience: string;
   intro: string[];
   sections: PostSection[];
   books: BookCard[];
@@ -230,6 +231,36 @@ export interface UserRole {
   role: AppRole;
 }
 
+export interface PasskeyItem {
+  id: string;
+  label: string;
+  createdAt: string;
+  lastUsedAt: string;
+  credentialId?: string;
+}
+
+export interface UserSession {
+  id: string;
+  userId: string;
+  device: string;
+  location: string;
+  ipAddress?: string;
+  startedAt: string;
+  lastActiveAt: string;
+  isCurrent: boolean;
+}
+
+export interface AccountDetails {
+  userId: string;
+  userName: string;
+  userEmail: string;
+  userAvatarUrl: string | null;
+  userRole: AppRole;
+  passkeys: PasskeyItem[];
+  connectedProviders: string[];
+  sessions: UserSession[];
+}
+
 // Contributions & Patronage ---------------------------------------------------
 
 export type ContributionStatus = "pending" | "captured" | "failed";
@@ -245,5 +276,19 @@ export interface Contribution {
   email?: string;
   note?: string;
   createdAt: string;
-  source: "razorpay" | "mock";
+  source: "razorpay" | "manual";
 }
+
+// Newsletter -----------------------------------------------------------------
+
+export interface NewsletterSubscriber {
+  id: string;
+  email: string;
+  createdAt: string;
+  status: "active" | "unsubscribed";
+  source?: string;
+}
+
+// Admin Navigation -----------------------------------------------------------
+
+export type SidepanelTab = "home" | "content" | "media" | "subscribers" | "account";

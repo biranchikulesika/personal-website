@@ -1,20 +1,25 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { resetDatabase } from "../lib/data/mock-db";
 import { ContentService } from "../lib/services/content.service";
+import { InMemoryTestContentRepository } from "./in-memory-test-content-repository";
 import {
-  createTestPost,
   createTestNote,
   createTestBook,
   createTestNowEntry,
-  createTestMedia,
 } from "./fixtures";
+import {
+  getSupabaseUrl,
+  getSupabasePublishableKey,
+  getSupabaseSecretKey,
+  getSupabaseJwtSecret,
+  getPostgresUrl,
+} from "../lib/config/env";
 
 // ── Now Entries CRUD ────────────────────────────────────────────────────────
 
 test("content service supports full CRUD on now entries", async () => {
-  resetDatabase();
-  const service = new ContentService();
+  const repo = new InMemoryTestContentRepository();
+  const service = new ContentService(repo);
 
   const initialEntries = await service.getNowEntries();
   assert.equal(initialEntries.length, 0, "should have no now entries initially");
@@ -53,11 +58,11 @@ test("content service supports full CRUD on now entries", async () => {
 // ── Orphaned Media Detection ────────────────────────────────────────────────
 
 test("content service detects orphaned media assets", async () => {
-  resetDatabase();
-  const service = new ContentService();
+  const repo = new InMemoryTestContentRepository();
+  const service = new ContentService(repo);
 
   const orphaned = await service.getOrphanedMedia();
-  assert.ok(orphaned.length >= 2, "should detect orphaned assets in seed data");
+  assert.ok(orphaned.length >= 1, "should detect orphaned assets in test repo");
 
   // Orphaned items should have src, name, and id
   for (const item of orphaned) {
@@ -68,15 +73,15 @@ test("content service detects orphaned media assets", async () => {
 });
 
 test("content service deleteStorageAssets removes specified assets", async () => {
-  resetDatabase();
-  const service = new ContentService();
+  const repo = new InMemoryTestContentRepository();
+  const service = new ContentService(repo);
 
   const orphaned = await service.getOrphanedMedia();
   assert.ok(orphaned.length > 0, "should have orphaned assets");
 
-  const srcsToDelete = orphaned.slice(0, 2).map((m) => m.src);
+  const srcsToDelete = orphaned.slice(0, 1).map((m) => m.src);
   const deletedCount = await service.deleteStorageAssets(srcsToDelete);
-  assert.equal(deletedCount, 2);
+  assert.equal(deletedCount, 1);
 
   const remaining = await service.getOrphanedMedia();
   assert.ok(remaining.length < orphaned.length, "should have fewer orphaned assets");
@@ -85,16 +90,16 @@ test("content service deleteStorageAssets removes specified assets", async () =>
 // ── Post Status Toggle Edge Cases ───────────────────────────────────────────
 
 test("togglePostStatus returns null for missing post", async () => {
-  resetDatabase();
-  const service = new ContentService();
+  const repo = new InMemoryTestContentRepository();
+  const service = new ContentService(repo);
 
   const result = await service.togglePostStatus("nonexistent-slug");
   assert.equal(result, null);
 });
 
 test("toggleNoteStatus returns null for missing note", async () => {
-  resetDatabase();
-  const service = new ContentService();
+  const repo = new InMemoryTestContentRepository();
+  const service = new ContentService(repo);
 
   const result = await service.toggleNoteStatus("nonexistent-slug");
   assert.equal(result, null);
@@ -103,24 +108,24 @@ test("toggleNoteStatus returns null for missing note", async () => {
 // ── Delete Non-Existent Records ─────────────────────────────────────────────
 
 test("deletePost returns false for non-existent post", async () => {
-  resetDatabase();
-  const service = new ContentService();
+  const repo = new InMemoryTestContentRepository();
+  const service = new ContentService(repo);
 
   const result = await service.deletePost("nonexistent-slug");
   assert.equal(result, false);
 });
 
 test("deleteNote returns false for non-existent note", async () => {
-  resetDatabase();
-  const service = new ContentService();
+  const repo = new InMemoryTestContentRepository();
+  const service = new ContentService(repo);
 
   const result = await service.deleteNote("nonexistent-slug");
   assert.equal(result, false);
 });
 
 test("deleteBook returns false for non-existent book", async () => {
-  resetDatabase();
-  const service = new ContentService();
+  const repo = new InMemoryTestContentRepository();
+  const service = new ContentService(repo);
 
   const result = await service.deleteBook("nonexistent-slug");
   assert.equal(result, false);
@@ -129,8 +134,8 @@ test("deleteBook returns false for non-existent book", async () => {
 // ── User Roles ────────────────────────────────────────────────────────────
 
 test("setUserRole persists and getUserRole retrieves", async () => {
-  resetDatabase();
-  const service = new ContentService();
+  const repo = new InMemoryTestContentRepository();
+  const service = new ContentService(repo);
 
   await service.setUserRole("test-user", "content_admin");
   const role = await service.getUserRole("test-user");
@@ -138,8 +143,8 @@ test("setUserRole persists and getUserRole retrieves", async () => {
 });
 
 test("getUserRole returns null for nonexistent user", async () => {
-  resetDatabase();
-  const service = new ContentService();
+  const repo = new InMemoryTestContentRepository();
+  const service = new ContentService(repo);
 
   const role = await service.getUserRole("nonexistent");
   assert.equal(role, null);
@@ -148,8 +153,8 @@ test("getUserRole returns null for nonexistent user", async () => {
 // ── Note CRUD Edge Cases ────────────────────────────────────────────────────
 
 test("saveNote creates new note and updates existing note", async () => {
-  resetDatabase();
-  const service = new ContentService();
+  const repo = new InMemoryTestContentRepository();
+  const service = new ContentService(repo);
 
   const initialCount = (await service.getAllNotes()).length;
 
@@ -171,8 +176,8 @@ test("saveNote creates new note and updates existing note", async () => {
 // ── Book CRUD Edge Cases ────────────────────────────────────────────────────
 
 test("saveBook creates new book and updates existing book", async () => {
-  resetDatabase();
-  const service = new ContentService();
+  const repo = new InMemoryTestContentRepository();
+  const service = new ContentService(repo);
 
   const initialCount = (await service.getAllBooks()).length;
 
@@ -189,4 +194,123 @@ test("saveBook creates new book and updates existing book", async () => {
   const afterUpdate = await service.getAllBooks();
   assert.equal(afterUpdate.length, initialCount + 1, "should not duplicate on update");
   assert.equal(afterUpdate.find((b) => b.slug === "new-book-slug")!.title, "Updated Book");
+});
+
+// ── Supabase & Vercel Environment Variable Resolution ────────────────────────
+
+test("getSupabaseUrl resolves NEXT_PUBLIC_SUPABASE_URL and SUPABASE_URL", () => {
+  const origNextUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const origUrl = process.env.SUPABASE_URL;
+
+  try {
+    delete process.env.NEXT_PUBLIC_SUPABASE_URL;
+    delete process.env.SUPABASE_URL;
+    assert.equal(getSupabaseUrl(), undefined);
+
+    process.env.SUPABASE_URL = "https://supabase-url.supabase.co";
+    assert.equal(getSupabaseUrl(), "https://supabase-url.supabase.co");
+
+    process.env.NEXT_PUBLIC_SUPABASE_URL = "https://next-public-url.supabase.co";
+    assert.equal(getSupabaseUrl(), "https://next-public-url.supabase.co");
+  } finally {
+    if (origNextUrl) process.env.NEXT_PUBLIC_SUPABASE_URL = origNextUrl;
+    else delete process.env.NEXT_PUBLIC_SUPABASE_URL;
+    if (origUrl) process.env.SUPABASE_URL = origUrl;
+    else delete process.env.SUPABASE_URL;
+  }
+});
+
+test("getSupabasePublishableKey resolves all 4 public/anon key variants", () => {
+  const origPub = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+  const origAnon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const origSupPub = process.env.SUPABASE_PUBLISHABLE_KEY;
+  const origSupAnon = process.env.SUPABASE_ANON_KEY;
+
+  try {
+    delete process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+    delete process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    delete process.env.SUPABASE_PUBLISHABLE_KEY;
+    delete process.env.SUPABASE_ANON_KEY;
+    assert.equal(getSupabasePublishableKey(), undefined);
+
+    process.env.SUPABASE_ANON_KEY = "anon-key-1";
+    assert.equal(getSupabasePublishableKey(), "anon-key-1");
+
+    process.env.SUPABASE_PUBLISHABLE_KEY = "pub-key-2";
+    assert.equal(getSupabasePublishableKey(), "pub-key-2");
+
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = "next-anon-key-3";
+    assert.equal(getSupabasePublishableKey(), "next-anon-key-3");
+
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY = "next-pub-key-4";
+    assert.equal(getSupabasePublishableKey(), "next-pub-key-4");
+  } finally {
+    if (origPub) process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY = origPub;
+    else delete process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+    if (origAnon) process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = origAnon;
+    else delete process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    if (origSupPub) process.env.SUPABASE_PUBLISHABLE_KEY = origSupPub;
+    else delete process.env.SUPABASE_PUBLISHABLE_KEY;
+    if (origSupAnon) process.env.SUPABASE_ANON_KEY = origSupAnon;
+    else delete process.env.SUPABASE_ANON_KEY;
+  }
+});
+
+test("getSupabaseSecretKey resolves SUPABASE_SERVICE_ROLE_KEY and SUPABASE_SECRET_KEY", () => {
+  const origService = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const origSecret = process.env.SUPABASE_SECRET_KEY;
+
+  try {
+    delete process.env.SUPABASE_SERVICE_ROLE_KEY;
+    delete process.env.SUPABASE_SECRET_KEY;
+    assert.equal(getSupabaseSecretKey(), undefined);
+
+    process.env.SUPABASE_SECRET_KEY = "secret-key-1";
+    assert.equal(getSupabaseSecretKey(), "secret-key-1");
+
+    process.env.SUPABASE_SERVICE_ROLE_KEY = "service-role-key-2";
+    assert.equal(getSupabaseSecretKey(), "service-role-key-2");
+  } finally {
+    if (origService) process.env.SUPABASE_SERVICE_ROLE_KEY = origService;
+    else delete process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (origSecret) process.env.SUPABASE_SECRET_KEY = origSecret;
+    else delete process.env.SUPABASE_SECRET_KEY;
+  }
+});
+
+test("getSupabaseJwtSecret and getPostgresUrl resolve properly", () => {
+  const origJwt = process.env.SUPABASE_JWT_SECRET;
+  const origPg = process.env.POSTGRES_URL;
+  const origPrisma = process.env.POSTGRES_PRISMA_URL;
+  const origNonPool = process.env.POSTGRES_URL_NON_POOLING;
+
+  try {
+    delete process.env.SUPABASE_JWT_SECRET;
+    assert.equal(getSupabaseJwtSecret(), undefined);
+    process.env.SUPABASE_JWT_SECRET = "jwt-secret-xyz";
+    assert.equal(getSupabaseJwtSecret(), "jwt-secret-xyz");
+
+    delete process.env.POSTGRES_URL;
+    delete process.env.POSTGRES_PRISMA_URL;
+    delete process.env.POSTGRES_URL_NON_POOLING;
+    assert.equal(getPostgresUrl(), undefined);
+
+    process.env.POSTGRES_URL_NON_POOLING = "postgres://non-pooling";
+    assert.equal(getPostgresUrl(), "postgres://non-pooling");
+
+    process.env.POSTGRES_PRISMA_URL = "postgres://prisma";
+    assert.equal(getPostgresUrl(), "postgres://prisma");
+
+    process.env.POSTGRES_URL = "postgres://standard";
+    assert.equal(getPostgresUrl(), "postgres://standard");
+  } finally {
+    if (origJwt) process.env.SUPABASE_JWT_SECRET = origJwt;
+    else delete process.env.SUPABASE_JWT_SECRET;
+    if (origPg) process.env.POSTGRES_URL = origPg;
+    else delete process.env.POSTGRES_URL;
+    if (origPrisma) process.env.POSTGRES_PRISMA_URL = origPrisma;
+    else delete process.env.POSTGRES_PRISMA_URL;
+    if (origNonPool) process.env.POSTGRES_URL_NON_POOLING = origNonPool;
+    else delete process.env.POSTGRES_URL_NON_POOLING;
+  }
 });

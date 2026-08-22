@@ -10,7 +10,7 @@ export const metadata: Metadata = {
     'Books that have shaped thinking — read, on the shelf, or somewhere in between.',
   alternates: { canonical: `${SITE_URL}/library` },
   openGraph: {
-    title: 'Library | Biranchi Kulesika',
+    title: 'Library',
     description:
       'Books that have shaped thinking — read, on the shelf, or somewhere in between.',
     url: `${SITE_URL}/library`,
@@ -20,11 +20,20 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     creator: '@BKulesika',
-    title: 'Library | Biranchi Kulesika',
+    title: 'Library',
     description:
       'Books that have shaped thinking — read, on the shelf, or somewhere in between.',
   },
 };
+
+function shuffle<T>(array: T[]): T[] {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+}
 
 export default async function LibraryPage() {
   const library = await new ContentService().getLibrary();
@@ -41,7 +50,7 @@ export default async function LibraryPage() {
         dangerouslySetInnerHTML={{ __html: safeJsonLd(breadcrumbs) }}
       />
       <LibraryPageView
-        books={library.items}
+        books={shuffle(library.items)}
         title={library.title}
         subheader={library.subheader}
       />

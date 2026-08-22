@@ -86,7 +86,7 @@ CREATE TABLE IF NOT EXISTS public.posts (
   tags             TEXT[] DEFAULT '{}',
   published_at     DATE,
   last_edited_at   DATE,
-  assumed_audience TEXT DEFAULT '',
+  target_audience  TEXT DEFAULT '',
   intro            JSONB DEFAULT '[]'::jsonb,
   sections         JSONB DEFAULT '[]'::jsonb,
   books            JSONB DEFAULT '[]'::jsonb,
@@ -117,6 +117,7 @@ CREATE TABLE IF NOT EXISTS public.notes (
   id             TEXT PRIMARY KEY,
   slug           TEXT NOT NULL UNIQUE,
   title          TEXT NOT NULL,
+  subtitle       TEXT,
   description    TEXT NOT NULL DEFAULT '',
   content        JSONB DEFAULT '[]'::jsonb,
   date           DATE,
@@ -248,12 +249,25 @@ CREATE TABLE IF NOT EXISTS public.contributions (
   email          TEXT,
   note           TEXT,
   created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  source         TEXT NOT NULL DEFAULT 'razorpay' CHECK (source IN ('razorpay', 'mock'))
+  source         TEXT NOT NULL DEFAULT 'razorpay' CHECK (source IN ('razorpay', 'manual'))
 );
 
 CREATE INDEX IF NOT EXISTS idx_contributions_payment_id ON public.contributions(payment_id);
 CREATE INDEX IF NOT EXISTS idx_contributions_order_id ON public.contributions(order_id);
 CREATE INDEX IF NOT EXISTS idx_contributions_created_at ON public.contributions(created_at DESC);
+
+CREATE TABLE IF NOT EXISTS public.subscribers (
+  id             TEXT PRIMARY KEY,
+  email          TEXT NOT NULL UNIQUE,
+  status         TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'unsubscribed')),
+  source         TEXT NOT NULL DEFAULT 'website',
+  created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_subscribers_email ON public.subscribers(email);
+CREATE INDEX IF NOT EXISTS idx_subscribers_created_at ON public.subscribers(created_at DESC);
+
+GRANT ALL ON TABLE public.subscribers TO anon, authenticated, service_role;
 
 -- ── Row Level Security (RLS) ─────────────────────────────────────────────────
 
@@ -266,8 +280,16 @@ ALTER TABLE public.media ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.featured_items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.storage_files ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.contributions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.subscribers ENABLE ROW LEVEL SECURITY;
 
--- ── Public Read Policies ─────────────────────────────────────────────────────
+-- ── Public Read & Insert Policies ────────────────────────────────────────────
+
+DROP POLICY IF EXISTS "Allow public newsletter subscriptions" ON public.subscribers;
+CREATE POLICY "Allow public newsletter subscriptions"
+  ON public.subscribers
+  FOR INSERT
+  TO anon, authenticated
+  WITH CHECK (true);
 
 DROP POLICY IF EXISTS "Public read all featured items" ON public.featured_items;
 CREATE POLICY "Public read all featured items"
@@ -366,6 +388,15 @@ DROP POLICY IF EXISTS "Authenticated full access" ON public.contributions;
 DROP POLICY IF EXISTS "Admin access contributions" ON public.contributions;
 CREATE POLICY "Admin access contributions"
   ON public.contributions FOR ALL TO authenticated
+  USING (public.is_admin())
+  WITH CHECK (public.is_admin());
+
+-- ── Subscribers Security Policies ───────────────────────────────────────────
+
+DROP POLICY IF EXISTS "Authenticated full access" ON public.subscribers;
+DROP POLICY IF EXISTS "Admin access subscribers" ON public.subscribers;
+CREATE POLICY "Admin access subscribers"
+  ON public.subscribers FOR ALL TO authenticated
   USING (public.is_admin())
   WITH CHECK (public.is_admin());
 

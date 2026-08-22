@@ -2,34 +2,56 @@
 
 import { useState } from 'react';
 import type { NewsletterConfig } from '@/lib/types';
+import { subscribeToNewsletterAction } from '@/app/admin/actions';
 
 /**
- * Mock newsletter signup. No backend is wired up on this branch — submitting
- * just shows a confirmation. Replace with a real form action later.
+ * Newsletter signup form.
  *
  * Mobile and desktop get deliberately different treatments: a full-width
- * underline-input card on small screens, the compact Kadlac-style pill on
- * desktop. They share the same state and submit handler.
+ * stacked pill on small screens, and the compact pill on desktop.
+ * Both submit directly to Supabase via server action / API.
  */
 interface NewsletterFormProps {
   newsletter: NewsletterConfig;
   showNote?: boolean;
+  source?: string;
 }
 
 export function NewsletterForm({
   newsletter,
   showNote = true,
+  source = 'website',
 }: NewsletterFormProps) {
-  const [subscribed, setSubscribed] = useState(false);
+  const [email, setEmail] = useState('');
+  const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [message, setMessage] = useState('');
 
-  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setSubscribed(true);
+    if (!email.trim() || status === 'loading') return;
+
+    setStatus('loading');
+    setMessage('');
+
+    try {
+      const res = await subscribeToNewsletterAction({ email, source });
+      if (res.success) {
+        setStatus('success');
+        setMessage(res.message || "You're on the list! Thank you.");
+        setEmail('');
+      } else {
+        setStatus('error');
+        setMessage(res.error || 'Unable to subscribe. Please try again.');
+      }
+    } catch {
+      setStatus('error');
+      setMessage('Something went wrong. Please check your connection.');
+    }
   }
 
   return (
     <div className="max-w-xl">
-      {/* Mobile layout — pill input on top with stacked pill button underneath */}
+      {/* Mobile layout — stacked pill input and button */}
       <form
         onSubmit={handleSubmit}
         className="flex flex-col gap-3 sm:hidden"
@@ -37,20 +59,28 @@ export function NewsletterForm({
         <input
           type="email"
           name="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          disabled={status === 'loading' || status === 'success'}
           required
           placeholder={newsletter.placeholder}
           aria-label="Email address"
-          className="w-full rounded-full border border-tinted/20 bg-night-soft px-5 py-3.5 text-base text-paper placeholder:text-ink-soft/60 shadow-sm transition-colors focus:border-tinted/40 focus:outline-none focus:ring-0"
+          className="w-full rounded-full border border-tinted/20 bg-night-soft px-5 py-3.5 text-base text-paper placeholder:text-ink-soft/60 shadow-sm transition-colors focus:border-tinted/40 focus:outline-none focus:ring-0 disabled:opacity-60"
         />
         <button
           type="submit"
-          className="w-full rounded-full bg-accent px-6 py-3.5 text-base font-semibold text-paper shadow-sm transition-colors hover:bg-accent-hover"
+          disabled={status === 'loading' || status === 'success'}
+          className="w-full rounded-full bg-accent px-6 py-3.5 text-base font-semibold text-paper shadow-sm transition-colors hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-80"
         >
-          {subscribed ? 'Subscribed!' : newsletter.button}
+          {status === 'loading'
+            ? 'Subscribing…'
+            : status === 'success'
+              ? 'Subscribed!'
+              : newsletter.button}
         </button>
       </form>
 
-      {/* Desktop layout — compact pill */}
+      {/* Desktop layout — compact combined pill */}
       <form
         onSubmit={handleSubmit}
         className="hidden flex-col gap-2 rounded-2xl border border-tinted/20 bg-night-soft p-1.5 shadow-lg transition-colors focus-within:border-tinted/40 sm:flex sm:flex-row sm:items-center sm:rounded-full"
@@ -58,20 +88,47 @@ export function NewsletterForm({
         <input
           type="email"
           name="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          disabled={status === 'loading' || status === 'success'}
           required
           placeholder={newsletter.placeholder}
           aria-label="Email address"
-          className="w-full flex-1 rounded-full border-none bg-transparent px-5 py-3 text-base text-paper placeholder:text-ink-soft/60 focus:outline-none focus:ring-0"
+          className="w-full flex-1 rounded-full border-none bg-transparent px-5 py-3 text-base text-paper placeholder:text-ink-soft/60 focus:outline-none focus:ring-0 disabled:opacity-60"
         />
         <button
           type="submit"
-          className="w-full whitespace-nowrap rounded-full bg-accent px-6 py-3 text-base font-semibold text-paper transition-colors hover:bg-accent-hover sm:w-auto"
+          disabled={status === 'loading' || status === 'success'}
+          className="w-full whitespace-nowrap rounded-full bg-accent px-6 py-3 text-base font-semibold text-paper transition-colors hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-80 sm:w-auto"
         >
-          {subscribed ? 'Subscribed!' : newsletter.button}
+          {status === 'loading'
+            ? 'Subscribing…'
+            : status === 'success'
+              ? 'Subscribed!'
+              : newsletter.button}
         </button>
       </form>
 
-      {showNote && (
+      {/* Status Feedback Message */}
+      {status === 'success' && (
+        <p
+          aria-live="polite"
+          className="mt-2.5 px-1 text-xs sm:text-[13px] font-medium text-emerald-400"
+        >
+          {message}
+        </p>
+      )}
+
+      {status === 'error' && (
+        <p
+          aria-live="polite"
+          className="mt-2.5 px-1 text-xs sm:text-[13px] font-medium text-rose-400"
+        >
+          {message}
+        </p>
+      )}
+
+      {status !== 'success' && status !== 'error' && showNote && (
         <p className="mt-2.5 px-1 text-xs sm:text-[13px] leading-relaxed text-gray-mid/75">
           {newsletter.note}
         </p>
