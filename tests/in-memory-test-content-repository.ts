@@ -272,19 +272,7 @@ export class InMemoryTestContentRepository implements ContentRepository {
         coverImage: n.coverImage,
       }));
 
-    const bookEntries: ScribbleEntry[] = this.books.map((b) => ({
-      id: b.id,
-      type: "book",
-      title: b.title,
-      description: b.description,
-      date: b.date,
-      persona: b.persona,
-      topics: b.tags,
-      href: "/library",
-      author: b.author,
-    }));
-
-    return [...essays, ...noteEntries, ...bookEntries];
+    return [...essays, ...noteEntries];
   }
 
   async getNowEntries(): Promise<NowEntry[]> {

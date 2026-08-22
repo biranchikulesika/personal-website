@@ -309,7 +309,7 @@ test("scribble entries aggregate all content types", async () => {
   const types = new Set(entries.map((e) => e.type));
   assert.ok(types.has("essay"), "scribble should include essays");
   assert.ok(types.has("note"), "scribble should include notes");
-  assert.ok(types.has("book"), "scribble should include books");
+  assert.ok(!types.has("book"), "scribble should not include books");
 
   for (const entry of entries) {
     assert.ok(entry.href, "scribble entry must have href");

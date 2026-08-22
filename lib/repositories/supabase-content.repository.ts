@@ -544,10 +544,9 @@ export class SupabaseContentRepository implements ContentRepository {
   // ── Scribble ───────────────────────────────────────────────────────────
 
   async getScribbleEntries(): Promise<ScribbleEntry[]> {
-    const [posts, notes, books] = await Promise.all([
+    const [posts, notes] = await Promise.all([
       this.getAllPosts(),
       this.getAllNotes(),
-      this.getAllBooks(),
     ]);
 
     const essays: ScribbleEntry[] = posts
@@ -579,21 +578,7 @@ export class SupabaseContentRepository implements ContentRepository {
         topics: note.tags,
         href: `/n/${note.slug}`,
         coverImage: note.coverImage,
-      }));
-
-    const bookEntries: ScribbleEntry[] = books.map((book) => ({
-      id: book.id,
-      type: "book" as const,
-      title: book.title,
-      description: book.description,
-      date: book.date,
-      persona: book.persona,
-      topics: book.tags,
-      href: "/library",
-      author: book.author,
-    }));
-
-    return [...essays, ...noteEntries, ...bookEntries];
+      }));    return [...essays, ...noteEntries];
   }
 
   // ── Now ────────────────────────────────────────────────────────────────

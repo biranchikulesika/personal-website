@@ -1353,8 +1353,16 @@ export function ContentManager({
                       value={bookTitle}
                       onChange={(e) => {
                         setBookTitle(e.target.value);
-                        if (!editingBook && !bookSlug) {
-                          setBookSlug(slugify(e.target.value));
+                        if (!editingBook) {
+                          const base = slugify(e.target.value) || 'untitled-book';
+                          const existingSlugs = books.map((b) => b.slug);
+                          let candidate = base;
+                          let counter = 2;
+                          while (existingSlugs.includes(candidate)) {
+                            candidate = `${base}-${counter}`;
+                            counter++;
+                          }
+                          setBookSlug(candidate);
                         }
                       }}
                       className="w-full rounded-xl border border-tinted/20 bg-night-soft px-3.5 py-2 text-sm text-paper placeholder:text-gray-mid/50 focus:border-tinted/40 focus:outline-none"

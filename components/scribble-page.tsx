@@ -5,7 +5,6 @@ import { useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import type {
   ScribbleEntry,
-  ScribbleEntryType,
   Persona,
 } from '@/lib/types';
 import {
@@ -22,10 +21,9 @@ interface ScribblePageProps {
   entries: ScribbleEntry[];
 }
 
-const TYPE_LABELS: Record<ScribbleEntryType, string> = {
+const TYPE_LABELS: Record<string, string> = {
   essay: 'Essay',
   note: 'Note',
-  book: 'Library',
 };
 
 /**
@@ -35,7 +33,7 @@ function CardMeta({
   type,
   date,
 }: {
-  type: ScribbleEntryType;
+  type: string;
   date: string;
 }) {
   return (
@@ -48,26 +46,6 @@ function CardMeta({
 }
 
 
-
-/**
- * Placeholder cover for book cards, blending softly into the background on all four sides.
- */
-function BookCover({ title, author }: { title: string; author?: string }) {
-  return (
-    <div className="flex min-h-[220px] w-full items-center justify-center overflow-hidden rounded-xl p-4">
-      <div className="flex aspect-[2/3] h-full max-h-32 flex-col justify-between rounded bg-night-soft border border-tinted/20 p-2.5 shadow-sm">
-        <span className="text-center font-serif text-xs italic leading-tight text-paper line-clamp-3">
-          {title}
-        </span>
-        {author && (
-          <span className="truncate text-center text-[10px] text-gray-mid">
-            {author}
-          </span>
-        )}
-      </div>
-    </div>
-  );
-}
 
 function NoteCard({ entry }: { entry: ScribbleEntry }) {
   const snippet = formatNoteSnippet(entry.description, 180);
@@ -120,39 +98,12 @@ function EssayCard({ entry }: { entry: ScribbleEntry }) {
   );
 }
 
-function BookCard({ entry }: { entry: ScribbleEntry }) {
-  return (
-    <article>
-      <Link
-        href={entry.href}
-        className="group block rounded-2xl border border-tinted/20 bg-post-card p-4 shadow-xs transition-all duration-300 hover:scale-[1.02] hover:shadow-md"
-      >
-        <BookCover title={entry.title} author={entry.author} />
-        <div className="mt-3.5">
-          <h3 className="font-serif text-lg font-normal leading-snug text-paper transition-colors duration-300 group-hover:text-accent">
-            {entry.title}
-          </h3>
-          {entry.author && (
-            <p className="mt-0.5 text-xs text-gray-mid">{entry.author}</p>
-          )}
-          <p className="mt-1 text-sm leading-relaxed text-gray-mid">{entry.description}</p>
-          <CardMeta
-            type={entry.type}
-            date={entry.date}
-          />
-        </div>
-      </Link>
-    </article>
-  );
-}
-
 const CARD_BY_TYPE: Record<
-  ScribbleEntryType,
+  string,
   (props: { entry: ScribbleEntry }) => ReactNode
 > = {
   essay: EssayCard,
   note: NoteCard,
-  book: BookCard,
 };
 
 /**
