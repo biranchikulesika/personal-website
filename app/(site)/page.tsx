@@ -4,7 +4,7 @@ import { ContentService } from '@/lib/services/content.service';
 import { SITE_URL, SITE_NAME, SITE_DESCRIPTION } from '@/lib/constants';
 
 export const metadata: Metadata = {
-  title: SITE_NAME,
+  title: { absolute: SITE_NAME },
   description: SITE_DESCRIPTION,
   alternates: { canonical: SITE_URL },
   openGraph: {

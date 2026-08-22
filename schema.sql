@@ -267,6 +267,8 @@ CREATE TABLE IF NOT EXISTS public.subscribers (
 CREATE INDEX IF NOT EXISTS idx_subscribers_email ON public.subscribers(email);
 CREATE INDEX IF NOT EXISTS idx_subscribers_created_at ON public.subscribers(created_at DESC);
 
+GRANT ALL ON TABLE public.subscribers TO anon, authenticated, service_role;
+
 -- ── Row Level Security (RLS) ─────────────────────────────────────────────────
 
 ALTER TABLE public.user_roles ENABLE ROW LEVEL SECURITY;
@@ -386,6 +388,15 @@ DROP POLICY IF EXISTS "Authenticated full access" ON public.contributions;
 DROP POLICY IF EXISTS "Admin access contributions" ON public.contributions;
 CREATE POLICY "Admin access contributions"
   ON public.contributions FOR ALL TO authenticated
+  USING (public.is_admin())
+  WITH CHECK (public.is_admin());
+
+-- ── Subscribers Security Policies ───────────────────────────────────────────
+
+DROP POLICY IF EXISTS "Authenticated full access" ON public.subscribers;
+DROP POLICY IF EXISTS "Admin access subscribers" ON public.subscribers;
+CREATE POLICY "Admin access subscribers"
+  ON public.subscribers FOR ALL TO authenticated
   USING (public.is_admin())
   WITH CHECK (public.is_admin());
 

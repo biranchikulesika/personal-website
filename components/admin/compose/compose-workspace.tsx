@@ -211,16 +211,21 @@ export function ComposeWorkspace({
   );
 
   // Keyboard shortcut listener for Ctrl+S / Cmd+S
+  // Use a ref so the effect only registers/unregisters the listener once,
+  // while always calling the latest save handler.
+  const handleSaveRef = useRef(handleSaveDocument);
+  handleSaveRef.current = handleSaveDocument;
+
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
       if ((e.metaKey || e.ctrlKey) && e.key === "s") {
         e.preventDefault();
-        handleSaveDocument("published");
+        handleSaveRef.current("published");
       }
     }
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  });
+  }, []);
 
   // Resizable split view handlers
   const handleMouseDown = useCallback((e: React.MouseEvent) => {

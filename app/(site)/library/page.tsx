@@ -10,7 +10,7 @@ export const metadata: Metadata = {
     'Books that have shaped thinking — read, on the shelf, or somewhere in between.',
   alternates: { canonical: `${SITE_URL}/library` },
   openGraph: {
-    title: 'Library | Biranchi Kulesika',
+    title: 'Library',
     description:
       'Books that have shaped thinking — read, on the shelf, or somewhere in between.',
     url: `${SITE_URL}/library`,
@@ -20,7 +20,7 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     creator: '@BKulesika',
-    title: 'Library | Biranchi Kulesika',
+    title: 'Library',
     description:
       'Books that have shaped thinking — read, on the shelf, or somewhere in between.',
   },

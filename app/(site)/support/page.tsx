@@ -8,7 +8,7 @@ export const metadata: Metadata = {
     'Support Biranchi Kulesika — fund independent software tools, open essays on Scribble, and thoughtful technology.',
   alternates: { canonical: `${SITE_URL}/support` },
   openGraph: {
-    title: 'Support & Patronage | Biranchi Kulesika',
+    title: 'Support & Patronage',
     description:
       'Support Biranchi Kulesika — fund independent software tools, open essays on Scribble, and thoughtful technology.',
     url: `${SITE_URL}/support`,
@@ -18,7 +18,7 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     creator: '@BKulesika',
-    title: 'Support & Patronage | Biranchi Kulesika',
+    title: 'Support & Patronage',
     description:
       'Support Biranchi Kulesika — fund independent software tools, open essays on Scribble, and thoughtful technology.',
   },

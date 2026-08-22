@@ -295,7 +295,7 @@ test("scribble entries exclude unpublished posts and notes", async () => {
 
 test("not-found metadata sets robots to noindex", async () => {
   const { metadata } = await import("../app/not-found");
-  assert.equal(metadata.title, "Page Not Found | Biranchi Kulesika");
+  assert.deepEqual(metadata.title, { absolute: "Page Not Found" });
   assert.equal(
     metadata.description,
     "The page you are looking for does not exist or has been moved."
