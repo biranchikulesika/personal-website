@@ -71,6 +71,33 @@ export function NoteEditorModal({
       : defaultNoteContent(),
   );
 
+  const hasChanges = Boolean(
+    editingNote &&
+      (title !== editingNote.title ||
+        slug !== editingNote.slug ||
+        subtitle !== (editingNote.subtitle || '') ||
+        description !== editingNote.description ||
+        persona !== editingNote.persona ||
+        status !== (editingNote.status || 'published') ||
+        tagsInput !== editingNote.tags.join(', ') ||
+        date !== editingNote.date ||
+        mdxContent !== editingNote.content.join('\n\n')),
+  );
+
+  function handleDiscard() {
+    if (!editingNote) return;
+    setTitle(editingNote.title);
+    setSlug(editingNote.slug);
+    setSubtitle(editingNote.subtitle || '');
+    setDescription(editingNote.description);
+    setDate(editingNote.date);
+    setPersona(editingNote.persona);
+    setStatus(editingNote.status || 'published');
+    setTagsInput(editingNote.tags.join(', '));
+    setMdxContent(editingNote.content.join('\n\n'));
+    showToast(`Unpublished changes discarded for "${editingNote.title}". Reverted to published version.`);
+  }
+
   function handleSave(e: React.FormEvent) {
     e.preventDefault();
     if (!title.trim()) return;
@@ -297,21 +324,36 @@ export function NoteEditorModal({
             />
           </div>
 
-          <div className="flex items-center justify-end gap-3 pt-4 border-t border-tinted/20">
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded-full px-5 py-2 text-xs font-semibold text-gray-mid hover:text-paper"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={isPending}
-              className="rounded-full bg-accent px-6 py-2.5 text-xs font-semibold text-paper shadow-sm hover:bg-accent-hover transition-colors disabled:opacity-50"
-            >
-              {isPending ? 'Saving Note...' : 'Save Note'}
-            </button>
+          <div className="flex items-center justify-between gap-3 pt-4 border-t border-tinted/20">
+            <div>
+              {hasChanges && (
+                <button
+                  type="button"
+                  onClick={handleDiscard}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-rose-800/40 bg-rose-950/20 px-4 py-2 text-xs font-semibold text-rose-300 hover:bg-rose-950/50 transition-colors"
+                  title="Discard unpublished modifications"
+                >
+                  <span>↺</span>
+                  <span>Discard Changes</span>
+                </button>
+              )}
+            </div>
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={onClose}
+                className="rounded-full px-5 py-2 text-xs font-semibold text-gray-mid hover:text-paper"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={isPending}
+                className="rounded-full bg-accent px-6 py-2.5 text-xs font-semibold text-paper shadow-sm hover:bg-accent-hover transition-colors disabled:opacity-50"
+              >
+                {isPending ? 'Saving Note...' : 'Save Note'}
+              </button>
+            </div>
           </div>
         </form>
       </div>

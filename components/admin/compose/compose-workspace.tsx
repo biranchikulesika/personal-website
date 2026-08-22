@@ -78,6 +78,12 @@ export function ComposeWorkspace({
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const isDraggingRef = useRef(false);
+  const tabCounterRef = useRef(0);
+
   // Create initial tab based on passed document
   const createInitialTab = (): DocumentTab => {
     if (initialDocument?.post) {
@@ -138,11 +144,16 @@ export function ComposeWorkspace({
     if (docType === "now") {
       tabCounterRef.current += 1;
       const n = tabCounterRef.current;
+      const defaultNowDate = new Date().toISOString().slice(0, 7);
+      const defaultNowTitle = new Date().toLocaleDateString("en-US", {
+        month: "long",
+        year: "numeric",
+      });
       return {
         id: `tab-new-now-${n}`,
         docType: "now",
         slug: `now-${n}`,
-        title: "",
+        title: defaultNowTitle,
         subtitle: "",
         description: "",
         status: "published",
@@ -150,7 +161,7 @@ export function ComposeWorkspace({
         content:
           "A short note on what you are reading, exploring, and thinking about this month.",
         isDirty: true,
-        date: new Date().toISOString().slice(0, 7),
+        date: defaultNowDate,
       };
     }
 
@@ -192,14 +203,9 @@ export function ComposeWorkspace({
     "book" | "post" | "note"
   >("book");
   const [isDraftsModalOpen, setIsDraftsModalOpen] = useState(false);
+  const [isDiscardModalOpen, setIsDiscardModalOpen] = useState(false);
   const [draftsSearchQuery, setDraftsSearchQuery] = useState("");
   const { message: toastMessage, showToast } = useToast();
-
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const isDraggingRef = useRef(false);
-  const tabCounterRef = useRef(0);
 
 
 
@@ -385,7 +391,17 @@ export function ComposeWorkspace({
   async function handleSaveDocument(
     statusToSet: "published" | "unpublished" = "published",
   ) {
-    if (!activeTab.title.trim()) {
+    const isNowDoc = activeTab.docType === "now";
+    const effectiveNowTitle =
+      activeTab.title.trim() ||
+      (activeTab.date
+        ? new Date(`${activeTab.date}-01`).toLocaleDateString("en-US", {
+            month: "long",
+            year: "numeric",
+          })
+        : "Timeline Update");
+
+    if (!activeTab.title.trim() && !isNowDoc) {
       showToast("Please provide a document title before saving.");
       return;
     }
@@ -465,7 +481,7 @@ export function ComposeWorkspace({
       } else if (activeTab.docType === "now") {
         const nowPayload: NowEntry = {
           id: activeTab.rawNow?.id || activeTab.slug || `now-${Date.now()}`,
-          title: activeTab.title.trim(),
+          title: effectiveNowTitle,
           date: activeTab.date || new Date().toISOString().slice(0, 7),
           content: activeTab.content.trim(),
         };
@@ -473,12 +489,13 @@ export function ComposeWorkspace({
         const res = await saveNowEntryAction(nowPayload);
         if (res.success && res.entry) {
           updateActiveTab({
+            title: effectiveNowTitle,
             slug: res.entry.id,
             isDirty: false,
             rawNow: res.entry,
           });
           setIsPublishDrawerOpen(false);
-          showToast(`Now entry "${activeTab.title}" saved to the timeline!`);
+          showToast(`Now entry "${effectiveNowTitle}" saved to the timeline!`);
         } else {
           showToast(res.error || "Failed to save now entry");
         }
@@ -540,6 +557,127 @@ export function ComposeWorkspace({
         }
       }
     });
+  }
+
+  // Check if active document has unpublished / unsaved modifications
+  const hasUnpublishedChanges = (() => {
+    if (activeTab.docType === "post" && activeTab.rawPost) {
+      const origContent = sectionsToMarkdown(
+        activeTab.rawPost.intro,
+        activeTab.rawPost.sections,
+      );
+      return (
+        activeTab.isDirty ||
+        activeTab.content !== origContent ||
+        activeTab.title !== activeTab.rawPost.title ||
+        (activeTab.subtitle || "") !== (activeTab.rawPost.subtitle || "") ||
+        (activeTab.description || "") !== (activeTab.rawPost.description || "") ||
+        (activeTab.persona || "builder") !== (activeTab.rawPost.persona || "builder") ||
+        (activeTab.status || "published") !== (activeTab.rawPost.status || "published") ||
+        (activeTab.tags || []).join(",") !== (activeTab.rawPost.tags || []).join(",") ||
+        (activeTab.coverImage || "") !== (activeTab.rawPost.coverImage || "") ||
+        activeTab.slug !== activeTab.rawPost.slug
+      );
+    }
+    if (activeTab.docType === "note" && activeTab.rawNote) {
+      const origContent = activeTab.rawNote.content.join("\n\n");
+      return (
+        activeTab.isDirty ||
+        activeTab.content !== origContent ||
+        activeTab.title !== activeTab.rawNote.title ||
+        (activeTab.subtitle || "") !== (activeTab.rawNote.subtitle || "") ||
+        (activeTab.description || "") !== (activeTab.rawNote.description || "") ||
+        (activeTab.persona || "thinker") !== (activeTab.rawNote.persona || "thinker") ||
+        (activeTab.status || "published") !== (activeTab.rawNote.status || "published") ||
+        (activeTab.tags || []).join(",") !== (activeTab.rawNote.tags || []).join(",") ||
+        (activeTab.coverImage || "") !== (activeTab.rawNote.coverImage || "") ||
+        activeTab.slug !== activeTab.rawNote.slug
+      );
+    }
+    if (activeTab.docType === "now" && activeTab.rawNow) {
+      return (
+        activeTab.isDirty ||
+        activeTab.title !== activeTab.rawNow.title ||
+        (activeTab.date || "") !== (activeTab.rawNow.date || "") ||
+        activeTab.content !== activeTab.rawNow.content
+      );
+    }
+    return activeTab.isDirty;
+  })();
+
+  // Discard handler: revert active tab back to original published / saved state
+  function handleDiscardChanges() {
+    if (activeTab.docType === "post" && activeTab.rawPost) {
+      const p = activeTab.rawPost;
+      updateActiveTab({
+        title: p.title,
+        subtitle: p.subtitle || "",
+        description: p.description,
+        persona: "builder",
+        status: p.status || "published",
+        tags: p.tags || ["essay"],
+        coverImage: p.coverImage,
+        slug: p.slug,
+        content: sectionsToMarkdown(p.intro, p.sections),
+        isDirty: false,
+      });
+      showToast(`Unpublished changes discarded for "${p.title}". Reverted to published version.`);
+    } else if (activeTab.docType === "note" && activeTab.rawNote) {
+      const n = activeTab.rawNote;
+      updateActiveTab({
+        title: n.title,
+        subtitle: n.subtitle || "",
+        description: n.description,
+        persona: n.persona,
+        status: n.status || "published",
+        tags: n.tags || ["note"],
+        coverImage: n.coverImage,
+        slug: n.slug,
+        content: n.content.join("\n\n"),
+        isDirty: false,
+      });
+      showToast(`Unpublished changes discarded for "${n.title}". Reverted to published version.`);
+    } else if (activeTab.docType === "now" && activeTab.rawNow) {
+      const now = activeTab.rawNow;
+      updateActiveTab({
+        title: now.title,
+        date: now.date,
+        content: now.content,
+        isDirty: false,
+      });
+      showToast(`Unpublished changes discarded for "${now.title}".`);
+    } else {
+      const isNote = activeTab.docType === "note";
+      const isNow = activeTab.docType === "now";
+      if (isNow) {
+        updateActiveTab({
+          title: "",
+          subtitle: "",
+          description: "",
+          content: "A short note on what you are reading, exploring, and thinking about this month.",
+          isDirty: false,
+          date: new Date().toISOString().slice(0, 7),
+        });
+      } else {
+        updateActiveTab({
+          slug: isNote ? "new-note" : "new-essay",
+          title: isNote ? "Untitled Note" : "Untitled Essay",
+          subtitle: "",
+          description: "",
+          persona: isNote ? "thinker" : "builder",
+          status: "published",
+          tags: isNote ? ["note"] : ["essay"],
+          coverImage: undefined,
+          content: isNote
+            ? "An atomic note on tools and focus.\n\n> [!TIP]\n> Keep notes concise and focused."
+            : "An opening reflection on technology, craft, and ideas.\n\n## The First Principle\n\nSoftware should feel like an orderly workshop.\n\n> [!NOTE]\n> Taking the slower path builds more resilient systems.",
+          isDirty: false,
+        });
+      }
+      showToast("Unsaved changes discarded.");
+    }
+    setIsDiscardModalOpen(false);
+    setIsPublishDrawerOpen(false);
   }
 
   // Word count & reading time metrics
@@ -854,6 +992,22 @@ export function ComposeWorkspace({
             <span>Split Preview</span>
           </button>
 
+          {/* Discard Unpublished Changes Button */}
+          <button
+            type="button"
+            disabled={!hasUnpublishedChanges}
+            onClick={() => setIsDiscardModalOpen(true)}
+            className="flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-colors border border-tinted/20 bg-night-soft text-paper/70 hover:bg-rose-950/40 hover:text-rose-300 hover:border-rose-800/40 disabled:opacity-30 disabled:pointer-events-none"
+            title={
+              hasUnpublishedChanges
+                ? "Discard unpublished changes and revert to published version"
+                : "No unpublished edits to discard"
+            }
+          >
+            <span>↺</span>
+            <span>Discard</span>
+          </button>
+
           {/* Save Draft Button with Pulse / Check status */}
           <button
             type="button"
@@ -1127,6 +1281,11 @@ export function ComposeWorkspace({
         docType={activeTab.docType}
         date={activeTab.date}
         onDateChange={(date) => updateActiveTab({ date })}
+        hasUnpublishedChanges={hasUnpublishedChanges}
+        onDiscard={() => {
+          setIsPublishDrawerOpen(false);
+          setIsDiscardModalOpen(true);
+        }}
       />
 
       {/* Media Asset Picker Modal */}
@@ -1147,6 +1306,46 @@ export function ComposeWorkspace({
         initialType={embedModalKind}
         onSelect={(snippet) => insertBlock(snippet)}
       />
+
+      {/* Discard Confirmation Modal */}
+      {isDiscardModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/70 backdrop-blur-xs p-4 animate-in fade-in">
+          <div className="w-full max-w-md rounded-2xl border border-tinted/20 bg-ink p-6 shadow-2xl space-y-4 text-paper">
+            <div className="flex items-center gap-3 text-rose-400">
+              <span className="text-xl">↺</span>
+              <h3 className="text-base font-semibold text-paper">
+                Discard Unpublished Changes?
+              </h3>
+            </div>
+            <p className="text-xs leading-relaxed text-ink-soft">
+              Are you sure you want to discard all unpublished edits for{" "}
+              <strong className="text-paper font-semibold">
+                “{activeTab.title || "Untitled"}”
+              </strong>
+              ?
+              {activeTab.rawPost || activeTab.rawNote || activeTab.rawNow
+                ? " All modifications will be reverted back to the published version. This action cannot be undone."
+                : " All unsaved draft content will be reset. This action cannot be undone."}
+            </p>
+            <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-tinted/20">
+              <button
+                type="button"
+                onClick={() => setIsDiscardModalOpen(false)}
+                className="rounded-lg border border-tinted/20 bg-night-soft hover:bg-tinted/10 px-4 py-2 text-xs font-medium text-paper/80 transition-colors"
+              >
+                Keep Editing
+              </button>
+              <button
+                type="button"
+                onClick={handleDiscardChanges}
+                className="rounded-lg bg-rose-600 hover:bg-rose-700 text-paper px-4 py-2 text-xs font-bold transition-colors shadow-sm"
+              >
+                Discard Changes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 5. Open Existing Drafts / Notes Modal (Triggered by Folder Icon) */}
       {isDraftsModalOpen && (
