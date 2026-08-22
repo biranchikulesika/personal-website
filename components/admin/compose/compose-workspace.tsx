@@ -136,10 +136,12 @@ export function ComposeWorkspace({
 
     const docType = initialDocument?.docType || "post";
     if (docType === "now") {
+      tabCounterRef.current += 1;
+      const n = tabCounterRef.current;
       return {
-        id: `tab-new-now-${Date.now()}`,
+        id: `tab-new-now-${n}`,
         docType: "now",
-        slug: `now-${Date.now()}`,
+        slug: `now-${n}`,
         title: "",
         subtitle: "",
         description: "",
@@ -153,8 +155,10 @@ export function ComposeWorkspace({
     }
 
     const isNote = docType === "note";
+    tabCounterRef.current += 1;
+    const n = tabCounterRef.current;
     return {
-      id: `tab-new-${Date.now()}`,
+      id: `tab-new-${n}`,
       docType: isNote ? "note" : "post",
       slug: isNote ? "new-note" : "new-essay",
       title: isNote ? "Untitled Note" : "Untitled Essay",
@@ -195,6 +199,7 @@ export function ComposeWorkspace({
   const containerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const isDraggingRef = useRef(false);
+  const tabCounterRef = useRef(0);
 
 
 
