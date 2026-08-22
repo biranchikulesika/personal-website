@@ -205,7 +205,7 @@ export function ContentManager({
     setBookDescription("");
     setBookDate(new Date().toISOString().split("T")[0]);
     setBookPersona("thinker");
-    setBookTagsInput("philosophy, craft");
+    setBookTagsInput("");
     setBookCover("");
     setBookLink("");
     setIsEditingBook(true);
