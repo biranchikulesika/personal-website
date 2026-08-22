@@ -309,8 +309,7 @@ export function ScribblePage({ entries }: ScribblePageProps) {
             <span className="ml-3 text-sea-blue">{entries.length}</span>
           </h1>
           <p className="mt-2 font-serif text-lg italic text-ink-soft md:text-xl">
-            Essays, notes, and reading — writing and thinking, tended in the
-            open.
+            Writing and thinking, shared openly.
           </p>
         </div>
         <div className="relative w-full max-w-xs pt-1">

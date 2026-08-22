@@ -10,17 +10,17 @@ export const metadata: Metadata = {
     'About Biranchi Kulesika — software developer, writer, and observer of digital life.',
   alternates: { canonical: `${SITE_URL}/about` },
   openGraph: {
-    title: 'About | Biranchi Kulesika',
+    title: 'About',
     description:
       'About Biranchi Kulesika — software developer, writer, and observer of digital life.',
     url: `${SITE_URL}/about`,
     siteName: 'Biranchi Kulesika',
-    images: [{ url: `${SITE_URL}/api/og?title=About%20Biranchi%20Kulesika&type=about`, width: 1200, height: 630, alt: 'About Biranchi Kulesika' }],
+    images: [{ url: `${SITE_URL}/api/og?title=About&type=about`, width: 1200, height: 630, alt: 'About Biranchi Kulesika' }],
   },
   twitter: {
     card: 'summary_large_image',
     creator: '@BKulesika',
-    title: 'About | Biranchi Kulesika',
+    title: 'About',
     description:
       'About Biranchi Kulesika — software developer, writer, and observer of digital life.',
   },

@@ -1,3 +1,4 @@
+import type { ContentRepository } from "../lib/repositories/content.repository";
 import type {
   AppRole,
   BlogPost,
@@ -5,6 +6,7 @@ import type {
   Contribution,
   HomeContent,
   MediaItem,
+  NewsletterSubscriber,
   NoteItem,
   NowEntry,
   PasskeyItem,
@@ -14,9 +16,7 @@ import type {
   UserRole,
   UserSession,
   WritingItem,
-  NewsletterSubscriber,
 } from "../lib/types";
-import type { ContentRepository } from "../lib/repositories/content.repository";
 
 export class InMemoryTestContentRepository implements ContentRepository {
   public posts: BlogPost[] = [];
@@ -95,7 +95,8 @@ export class InMemoryTestContentRepository implements ContentRepository {
       notes: {
         title: "Notes",
         href: "/scribble",
-        subheader: "Short-form thinking",
+        subheader:
+          "Things I want to share, stories, opinions, observations, and thoughts.",
         items: allNotes.filter((n) => n.status !== "unpublished"),
       },
       library,
@@ -107,7 +108,7 @@ export class InMemoryTestContentRepository implements ContentRepository {
     return {
       title: "Writing",
       href: "/scribble",
-      subheader: "Essays on craft, systems, and observation",
+      subheader: "Thoughts and ideas I want to explore and explain",
       items: published.map((p) => ({
         id: p.slug,
         slug: p.slug,
@@ -144,7 +145,10 @@ export class InMemoryTestContentRepository implements ContentRepository {
     return [...this.posts];
   }
 
-  async savePost(post: BlogPost, persona: Persona = "builder"): Promise<BlogPost> {
+  async savePost(
+    post: BlogPost,
+    persona: Persona = "builder",
+  ): Promise<BlogPost> {
     const index = this.posts.findIndex((p) => p.slug === post.slug);
     const item: BlogPost = {
       ...post,
@@ -380,7 +384,7 @@ export class InMemoryTestContentRepository implements ContentRepository {
     const existing = this.contributions.find(
       (c) =>
         (contribution.paymentId && c.paymentId === contribution.paymentId) ||
-        (contribution.orderId && c.orderId === contribution.orderId)
+        (contribution.orderId && c.orderId === contribution.orderId),
     );
     if (existing) return existing;
 
@@ -391,7 +395,7 @@ export class InMemoryTestContentRepository implements ContentRepository {
   async getContribution(id: string): Promise<Contribution | null> {
     return (
       this.contributions.find(
-        (c) => c.id === id || c.paymentId === id || c.orderId === id
+        (c) => c.id === id || c.paymentId === id || c.orderId === id,
       ) ?? null
     );
   }
@@ -421,7 +425,10 @@ export class InMemoryTestContentRepository implements ContentRepository {
     return true;
   }
 
-  async getSessions(userId: string, currentSessionId?: string): Promise<UserSession[]> {
+  async getSessions(
+    userId: string,
+    currentSessionId?: string,
+  ): Promise<UserSession[]> {
     return this.sessions.map((s) => ({
       ...s,
       isCurrent: currentSessionId ? s.id === currentSessionId : s.isCurrent,
@@ -451,14 +458,24 @@ export class InMemoryTestContentRepository implements ContentRepository {
   }
 
   async getConnectedProviders(userId: string): Promise<string[]> {
-    return this.connectedProviders[userId] ?? this.connectedProviders["default"] ?? [];
+    return (
+      this.connectedProviders[userId] ??
+      this.connectedProviders["default"] ??
+      []
+    );
   }
 
-  async setConnectedProviders(userId: string, providers: string[]): Promise<void> {
+  async setConnectedProviders(
+    userId: string,
+    providers: string[],
+  ): Promise<void> {
     this.connectedProviders[userId] = [...providers];
   }
 
-  async addSubscriber(email: string, source: string = "website"): Promise<NewsletterSubscriber> {
+  async addSubscriber(
+    email: string,
+    source: string = "website",
+  ): Promise<NewsletterSubscriber> {
     const normalizedEmail = email.trim().toLowerCase();
     const existing = this.subscribers.find((s) => s.email === normalizedEmail);
     if (existing) {

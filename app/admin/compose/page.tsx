@@ -5,7 +5,7 @@ import { getSupabaseServer } from '@/lib/supabase/server';
 import { ComposeWorkspace } from './compose-workspace-loader';
 
 export const metadata: Metadata = {
-  title: 'MDX Composer | Biranchi Admin',
+  title: { absolute: 'Compose' },
   description: 'Full-page IDE-grade MDX composer for essays, notes, and Now entries.',
   robots: {
     index: false,

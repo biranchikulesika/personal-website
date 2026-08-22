@@ -8,7 +8,7 @@ import { parseUserAgent } from '@/lib/utils';
 import type { PasskeyItem, UserSession } from '@/lib/types';
 
 export const metadata: Metadata = {
-  title: 'Admin Workspace | Biranchi Kulesika',
+  title: { absolute: 'Admin Workspace' },
   description: 'Manage writing, atomic notes, media resources, and admin settings.',
   robots: {
     index: false,

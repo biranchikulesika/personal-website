@@ -6,8 +6,6 @@ import {
   deleteNowEntryAction,
   deletePostAction,
   saveBookAction,
-  saveNoteAction,
-  savePostAction,
   toggleNoteStatusAction,
   togglePostStatusAction,
 } from "@/app/admin/actions";
@@ -28,8 +26,6 @@ import type {
 } from "@/lib/types";
 import {
   formatDisplayDate,
-  markdownToPostSections,
-  sectionsToMarkdown,
   slugify,
 } from "@/lib/utils";
 import Link from "next/link";
@@ -38,7 +34,8 @@ import { useState, useTransition, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { ToastView } from "@/components/ui/toast-view";
 import { BookCoverPicker } from "./book-cover-picker";
-import { MDXEditor } from "./mdx-editor/mdx-editor";
+import { PostEditorModal } from "./mdx-editor/post-editor-modal";
+import { NoteEditorModal } from "./mdx-editor/note-editor-modal";
 
 interface ContentManagerProps {
   initialPosts: BlogPost[];
@@ -102,36 +99,14 @@ export function ContentManager({
     setConfirmAction(confirm);
   }
 
-  // Post Editor State
+  // Post Editor — only the open/close flag and which post is being edited.
+  // All editor state lives inside PostEditorModal.
   const [isEditingPost, setIsEditingPost] = useState(false);
   const [editingPost, setEditingPost] = useState<BlogPost | null>(null);
-  const [postTitle, setPostTitle] = useState("");
-  const [postSlug, setPostSlug] = useState("");
-  const [postDescription, setPostDescription] = useState("");
-  const [postPersona, setPostPersona] = useState<Persona>("builder");
-  const [postStatus, setPostStatus] = useState<"published" | "unpublished">(
-    "published",
-  );
-  const [postTagsInput, setPostTagsInput] = useState("");
-  const [postPlantedAt, setPostPlantedAt] = useState("");
-  const [postLastTendedAt, setPostLastTendedAt] = useState("");
-  const [postAssumedAudience, setPostAssumedAudience] = useState("");
-  const [postMdxContent, setPostMdxContent] = useState("");
 
-  // Note Editor State
+  // Note Editor — same pattern as post.
   const [isEditingNote, setIsEditingNote] = useState(false);
   const [editingNote, setEditingNote] = useState<NoteItem | null>(null);
-  const [noteTitle, setNoteTitle] = useState("");
-  const [noteSlug, setNoteSlug] = useState("");
-  const [noteSubtitle, setNoteSubtitle] = useState("");
-  const [noteDescription, setNoteDescription] = useState("");
-  const [noteDate, setNoteDate] = useState("");
-  const [notePersona, setNotePersona] = useState<Persona>("thinker");
-  const [noteStatus, setNoteStatus] = useState<"published" | "unpublished">(
-    "published",
-  );
-  const [noteTagsInput, setNoteTagsInput] = useState("");
-  const [noteMdxContent, setNoteMdxContent] = useState("");
 
   // Book Editor State
   const [isEditingBook, setIsEditingBook] = useState(false);
@@ -157,199 +132,48 @@ export function ContentManager({
 
 
 
-  // Post Handlers
+  // Post open/create handlers — just set the flag and which post to edit.
   function handleOpenCreatePost() {
     setEditingPost(null);
-    setPostTitle("");
-    setPostSlug("");
-    setPostDescription("");
-    setPostPersona("builder");
-    setPostStatus("published");
-    setPostTagsInput("craft, software, tools");
-    setPostPlantedAt(new Date().toISOString().split("T")[0]);
-    setPostLastTendedAt(new Date().toISOString().split("T")[0]);
-    setPostAssumedAudience("Curious technologists and builders");
-    setPostMdxContent(
-      "An opening reflection on tools, craft, and technology.\n\n## First Principle\n\nWe often build digital things quickly before understanding their long-term impact on our attention.\n\n> [!NOTE]\n> Taking the slower path usually yields more resilient systems.\n\n## The Architecture of Quiet Spaces\n\nSoftware should feel like an orderly workshop, not a crowded marketplace.",
-    );
     setIsEditingPost(true);
   }
 
   function handleOpenEditPost(post: BlogPost) {
     setEditingPost(post);
-    setPostTitle(post.title);
-    setPostSlug(post.slug);
-    setPostDescription(post.description);
-    setPostPersona("builder");
-    setPostStatus(post.status || "published");
-    setPostTagsInput(post.tags.join(", "));
-    setPostPlantedAt(post.publishedAt);
-    setPostLastTendedAt(post.lastEditedAt);
-    setPostAssumedAudience(post.assumedAudience || "");
-    setPostMdxContent(sectionsToMarkdown(post.intro, post.sections));
     setIsEditingPost(true);
   }
 
-  function handleSavePost(e: React.FormEvent) {
-    e.preventDefault();
-    if (!postTitle.trim() || !postSlug.trim()) return;
-
-    const parsedTags = postTagsInput
-      .split(",")
-      .map((t) => t.trim())
-      .filter(Boolean);
-
-    const cleanSlug = slugify(postSlug || postTitle || "untitled-essay");
-    const isTakenByPost = posts.some(
-      (p) => p.slug === cleanSlug && p.slug !== editingPost?.slug,
-    );
-    const isTakenByNote = notes.some((n) => n.slug === cleanSlug);
-    const isTakenByBook = books.some((b) => b.slug === cleanSlug);
-    if (isTakenByPost || isTakenByNote || isTakenByBook) {
-      showToast(
-        `Slug "${cleanSlug}" is already in use. Please choose a unique slug.`,
+  // Post save callback — called by PostEditorModal after successful save.
+  function handlePostSaved(post: BlogPost, oldSlug?: string) {
+    setPosts((prev) => {
+      const filtered = prev.filter(
+        (p) => p.slug !== oldSlug && p.slug !== post.slug,
       );
-      return;
-    }
-
-    const { intro, sections } = markdownToPostSections(postMdxContent);
-
-    const postPayload: BlogPost = {
-      title: postTitle,
-      slug: cleanSlug,
-      description:
-        postDescription || (intro[0] ? intro[0].slice(0, 150) : postTitle),
-      tags: parsedTags.length > 0 ? parsedTags : ["essay"],
-      publishedAt: postPlantedAt || new Date().toISOString().split("T")[0],
-      lastEditedAt: postLastTendedAt || new Date().toISOString().split("T")[0],
-      assumedAudience: postAssumedAudience,
-      intro: intro.length > 0 ? intro : [postDescription],
-      sections:
-        sections.length > 0
-          ? sections
-          : [
-              {
-                id: "section-1",
-                heading: "Overview",
-                paragraphs: [postMdxContent || ""],
-              },
-            ],
-      books: editingPost?.books || [],
-      status: postStatus,
-    };
-
-    startTransition(async () => {
-      if (editingPost && editingPost.slug !== cleanSlug) {
-        await deletePostAction(editingPost.slug);
-      }
-      const res = await savePostAction(postPayload, postPersona);
-      if (res.success && res.post) {
-        setPosts((prev) => {
-          const filtered = prev.filter(
-            (p) => p.slug !== editingPost?.slug && p.slug !== cleanSlug,
-          );
-          return [postPayload, ...filtered];
-        });
-        setIsEditingPost(false);
-        showToast(`Essay "${postTitle}" saved successfully with MDX!`);
-      } else {
-        showToast(res.error || "Failed to save post");
-      }
+      return [post, ...filtered];
     });
+    setIsEditingPost(false);
   }
 
+  // Note open/create handlers — just set the flag and which note to edit.
   function handleOpenCreateNote() {
     setEditingNote(null);
-    setNoteTitle("");
-    setNoteSlug("");
-    setNoteSubtitle("");
-    setNoteDescription("");
-    setNoteDate(new Date().toISOString().split("T")[0]);
-    setNotePersona("thinker");
-    setNoteStatus("published");
-    setNoteTagsInput("notes, thoughts");
-    setNoteMdxContent(
-      "An atomic thought or brief observation.\n\n> [!TIP]\n> Keep notes focused on a single coherent idea.",
-    );
     setIsEditingNote(true);
   }
 
   function handleOpenEditNote(note: NoteItem) {
     setEditingNote(note);
-    setNoteTitle(note.title);
-    setNoteSlug(note.slug);
-    setNoteSubtitle(note.subtitle || "");
-    setNoteDescription(note.description);
-    setNoteDate(note.date);
-    setNotePersona(note.persona);
-    setNoteStatus(note.status || "published");
-    setNoteTagsInput(note.tags.join(", "));
-    setNoteMdxContent(note.content.join("\n\n"));
     setIsEditingNote(true);
   }
 
-  function handleSaveNote(e: React.FormEvent) {
-    e.preventDefault();
-    if (!noteTitle.trim()) return;
-
-    const cleanSlug = slugify(noteSlug || noteTitle || "untitled-note");
-    const isTakenByNote = notes.some(
-      (n) => n.slug === cleanSlug && n.slug !== editingNote?.slug,
-    );
-    const isTakenByPost = posts.some((p) => p.slug === cleanSlug);
-    const isTakenByBook = books.some((b) => b.slug === cleanSlug);
-    if (isTakenByNote || isTakenByPost || isTakenByBook) {
-      showToast(
-        `Slug "${cleanSlug}" is already in use. Please choose a unique slug.`,
+  // Note save callback — called by NoteEditorModal after successful save.
+  function handleNoteSaved(note: NoteItem, oldSlug?: string) {
+    setNotes((prev) => {
+      const filtered = prev.filter(
+        (n) => n.slug !== oldSlug && n.slug !== note.slug,
       );
-      return;
-    }
-
-    const parsedTags = noteTagsInput
-      .split(",")
-      .map((t) => t.trim())
-      .filter(Boolean);
-
-    const parsedParagraphs = noteMdxContent
-      .split("\n\n")
-      .map((p) => p.trim())
-      .filter(Boolean);
-
-    const notePayload: NoteItem = {
-      id: editingNote ? editingNote.id : `note-${Date.now()}`,
-      title: noteTitle,
-      slug: cleanSlug,
-      subtitle: noteSubtitle.trim() || undefined,
-      description:
-        noteDescription ||
-        noteSubtitle ||
-        (parsedParagraphs[0] ? parsedParagraphs[0].slice(0, 120) : noteTitle),
-      content:
-        parsedParagraphs.length > 0 ? parsedParagraphs : [noteDescription],
-      date: noteDate || new Date().toISOString().split("T")[0],
-      persona: notePersona,
-      tags: parsedTags.length > 0 ? parsedTags : ["note"],
-      status: noteStatus,
-    };
-
-    startTransition(async () => {
-      if (editingNote && editingNote.slug !== cleanSlug) {
-        await deleteNoteAction(editingNote.slug);
-      }
-      const res = await saveNoteAction(notePayload);
-      if (res.success && res.note) {
-        setNotes((prev) => {
-          const filtered = prev.filter(
-            (n) => n.slug !== editingNote?.slug && n.slug !== cleanSlug,
-          );
-          return [notePayload, ...filtered];
-        });
-        setIsEditingNote(false);
-        showToast(`Note "${noteTitle}" saved successfully!`);
-      } else {
-        showToast(res.error || "Failed to save note");
-      }
+      return [note, ...filtered];
     });
+    setIsEditingNote(false);
   }
 
   function handleToggleNoteStatus(slug: string) {
@@ -1458,381 +1282,31 @@ export function ContentManager({
         </div>
       )}
 
-      {/* Full Essay Composer Modal with MDX Editor */}
+      {/* Post Editor Modal — self-contained, does not cause ContentManager re-renders */}
       {isEditingPost && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/70 p-3 sm:p-6 backdrop-blur-xs">
-          <div className="relative my-4 max-h-[96vh] w-full max-w-6xl overflow-y-auto rounded-3xl border border-tinted/20 bg-night p-6 shadow-2xl sm:p-8">
-            <div className="flex items-center justify-between border-b border-tinted/20 pb-4">
-              <div>
-                <h3 className="font-serif text-2xl font-normal text-paper">
-                  {editingPost ? "Edit Post" : "New Post"}
-                </h3>
-                <p className="mt-0.5 text-xs text-gray-mid">
-                  Author long-form essays with live split-view markdown and rich
-                  component insertions.
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsEditingPost(false)}
-                className="rounded-full p-2 text-gray-mid hover:bg-night-soft hover:text-paper"
-              >
-                ✕
-              </button>
-            </div>
-
-            <form onSubmit={handleSavePost} className="mt-6 space-y-6">
-              {/* Metadata row: Title & Slug */}
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div>
-                  <label htmlFor="post-title" className="block text-xs font-semibold uppercase tracking-wider text-gray-mid">
-                    Title
-                  </label>
-                  <input
-                    id="post-title"
-                    type="text"
-                    required
-                    placeholder="Essay Title..."
-                    value={postTitle}
-                    onChange={(e) => {
-                      setPostTitle(e.target.value);
-                      if (!editingPost && !postSlug) {
-                        setPostSlug(slugify(e.target.value));
-                      }
-                    }}
-                    className="mt-1.5 w-full rounded-xl border border-tinted/20 bg-night-soft px-3.5 py-2 text-sm text-paper placeholder:text-gray-mid/50 focus:border-tinted/40 focus:outline-none"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="post-slug" className="block text-xs font-semibold uppercase tracking-wider text-gray-mid">
-                    Slug
-                  </label>
-                  <input
-                    id="post-slug"
-                    type="text"
-                    required
-                    placeholder="essay-slug-url"
-                    value={postSlug}
-                    onChange={(e) => setPostSlug(slugify(e.target.value))}
-                    className="mt-1.5 w-full rounded-xl border border-tinted/20 bg-night-soft px-3.5 py-2 font-mono text-sm text-paper placeholder:text-gray-mid/50 focus:border-tinted/40 focus:outline-none"
-                  />
-                </div>
-              </div>
-
-              {/* Persona, Status, Dates & Tags row */}
-              <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-                <div>
-                  <label htmlFor="post-status" className="block text-xs font-semibold uppercase tracking-wider text-gray-mid">
-                    Status
-                  </label>
-                  <select
-                    id="post-status"
-                    value={postStatus}
-                    onChange={(e) =>
-                      setPostStatus(
-                        e.target.value as "published" | "unpublished",
-                      )
-                    }
-                    className="mt-1.5 w-full rounded-xl border border-tinted/20 bg-night-soft px-3.5 py-2 text-xs text-paper focus:border-tinted/40 focus:outline-none"
-                  >
-                    <option value="published" className="bg-night text-paper">
-                      Published
-                    </option>
-                    <option value="unpublished" className="bg-night text-paper">
-                      Draft
-                    </option>
-                  </select>
-                </div>
-                <div>
-                  <label htmlFor="post-persona" className="block text-xs font-semibold uppercase tracking-wider text-gray-mid">
-                    Persona Theme
-                  </label>
-                  <select
-                    id="post-persona"
-                    value={postPersona}
-                    onChange={(e) => setPostPersona(e.target.value as Persona)}
-                    className="mt-1.5 w-full rounded-xl border border-tinted/20 bg-night-soft px-3.5 py-2 text-xs text-paper focus:border-tinted/40 focus:outline-none"
-                  >
-                    <option value="builder" className="bg-night text-paper">
-                      Builder
-                    </option>
-                    <option value="operator" className="bg-night text-paper">
-                      Operator
-                    </option>
-                    <option value="thinker" className="bg-night text-paper">
-                      Thinker
-                    </option>
-                    <option value="wanderer" className="bg-night text-paper">
-                      Wanderer
-                    </option>
-                  </select>
-                </div>
-                <div>
-                  <label htmlFor="post-planted-date" className="block text-xs font-semibold uppercase tracking-wider text-gray-mid">
-                    Planted Date
-                  </label>
-                  <input
-                    id="post-planted-date"
-                    type="date"
-                    value={postPlantedAt}
-                    onChange={(e) => setPostPlantedAt(e.target.value)}
-                    className="mt-1.5 w-full rounded-xl border border-tinted/20 bg-night-soft px-3.5 py-2 text-xs text-paper focus:border-tinted/40 focus:outline-none"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="post-tags" className="block text-xs font-semibold uppercase tracking-wider text-gray-mid">
-                    Tags
-                  </label>
-                  <input
-                    id="post-tags"
-                    type="text"
-                    placeholder="craft, tools, web"
-                    value={postTagsInput}
-                    onChange={(e) => setPostTagsInput(e.target.value)}
-                    className="mt-1.5 w-full rounded-xl border border-tinted/20 bg-night-soft px-3.5 py-2 text-xs text-paper placeholder:text-gray-mid/50 focus:border-tinted/40 focus:outline-none"
-                  />
-                </div>
-              </div>
-
-              {/* Summary / Excerpt */}
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-gray-mid">
-                  Summary / Excerpt
-                </label>
-                <input
-                  type="text"
-                  placeholder="Short one-line synopsis for cards..."
-                  value={postDescription}
-                  onChange={(e) => setPostDescription(e.target.value)}
-                  className="mt-1.5 w-full rounded-xl border border-tinted/20 bg-night-soft px-3.5 py-2 text-sm text-paper placeholder:text-gray-mid/50 focus:border-tinted/40 focus:outline-none"
-                />
-              </div>
-
-              {/* Rich MDX Editor */}
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-gray-mid mb-1.5">
-                  Essay Body (Markdown & MDX)
-                </label>
-                <MDXEditor
-                  initialContent={postMdxContent}
-                  title={postTitle}
-                  subtitle={postDescription}
-                  persona={postPersona}
-                  date={postPlantedAt}
-                  mediaItems={mediaItems}
-                  embedBooks={books}
-                  embedPosts={posts}
-                  embedNotes={notes}
-                  onChange={(val) => setPostMdxContent(val)}
-                  className="h-[520px]"
-                />
-              </div>
-
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-tinted/20">
-                <button
-                  type="button"
-                  onClick={() => setIsEditingPost(false)}
-                  className="rounded-full px-5 py-2 text-xs font-semibold text-gray-mid hover:text-paper"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isPending}
-                  className="rounded-full bg-accent px-6 py-2.5 text-xs font-semibold text-paper shadow-sm hover:bg-accent-hover transition-colors disabled:opacity-50"
-                >
-                  {isPending ? "Saving Essay..." : "Save Essay"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+        <PostEditorModal
+          editingPost={editingPost}
+          allPosts={posts}
+          allNotes={notes}
+          allBooks={books}
+          mediaItems={mediaItems}
+          onSaved={handlePostSaved}
+          onClose={() => setIsEditingPost(false)}
+          showToast={showToast}
+        />
       )}
 
-      {/* Note Composer Modal with MDX Editor */}
+      {/* Note Editor Modal — self-contained, does not cause ContentManager re-renders */}
       {isEditingNote && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/70 p-3 sm:p-6 backdrop-blur-xs">
-          <div className="relative my-4 max-h-[96vh] w-full max-w-5xl overflow-y-auto rounded-3xl border border-tinted/20 bg-night p-6 shadow-2xl sm:p-8">
-            <div className="flex items-center justify-between border-b border-tinted/20 pb-4">
-              <div>
-                <h3 className="font-serif text-2xl font-normal text-paper">
-                  {editingNote ? "Edit Note" : "New Note"}
-                </h3>
-                <p className="mt-0.5 text-xs text-gray-mid">
-                  Capture an atomic thought or observation with live MDX
-                  preview.
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsEditingNote(false)}
-                className="rounded-full p-2 text-gray-mid hover:bg-night-soft hover:text-paper"
-              >
-                ✕
-              </button>
-            </div>
-
-            <form onSubmit={handleSaveNote} className="mt-6 space-y-6">
-              {/* Metadata: Title, Slug, Status, Persona */}
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div>
-                  <label htmlFor="note-title" className="block text-xs font-semibold uppercase tracking-wider text-gray-mid">
-                    Title
-                  </label>
-                  <input
-                    id="note-title"
-                    type="text"
-                    required
-                    placeholder="Note title..."
-                    value={noteTitle}
-                    onChange={(e) => {
-                      setNoteTitle(e.target.value);
-                      if (!editingNote && !noteSlug) {
-                        setNoteSlug(slugify(e.target.value));
-                      }
-                    }}
-                    className="mt-1.5 w-full rounded-xl border border-tinted/20 bg-night-soft px-3.5 py-2 text-sm text-paper placeholder:text-gray-mid/50 focus:border-tinted/40 focus:outline-none"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="note-slug" className="block text-xs font-semibold uppercase tracking-wider text-gray-mid">
-                    Slug
-                  </label>
-                  <input
-                    id="note-slug"
-                    type="text"
-                    required
-                    placeholder="note-slug"
-                    value={noteSlug}
-                    onChange={(e) => setNoteSlug(slugify(e.target.value))}
-                    className="mt-1.5 w-full rounded-xl border border-tinted/20 bg-night-soft px-3.5 py-2 font-mono text-sm text-paper placeholder:text-gray-mid/50 focus:border-tinted/40 focus:outline-none"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label htmlFor="note-subtitle" className="block text-xs font-semibold uppercase tracking-wider text-gray-mid">
-                  Subtitle (Optional)
-                </label>
-                <input
-                  id="note-subtitle"
-                  type="text"
-                  placeholder="Short subtitle or core premise..."
-                  value={noteSubtitle}
-                  onChange={(e) => setNoteSubtitle(e.target.value)}
-                  className="mt-1.5 w-full rounded-xl border border-tinted/20 bg-night-soft px-3.5 py-2 text-sm text-paper placeholder:text-gray-mid/50 focus:border-tinted/40 focus:outline-none"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-                <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-gray-mid">
-                    Status
-                  </label>
-                  <select
-                    value={noteStatus}
-                    onChange={(e) =>
-                      setNoteStatus(
-                        e.target.value as "published" | "unpublished",
-                      )
-                    }
-                    className="mt-1.5 w-full rounded-xl border border-tinted/20 bg-night-soft px-3.5 py-2 text-xs text-paper focus:border-tinted/40 focus:outline-none"
-                  >
-                    <option value="published" className="bg-night text-paper">
-                      Published
-                    </option>
-                    <option value="unpublished" className="bg-night text-paper">
-                      Draft
-                    </option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-gray-mid">
-                    Persona Theme
-                  </label>
-                  <select
-                    value={notePersona}
-                    onChange={(e) => setNotePersona(e.target.value as Persona)}
-                    className="mt-1.5 w-full rounded-xl border border-tinted/20 bg-night-soft px-3.5 py-2 text-xs text-paper focus:border-tinted/40 focus:outline-none"
-                  >
-                    <option value="builder" className="bg-night text-paper">
-                      Builder
-                    </option>
-                    <option value="operator" className="bg-night text-paper">
-                      Operator
-                    </option>
-                    <option value="thinker" className="bg-night text-paper">
-                      Thinker
-                    </option>
-                    <option value="wanderer" className="bg-night text-paper">
-                      Wanderer
-                    </option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-gray-mid">
-                    Date
-                  </label>
-                  <input
-                    type="date"
-                    value={noteDate}
-                    onChange={(e) => setNoteDate(e.target.value)}
-                    className="mt-1.5 w-full rounded-xl border border-tinted/20 bg-night-soft px-3.5 py-2 text-xs text-paper focus:border-tinted/40 focus:outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-gray-mid">
-                    Tags
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="philosophy, web"
-                    value={noteTagsInput}
-                    onChange={(e) => setNoteTagsInput(e.target.value)}
-                    className="mt-1.5 w-full rounded-xl border border-tinted/20 bg-night-soft px-3.5 py-2 text-xs text-paper placeholder:text-gray-mid/50 focus:border-tinted/40 focus:outline-none"
-                  />
-                </div>
-              </div>
-
-              {/* MDX Note Editor */}
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-gray-mid mb-1.5">
-                  Note Content (Markdown & MDX)
-                </label>
-                <MDXEditor
-                  initialContent={noteMdxContent}
-                  title={noteTitle}
-                  subtitle={noteDescription}
-                  persona={notePersona}
-                  date={noteDate}
-                  mediaItems={mediaItems}
-                  embedBooks={initialBooks}
-                  embedPosts={initialPosts}
-                  embedNotes={initialNotes}
-                  onChange={(val) => setNoteMdxContent(val)}
-                  className="h-[440px]"
-                />
-              </div>
-
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-tinted/20">
-                <button
-                  type="button"
-                  onClick={() => setIsEditingNote(false)}
-                  className="rounded-full px-5 py-2 text-xs font-semibold text-gray-mid hover:text-paper"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isPending}
-                  className="rounded-full bg-accent px-6 py-2.5 text-xs font-semibold text-paper shadow-sm hover:bg-accent-hover transition-colors disabled:opacity-50"
-                >
-                  {isPending ? "Saving Note..." : "Save Note"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+        <NoteEditorModal
+          editingNote={editingNote}
+          allNotes={notes}
+          allPosts={posts}
+          allBooks={books}
+          onSaved={handleNoteSaved}
+          onClose={() => setIsEditingNote(false)}
+          showToast={showToast}
+        />
       )}
 
       {/* Book Editor Modal */}
