@@ -19,8 +19,6 @@ interface HomeOverviewProps {
   media: MediaItem[];
   orphanedMedia: MediaItem[];
   nowEntries: NowEntry[];
-  featuredPostSlugs: string[];
-  featuredBookSlugs: string[];
   subscribers?: NewsletterSubscriber[];
   userName: string;
   userEmail: string;

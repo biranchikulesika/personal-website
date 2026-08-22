@@ -103,8 +103,6 @@ export default async function AdminPage() {
     media,
     orphanedMedia,
     nowEntries,
-    featuredPostSlugs,
-    featuredBookSlugs,
     passkeys,
     sessions,
     subscribers,
@@ -115,8 +113,6 @@ export default async function AdminPage() {
     contentService.getMedia(),
     contentService.getOrphanedMedia(),
     contentService.getNowEntries(),
-    contentService.getFeaturedPosts(),
-    contentService.getFeaturedBooks(),
     contentService.getPasskeys(user.id),
     contentService.getSessions(user.id, 'sess-current'),
     contentService.getSubscribers(),
@@ -130,8 +126,6 @@ export default async function AdminPage() {
       initialMedia={media}
       initialOrphanedMedia={orphanedMedia}
       initialNowEntries={nowEntries}
-      initialFeaturedPostSlugs={featuredPostSlugs}
-      initialFeaturedBookSlugs={featuredBookSlugs}
       initialSubscribers={subscribers}
       initialPasskeys={passkeys}
       initialConnectedProviders={connectedProviders}
