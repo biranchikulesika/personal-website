@@ -167,7 +167,7 @@ export async function GET(request: NextRequest) {
       const service = new ContentService();
       const liveEntries = await service.getScribbleEntries();
       if (liveEntries?.length) {
-        entries = liveEntries.slice(0, 4);
+        entries = liveEntries.slice(0, 3);
         totalCount = liveEntries.length;
       }
     } catch {
@@ -179,25 +179,25 @@ export async function GET(request: NextRequest) {
         {
           id: 's1',
           title: 'On Simplicity and Systems',
-          description: 'Reflections on reducing complexity and building durable tools.',
+          description: 'Reflections on reducing cognitive friction and crafting software that lasts.',
           type: 'essay',
-          date: 'Aug 2026',
+          date: '',
           persona: 'Builder',
         },
         {
           id: 's2',
           title: 'Why we write things down',
-          description: 'Writing as an extension of thinking and clarity.',
+          description: 'Writing is not the artifact of thinking — writing is thinking itself.',
           type: 'note',
-          date: 'Aug 2026',
+          date: '',
           persona: 'Thinker',
         },
         {
           id: 's3',
-          title: 'The craft of small software',
-          description: 'Tools designed for attention and intentional use.',
+          title: 'The craft of small tools',
+          description: 'Software built with care and restraint rather than runaway complexity.',
           type: 'essay',
-          date: 'Jul 2026',
+          date: '',
           persona: 'Craftsman',
         },
       ];
@@ -907,6 +907,12 @@ function generateScribbleOG({
     'Writing and thinking, shared openly. Essays, observations, and atomic notes on software, systems, and craft.';
   const featured = entries.slice(0, 3);
 
+  const cardAccents = [
+    { borderLeft: '4px solid #D97757', color: '#D97757', rot: -2.5 },
+    { borderLeft: '4px solid #04A4BA', color: '#04A4BA', rot: 1.5 },
+    { borderLeft: '4px solid #788C5D', color: '#788C5D', rot: -1.0 },
+  ];
+
   return new ImageResponse(
     (
       <div
@@ -942,7 +948,7 @@ function generateScribbleOG({
             display: 'flex',
             flexDirection: 'column',
             justifyContent: 'space-between',
-            flex: '0 0 50%',
+            flex: '0 0 48%',
             padding: '52px 64px 48px',
             position: 'relative',
           }}
@@ -1016,7 +1022,7 @@ function generateScribbleOG({
                 fontFamily: 'sans-serif',
                 color: '#B0AEA5',
                 lineHeight: 1.45,
-                maxWidth: '460px',
+                maxWidth: '440px',
               }}
             >
               {desc}
@@ -1044,15 +1050,15 @@ function generateScribbleOG({
           </div>
         </div>
 
-        {/* Right column — dynamic ledger cards stack */}
+        {/* Right column — dynamic editorial ledger card composition */}
         <div
           style={{
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            flex: '0 0 50%',
+            flex: '0 0 52%',
             position: 'relative',
-            paddingRight: '56px',
+            paddingRight: '48px',
           }}
         >
           {/* Staggered layered ledger cards */}
@@ -1060,34 +1066,32 @@ function generateScribbleOG({
             style={{
               display: 'flex',
               flexDirection: 'column',
-              gap: '16px',
+              gap: '14px',
               width: '100%',
-              maxWidth: '440px',
+              maxWidth: '480px',
               position: 'relative',
-              transform: 'rotate(-2deg)',
             }}
           >
-            {featured.map((entry, i) => (
-              <div
-                key={entry.id || i}
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  justifyContent: 'space-between',
-                  background: '#1c1c1a',
-                  border: '1px solid rgba(250,249,245,0.12)',
-                  borderRadius: '14px',
-                  padding: '18px 22px',
-                  boxShadow: '0 12px 28px rgba(0,0,0,0.4)',
-                  transform: `rotate(${[-1, 1.5, -0.5][i] || 0}deg)`,
-                }}
-              >
+            {featured.map((entry, i) => {
+              const accent = cardAccents[i] || cardAccents[0];
+              const snippet = entry.description
+                ? entry.description.slice(0, 95)
+                : '';
+
+              return (
                 <div
+                  key={entry.id || i}
                   style={{
                     display: 'flex',
-                    alignItems: 'center',
+                    flexDirection: 'column',
                     justifyContent: 'space-between',
-                    marginBottom: '8px',
+                    background: '#191917',
+                    border: '1px solid rgba(250,249,245,0.13)',
+                    borderLeft: accent.borderLeft,
+                    borderRadius: '12px',
+                    padding: '16px 20px',
+                    boxShadow: '0 14px 30px rgba(0,0,0,0.5)',
+                    transform: `rotate(${accent.rot}deg)`,
                   }}
                 >
                   <div
@@ -1095,13 +1099,14 @@ function generateScribbleOG({
                       display: 'flex',
                       alignItems: 'center',
                       gap: '8px',
+                      marginBottom: '6px',
                     }}
                   >
                     <span
                       style={{
                         fontSize: '11px',
                         fontFamily: 'sans-serif',
-                        color: entry.type === 'essay' ? '#D97757' : '#04A4BA',
+                        color: accent.color,
                         textTransform: 'uppercase',
                         letterSpacing: '0.12em',
                         fontWeight: 600,
@@ -1114,7 +1119,7 @@ function generateScribbleOG({
                         style={{
                           fontSize: '11px',
                           fontFamily: 'sans-serif',
-                          color: '#B0AEA5',
+                          color: '#8A8780',
                           textTransform: 'capitalize',
                         }}
                       >
@@ -1122,31 +1127,36 @@ function generateScribbleOG({
                       </span>
                     )}
                   </div>
-                  <span
+
+                  <div
                     style={{
-                      fontSize: '11px',
-                      fontFamily: 'sans-serif',
-                      color: '#8A8780',
+                      display: 'flex',
+                      fontSize: '18px',
+                      fontFamily: 'serif',
+                      lineHeight: 1.25,
+                      color: '#FAF9F5',
+                      marginBottom: snippet ? '6px' : '0',
                     }}
                   >
-                    {entry.date}
-                  </span>
-                </div>
+                    {entry.title}
+                  </div>
 
-                <div
-                  style={{
-                    display: 'flex',
-                    fontSize: '17px',
-                    fontFamily: 'serif',
-                    lineHeight: 1.3,
-                    color: '#FAF9F5',
-                    overflow: 'hidden',
-                  }}
-                >
-                  {entry.title}
+                  {snippet && (
+                    <div
+                      style={{
+                        display: 'flex',
+                        fontSize: '13px',
+                        fontFamily: 'sans-serif',
+                        color: '#9E9C94',
+                        lineHeight: 1.4,
+                      }}
+                    >
+                      {snippet}…
+                    </div>
+                  )}
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </div>
