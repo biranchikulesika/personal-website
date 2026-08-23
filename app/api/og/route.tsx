@@ -23,14 +23,6 @@ export async function OPTIONS() {
 
 /**
  * Dynamic OG image generation.
- *
- * Modes:
- *   1. With ?slug=<post-slug>: Resolves the post/note via the service layer,
- *      fetches its cover artwork, and generates a composed 1200×630 image.
- *   2. With ?type=about|library|scribble|now: Generates page-specific OG
- *      images that pull live data from the content layer.
- *   3. Without slug or page type: Generates a default OG image using
- *      query params (title, description, type).
  */
 export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl;
@@ -42,48 +34,57 @@ export async function GET(request: NextRequest) {
     const typeParam = searchParams.get('type');
 
     if (typeParam === 'note') {
+      try {
+        const note = await service.getNote(slug);
+        if (note) {
+          const personaLabel = note.persona ? (PERSONA_LABELS[note.persona] ?? note.persona) : '';
+          const coverImageB64 = await resolveCoverImage(note.coverImage);
+          return generatePostOG({
+            title: note.title,
+            description: note.subtitle || note.description || '',
+            typeLabel: 'Note',
+            personaLabel,
+            coverImageB64,
+            hasCover: Boolean(coverImageB64),
+          });
+        }
+      } catch {
+        // fallback
+      }
+      return generateFallbackOG();
+    }
+
+    try {
+      const post = await service.getPost(slug);
+      if (post) {
+        const personaLabel = post.persona ? PERSONA_LABELS[post.persona] : '';
+        const coverImageB64 = await resolveCoverImage(post.coverImage);
+
+        return generatePostOG({
+          title: post.title,
+          description: post.subtitle || post.description || '',
+          typeLabel: 'Essay',
+          personaLabel,
+          coverImageB64,
+          hasCover: Boolean(coverImageB64),
+        });
+      }
+
       const note = await service.getNote(slug);
-      if (!note) return generateFallbackOG();
-      const personaLabel = note.persona ? (PERSONA_LABELS[note.persona] ?? note.persona) : '';
-      const coverImageB64 = await resolveCoverImage(note.coverImage);
-      return generatePostOG({
-        title: note.title,
-        description: note.subtitle || note.description || '',
-        typeLabel: 'Note',
-        personaLabel,
-        coverImageB64,
-        hasCover: Boolean(coverImageB64),
-      });
-    }
-
-    const post = await service.getPost(slug);
-
-    if (post) {
-      const personaLabel = post.persona ? PERSONA_LABELS[post.persona] : '';
-      const coverImageB64 = await resolveCoverImage(post.coverImage);
-
-      return generatePostOG({
-        title: post.title,
-        description: post.subtitle || post.description || '',
-        typeLabel: 'Essay',
-        personaLabel,
-        coverImageB64,
-        hasCover: Boolean(coverImageB64),
-      });
-    }
-
-    const note = await service.getNote(slug);
-    if (note) {
-      const personaLabel = note.persona ? (PERSONA_LABELS[note.persona] ?? note.persona) : '';
-      const coverImageB64 = await resolveCoverImage(note.coverImage);
-      return generatePostOG({
-        title: note.title,
-        description: note.subtitle || note.description || '',
-        typeLabel: 'Note',
-        personaLabel,
-        coverImageB64,
-        hasCover: Boolean(coverImageB64),
-      });
+      if (note) {
+        const personaLabel = note.persona ? (PERSONA_LABELS[note.persona] ?? note.persona) : '';
+        const coverImageB64 = await resolveCoverImage(note.coverImage);
+        return generatePostOG({
+          title: note.title,
+          description: note.subtitle || note.description || '',
+          typeLabel: 'Note',
+          personaLabel,
+          coverImageB64,
+          hasCover: Boolean(coverImageB64),
+        });
+      }
+    } catch {
+      // fallback
     }
 
     return generateFallbackOG();
@@ -93,72 +94,155 @@ export async function GET(request: NextRequest) {
   const type = searchParams.get('type') || '';
 
   if (type === 'about') {
+    let siteName = SITE_NAME;
     try {
       const service = new ContentService();
       const site = service.getSiteContent();
-      const description = searchParams.get('description') || '';
-      const images = await resolveAboutImages();
-      return generateAboutOG({
-        title: 'About',
-        description,
-        images,
-        siteName: site.identity.name,
-      });
+      if (site?.identity?.name) siteName = site.identity.name;
     } catch {
-      return generateFallbackOG();
+      // Use fallback
     }
+
+    const description = searchParams.get('description') || '';
+    const images = await resolveAboutImages();
+    return generateAboutOG({
+      title: 'About',
+      description,
+      images,
+      siteName,
+    });
   }
 
   if (type === 'library') {
+    let books: { id: string; title: string; author: string; cover?: string }[] = [];
+    let title = 'Library';
+    let description = searchParams.get('description') || '';
+    let totalCount = 0;
+
     try {
       const service = new ContentService();
       const library = await service.getLibrary();
-      const description = searchParams.get('description') || '';
-      const books = selectBooksForOG(library.items);
-      const coverImages = await resolveBookCovers(books);
-      return generateLibraryOG({
-        title: library.title,
-        description,
-        books,
-        coverImages,
-        totalCount: library.items.length,
-      });
+      if (library?.items?.length) {
+        title = library.title || 'Library';
+        description = description || library.subheader || '';
+        books = selectBooksForOG(library.items);
+        totalCount = library.items.length;
+      }
     } catch {
-      return generateFallbackOG();
+      // Database unavailable, use curated defaults
     }
+
+    if (books.length === 0) {
+      books = [
+        { id: 'b1', title: 'Thinking in Systems', author: 'Donella H. Meadows' },
+        { id: 'b2', title: 'Crafting Interpreters', author: 'Robert Nystrom' },
+        { id: 'b3', title: 'The Pragmatic Programmer', author: 'David Thomas & Andrew Hunt' },
+      ];
+      totalCount = books.length;
+    }
+
+    const coverImages = await resolveBookCovers(books);
+    return generateLibraryOG({
+      title,
+      description,
+      books,
+      coverImages,
+      totalCount,
+    });
   }
 
   if (type === 'scribble') {
+    let entries: {
+      id: string;
+      title: string;
+      description: string;
+      type: string;
+      date: string;
+      persona?: string;
+    }[] = [];
+    const description = searchParams.get('description') || '';
+    let totalCount = 0;
+
     try {
       const service = new ContentService();
-      const entries = await service.getScribbleEntries();
-      const description = searchParams.get('description') || '';
-      return generateScribbleOG({
-        title: 'Scribble',
-        description,
-        entries: entries.slice(0, 4),
-        totalCount: entries.length,
-      });
+      const liveEntries = await service.getScribbleEntries();
+      if (liveEntries?.length) {
+        entries = liveEntries.slice(0, 4);
+        totalCount = liveEntries.length;
+      }
     } catch {
-      return generateFallbackOG();
+      // Database unavailable, use curated defaults
     }
+
+    if (entries.length === 0) {
+      entries = [
+        {
+          id: 's1',
+          title: 'On Simplicity and Systems',
+          description: 'Reflections on reducing complexity and building durable tools.',
+          type: 'essay',
+          date: 'Aug 2026',
+          persona: 'Builder',
+        },
+        {
+          id: 's2',
+          title: 'Why we write things down',
+          description: 'Writing as an extension of thinking and clarity.',
+          type: 'note',
+          date: 'Aug 2026',
+          persona: 'Thinker',
+        },
+        {
+          id: 's3',
+          title: 'The craft of small software',
+          description: 'Tools designed for attention and intentional use.',
+          type: 'essay',
+          date: 'Jul 2026',
+          persona: 'Craftsman',
+        },
+      ];
+      totalCount = entries.length;
+    }
+
+    return generateScribbleOG({
+      title: 'Scribble',
+      description,
+      entries,
+      totalCount,
+    });
   }
 
   if (type === 'now') {
+    let latestEntry: { title: string; date: string; content: string } | null = null;
+    let entryCount = 1;
+    const description = searchParams.get('description') || '';
+
     try {
       const service = new ContentService();
       const entries = await service.getNowEntries();
-      const description = searchParams.get('description') || '';
-      const latestEntry = entries.length > 0 ? entries[0] : null;
-      return generateNowOG({
-        title: 'Now',
-        description,
-        latestEntry,
-        entryCount: entries.length,
-      });
+      if (entries?.length) {
+        latestEntry = entries[0];
+        entryCount = entries.length;
+      }
     } catch {
-      return generateFallbackOG();
+      // Database unavailable, use curated default
     }
+
+    if (!latestEntry) {
+      latestEntry = {
+        title: 'Present Focus',
+        date: 'August 2026',
+        content:
+          'Reading philosophy, exploring systems thinking, building lightweight web craft, and thinking about technology outside the internet.',
+      };
+    }
+
+    return generateNowOG({
+      title: 'Now',
+      description,
+      latestEntry,
+      entryCount,
+    });
   }
 
   // ── Generic fallback mode ───────────────────────────────────────────────
@@ -230,6 +314,7 @@ function generateAboutOG({
         {/* Top accent line */}
         <div
           style={{
+            display: 'flex',
             position: 'absolute',
             top: 0,
             left: 0,
@@ -249,7 +334,6 @@ function generateAboutOG({
             flex: '0 0 54%',
             padding: '52px 64px 48px',
             position: 'relative',
-            zIndex: 2,
           }}
         >
           {/* Top category label */}
@@ -272,7 +356,15 @@ function generateAboutOG({
             >
               About
             </span>
-            <span style={{ fontSize: '12px', color: '#555550' }}>✦</span>
+            <div
+              style={{
+                display: 'flex',
+                width: '4px',
+                height: '4px',
+                borderRadius: '50%',
+                background: '#78766E',
+              }}
+            />
             <span
               style={{
                 fontSize: '14px',
@@ -325,6 +417,7 @@ function generateAboutOG({
 
             <div
               style={{
+                display: 'flex',
                 fontSize: '19px',
                 fontFamily: 'sans-serif',
                 color: '#B0AEA5',
@@ -370,18 +463,6 @@ function generateAboutOG({
               overflow: 'hidden',
             }}
           >
-            {/* Soft background radial glow */}
-            <div
-              style={{
-                position: 'absolute',
-                width: '450px',
-                height: '450px',
-                borderRadius: '50%',
-                background:
-                  'radial-gradient(circle, rgba(4,164,186,0.1) 0%, rgba(217,119,87,0.05) 50%, transparent 70%)',
-              }}
-            />
-
             {/* 2-column skewed grid */}
             <div
               style={{
@@ -389,7 +470,6 @@ function generateAboutOG({
                 gap: '14px',
                 transform: 'rotate(-4deg)',
                 position: 'relative',
-                zIndex: 1,
               }}
             >
               {/* Column 1 (offset up) */}
@@ -428,6 +508,7 @@ function generateAboutOG({
                     />
                     <div
                       style={{
+                        display: 'flex',
                         position: 'absolute',
                         bottom: 0,
                         left: 0,
@@ -480,6 +561,7 @@ function generateAboutOG({
                     />
                     <div
                       style={{
+                        display: 'flex',
                         position: 'absolute',
                         bottom: 0,
                         left: 0,
@@ -561,6 +643,7 @@ function generateLibraryOG({
         {/* Top accent line */}
         <div
           style={{
+            display: 'flex',
             position: 'absolute',
             top: 0,
             left: 0,
@@ -580,7 +663,6 @@ function generateLibraryOG({
             flex: '0 0 52%',
             padding: '52px 64px 48px',
             position: 'relative',
-            zIndex: 2,
           }}
         >
           {/* Top category label */}
@@ -603,7 +685,15 @@ function generateLibraryOG({
             >
               Library
             </span>
-            <span style={{ fontSize: '12px', color: '#555550' }}>✦</span>
+            <div
+              style={{
+                display: 'flex',
+                width: '4px',
+                height: '4px',
+                borderRadius: '50%',
+                background: '#78766E',
+              }}
+            />
             <span
               style={{
                 fontSize: '14px',
@@ -626,6 +716,7 @@ function generateLibraryOG({
           >
             <div
               style={{
+                display: 'flex',
                 fontSize: '64px',
                 fontWeight: 400,
                 lineHeight: 1.05,
@@ -638,6 +729,7 @@ function generateLibraryOG({
 
             <div
               style={{
+                display: 'flex',
                 fontSize: '20px',
                 fontFamily: 'sans-serif',
                 color: '#B0AEA5',
@@ -681,18 +773,6 @@ function generateLibraryOG({
             paddingRight: '48px',
           }}
         >
-          {/* Subtle warm glow behind book stack */}
-          <div
-            style={{
-              position: 'absolute',
-              width: '420px',
-              height: '420px',
-              borderRadius: '50%',
-              background:
-                'radial-gradient(circle, rgba(217,119,87,0.12) 0%, transparent 70%)',
-            }}
-          />
-
           {/* Layered books row */}
           <div
             style={{
@@ -700,13 +780,11 @@ function generateLibraryOG({
               alignItems: 'center',
               gap: '14px',
               position: 'relative',
-              zIndex: 1,
             }}
           >
             {books.map((book, i) => {
               const img = coverImages[i];
               const rotation = rotations[i] ?? 0;
-              const zIndex = i === 1 ? 3 : i === 2 ? 2 : 1;
 
               return (
                 <div
@@ -722,7 +800,6 @@ function generateLibraryOG({
                     boxShadow: '0 20px 40px rgba(0,0,0,0.6)',
                     position: 'relative',
                     transform: `rotate(${rotation}deg)`,
-                    zIndex,
                     display: 'flex',
                   }}
                 >
@@ -753,6 +830,7 @@ function generateLibraryOG({
                     >
                       <div
                         style={{
+                          display: 'flex',
                           fontSize: '11px',
                           fontFamily: 'sans-serif',
                           color: '#D97757',
@@ -847,6 +925,7 @@ function generateScribbleOG({
         {/* Top accent line */}
         <div
           style={{
+            display: 'flex',
             position: 'absolute',
             top: 0,
             left: 0,
@@ -866,7 +945,6 @@ function generateScribbleOG({
             flex: '0 0 50%',
             padding: '52px 64px 48px',
             position: 'relative',
-            zIndex: 2,
           }}
         >
           {/* Top category label */}
@@ -889,7 +967,15 @@ function generateScribbleOG({
             >
               Scribble
             </span>
-            <span style={{ fontSize: '12px', color: '#555550' }}>✦</span>
+            <div
+              style={{
+                display: 'flex',
+                width: '4px',
+                height: '4px',
+                borderRadius: '50%',
+                background: '#78766E',
+              }}
+            />
             <span
               style={{
                 fontSize: '14px',
@@ -912,6 +998,7 @@ function generateScribbleOG({
           >
             <div
               style={{
+                display: 'flex',
                 fontSize: '64px',
                 fontWeight: 400,
                 lineHeight: 1.05,
@@ -924,6 +1011,7 @@ function generateScribbleOG({
 
             <div
               style={{
+                display: 'flex',
                 fontSize: '20px',
                 fontFamily: 'sans-serif',
                 color: '#B0AEA5',
@@ -967,18 +1055,6 @@ function generateScribbleOG({
             paddingRight: '56px',
           }}
         >
-          {/* Subtle teal background glow */}
-          <div
-            style={{
-              position: 'absolute',
-              width: '440px',
-              height: '440px',
-              borderRadius: '50%',
-              background:
-                'radial-gradient(circle, rgba(4,164,186,0.1) 0%, transparent 70%)',
-            }}
-          />
-
           {/* Staggered layered ledger cards */}
           <div
             style={{
@@ -988,7 +1064,6 @@ function generateScribbleOG({
               width: '100%',
               maxWidth: '440px',
               position: 'relative',
-              zIndex: 1,
               transform: 'rotate(-2deg)',
             }}
           >
@@ -1060,6 +1135,7 @@ function generateScribbleOG({
 
                 <div
                   style={{
+                    display: 'flex',
                     fontSize: '17px',
                     fontFamily: 'serif',
                     lineHeight: 1.3,
@@ -1133,6 +1209,7 @@ function generateNowOG({
         {/* Top accent line */}
         <div
           style={{
+            display: 'flex',
             position: 'absolute',
             top: 0,
             left: 0,
@@ -1152,7 +1229,6 @@ function generateNowOG({
             flex: '0 0 52%',
             padding: '52px 64px 48px',
             position: 'relative',
-            zIndex: 2,
           }}
         >
           {/* Top live pulse label */}
@@ -1165,6 +1241,7 @@ function generateNowOG({
           >
             <div
               style={{
+                display: 'flex',
                 width: '8px',
                 height: '8px',
                 borderRadius: '50%',
@@ -1183,7 +1260,15 @@ function generateNowOG({
             >
               Now
             </span>
-            <span style={{ fontSize: '12px', color: '#555550' }}>✦</span>
+            <div
+              style={{
+                display: 'flex',
+                width: '4px',
+                height: '4px',
+                borderRadius: '50%',
+                background: '#78766E',
+              }}
+            />
             <span
               style={{
                 fontSize: '14px',
@@ -1206,6 +1291,7 @@ function generateNowOG({
           >
             <div
               style={{
+                display: 'flex',
                 fontSize: '64px',
                 fontWeight: 400,
                 lineHeight: 1.05,
@@ -1218,6 +1304,7 @@ function generateNowOG({
 
             <div
               style={{
+                display: 'flex',
                 fontSize: '20px',
                 fontFamily: 'sans-serif',
                 color: '#B0AEA5',
@@ -1261,18 +1348,6 @@ function generateNowOG({
             paddingRight: '56px',
           }}
         >
-          {/* Subtle teal/blue background glow */}
-          <div
-            style={{
-              position: 'absolute',
-              width: '440px',
-              height: '440px',
-              borderRadius: '50%',
-              background:
-                'radial-gradient(circle, rgba(4,164,186,0.12) 0%, rgba(217,119,87,0.04) 50%, transparent 70%)',
-            }}
-          />
-
           {/* Timeline visualization */}
           <div
             style={{
@@ -1282,7 +1357,6 @@ function generateNowOG({
               width: '100%',
               maxWidth: '440px',
               position: 'relative',
-              zIndex: 1,
             }}
           >
             {/* Active latest entry card */}
@@ -1317,7 +1391,7 @@ function generateNowOG({
                       textTransform: 'uppercase',
                     }}
                   >
-                    ✦ Current Update
+                    Current Update
                   </span>
                   <span
                     style={{
@@ -1333,6 +1407,7 @@ function generateNowOG({
                 {contentSnippet && (
                   <div
                     style={{
+                      display: 'flex',
                       fontSize: '15px',
                       fontFamily: 'sans-serif',
                       color: '#FAF9F5',
@@ -1356,6 +1431,7 @@ function generateNowOG({
             >
               <div
                 style={{
+                  display: 'flex',
                   width: '10px',
                   height: '10px',
                   borderRadius: '50%',
@@ -1364,6 +1440,7 @@ function generateNowOG({
               />
               <div
                 style={{
+                  display: 'flex',
                   height: '2px',
                   width: '60px',
                   background: 'rgba(250,249,245,0.15)',
@@ -1371,6 +1448,7 @@ function generateNowOG({
               />
               <div
                 style={{
+                  display: 'flex',
                   width: '8px',
                   height: '8px',
                   borderRadius: '50%',
@@ -1379,6 +1457,7 @@ function generateNowOG({
               />
               <div
                 style={{
+                  display: 'flex',
                   height: '2px',
                   width: '40px',
                   background: 'rgba(250,249,245,0.1)',
@@ -1386,6 +1465,7 @@ function generateNowOG({
               />
               <div
                 style={{
+                  display: 'flex',
                   width: '6px',
                   height: '6px',
                   borderRadius: '50%',
@@ -1408,6 +1488,7 @@ function generateNowOG({
           {/* Faint watermark typography in background */}
           <div
             style={{
+              display: 'flex',
               position: 'absolute',
               right: '24px',
               bottom: '24px',
@@ -1577,6 +1658,7 @@ function generatePostOG({
         {/* Top accent line */}
         <div
           style={{
+            display: 'flex',
             position: 'absolute',
             top: 0,
             left: 0,
@@ -1594,7 +1676,6 @@ function generatePostOG({
             flexDirection: 'column',
             flex: hasCover ? '0 0 60%' : '1 1 100%',
             position: 'relative',
-            zIndex: 1,
           }}
         >
           {/* Top bar: Type + Persona */}
@@ -1620,14 +1701,15 @@ function generatePostOG({
                 {typeLabel}
               </span>
               {typeLabel && personaLabel && (
-                <span
+                <div
                   style={{
-                    fontSize: '12px',
-                    color: '#4a4a45',
+                    display: 'flex',
+                    width: '4px',
+                    height: '4px',
+                    borderRadius: '50%',
+                    background: '#78766E',
                   }}
-                >
-                  ✦
-                </span>
+                />
               )}
               {personaLabel && (
                 <span
@@ -1659,6 +1741,7 @@ function generatePostOG({
             {/* Title */}
             <div
               style={{
+                display: 'flex',
                 fontSize: isHome ? '80px' : '64px',
                 fontWeight: 400,
                 lineHeight: 1.05,
@@ -1673,6 +1756,7 @@ function generatePostOG({
             {displayDescription && (
               <div
                 style={{
+                  display: 'flex',
                   fontSize: '21px',
                   fontFamily: 'sans-serif',
                   color: '#B0AEA5',
@@ -1696,6 +1780,7 @@ function generatePostOG({
           >
             <div
               style={{
+                display: 'flex',
                 fontSize: '18px',
                 fontFamily: 'sans-serif',
                 fontWeight: 600,
@@ -1728,7 +1813,6 @@ function generatePostOG({
                 maxHeight: '80%',
                 objectFit: 'contain',
                 position: 'relative',
-                zIndex: 1,
               }}
             />
           </div>
@@ -1764,6 +1848,7 @@ function generateFallbackOG() {
         {/* Top accent line */}
         <div
           style={{
+            display: 'flex',
             position: 'absolute',
             top: 0,
             left: 0,
@@ -1784,6 +1869,7 @@ function generateFallbackOG() {
         >
           <div
             style={{
+              display: 'flex',
               fontSize: '80px',
               fontWeight: 400,
               lineHeight: 1.05,
@@ -1802,6 +1888,7 @@ function generateFallbackOG() {
         >
           <div
             style={{
+              display: 'flex',
               fontSize: '18px',
               fontFamily: 'sans-serif',
               fontWeight: 600,
