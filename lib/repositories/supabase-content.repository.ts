@@ -238,7 +238,7 @@ export class SupabaseContentRepository implements ContentRepository {
     return {
       title: "Library",
       href: "/library",
-      subheader: "Books that shaped my thinking",
+      subheader: "Books I've read, loved, and recommend for others to read.",
       items: (data as BookRow[]).map(bookRowToDomain) as BookItem[],
     };
   }

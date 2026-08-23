@@ -91,3 +91,19 @@ To achieve near-instant page loads and minimal JavaScript bundle sizes:
 - **`app/not-found.tsx`**: Renders when `notFound()` is invoked. Sets HTTP `robots: { index: false, follow: false }` to prevent search engine indexing of invalid URLs.
 - **`app/error.tsx`**: Client-side error boundary with accessible retry action triggers (`ErrorView`).
 - **`next.config.ts` Redirects**: Permanent `308` redirect configured from `/fund` to `/support`.
+
+---
+
+## 5. Dynamic Open Graph API (`/api/og`)
+
+Dynamic social preview image generation powered by `@vercel/og`:
+
+- **`/api/og?type=home`**: Homepage OG preview with portrait hero image, greeting, and headline.
+- **`/api/og?type=about`**: About page OG preview with angled 2-column image mosaic.
+- **`/api/og?type=library`**: Library OG preview with 3D stacked book artwork covers.
+- **`/api/og?type=scribble`**: Scribble index OG preview with layered ledger cards.
+- **`/api/og?type=now`**: Now page OG preview with latest timeline update.
+- **`/api/og?type=support`**: Support & Patronage OG preview with unboxed numbered ledger.
+- **`/api/og?slug=[slug]`**: Per-essay OG preview with persona tag and cover image.
+- **`/api/og?slug=[slug]&type=note`**: Per-note OG preview with persona tag and media.
+

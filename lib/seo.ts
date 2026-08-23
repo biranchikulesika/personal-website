@@ -1,25 +1,33 @@
-import type { Metadata } from 'next';
-import type { BlogPost, NoteItem } from '@/lib/types';
 import {
-  SITE_URL,
-  SITE_NAME,
-  SITE_DESCRIPTION,
   PERSONA_LABELS,
-} from '@/lib/constants';
+  SITE_DESCRIPTION,
+  SITE_NAME,
+  SITE_URL,
+} from "@/lib/constants";
+import type { BlogPost, NoteItem } from "@/lib/types";
+import type { Metadata } from "next";
 
 /**
  * Generate a dynamic OG image URL.
  * Falls back to a static endpoint that generates the image on the fly.
  */
-function ogImage(params: { title?: string; description?: string; type?: string; persona?: string; cover?: string } = {}) {
+function ogImage(
+  params: {
+    title?: string;
+    description?: string;
+    type?: string;
+    persona?: string;
+    cover?: string;
+  } = {},
+) {
   const searchParams = new URLSearchParams();
-  if (params.title) searchParams.set('title', params.title);
-  if (params.description) searchParams.set('description', params.description);
-  if (params.type) searchParams.set('type', params.type);
-  if (params.persona) searchParams.set('persona', params.persona);
-  if (params.cover) searchParams.set('cover', params.cover);
+  if (params.title) searchParams.set("title", params.title);
+  if (params.description) searchParams.set("description", params.description);
+  if (params.type) searchParams.set("type", params.type);
+  if (params.persona) searchParams.set("persona", params.persona);
+  if (params.cover) searchParams.set("cover", params.cover);
   const qs = searchParams.toString();
-  return `${SITE_URL}/api/og${qs ? `?${qs}` : ''}`;
+  return `${SITE_URL}/api/og${qs ? `?${qs}` : ""}`;
 }
 
 // ── Base metadata ───────────────────────────────────────────────────────────
@@ -38,12 +46,12 @@ export const rootMetadata: Metadata = {
   authors: [{ name: SITE_NAME }],
   creator: SITE_NAME,
   openGraph: {
-    type: 'website',
-    locale: 'en_US',
+    type: "website",
+    locale: "en_US",
     siteName: SITE_NAME,
     images: [
       {
-        url: ogImage({ title: SITE_NAME, type: 'home' }),
+        url: ogImage({ title: SITE_NAME, type: "home" }),
         width: 1200,
         height: 630,
         alt: SITE_NAME,
@@ -51,11 +59,11 @@ export const rootMetadata: Metadata = {
     ],
   },
   twitter: {
-    card: 'summary_large_image',
-    creator: '@BKulesika',
+    card: "summary_large_image",
+    creator: "@BKulesika",
     title: SITE_NAME,
     description: SITE_DESCRIPTION,
-    images: [ogImage({ title: SITE_NAME, type: 'home' })],
+    images: [ogImage({ title: SITE_NAME, type: "home" })],
   },
   robots: {
     index: true,
@@ -63,23 +71,27 @@ export const rootMetadata: Metadata = {
     googleBot: {
       index: true,
       follow: true,
-      'max-video-preview': -1,
-      'max-image-preview': 'large',
-      'max-snippet': -1,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
     },
   },
   icons: {
     icon: [
-      { url: '/favicon/favicon.ico' },
-      { url: '/favicon/favicon.svg', type: 'image/svg+xml' },
-      { url: '/favicon/favicon-96x96.png', sizes: '96x96', type: 'image/png' },
+      { url: "/favicon/favicon.ico" },
+      { url: "/favicon/favicon.svg", type: "image/svg+xml" },
+      { url: "/favicon/favicon-96x96.png", sizes: "96x96", type: "image/png" },
     ],
     apple: [
-      { url: '/favicon/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
+      {
+        url: "/favicon/apple-touch-icon.png",
+        sizes: "180x180",
+        type: "image/png",
+      },
     ],
-    shortcut: '/favicon/favicon.ico',
+    shortcut: "/favicon/favicon.ico",
   },
-  manifest: '/manifest.webmanifest',
+  manifest: "/manifest.webmanifest",
 };
 
 // ── Page metadata builders ──────────────────────────────────────────────────
@@ -90,14 +102,12 @@ export const rootMetadata: Metadata = {
 export function postMetadata(post: BlogPost): Metadata {
   const url = `${SITE_URL}/p/${post.slug}`;
   const title = post.title;
-  const description = post.description || post.subtitle || '';
-  const personaLabel = post.persona
-    ? PERSONA_LABELS[post.persona]
-    : undefined;
+  const description = post.description || post.subtitle || "";
+  const personaLabel = post.persona ? PERSONA_LABELS[post.persona] : undefined;
   // Use the dynamic OG route that resolves post data and generates a composed image
   const ogUrl = `${SITE_URL}/api/og?slug=${encodeURIComponent(post.slug)}`;
 
-  const isDraft = post.status === 'unpublished';
+  const isDraft = post.status === "unpublished";
 
   return {
     title,
@@ -105,7 +115,7 @@ export function postMetadata(post: BlogPost): Metadata {
     alternates: { canonical: url },
     robots: isDraft ? { index: false, follow: false } : undefined,
     openGraph: {
-      type: 'article',
+      type: "article",
       title,
       description,
       url,
@@ -117,8 +127,8 @@ export function postMetadata(post: BlogPost): Metadata {
       images: [{ url: ogUrl, width: 1200, height: 630, alt: title }],
     },
     twitter: {
-      card: 'summary_large_image',
-      creator: '@BKulesika',
+      card: "summary_large_image",
+      creator: "@BKulesika",
       title,
       description,
       images: [ogUrl],
@@ -132,18 +142,24 @@ export function postMetadata(post: BlogPost): Metadata {
 export function noteMetadata(note: NoteItem): Metadata {
   const url = `${SITE_URL}/n/${note.slug}`;
   const title = note.title;
-  const description = note.subtitle || note.description || '';
+  const description = note.subtitle || note.description || "";
   const personaLabel = PERSONA_LABELS[note.persona];
-  const noteOgParams: { title: string; description: string; type: string; persona?: string; cover?: string } = {
+  const noteOgParams: {
+    title: string;
+    description: string;
+    type: string;
+    persona?: string;
+    cover?: string;
+  } = {
     title,
     description,
-    type: 'note',
+    type: "note",
   };
   if (personaLabel) noteOgParams.persona = personaLabel;
   if (note.coverImage) noteOgParams.cover = note.coverImage;
   const noteOgUrl = ogImage(noteOgParams);
 
-  const isDraft = note.status === 'unpublished';
+  const isDraft = note.status === "unpublished";
 
   return {
     title,
@@ -151,7 +167,7 @@ export function noteMetadata(note: NoteItem): Metadata {
     alternates: { canonical: url },
     robots: isDraft ? { index: false, follow: false } : undefined,
     openGraph: {
-      type: 'article',
+      type: "article",
       title,
       description,
       url,
@@ -161,11 +177,210 @@ export function noteMetadata(note: NoteItem): Metadata {
       images: [{ url: noteOgUrl, width: 1200, height: 630, alt: title }],
     },
     twitter: {
-      card: 'summary_large_image',
-      creator: '@BKulesika',
+      card: "summary_large_image",
+      creator: "@BKulesika",
       title,
       description,
       images: [noteOgUrl],
+    },
+  };
+}
+
+/**
+ * Generate metadata for the About page.
+ */
+export function aboutMetadata(): Metadata {
+  const url = `${SITE_URL}/about`;
+  const title = "About";
+  const description =
+    "A little about Biranchi Kulesika, his work, writing, interests, and the things he is learning along the way.";
+  const ogUrl = `${SITE_URL}/api/og?type=about`;
+
+  return {
+    title,
+    description,
+    alternates: { canonical: url },
+    openGraph: {
+      type: "profile",
+      title: "About | Biranchi Kulesika",
+      description,
+      url,
+      siteName: SITE_NAME,
+      images: [
+        {
+          url: ogUrl,
+          width: 1200,
+          height: 630,
+          alt: "About Biranchi Kulesika",
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      creator: "@BKulesika",
+      title: "About | Biranchi Kulesika",
+      description,
+      images: [ogUrl],
+    },
+  };
+}
+
+/**
+ * Generate metadata for the Library page.
+ */
+export function libraryMetadata(): Metadata {
+  const url = `${SITE_URL}/library`;
+  const title = "Library";
+  const description =
+    "Books I've read, loved, and recommend for others to read.";
+  const ogUrl = `${SITE_URL}/api/og?type=library`;
+
+  return {
+    title,
+    description,
+    alternates: { canonical: url },
+    openGraph: {
+      type: "website",
+      title: "Library | Biranchi Kulesika",
+      description,
+      url,
+      siteName: SITE_NAME,
+      images: [{ url: ogUrl, width: 1200, height: 630, alt: "Library" }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      creator: "@BKulesika",
+      title: "Library | Biranchi Kulesika",
+      description,
+      images: [ogUrl],
+    },
+  };
+}
+
+/**
+ * Generate metadata for the Scribble page.
+ */
+export function scribbleMetadata(): Metadata {
+  const url = `${SITE_URL}/scribble`;
+  const title = "Scribble";
+  const description = "Writing and thinking, shared openly.";
+  const ogUrl = `${SITE_URL}/api/og?type=scribble`;
+
+  return {
+    title,
+    description,
+    alternates: { canonical: url },
+    openGraph: {
+      type: "website",
+      title: "Scribble | Biranchi Kulesika",
+      description,
+      url,
+      siteName: SITE_NAME,
+      images: [{ url: ogUrl, width: 1200, height: 630, alt: "Scribble" }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      creator: "@BKulesika",
+      title: "Scribble | Biranchi Kulesika",
+      description,
+      images: [ogUrl],
+    },
+  };
+}
+
+/**
+ * Generate metadata for the Now page.
+ */
+export function nowMetadata(): Metadata {
+  const url = `${SITE_URL}/now`;
+  const title = "Now";
+  const description =
+    "What I’m reading, exploring, working on, and thinking about these days.";
+  const ogUrl = `${SITE_URL}/api/og?type=now`;
+
+  return {
+    title,
+    description,
+    alternates: { canonical: url },
+    openGraph: {
+      type: "website",
+      title: "Now | Biranchi Kulesika",
+      description,
+      url,
+      siteName: SITE_NAME,
+      images: [{ url: ogUrl, width: 1200, height: 630, alt: "Now" }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      creator: "@BKulesika",
+      title: "Now | Biranchi Kulesika",
+      description,
+      images: [ogUrl],
+    },
+  };
+}
+
+/**
+ * Generate metadata for the Home page.
+ */
+export function homeMetadata(): Metadata {
+  const url = SITE_URL;
+  const title = SITE_NAME;
+  const description = SITE_DESCRIPTION;
+  const ogUrl = `${SITE_URL}/api/og?type=home`;
+
+  return {
+    title: { absolute: title },
+    description,
+    alternates: { canonical: url },
+    openGraph: {
+      type: "website",
+      title: `${title} | Independent Developer & Writer`,
+      description,
+      url,
+      siteName: SITE_NAME,
+      images: [{ url: ogUrl, width: 1200, height: 630, alt: title }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      creator: "@BKulesika",
+      title: `${title} | Independent Developer & Writer`,
+      description,
+      images: [ogUrl],
+    },
+  };
+}
+
+/**
+ * Generate metadata for the Support & Patronage page.
+ */
+export function supportMetadata(): Metadata {
+  const url = `${SITE_URL}/support`;
+  const title = "Support & Patronage";
+  const description =
+    "Support my work and help me keep building, writing, and sharing things openly.";
+  const ogUrl = `${SITE_URL}/api/og?type=support`;
+
+  return {
+    title,
+    description,
+    alternates: { canonical: url },
+    openGraph: {
+      type: "website",
+      title: "Support & Patronage | Biranchi Kulesika",
+      description,
+      url,
+      siteName: SITE_NAME,
+      images: [
+        { url: ogUrl, width: 1200, height: 630, alt: "Support & Patronage" },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      creator: "@BKulesika",
+      title: "Support & Patronage | Biranchi Kulesika",
+      description,
+      images: [ogUrl],
     },
   };
 }
@@ -178,31 +393,31 @@ export function noteMetadata(note: NoteItem): Metadata {
  */
 export function websiteJsonLd() {
   return {
-    '@context': 'https://schema.org',
-    '@type': 'WebSite',
+    "@context": "https://schema.org",
+    "@type": "WebSite",
     name: SITE_NAME,
     url: SITE_URL,
     description: SITE_DESCRIPTION,
-    inLanguage: 'en-US',
+    inLanguage: "en-US",
     image: `${SITE_URL}/favicon/web-app-manifest-512x512.png`,
     author: {
-      '@type': 'Person',
+      "@type": "Person",
       name: SITE_NAME,
       url: SITE_URL,
       image: `${SITE_URL}/favicon/web-app-manifest-512x512.png`,
-      jobTitle: 'Software Developer & Writer',
+      jobTitle: "Software Developer & Writer",
       sameAs: [
-        'https://github.com/biranchikulesika',
-        'https://x.com/BKulesika',
-        'https://linkedin.com/in/biranchikulesika',
-        'https://instagram.com/biranchikulesika',
+        "https://github.com/biranchikulesika",
+        "https://x.com/BKulesika",
+        "https://linkedin.com/in/biranchikulesika",
+        "https://instagram.com/biranchikulesika",
       ],
       knowsAbout: [
-        'Software Engineering',
-        'Web Architecture',
-        'Cybersecurity',
-        'Computer Science',
-        'Philosophy',
+        "Software Engineering",
+        "Web Architecture",
+        "Cybersecurity",
+        "Computer Science",
+        "Philosophy",
       ],
     },
   };
@@ -213,13 +428,13 @@ export function websiteJsonLd() {
  */
 export function breadcrumbJsonLd(items: Array<{ name: string; url: string }>) {
   return {
-    '@context': 'https://schema.org',
-    '@type': 'BreadcrumbList',
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
     itemListElement: items.map((item, index) => ({
-      '@type': 'ListItem',
+      "@type": "ListItem",
       position: index + 1,
       name: item.name,
-      item: item.url.startsWith('http') ? item.url : `${SITE_URL}${item.url}`,
+      item: item.url.startsWith("http") ? item.url : `${SITE_URL}${item.url}`,
     })),
   };
 }
@@ -229,30 +444,30 @@ export function breadcrumbJsonLd(items: Array<{ name: string; url: string }>) {
  */
 export function articleJsonLd(post: BlogPost) {
   return {
-    '@context': 'https://schema.org',
-    '@type': 'Article',
+    "@context": "https://schema.org",
+    "@type": "Article",
     mainEntityOfPage: {
-      '@type': 'WebPage',
-      '@id': `${SITE_URL}/p/${post.slug}`,
+      "@type": "WebPage",
+      "@id": `${SITE_URL}/p/${post.slug}`,
     },
     headline: post.title,
-    description: post.description || post.subtitle || '',
+    description: post.description || post.subtitle || "",
     author: {
-      '@type': 'Person',
+      "@type": "Person",
       name: SITE_NAME,
       url: SITE_URL,
     },
     publisher: {
-      '@type': 'Person',
+      "@type": "Person",
       name: SITE_NAME,
       url: SITE_URL,
     },
     datePublished: post.publishedAt,
     dateModified: post.lastEditedAt || post.publishedAt,
     url: `${SITE_URL}/p/${post.slug}`,
-    image: post.coverImage || ogImage({ title: post.title, type: 'post' }),
-    keywords: post.tags.join(', '),
-    inLanguage: 'en-US',
+    image: post.coverImage || ogImage({ title: post.title, type: "post" }),
+    keywords: post.tags.join(", "),
+    inLanguage: "en-US",
   };
 }
 
@@ -261,30 +476,30 @@ export function articleJsonLd(post: BlogPost) {
  */
 export function noteJsonLd(note: NoteItem) {
   return {
-    '@context': 'https://schema.org',
-    '@type': 'Article',
+    "@context": "https://schema.org",
+    "@type": "Article",
     mainEntityOfPage: {
-      '@type': 'WebPage',
-      '@id': `${SITE_URL}/n/${note.slug}`,
+      "@type": "WebPage",
+      "@id": `${SITE_URL}/n/${note.slug}`,
     },
     headline: note.title,
-    description: note.description || '',
+    description: note.description || "",
     author: {
-      '@type': 'Person',
+      "@type": "Person",
       name: SITE_NAME,
       url: SITE_URL,
     },
     publisher: {
-      '@type': 'Person',
+      "@type": "Person",
       name: SITE_NAME,
       url: SITE_URL,
     },
     datePublished: note.date,
     dateModified: note.date,
     url: `${SITE_URL}/n/${note.slug}`,
-    image: note.coverImage || ogImage({ title: note.title, type: 'note' }),
-    keywords: note.tags.join(', '),
-    inLanguage: 'en-US',
+    image: note.coverImage || ogImage({ title: note.title, type: "note" }),
+    keywords: note.tags.join(", "),
+    inLanguage: "en-US",
   };
 }
 
@@ -293,5 +508,5 @@ export function noteJsonLd(note: NoteItem) {
  * Escapes `<` to `\u003c` to prevent </script> injection XSS attacks.
  */
 export function safeJsonLd(data: unknown): string {
-  return JSON.stringify(data).replace(/</g, '\\u003c');
+  return JSON.stringify(data).replace(/</g, "\\u003c");
 }

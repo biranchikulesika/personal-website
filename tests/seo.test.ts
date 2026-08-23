@@ -4,6 +4,12 @@ import {
   rootMetadata,
   postMetadata,
   noteMetadata,
+  aboutMetadata,
+  libraryMetadata,
+  scribbleMetadata,
+  nowMetadata,
+  homeMetadata,
+  supportMetadata,
   websiteJsonLd,
   articleJsonLd,
   noteJsonLd,
@@ -257,4 +263,58 @@ test("safeJsonLd escapes < to prevent </script> tag injection breakout", () => {
   const serialized = safeJsonLd(maliciousObject);
   assert.equal(serialized.includes("<"), false, "JSON-LD string must not contain raw < characters");
   assert.ok(serialized.includes(String.raw`\u003c/script>`));
+});
+
+// ── Section metadata builders ───────────────────────────────────────────────
+
+test("aboutMetadata generates correct metadata pointing to dynamic OG route", () => {
+  const meta = aboutMetadata();
+  assert.equal(meta.title, "About");
+  assert.equal(meta.alternates?.canonical, "https://biranchikulesika.com/about");
+  const og = meta.openGraph as Record<string, unknown>;
+  const images = og.images as Array<{ url: string }>;
+  assert.ok(images[0].url.includes("/api/og?type=about"));
+});
+
+test("libraryMetadata generates correct metadata pointing to dynamic OG route", () => {
+  const meta = libraryMetadata();
+  assert.equal(meta.title, "Library");
+  assert.equal(meta.alternates?.canonical, "https://biranchikulesika.com/library");
+  const og = meta.openGraph as Record<string, unknown>;
+  const images = og.images as Array<{ url: string }>;
+  assert.ok(images[0].url.includes("/api/og?type=library"));
+});
+
+test("scribbleMetadata generates correct metadata pointing to dynamic OG route", () => {
+  const meta = scribbleMetadata();
+  assert.equal(meta.title, "Scribble");
+  assert.equal(meta.alternates?.canonical, "https://biranchikulesika.com/scribble");
+  const og = meta.openGraph as Record<string, unknown>;
+  const images = og.images as Array<{ url: string }>;
+  assert.ok(images[0].url.includes("/api/og?type=scribble"));
+});
+
+test("nowMetadata generates correct metadata pointing to dynamic OG route", () => {
+  const meta = nowMetadata();
+  assert.equal(meta.title, "Now");
+  assert.equal(meta.alternates?.canonical, "https://biranchikulesika.com/now");
+  const og = meta.openGraph as Record<string, unknown>;
+  const images = og.images as Array<{ url: string }>;
+  assert.ok(images[0].url.includes("/api/og?type=now"));
+});
+
+test("homeMetadata generates correct metadata pointing to dynamic OG route", () => {
+  const meta = homeMetadata();
+  const og = meta.openGraph as Record<string, unknown>;
+  const images = og.images as Array<{ url: string }>;
+  assert.ok(images[0].url.includes("/api/og?type=home"));
+});
+
+test("supportMetadata generates correct metadata pointing to dynamic OG route", () => {
+  const meta = supportMetadata();
+  assert.equal(meta.title, "Support & Patronage");
+  assert.equal(meta.alternates?.canonical, "https://biranchikulesika.com/support");
+  const og = meta.openGraph as Record<string, unknown>;
+  const images = og.images as Array<{ url: string }>;
+  assert.ok(images[0].url.includes("/api/og?type=support"));
 });

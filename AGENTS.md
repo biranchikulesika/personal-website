@@ -53,8 +53,9 @@ This file is the single source of truth for AI agents and developers working on 
      ```
      *(e.g., `feat/patron-tier-management`, `fix/slug-collision-handler`, `docs/update-agents-md`)*
 
-### Merge & Pruning Workflow (Feature → Develop)
-* Keep working and committing on the active feature branch.
+### Commit & Merge Authorization Workflow
+* Keep working on the active feature branch.
+* **Do NOT commit or push changes unless explicitly instructed by the repository owner.**
 * **Do NOT merge into `develop` until explicitly instructed by the repository owner.**
 * When and only when the repository owner gives explicit instruction to merge (e.g., via PR or squash merge):
   1. Squash merge the active branch into `develop`.
@@ -208,4 +209,15 @@ All tests must pass with zero errors and zero warnings.
   * Never run `git checkout -- <file>`, `git restore <file>`, `git reset`, `git clean`, or any command to discard/revert uncommitted modifications unless explicitly instructed by the user.
   * Never overwrite or revert files that contain user edits.
 * Always preserve and respect all user modifications and continue working alongside them seamlessly.
+
+---
+
+## 10. Commit & Push Authorization Rule (CRITICAL)
+
+* **Never commit or push changes unless explicitly instructed by the repository owner.**
+* AI agents must make necessary file edits, run validations (`npm test`, `npm run lint`), and present the completed work to the user.
+* **Strictly forbidden actions without explicit instruction**:
+  * Running `git commit` (e.g. `git commit -m`, `git commit -am`).
+  * Running `git push` (e.g. `git push origin <branch>`).
+* Only when the repository owner gives explicit instruction (e.g., *"commit these changes"*, *"commit and push"*), the agent will stage, commit with a concise message, and/or push to remote.
 
