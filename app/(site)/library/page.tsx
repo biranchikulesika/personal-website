@@ -1,28 +1,32 @@
-import type { Metadata } from 'next';
-import { LibraryPageView } from '@/components/library-page';
-import { ContentService } from '@/lib/services/content.service';
-import { SITE_URL } from '@/lib/constants';
-import { breadcrumbJsonLd, safeJsonLd } from '@/lib/seo';
+import { LibraryPageView } from "@/components/library-page";
+import { SITE_URL } from "@/lib/constants";
+import { breadcrumbJsonLd, safeJsonLd } from "@/lib/seo";
+import { ContentService } from "@/lib/services/content.service";
+import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: 'Library',
-  description:
-    'Books that have shaped thinking — read, on the shelf, or somewhere in between.',
+  title: "Library",
+  description: "Books I’ve read, loved, and think are worth recommending.",
   alternates: { canonical: `${SITE_URL}/library` },
   openGraph: {
-    title: 'Library',
-    description:
-      'Books that have shaped thinking — read, on the shelf, or somewhere in between.',
+    title: "Library",
+    description: "Books I’ve read, loved, and think are worth recommending.",
     url: `${SITE_URL}/library`,
-    siteName: 'Biranchi Kulesika',
-    images: [{ url: `${SITE_URL}/api/og?title=Library&type=library`, width: 1200, height: 630, alt: 'Library' }],
+    siteName: "Biranchi Kulesika",
+    images: [
+      {
+        url: `${SITE_URL}/api/og?title=Library&type=library`,
+        width: 1200,
+        height: 630,
+        alt: "Library",
+      },
+    ],
   },
   twitter: {
-    card: 'summary_large_image',
-    creator: '@BKulesika',
-    title: 'Library',
-    description:
-      'Books that have shaped thinking — read, on the shelf, or somewhere in between.',
+    card: "summary_large_image",
+    creator: "@BKulesika",
+    title: "Library",
+    description: "Books I’ve read, loved, and think are worth recommending.",
   },
 };
 
@@ -39,8 +43,8 @@ export default async function LibraryPage() {
   const library = await new ContentService().getLibrary();
 
   const breadcrumbs = breadcrumbJsonLd([
-    { name: 'Home', url: '/' },
-    { name: 'Library', url: '/library' },
+    { name: "Home", url: "/" },
+    { name: "Library", url: "/library" },
   ]);
 
   return (

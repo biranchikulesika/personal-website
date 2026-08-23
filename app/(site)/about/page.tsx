@@ -1,28 +1,35 @@
-import type { Metadata } from 'next';
-import { AboutPageView } from '@/components/about-page';
-import { ContentService } from '@/lib/services/content.service';
-import { SITE_URL } from '@/lib/constants';
-import { breadcrumbJsonLd, safeJsonLd } from '@/lib/seo';
+import { AboutPageView } from "@/components/about-page";
+import { SITE_URL } from "@/lib/constants";
+import { breadcrumbJsonLd, safeJsonLd } from "@/lib/seo";
+import { ContentService } from "@/lib/services/content.service";
+import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: 'About',
+  title: "About",
   description:
-    'About Biranchi Kulesika — software developer, writer, and observer of digital life.',
+    "A little about Biranchi Kulesika, his work, writing, interests, and the things he is learning along the way",
   alternates: { canonical: `${SITE_URL}/about` },
   openGraph: {
-    title: 'About',
+    title: "About",
     description:
-      'About Biranchi Kulesika — software developer, writer, and observer of digital life.',
+      "A little about Biranchi Kulesika, his work, writing, interests, and the things he is learning along the way",
     url: `${SITE_URL}/about`,
-    siteName: 'Biranchi Kulesika',
-    images: [{ url: `${SITE_URL}/api/og?title=About&type=about`, width: 1200, height: 630, alt: 'About Biranchi Kulesika' }],
+    siteName: "Biranchi Kulesika",
+    images: [
+      {
+        url: `${SITE_URL}/api/og?title=About&type=about`,
+        width: 1200,
+        height: 630,
+        alt: "About Biranchi Kulesika",
+      },
+    ],
   },
   twitter: {
-    card: 'summary_large_image',
-    creator: '@BKulesika',
-    title: 'About',
+    card: "summary_large_image",
+    creator: "@BKulesika",
+    title: "About",
     description:
-      'About Biranchi Kulesika — software developer, writer, and observer of digital life.',
+      "A little about Biranchi Kulesika, his work, writing, interests, and the things he is learning along the way",
   },
 };
 
@@ -34,8 +41,8 @@ export default async function AboutPage() {
   ]);
 
   const breadcrumbs = breadcrumbJsonLd([
-    { name: 'Home', url: '/' },
-    { name: 'About', url: '/about' },
+    { name: "Home", url: "/" },
+    { name: "About", url: "/about" },
   ]);
 
   return (

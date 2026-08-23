@@ -17,6 +17,7 @@ test("sitemap includes all public static pages", async () => {
   assert.ok(urls.includes(`${TEST_DOMAIN}/about`), "should include about");
   assert.ok(urls.includes(`${TEST_DOMAIN}/library`), "should include library");
   assert.ok(urls.includes(`${TEST_DOMAIN}/scribble`), "should include scribble");
+  assert.ok(urls.includes(`${TEST_DOMAIN}/now`), "should include now");
   assert.ok(urls.includes(`${TEST_DOMAIN}/support`), "should include support");
 });
 
@@ -28,12 +29,12 @@ test("sitemap excludes admin routes", async () => {
   assert.ok(!urls.some((u) => u.includes("/admin")), "should not include admin routes");
 });
 
-test("sitemap excludes now page", async () => {
+test("sitemap includes now page", async () => {
   const { default: sitemap } = await import("../app/sitemap");
   const entries = await sitemap();
 
   const urls = entries.map((e) => e.url);
-  assert.ok(!urls.includes(`${TEST_DOMAIN}/now`), "should not include now page");
+  assert.ok(urls.includes(`${TEST_DOMAIN}/now`), "should include now page");
 });
 
 test("sitemap uses canonical domain", async () => {

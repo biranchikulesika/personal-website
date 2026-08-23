@@ -14,7 +14,7 @@ interface HeroProps {
  */
 export function Hero({ hero }: HeroProps) {
   return (
-    <section className="grid grid-cols-1 items-start gap-12 py-6 min-h-[calc(100dvh-4.5rem)] lg:min-h-[calc(100dvh-7rem)] lg:grid-cols-[1.2fr_1fr] lg:items-center lg:gap-16 lg:py-6">
+    <section className="grid grid-cols-1 items-start gap-12 py-6 lg:min-h-[calc(100vh-7rem)] lg:grid-cols-[1.2fr_1fr] lg:items-center lg:gap-16 lg:py-6">
       <div className="flex flex-col justify-center lg:pr-6">
         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent sm:text-sm">
           {hero.greeting}

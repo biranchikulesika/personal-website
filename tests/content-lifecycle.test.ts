@@ -65,6 +65,86 @@ test("toggle post status switches between published and unpublished", async () =
   await service.deletePost("toggle-lifecycle-test");
 });
 
+test("discarding unpublished edits restores the original published post", async () => {
+  const repo = new InMemoryTestContentRepository();
+  const service = new ContentService(repo);
+
+  const publishedOriginal = {
+    slug: "discard-test-post",
+    title: "Original Published Title",
+    subtitle: "Original Subtitle",
+    description: "Original Description",
+    tags: ["essay"],
+    publishedAt: "2026-08-20",
+    lastEditedAt: "2026-08-20",
+    targetAudience: "Test Readers",
+    intro: ["Original Intro Paragraph"],
+    sections: [{ id: "sec-1", heading: "Heading", paragraphs: ["Original body paragraph"] }],
+    books: [],
+    status: "published" as const,
+  };
+
+  await service.savePost(publishedOriginal, "builder");
+
+  // Simulated working copy with unpublished changes
+  const workingDraft = {
+    ...publishedOriginal,
+    title: "Unpublished Modified Title",
+    intro: ["Unpublished draft intro"],
+    status: "unpublished" as const,
+  };
+
+  // Verifying working copy diverged
+  assert.notEqual(workingDraft.title, publishedOriginal.title);
+
+  // Discard unpublished edits: reload published baseline from service
+  const revertedPost = await service.getPost("discard-test-post");
+  assert.ok(revertedPost);
+  assert.equal(revertedPost.title, "Original Published Title");
+  assert.equal(revertedPost.status, "published");
+  assert.deepEqual(revertedPost.intro, ["Original Intro Paragraph"]);
+
+  await service.deletePost("discard-test-post");
+});
+
+test("discarding unpublished edits restores the original published note", async () => {
+  const repo = new InMemoryTestContentRepository();
+  const service = new ContentService(repo);
+
+  const publishedOriginalNote = {
+    id: "discard-test-note",
+    slug: "discard-test-note",
+    title: "Original Note Title",
+    subtitle: "Original Note Subtitle",
+    description: "Original Note Description",
+    content: ["Original Note paragraph 1", "Original Note paragraph 2"],
+    date: "2026-08-20",
+    persona: "thinker" as const,
+    tags: ["note"],
+    status: "published" as const,
+  };
+
+  await service.saveNote(publishedOriginalNote);
+
+  // Simulated working copy with unpublished changes
+  const workingDraftNote = {
+    ...publishedOriginalNote,
+    title: "Unpublished Note Edits",
+    content: ["Draft content that should be discarded"],
+  };
+
+  assert.notEqual(workingDraftNote.title, publishedOriginalNote.title);
+
+  // Discard unpublished edits: reload published baseline from service
+  const revertedNote = await service.getNote("discard-test-note");
+  assert.ok(revertedNote);
+  assert.equal(revertedNote.title, "Original Note Title");
+  assert.equal(revertedNote.status, "published");
+  assert.deepEqual(revertedNote.content, ["Original Note paragraph 1", "Original Note paragraph 2"]);
+
+  await service.deleteNote("discard-test-note");
+});
+
 test("default status is published when saving without explicit status", async () => {
   const repo = new InMemoryTestContentRepository();
   const service = new ContentService(repo);

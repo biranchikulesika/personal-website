@@ -78,7 +78,7 @@ export function WritingSection({ writing, limit = 4, featured }: WritingSectionP
       </div>
 
       {/* Mobile Mode: Sideways Scroll */}
-      <div className="no-scrollbar -mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-1 sm:hidden">
+      <div className="no-scrollbar -mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto overscroll-x-contain px-4 pb-1 sm:hidden">
         {items.map((item) => (
           <div key={item.slug} className="w-[82%] shrink-0 snap-start">
             <EssayCard item={item} />
