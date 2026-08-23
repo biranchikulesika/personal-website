@@ -61,6 +61,42 @@ const nextConfig: NextConfig = {
       ],
     },
     {
+      // OpenGraph dynamic images & public API previews — allow cross-origin scrapers (Twitter, Facebook, LinkedIn, opengraph.xyz)
+      source: '/api/og(.*)',
+      headers: [
+        {
+          key: 'Access-Control-Allow-Origin',
+          value: '*',
+        },
+        {
+          key: 'Access-Control-Allow-Methods',
+          value: 'GET, HEAD, OPTIONS',
+        },
+        {
+          key: 'Cross-Origin-Resource-Policy',
+          value: 'cross-origin',
+        },
+        {
+          key: 'Cache-Control',
+          value: 'public, max-age=86400, stale-while-revalidate=604800',
+        },
+      ],
+    },
+    {
+      // Favicons and static branding assets
+      source: '/favicon/(.*)',
+      headers: [
+        {
+          key: 'Access-Control-Allow-Origin',
+          value: '*',
+        },
+        {
+          key: 'Cross-Origin-Resource-Policy',
+          value: 'cross-origin',
+        },
+      ],
+    },
+    {
       // Prevent search engines from indexing admin routes.
       source: '/admin/:path*',
       headers: [

@@ -5,6 +5,22 @@ import path from 'node:path';
 import { ContentService } from '@/lib/services/content.service';
 import { SITE_URL, SITE_NAME, SITE_DOMAIN, PERSONA_LABELS } from '@/lib/constants';
 
+export const OG_HEADERS = {
+  'Content-Type': 'image/png',
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, HEAD, OPTIONS',
+  'Access-Control-Allow-Headers': '*',
+  'Cross-Origin-Resource-Policy': 'cross-origin',
+  'Cache-Control': 'public, max-age=86400, stale-while-revalidate=604800',
+};
+
+export async function OPTIONS() {
+  return new Response(null, {
+    status: 204,
+    headers: OG_HEADERS,
+  });
+}
+
 /**
  * Dynamic OG image generation.
  *
@@ -481,7 +497,7 @@ function generateAboutOG({
         )}
       </div>
     ),
-    { width: 1200, height: 630 },
+    { width: 1200, height: 630, headers: OG_HEADERS },
   );
 }
 
@@ -783,7 +799,7 @@ function generateLibraryOG({
         </div>
       </div>
     ),
-    { width: 1200, height: 630 },
+    { width: 1200, height: 630, headers: OG_HEADERS },
   );
 }
 
@@ -1059,7 +1075,7 @@ function generateScribbleOG({
         </div>
       </div>
     ),
-    { width: 1200, height: 630 },
+    { width: 1200, height: 630, headers: OG_HEADERS },
   );
 }
 
@@ -1409,7 +1425,7 @@ function generateNowOG({
         </div>
       </div>
     ),
-    { width: 1200, height: 630 },
+    { width: 1200, height: 630, headers: OG_HEADERS },
   );
 }
 
@@ -1429,7 +1445,7 @@ function isAllowedCoverHost(hostname: string): boolean {
     const siteHost = new URL(SITE_URL).hostname;
     if (hostname === siteHost) return true;
     if (
-      process.env.NODE_ENV === 'development' &&
+      process.env.NODE_ENV !== 'production' &&
       (hostname === 'localhost' || hostname === '127.0.0.1')
     ) {
       return true;
@@ -1722,6 +1738,7 @@ function generatePostOG({
     {
       width: 1200,
       height: 630,
+      headers: OG_HEADERS,
     },
   );
 }
@@ -1799,6 +1816,7 @@ function generateFallbackOG() {
     {
       width: 1200,
       height: 630,
+      headers: OG_HEADERS,
     },
   );
 }
