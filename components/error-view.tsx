@@ -57,15 +57,26 @@ export function ErrorView({
         </button>
       </div>
 
-      {isDev && error.message && (
-        <div className="mt-8 max-w-md text-left">
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-mid">
-            Debug message
-          </p>
-          <p className="mt-1 font-mono text-xs text-gray-mid break-words">
-            {error.message}
-          </p>
-        </div>
+      {(error.message || error.digest) && (
+        <details className="group mt-8 max-w-md text-left">
+          <summary className="inline-flex cursor-pointer items-center gap-1.5 text-xs text-gray-secondary transition-colors hover:text-paper focus-visible:outline-none select-none">
+            <span className="underline decoration-tinted/40 underline-offset-4 group-open:no-underline">
+              Show technical details
+            </span>
+          </summary>
+          <div className="mt-3 rounded-xl border border-tinted/20 bg-night-soft p-3.5 text-left font-mono text-xs text-ink-soft">
+            {error.message && (
+              <p className="break-words">
+                {error.message}
+              </p>
+            )}
+            {error.digest && (
+              <p className="mt-2 text-[11px] text-gray-secondary">
+                Digest: {error.digest}
+              </p>
+            )}
+          </div>
+        </details>
       )}
     </div>
   );
