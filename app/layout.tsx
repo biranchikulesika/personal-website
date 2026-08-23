@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Space_Grotesk, Newsreader } from 'next/font/google';
 import './globals.css';
 import { rootMetadata, websiteJsonLd, safeJsonLd } from '@/lib/seo';
@@ -17,6 +17,11 @@ const newsreader = Newsreader({
 });
 
 export const metadata: Metadata = rootMetadata;
+
+export const viewport: Viewport = {
+  themeColor: '#141413',
+  colorScheme: 'dark',
+};
 
 export default function RootLayout({
   children,

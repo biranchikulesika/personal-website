@@ -45,6 +45,25 @@ test("rootMetadata allows indexing by default", () => {
   assert.equal(robots.follow, true);
 });
 
+test("rootMetadata has favicon icons and manifest configured", () => {
+  assert.ok(rootMetadata.icons, "rootMetadata should define icons");
+  const icons = rootMetadata.icons as Record<string, unknown>;
+  assert.ok(icons.icon, "icons should have icon entry");
+  assert.ok(icons.apple, "icons should have apple entry");
+  assert.equal(rootMetadata.manifest, "/manifest.webmanifest");
+});
+
+test("manifest function returns valid web app manifest", async () => {
+  const { default: manifest } = await import("../app/manifest");
+  const data = manifest();
+  assert.equal(data.name, "Biranchi Kulesika");
+  assert.equal(data.short_name, "Biranchi");
+  assert.equal(data.background_color, "#141413");
+  assert.equal(data.theme_color, "#141413");
+  assert.equal(data.display, "standalone");
+  assert.ok(data.icons && data.icons.length > 0, "manifest should have icons");
+});
+
 // ── postMetadata ────────────────────────────────────────────────────────────
 
 test("postMetadata generates correct metadata for a blog post", () => {

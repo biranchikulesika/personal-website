@@ -68,6 +68,18 @@ export const rootMetadata: Metadata = {
       'max-snippet': -1,
     },
   },
+  icons: {
+    icon: [
+      { url: '/favicon/favicon.ico' },
+      { url: '/favicon/favicon.svg', type: 'image/svg+xml' },
+      { url: '/favicon/favicon-96x96.png', sizes: '96x96', type: 'image/png' },
+    ],
+    apple: [
+      { url: '/favicon/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
+    ],
+    shortcut: '/favicon/favicon.ico',
+  },
+  manifest: '/manifest.webmanifest',
 };
 
 // ── Page metadata builders ──────────────────────────────────────────────────
@@ -172,10 +184,12 @@ export function websiteJsonLd() {
     url: SITE_URL,
     description: SITE_DESCRIPTION,
     inLanguage: 'en-US',
+    image: `${SITE_URL}/favicon/web-app-manifest-512x512.png`,
     author: {
       '@type': 'Person',
       name: SITE_NAME,
       url: SITE_URL,
+      image: `${SITE_URL}/favicon/web-app-manifest-512x512.png`,
       jobTitle: 'Software Developer & Writer',
       sameAs: [
         'https://github.com/biranchikulesika',
