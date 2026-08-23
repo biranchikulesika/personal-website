@@ -8,6 +8,8 @@ import {
   libraryMetadata,
   scribbleMetadata,
   nowMetadata,
+  homeMetadata,
+  supportMetadata,
   websiteJsonLd,
   articleJsonLd,
   noteJsonLd,
@@ -299,4 +301,20 @@ test("nowMetadata generates correct metadata pointing to dynamic OG route", () =
   const og = meta.openGraph as Record<string, unknown>;
   const images = og.images as Array<{ url: string }>;
   assert.ok(images[0].url.includes("/api/og?type=now"));
+});
+
+test("homeMetadata generates correct metadata pointing to dynamic OG route", () => {
+  const meta = homeMetadata();
+  const og = meta.openGraph as Record<string, unknown>;
+  const images = og.images as Array<{ url: string }>;
+  assert.ok(images[0].url.includes("/api/og?type=home"));
+});
+
+test("supportMetadata generates correct metadata pointing to dynamic OG route", () => {
+  const meta = supportMetadata();
+  assert.equal(meta.title, "Support & Patronage");
+  assert.equal(meta.alternates?.canonical, "https://biranchikulesika.com/support");
+  const og = meta.openGraph as Record<string, unknown>;
+  const images = og.images as Array<{ url: string }>;
+  assert.ok(images[0].url.includes("/api/og?type=support"));
 });

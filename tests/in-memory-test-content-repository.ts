@@ -126,7 +126,7 @@ export class InMemoryTestContentRepository implements ContentRepository {
     return {
       title: "Library",
       href: "/library",
-      subheader: "Books that shaped my thinking",
+      subheader: "Books I've read, loved, and recommend for others to read.",
       items: [...this.books],
     };
   }
