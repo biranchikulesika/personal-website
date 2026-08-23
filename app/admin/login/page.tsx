@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { useSearchParams } from 'next/navigation';
 import { signInWithGoogle, signInWithGitHub, signInWithPasskey, verifyPasskeyLoginAction } from './actions';
 import { getSupabaseBrowser } from '@/lib/supabase/client';
+import { SITE_DOMAIN } from '@/lib/constants';
 
 interface DailyBackground {
   imageUrl: string;
@@ -244,7 +245,7 @@ function LoginForm() {
       {/* Bottom */}
       <div className="relative z-10 shrink-0 pb-5 pt-2 text-center">
         <p className="text-[11px] text-ink-soft/60">
-          biranchikulesika.com
+          {SITE_DOMAIN}
         </p>
       </div>
     </div>

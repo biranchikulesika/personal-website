@@ -1,3 +1,4 @@
+import { SITE_URL } from "../lib/constants";
 import type {
   BlogPost,
   NoteItem,
@@ -123,4 +124,4 @@ export const ALL_PERSONAS: Persona[] = [
 ];
 
 /** Canonical production domain used in tests. */
-export const TEST_DOMAIN = "https://biranchikulesika.com";
+export const TEST_DOMAIN = SITE_URL;

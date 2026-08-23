@@ -220,8 +220,7 @@ Next.js loads environment files in the following order of precedence (highest to
 ## 3. Feature Relationship Map
 
 ```
-DATA_SOURCE=supabase
-      │
+Supabase PostgreSQL & Storage:
       ├── SUPABASE_URL
       ├── NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ──► getSupabasePublic() / Client Queries (RLS)
       └── SUPABASE_SECRET_KEY                   ──► getSupabaseAdmin()  / Admin Operations (Bypasses RLS)
