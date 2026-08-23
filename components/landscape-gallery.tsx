@@ -12,9 +12,13 @@ export interface GalleryImage {
 
 interface LandscapeGalleryProps {
   images?: GalleryImage[];
+  priority?: boolean;
 }
 
-export function LandscapeGallery({ images = [] }: LandscapeGalleryProps) {
+export function LandscapeGallery({
+  images = [],
+  priority = false,
+}: LandscapeGalleryProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
 
   const hasImages = images.length > 0;
@@ -43,7 +47,7 @@ export function LandscapeGallery({ images = [] }: LandscapeGalleryProps) {
             fill
             sizes="(min-width: 1024px) 600px, 90vw"
             className="object-cover object-center transition-transform duration-500 group-hover:scale-105"
-            loading="lazy"
+            priority={priority && currentIndex === 0}
           />
 
           {currentImage.caption && (

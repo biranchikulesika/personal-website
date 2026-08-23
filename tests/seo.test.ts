@@ -4,6 +4,12 @@ import {
   rootMetadata,
   postMetadata,
   noteMetadata,
+  aboutMetadata,
+  libraryMetadata,
+  scribbleMetadata,
+  nowMetadata,
+  homeMetadata,
+  supportMetadata,
   websiteJsonLd,
   articleJsonLd,
   noteJsonLd,
@@ -43,6 +49,25 @@ test("rootMetadata allows indexing by default", () => {
   const robots = rootMetadata.robots as Record<string, unknown>;
   assert.equal(robots.index, true);
   assert.equal(robots.follow, true);
+});
+
+test("rootMetadata has favicon icons and manifest configured", () => {
+  assert.ok(rootMetadata.icons, "rootMetadata should define icons");
+  const icons = rootMetadata.icons as Record<string, unknown>;
+  assert.ok(icons.icon, "icons should have icon entry");
+  assert.ok(icons.apple, "icons should have apple entry");
+  assert.equal(rootMetadata.manifest, "/manifest.webmanifest");
+});
+
+test("manifest function returns valid web app manifest", async () => {
+  const { default: manifest } = await import("../app/manifest");
+  const data = manifest();
+  assert.equal(data.name, "Biranchi Kulesika");
+  assert.equal(data.short_name, "Biranchi");
+  assert.equal(data.background_color, "#141413");
+  assert.equal(data.theme_color, "#141413");
+  assert.equal(data.display, "standalone");
+  assert.ok(data.icons && data.icons.length > 0, "manifest should have icons");
 });
 
 // ── postMetadata ────────────────────────────────────────────────────────────
@@ -238,4 +263,58 @@ test("safeJsonLd escapes < to prevent </script> tag injection breakout", () => {
   const serialized = safeJsonLd(maliciousObject);
   assert.equal(serialized.includes("<"), false, "JSON-LD string must not contain raw < characters");
   assert.ok(serialized.includes(String.raw`\u003c/script>`));
+});
+
+// ── Section metadata builders ───────────────────────────────────────────────
+
+test("aboutMetadata generates correct metadata pointing to dynamic OG route", () => {
+  const meta = aboutMetadata();
+  assert.equal(meta.title, "About");
+  assert.equal(meta.alternates?.canonical, "https://biranchikulesika.com/about");
+  const og = meta.openGraph as Record<string, unknown>;
+  const images = og.images as Array<{ url: string }>;
+  assert.ok(images[0].url.includes("/api/og?type=about"));
+});
+
+test("libraryMetadata generates correct metadata pointing to dynamic OG route", () => {
+  const meta = libraryMetadata();
+  assert.equal(meta.title, "Library");
+  assert.equal(meta.alternates?.canonical, "https://biranchikulesika.com/library");
+  const og = meta.openGraph as Record<string, unknown>;
+  const images = og.images as Array<{ url: string }>;
+  assert.ok(images[0].url.includes("/api/og?type=library"));
+});
+
+test("scribbleMetadata generates correct metadata pointing to dynamic OG route", () => {
+  const meta = scribbleMetadata();
+  assert.equal(meta.title, "Scribble");
+  assert.equal(meta.alternates?.canonical, "https://biranchikulesika.com/scribble");
+  const og = meta.openGraph as Record<string, unknown>;
+  const images = og.images as Array<{ url: string }>;
+  assert.ok(images[0].url.includes("/api/og?type=scribble"));
+});
+
+test("nowMetadata generates correct metadata pointing to dynamic OG route", () => {
+  const meta = nowMetadata();
+  assert.equal(meta.title, "Now");
+  assert.equal(meta.alternates?.canonical, "https://biranchikulesika.com/now");
+  const og = meta.openGraph as Record<string, unknown>;
+  const images = og.images as Array<{ url: string }>;
+  assert.ok(images[0].url.includes("/api/og?type=now"));
+});
+
+test("homeMetadata generates correct metadata pointing to dynamic OG route", () => {
+  const meta = homeMetadata();
+  const og = meta.openGraph as Record<string, unknown>;
+  const images = og.images as Array<{ url: string }>;
+  assert.ok(images[0].url.includes("/api/og?type=home"));
+});
+
+test("supportMetadata generates correct metadata pointing to dynamic OG route", () => {
+  const meta = supportMetadata();
+  assert.equal(meta.title, "Support & Patronage");
+  assert.equal(meta.alternates?.canonical, "https://biranchikulesika.com/support");
+  const og = meta.openGraph as Record<string, unknown>;
+  const images = og.images as Array<{ url: string }>;
+  assert.ok(images[0].url.includes("/api/og?type=support"));
 });

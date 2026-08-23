@@ -68,7 +68,8 @@ test("robots allows public pages", async () => {
 
   assert.ok(result.rules, "robots should have rules");
   const rules = Array.isArray(result.rules) ? result.rules : [result.rules];
-  assert.equal(rules[0].allow, "/", "should allow all public pages");
+  const allow = Array.isArray(rules[0].allow) ? rules[0].allow : [rules[0].allow];
+  assert.ok(allow.includes("/"), "should allow all public pages");
 });
 
 test("robots never mentions or exposes admin routes", async () => {

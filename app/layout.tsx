@@ -1,4 +1,5 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
+import Script from 'next/script';
 import { Space_Grotesk, Newsreader } from 'next/font/google';
 import './globals.css';
 import { rootMetadata, websiteJsonLd, safeJsonLd } from '@/lib/seo';
@@ -18,6 +19,11 @@ const newsreader = Newsreader({
 
 export const metadata: Metadata = rootMetadata;
 
+export const viewport: Viewport = {
+  themeColor: '#141413',
+  colorScheme: 'dark',
+};
+
 export default function RootLayout({
   children,
 }: {
@@ -29,7 +35,9 @@ export default function RootLayout({
       className={`${spaceGrotesk.variable} ${newsreader.variable}`}
     >
       <head>
-        <script
+        <Script
+          id="svg-element-guard"
+          strategy="beforeInteractive"
           dangerouslySetInnerHTML={{
             __html: `(function(){try{if(typeof SVGElement!=='undefined'&&SVGElement.prototype){Object.defineProperty(SVGElement.prototype,'correspondingUseElement',{get:function(){return null;},set:function(){},configurable:true});Object.defineProperty(SVGElement.prototype,'correspondingElement',{get:function(){return null;},set:function(){},configurable:true});}}catch(e){}if(typeof window!=='undefined'){window.addEventListener('error',function(e){var m=e&&e.message?String(e.message):'';if(m.indexOf('correspondingUseElement')!==-1||m.indexOf('nodeType')!==-1||m.indexOf('Permission denied to access property')!==-1){if(e.stopImmediatePropagation)e.stopImmediatePropagation();if(e.preventDefault)e.preventDefault();return true;}},true);window.addEventListener('unhandledrejection',function(e){var m=e&&e.reason?(e.reason.message||String(e.reason)):'';if(m.indexOf('correspondingUseElement')!==-1||m.indexOf('nodeType')!==-1||m.indexOf('Permission denied to access property')!==-1){if(e.stopImmediatePropagation)e.stopImmediatePropagation();if(e.preventDefault)e.preventDefault();}},true);}})();`,
           }}

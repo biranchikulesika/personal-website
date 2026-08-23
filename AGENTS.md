@@ -6,10 +6,35 @@ This file is the single source of truth for AI agents and developers working on 
 
 ## 1. Branch Management & Git Workflow
 
-### Production Branch Isolation
-* **`production` is strictly untouchable.**
-* Never check out, commit to, rebase onto, merge into, or push to the `production` branch.
-* Behave as if the `production` branch does not exist for daily development. Only the repository owner manages production releases.
+### Production Branch & Release Policy
+* **`production` is the deployment branch.**
+* AI agents must never check out, commit to, rebase onto, merge into, or push directly to `production` during daily feature development.
+* **Production Releases via PR**: Only when the repository owner gives **explicit instruction** to release to production, the agent will open a PR from `develop` targeting `production` and execute the squash merge (e.g., using `gh pr create` and `gh pr merge --squash`).
+
+### Post-Production Merge & Develop Recreation Workflow
+* After a successful PR and squash merge into `production`, GitHub PR pruning deletes the remote `develop` head.
+* The agent must immediately perform the following sequence:
+  1. Switch to `production`:
+     ```bash
+     git checkout production
+     ```
+  2. Pull to update the local `production` branch:
+     ```bash
+     git pull origin production
+     ```
+  3. Delete the old local `develop` branch:
+     ```bash
+     git branch -D develop
+     ```
+  4. Create and checkout a fresh `develop` branch from the updated `production`:
+     ```bash
+     git checkout -b develop
+     ```
+  5. Push the new `develop` branch to origin:
+     ```bash
+     git push -u origin develop
+     ```
+  * This guarantees that after every production release, `develop` is re-created cleanly, starting 1:1 in sync with `production`.
 
 ### Develop Branch Policy
 * **`develop` is the base development branch.**
@@ -28,8 +53,9 @@ This file is the single source of truth for AI agents and developers working on 
      ```
      *(e.g., `feat/patron-tier-management`, `fix/slug-collision-handler`, `docs/update-agents-md`)*
 
-### Merge & Pruning Workflow
-* Keep working and committing on the active feature branch.
+### Commit & Merge Authorization Workflow
+* Keep working on the active feature branch.
+* **Do NOT commit or push changes unless explicitly instructed by the repository owner.**
 * **Do NOT merge into `develop` until explicitly instructed by the repository owner.**
 * When and only when the repository owner gives explicit instruction to merge (e.g., via PR or squash merge):
   1. Squash merge the active branch into `develop`.
@@ -183,4 +209,15 @@ All tests must pass with zero errors and zero warnings.
   * Never run `git checkout -- <file>`, `git restore <file>`, `git reset`, `git clean`, or any command to discard/revert uncommitted modifications unless explicitly instructed by the user.
   * Never overwrite or revert files that contain user edits.
 * Always preserve and respect all user modifications and continue working alongside them seamlessly.
+
+---
+
+## 10. Commit & Push Authorization Rule (CRITICAL)
+
+* **Never commit or push changes unless explicitly instructed by the repository owner.**
+* AI agents must make necessary file edits, run validations (`npm test`, `npm run lint`), and present the completed work to the user.
+* **Strictly forbidden actions without explicit instruction**:
+  * Running `git commit` (e.g. `git commit -m`, `git commit -am`).
+  * Running `git push` (e.g. `git push origin <branch>`).
+* Only when the repository owner gives explicit instruction (e.g., *"commit these changes"*, *"commit and push"*), the agent will stage, commit with a concise message, and/or push to remote.
 

@@ -16,17 +16,59 @@ Applied at the root layout (`app/layout.tsx`):
 - **Twitter Card**: `summary_large_image` with `@BKulesika` creator attribution.
 
 ### Page-Specific Metadata Builders
+- **`homeMetadata()`**: Points to `/api/og?type=home`.
+- **`aboutMetadata()`**: Points to `/api/og?type=about`.
+- **`libraryMetadata()`**: Points to `/api/og?type=library`.
+- **`scribbleMetadata()`**: Points to `/api/og?type=scribble`.
+- **`nowMetadata()`**: Points to `/api/og?type=now`.
+- **`supportMetadata()`**: Points to `/api/og?type=support`.
 - **`postMetadata(post: BlogPost)`**:
   - Dynamically calculates canonical URL: `https://biranchikulesika.com/p/${slug}`.
   - Injects `article` Open Graph type, `publishedTime`, `modifiedTime`, tags, and dynamic OG image endpoint `/api/og?slug=${slug}`.
   - If `post.status === 'unpublished'`, automatically injects `robots: { index: false, follow: false }`.
 - **`noteMetadata(note: NoteItem)`**:
   - Calculates canonical URL: `https://biranchikulesika.com/n/${slug}`.
+  - Injects dynamic OG image endpoint `/api/og?slug=${slug}&type=note`.
   - Sets article tags, persona tags, and draft noindex guards.
 
 ---
 
-## 2. Structured Data (JSON-LD)
+## 2. Dynamic Open Graph System (`/api/og`)
+
+Social preview cards are generated on-demand at edge using `@vercel/og` (`ImageResponse`), producing 1200x630 PNG images following the site's dark editorial ledger aesthetic.
+
+### Dynamic Endpoint Paths & Previews
+
+| Target Page | API Path | Dynamic Content Rendered |
+| :--- | :--- | :--- |
+| **Home (`/`)** | `/api/og?type=home` | Homepage hero portrait (`/biranchi.jpeg`), editorial greeting (`"Hi, I'm Biranchi."`), headline, and supporting copy. |
+| **About (`/about`)** | `/api/og?type=about` | Angled 2-column skewed photo grid of personal photos, page headline, and introductory description. |
+| **Library (`/library`)** | `/api/og?type=library` | 3D layered book cover stack from reading catalog, catalog count, and description (`"Books I've read, loved, and recommend for others to read."`). |
+| **Scribble (`/scribble`)** | `/api/og?type=scribble` | Staggered index ledger cards with color-coded accent borders (Terracotta, Sea-Blue, Sage), persona badges, and excerpts. |
+| **Now (`/now`)** | `/api/og?type=now` | Live pulse status, latest timeline update snippet, and chronological node telemetry. |
+| **Support (`/support`)** | `/api/og?type=support` | Unboxed numbered editorial ledger (`01`, `02`, `03`) outlining independent craft pillars with background watermark. |
+| **Essay (`/p/[slug]`)** | `/api/og?slug=[slug]` | Essay title, description, persona label, and full-bleed cover image. |
+| **Atomic Note (`/n/[slug]`)** | `/api/og?slug=[slug]&type=note` | Note title, snippet/subtitle, persona label, and attached media. |
+
+### Query Parameters
+
+- **`type`**: `home` | `about` | `library` | `scribble` | `now` | `support` | `post` | `note`
+- **`slug`**: Identifier for individual post or note.
+- **`title`**: Override headline text (optional).
+- **`description`**: Override supporting text or excerpt (optional).
+- **`persona`**: Persona label (`Builder`, `Thinker`, `Craftsman`) for custom cards (optional).
+- **`cover`**: External or local cover image URL (optional).
+
+### Design Specifications
+- **Dimensions**: `1200 × 630 px` (standard Open Graph aspect ratio `1.91:1`).
+- **Canvas Base**: `#141413` with top tri-color accent strip (`linear-gradient(90deg, #D97757 0%, #04A4BA 50%, #788C5D 100%)`).
+- **Typography**: Editorial Serif for prose & headlines; Space Grotesk / Sans-Serif for technical metadata, tags, and domain branding.
+- **Image Resolution & Fallbacks**: Remote images are fetched and base64-encoded to guarantee deterministic SSR rasterization with SSRF protection against private IP ranges. Self-healing curated fallbacks ensure all cards render without empty spines or broken placeholders.
+
+
+---
+
+## 3. Structured Data (JSON-LD)
 
 Schema.org structured data is injected into HTML `<head>` tags to provide semantic interpretability for AI crawlers (ChatGPT, Claude, Perplexity) and Google Knowledge Graph.
 
@@ -70,7 +112,7 @@ Injected on deep pages (`/about`, `/library`, `/scribble`, `/p/[slug]`, `/n/[slu
 
 ---
 
-## 3. Dynamic Sitemap (`app/sitemap.ts`)
+## 4. Dynamic Sitemap (`app/sitemap.ts`)
 
 Generates `sitemap.xml` dynamically on each crawl request:
 - **Included Routes**:
@@ -85,7 +127,7 @@ Generates `sitemap.xml` dynamically on each crawl request:
 
 ---
 
-## 4. Robots Configuration (`app/robots.ts`)
+## 5. Robots Configuration (`app/robots.ts`)
 
 Generates `robots.txt` dynamically:
 - **`Allow: /`**: Grants access to all public content.
@@ -95,7 +137,8 @@ Generates `robots.txt` dynamically:
 
 ---
 
-## 5. Duplicate Route & Redirect Management
+## 6. Duplicate Route & Redirect Management
 
 - `/fund` permanently redirects (`308`) to canonical `/support` via [`next.config.ts`](file:///home/biranchikulesika/Projects/biranchi/next.config.ts) and [`app/(site)/fund/page.tsx`](file:///home/biranchikulesika/Projects/biranchi/app/%28site%29/fund/page.tsx).
 - Search and query parameters on `/scribble` and `/library` are filtered client-side, preventing search engines from indexing thin query-string result pages.
+
