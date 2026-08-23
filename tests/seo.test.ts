@@ -16,6 +16,7 @@ import {
   breadcrumbJsonLd,
   safeJsonLd,
 } from "../lib/seo";
+import { SITE_URL } from "../lib/constants";
 import type { BlogPost, NoteItem } from "../lib/types";
 
 // ── rootMetadata ────────────────────────────────────────────────────────────
@@ -23,7 +24,7 @@ import type { BlogPost, NoteItem } from "../lib/types";
 test("rootMetadata has metadataBase pointing to production domain", () => {
   assert.ok(rootMetadata.metadataBase);
   const base = rootMetadata.metadataBase as URL;
-  assert.equal(base.origin, "https://biranchikulesika.com");
+  assert.equal(base.origin, SITE_URL);
 });
 
 test("rootMetadata has title template with site name", () => {
@@ -186,7 +187,7 @@ test("websiteJsonLd returns valid Person + WebSite schema", () => {
 
   assert.equal(jsonLd["@type"], "WebSite");
   assert.equal(jsonLd.name, "Biranchi Kulesika");
-  assert.equal(jsonLd.url, "https://biranchikulesika.com");
+  assert.equal(jsonLd.url, SITE_URL);
   assert.equal(jsonLd.author["@type"], "Person");
   assert.equal(jsonLd.author.name, "Biranchi Kulesika");
   assert.ok(jsonLd.author.sameAs.length > 0);
@@ -214,7 +215,7 @@ test("articleJsonLd returns valid Article schema", () => {
   assert.equal(jsonLd.headline, "Test Article");
   assert.equal(jsonLd.datePublished, "2026-03-03");
   assert.equal(jsonLd.dateModified, "2026-08-21");
-  assert.equal(jsonLd.url, "https://biranchikulesika.com/p/test-article");
+  assert.equal(jsonLd.url, `${SITE_URL}/p/test-article`);
   assert.equal(jsonLd.keywords, "craft");
   assert.ok(jsonLd.inLanguage.startsWith("en"));
 });
@@ -238,7 +239,7 @@ test("noteJsonLd returns valid Article/Document schema for atomic note", () => {
   assert.equal(jsonLd["@type"], "Article");
   assert.equal(jsonLd.headline, "Note on Clarity");
   assert.equal(jsonLd.datePublished, "2026-08-21");
-  assert.equal(jsonLd.url, "https://biranchikulesika.com/n/note-on-clarity");
+  assert.equal(jsonLd.url, `${SITE_URL}/n/note-on-clarity`);
 });
 
 test("breadcrumbJsonLd generates valid BreadcrumbList schema", () => {
@@ -270,7 +271,7 @@ test("safeJsonLd escapes < to prevent </script> tag injection breakout", () => {
 test("aboutMetadata generates correct metadata pointing to dynamic OG route", () => {
   const meta = aboutMetadata();
   assert.equal(meta.title, "About");
-  assert.equal(meta.alternates?.canonical, "https://biranchikulesika.com/about");
+  assert.equal(meta.alternates?.canonical, `${SITE_URL}/about`);
   const og = meta.openGraph as Record<string, unknown>;
   const images = og.images as Array<{ url: string }>;
   assert.ok(images[0].url.includes("/api/og?type=about"));
@@ -279,7 +280,7 @@ test("aboutMetadata generates correct metadata pointing to dynamic OG route", ()
 test("libraryMetadata generates correct metadata pointing to dynamic OG route", () => {
   const meta = libraryMetadata();
   assert.equal(meta.title, "Library");
-  assert.equal(meta.alternates?.canonical, "https://biranchikulesika.com/library");
+  assert.equal(meta.alternates?.canonical, `${SITE_URL}/library`);
   const og = meta.openGraph as Record<string, unknown>;
   const images = og.images as Array<{ url: string }>;
   assert.ok(images[0].url.includes("/api/og?type=library"));
@@ -288,7 +289,7 @@ test("libraryMetadata generates correct metadata pointing to dynamic OG route", 
 test("scribbleMetadata generates correct metadata pointing to dynamic OG route", () => {
   const meta = scribbleMetadata();
   assert.equal(meta.title, "Scribble");
-  assert.equal(meta.alternates?.canonical, "https://biranchikulesika.com/scribble");
+  assert.equal(meta.alternates?.canonical, `${SITE_URL}/scribble`);
   const og = meta.openGraph as Record<string, unknown>;
   const images = og.images as Array<{ url: string }>;
   assert.ok(images[0].url.includes("/api/og?type=scribble"));
@@ -297,7 +298,7 @@ test("scribbleMetadata generates correct metadata pointing to dynamic OG route",
 test("nowMetadata generates correct metadata pointing to dynamic OG route", () => {
   const meta = nowMetadata();
   assert.equal(meta.title, "Now");
-  assert.equal(meta.alternates?.canonical, "https://biranchikulesika.com/now");
+  assert.equal(meta.alternates?.canonical, `${SITE_URL}/now`);
   const og = meta.openGraph as Record<string, unknown>;
   const images = og.images as Array<{ url: string }>;
   assert.ok(images[0].url.includes("/api/og?type=now"));
@@ -313,7 +314,7 @@ test("homeMetadata generates correct metadata pointing to dynamic OG route", () 
 test("supportMetadata generates correct metadata pointing to dynamic OG route", () => {
   const meta = supportMetadata();
   assert.equal(meta.title, "Support & Patronage");
-  assert.equal(meta.alternates?.canonical, "https://biranchikulesika.com/support");
+  assert.equal(meta.alternates?.canonical, `${SITE_URL}/support`);
   const og = meta.openGraph as Record<string, unknown>;
   const images = og.images as Array<{ url: string }>;
   assert.ok(images[0].url.includes("/api/og?type=support"));

@@ -15,6 +15,7 @@ import {
 } from '@/components/icons';
 import { NoContentState } from '@/components/ui/states';
 import { getSupabaseBrowser } from '@/lib/supabase/client';
+import { SITE_DOMAIN } from '@/lib/constants';
 import {
   registerPasskeyAction,
   deletePasskeyAction,
@@ -149,7 +150,7 @@ export function AccountManager({
               },
               user: {
                 id: userIdBytes,
-                name: userEmail || 'admin@biranchikulesika.com',
+                name: userEmail || `admin@${SITE_DOMAIN}`,
                 displayName: userName || 'Admin',
               },
               pubKeyCredParams: [
@@ -340,7 +341,7 @@ export function AccountManager({
               </div>
               <p className="mt-1 flex items-center gap-1.5 truncate text-xs text-gray-mid">
                 <EnvelopeIcon className="h-3.5 w-3.5 shrink-0" />
-                <span>{userEmail || 'admin@biranchikulesika.com'}</span>
+                <span>{userEmail || `admin@${SITE_DOMAIN}`}</span>
               </p>
             </div>
           </div>

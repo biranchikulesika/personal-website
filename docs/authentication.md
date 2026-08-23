@@ -14,7 +14,7 @@ This document details the authentication and authorization architecture of the p
 
 ## 2. Target Production Auth Architecture
 
-In a production environment connected to Supabase (`DATA_SOURCE="supabase"`):
+In a production environment connected to Supabase:
 
 ```
 ┌─────────────────────────────────────────────────────────────┐

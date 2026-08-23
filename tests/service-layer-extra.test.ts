@@ -13,6 +13,8 @@ import {
   getSupabaseSecretKey,
   getSupabaseJwtSecret,
   getPostgresUrl,
+  getSiteUrl,
+  getSiteDomain,
 } from "../lib/config/env";
 
 // ── Now Entries CRUD ────────────────────────────────────────────────────────
@@ -314,3 +316,51 @@ test("getSupabaseJwtSecret and getPostgresUrl resolve properly", () => {
     else delete process.env.POSTGRES_URL_NON_POOLING;
   }
 });
+
+test("getSiteUrl and getSiteDomain resolve environment variables and fallback dynamically", () => {
+  const origNextPublic = process.env.NEXT_PUBLIC_SITE_URL;
+  const origSiteUrl = process.env.SITE_URL;
+  const origVercelProd = process.env.VERCEL_PROJECT_PRODUCTION_URL;
+  const origVercel = process.env.VERCEL_URL;
+
+  try {
+    delete process.env.NEXT_PUBLIC_SITE_URL;
+    delete process.env.SITE_URL;
+    delete process.env.VERCEL_PROJECT_PRODUCTION_URL;
+    delete process.env.VERCEL_URL;
+
+    // Fallback default
+    assert.equal(getSiteUrl(), "https://biranchikulesika.com");
+    assert.equal(getSiteDomain(), "biranchikulesika.com");
+
+    // VERCEL_URL fallback
+    process.env.VERCEL_URL = "preview-deploy.vercel.app";
+    assert.equal(getSiteUrl(), "https://preview-deploy.vercel.app");
+    assert.equal(getSiteDomain(), "preview-deploy.vercel.app");
+
+    // VERCEL_PROJECT_PRODUCTION_URL takes precedence over VERCEL_URL
+    process.env.VERCEL_PROJECT_PRODUCTION_URL = "my-custom-domain.org";
+    assert.equal(getSiteUrl(), "https://my-custom-domain.org");
+    assert.equal(getSiteDomain(), "my-custom-domain.org");
+
+    // SITE_URL takes precedence
+    process.env.SITE_URL = "https://example.com/";
+    assert.equal(getSiteUrl(), "https://example.com");
+    assert.equal(getSiteDomain(), "example.com");
+
+    // NEXT_PUBLIC_SITE_URL takes highest precedence
+    process.env.NEXT_PUBLIC_SITE_URL = "https://kulesika.me";
+    assert.equal(getSiteUrl(), "https://kulesika.me");
+    assert.equal(getSiteDomain(), "kulesika.me");
+  } finally {
+    if (origNextPublic) process.env.NEXT_PUBLIC_SITE_URL = origNextPublic;
+    else delete process.env.NEXT_PUBLIC_SITE_URL;
+    if (origSiteUrl) process.env.SITE_URL = origSiteUrl;
+    else delete process.env.SITE_URL;
+    if (origVercelProd) process.env.VERCEL_PROJECT_PRODUCTION_URL = origVercelProd;
+    else delete process.env.VERCEL_PROJECT_PRODUCTION_URL;
+    if (origVercel) process.env.VERCEL_URL = origVercel;
+    else delete process.env.VERCEL_URL;
+  }
+});
+

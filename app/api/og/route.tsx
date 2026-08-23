@@ -389,7 +389,7 @@ function generateHomeOG({
           top: 0,
           left: 0,
           right: 0,
-          height: "4px",
+          height: "6px",
           background:
             "linear-gradient(90deg, #D97757 0%, #04A4BA 50%, #788C5D 100%)",
         }}
@@ -402,7 +402,7 @@ function generateHomeOG({
           flexDirection: "column",
           justifyContent: "space-between",
           flex: "0 0 58%",
-          padding: "52px 64px 48px",
+          padding: "48px 56px 44px 60px",
           position: "relative",
         }}
       >
@@ -415,7 +415,7 @@ function generateHomeOG({
         >
           <span
             style={{
-              fontSize: "13px",
+              fontSize: "18px",
               fontFamily: "sans-serif",
               color: "#D97757",
               textTransform: "uppercase",
@@ -432,13 +432,13 @@ function generateHomeOG({
           style={{
             display: "flex",
             flexDirection: "column",
-            gap: "14px",
+            gap: "16px",
           }}
         >
           <div
             style={{
               display: "flex",
-              fontSize: "24px",
+              fontSize: "32px",
               fontStyle: "italic",
               fontFamily: "serif",
               color: "#D97757",
@@ -450,12 +450,12 @@ function generateHomeOG({
           <div
             style={{
               display: "flex",
-              fontSize: "40px",
+              fontSize: "48px",
               fontWeight: 400,
-              lineHeight: 1.12,
+              lineHeight: 1.14,
               letterSpacing: "-0.025em",
               color: "#FAF9F5",
-              maxWidth: "540px",
+              maxWidth: "580px",
             }}
           >
             {headline}
@@ -465,12 +465,12 @@ function generateHomeOG({
             <div
               style={{
                 display: "flex",
-                fontSize: "17px",
+                fontSize: "22px",
                 fontStyle: "italic",
                 fontFamily: "serif",
                 color: "#B0AEA5",
                 lineHeight: 1.4,
-                maxWidth: "500px",
+                maxWidth: "540px",
               }}
             >
               {supporting}
@@ -487,7 +487,7 @@ function generateHomeOG({
         >
           <span
             style={{
-              fontSize: "17px",
+              fontSize: "22px",
               fontFamily: "sans-serif",
               fontWeight: 600,
               color: "#FAF9F5",
@@ -507,7 +507,7 @@ function generateHomeOG({
           justifyContent: "center",
           flex: "0 0 42%",
           position: "relative",
-          paddingRight: "60px",
+          paddingRight: "50px",
         }}
       >
         {/* Subtle background glow circle */}
@@ -515,8 +515,8 @@ function generateHomeOG({
           style={{
             display: "flex",
             position: "absolute",
-            width: "360px",
-            height: "360px",
+            width: "420px",
+            height: "420px",
             borderRadius: "50%",
             background: "rgba(250,249,245,0.03)",
             border: "1px solid rgba(250,249,245,0.06)",
@@ -527,12 +527,12 @@ function generateHomeOG({
           <div
             style={{
               display: "flex",
-              width: "280px",
-              height: "370px",
-              borderRadius: "20px",
+              width: "320px",
+              height: "420px",
+              borderRadius: "24px",
               overflow: "hidden",
-              border: "1px solid rgba(250,249,245,0.18)",
-              boxShadow: "0 20px 48px rgba(0,0,0,0.65)",
+              border: "2px solid rgba(250,249,245,0.2)",
+              boxShadow: "0 24px 56px rgba(0,0,0,0.7)",
               position: "relative",
             }}
           >
@@ -585,7 +585,7 @@ function generateSupportOG({
           top: 0,
           left: 0,
           right: 0,
-          height: "4px",
+          height: "6px",
           background:
             "linear-gradient(90deg, #D97757 0%, #04A4BA 50%, #788C5D 100%)",
         }}
@@ -597,8 +597,8 @@ function generateSupportOG({
           display: "flex",
           position: "absolute",
           right: "40px",
-          bottom: "20px",
-          fontSize: "150px",
+          bottom: "10px",
+          fontSize: "190px",
           fontFamily: "serif",
           fontStyle: "italic",
           color: "rgba(250, 249, 245, 0.025)",
@@ -616,7 +616,7 @@ function generateSupportOG({
           flexDirection: "column",
           justifyContent: "space-between",
           flex: "0 0 52%",
-          padding: "52px 64px 48px",
+          padding: "48px 56px 44px 60px",
           position: "relative",
         }}
       >
@@ -629,7 +629,7 @@ function generateSupportOG({
         >
           <span
             style={{
-              fontSize: "14px",
+              fontSize: "18px",
               fontFamily: "sans-serif",
               color: "#D97757",
               textTransform: "uppercase",
@@ -646,18 +646,18 @@ function generateSupportOG({
           style={{
             display: "flex",
             flexDirection: "column",
-            gap: "18px",
+            gap: "20px",
           }}
         >
           <div
             style={{
               display: "flex",
-              fontSize: "46px",
+              fontSize: "52px",
               fontWeight: 400,
               lineHeight: 1.12,
               letterSpacing: "-0.025em",
               color: "#FAF9F5",
-              maxWidth: "480px",
+              maxWidth: "520px",
             }}
           >
             {title}
@@ -666,11 +666,11 @@ function generateSupportOG({
           <div
             style={{
               display: "flex",
-              fontSize: "18px",
+              fontSize: "22px",
               fontFamily: "sans-serif",
               color: "#B0AEA5",
               lineHeight: 1.45,
-              maxWidth: "460px",
+              maxWidth: "500px",
             }}
           >
             {subtitle}
@@ -686,7 +686,7 @@ function generateSupportOG({
         >
           <span
             style={{
-              fontSize: "17px",
+              fontSize: "22px",
               fontFamily: "sans-serif",
               fontWeight: 600,
               color: "#FAF9F5",
@@ -706,7 +706,7 @@ function generateSupportOG({
           justifyContent: "center",
           flex: "0 0 48%",
           position: "relative",
-          paddingRight: "64px",
+          paddingRight: "56px",
           paddingLeft: "16px",
         }}
       >
@@ -716,7 +716,7 @@ function generateSupportOG({
             flexDirection: "column",
             gap: "24px",
             width: "100%",
-            maxWidth: "460px",
+            maxWidth: "480px",
           }}
         >
           {/* Item 01 */}
@@ -724,19 +724,19 @@ function generateSupportOG({
             style={{
               display: "flex",
               alignItems: "flex-start",
-              gap: "20px",
-              paddingBottom: "20px",
+              gap: "22px",
+              paddingBottom: "22px",
               borderBottom: "1px solid rgba(250, 249, 245, 0.08)",
             }}
           >
             <span
               style={{
-                fontSize: "13px",
+                fontSize: "18px",
                 fontFamily: "sans-serif",
                 color: "#D97757",
                 fontWeight: 600,
                 letterSpacing: "0.1em",
-                marginTop: "4px",
+                marginTop: "2px",
               }}
             >
               01
@@ -745,12 +745,12 @@ function generateSupportOG({
               style={{
                 display: "flex",
                 flexDirection: "column",
-                gap: "4px",
+                gap: "6px",
               }}
             >
               <span
                 style={{
-                  fontSize: "21px",
+                  fontSize: "26px",
                   fontFamily: "serif",
                   color: "#FAF9F5",
                   lineHeight: 1.2,
@@ -760,9 +760,10 @@ function generateSupportOG({
               </span>
               <span
                 style={{
-                  fontSize: "13px",
+                  fontSize: "17px",
                   fontFamily: "sans-serif",
                   color: "#8A8780",
+                  lineHeight: 1.35,
                 }}
               >
                 No paywalls, subscriptions, or gated essays
@@ -775,19 +776,19 @@ function generateSupportOG({
             style={{
               display: "flex",
               alignItems: "flex-start",
-              gap: "20px",
-              paddingBottom: "20px",
+              gap: "22px",
+              paddingBottom: "22px",
               borderBottom: "1px solid rgba(250, 249, 245, 0.08)",
             }}
           >
             <span
               style={{
-                fontSize: "13px",
+                fontSize: "18px",
                 fontFamily: "sans-serif",
                 color: "#04A4BA",
                 fontWeight: 600,
                 letterSpacing: "0.1em",
-                marginTop: "4px",
+                marginTop: "2px",
               }}
             >
               02
@@ -796,12 +797,12 @@ function generateSupportOG({
               style={{
                 display: "flex",
                 flexDirection: "column",
-                gap: "4px",
+                gap: "6px",
               }}
             >
               <span
                 style={{
-                  fontSize: "21px",
+                  fontSize: "26px",
                   fontFamily: "serif",
                   color: "#FAF9F5",
                   lineHeight: 1.2,
@@ -811,9 +812,10 @@ function generateSupportOG({
               </span>
               <span
                 style={{
-                  fontSize: "13px",
+                  fontSize: "17px",
                   fontFamily: "sans-serif",
                   color: "#8A8780",
+                  lineHeight: 1.35,
                 }}
               >
                 No sponsorships, tracking pixels, or visual noise
@@ -826,17 +828,17 @@ function generateSupportOG({
             style={{
               display: "flex",
               alignItems: "flex-start",
-              gap: "20px",
+              gap: "22px",
             }}
           >
             <span
               style={{
-                fontSize: "13px",
+                fontSize: "18px",
                 fontFamily: "sans-serif",
                 color: "#788C5D",
                 fontWeight: 600,
                 letterSpacing: "0.1em",
-                marginTop: "4px",
+                marginTop: "2px",
               }}
             >
               03
@@ -845,12 +847,12 @@ function generateSupportOG({
               style={{
                 display: "flex",
                 flexDirection: "column",
-                gap: "4px",
+                gap: "6px",
               }}
             >
               <span
                 style={{
-                  fontSize: "21px",
+                  fontSize: "26px",
                   fontFamily: "serif",
                   color: "#FAF9F5",
                   lineHeight: 1.2,
@@ -860,9 +862,10 @@ function generateSupportOG({
               </span>
               <span
                 style={{
-                  fontSize: "13px",
+                  fontSize: "17px",
                   fontFamily: "sans-serif",
                   color: "#8A8780",
+                  lineHeight: 1.35,
                 }}
               >
                 Sustaining servers, research books, tools, and code
@@ -926,7 +929,7 @@ function generateAboutOG({
           top: 0,
           left: 0,
           right: 0,
-          height: "4px",
+          height: "6px",
           background:
             "linear-gradient(90deg, #D97757 0%, #04A4BA 50%, #788C5D 100%)",
         }}
@@ -939,7 +942,7 @@ function generateAboutOG({
           flexDirection: "column",
           justifyContent: "space-between",
           flex: "0 0 54%",
-          padding: "52px 64px 48px",
+          padding: "48px 56px 44px 60px",
           position: "relative",
         }}
       >
@@ -948,12 +951,12 @@ function generateAboutOG({
           style={{
             display: "flex",
             alignItems: "center",
-            gap: "10px",
+            gap: "12px",
           }}
         >
           <span
             style={{
-              fontSize: "14px",
+              fontSize: "18px",
               fontFamily: "sans-serif",
               color: "#D97757",
               textTransform: "uppercase",
@@ -966,15 +969,15 @@ function generateAboutOG({
           <div
             style={{
               display: "flex",
-              width: "4px",
-              height: "4px",
+              width: "6px",
+              height: "6px",
               borderRadius: "50%",
               background: "#78766E",
             }}
           />
           <span
             style={{
-              fontSize: "14px",
+              fontSize: "18px",
               fontFamily: "sans-serif",
               color: "#B0AEA5",
               letterSpacing: "0.05em",
@@ -989,7 +992,7 @@ function generateAboutOG({
           style={{
             display: "flex",
             flexDirection: "column",
-            gap: "16px",
+            gap: "18px",
           }}
         >
           <div
@@ -1000,7 +1003,7 @@ function generateAboutOG({
           >
             <span
               style={{
-                fontSize: "56px",
+                fontSize: "66px",
                 fontWeight: 400,
                 lineHeight: 1.05,
                 letterSpacing: "-0.025em",
@@ -1011,7 +1014,7 @@ function generateAboutOG({
             </span>
             <span
               style={{
-                fontSize: "48px",
+                fontSize: "56px",
                 fontStyle: "italic",
                 fontWeight: 400,
                 lineHeight: 1.1,
@@ -1025,11 +1028,11 @@ function generateAboutOG({
           <div
             style={{
               display: "flex",
-              fontSize: "19px",
+              fontSize: "23px",
               fontFamily: "sans-serif",
               color: "#B0AEA5",
-              lineHeight: 1.45,
-              maxWidth: "480px",
+              lineHeight: 1.42,
+              maxWidth: "520px",
             }}
           >
             {desc}
@@ -1046,7 +1049,7 @@ function generateAboutOG({
         >
           <span
             style={{
-              fontSize: "17px",
+              fontSize: "22px",
               fontFamily: "sans-serif",
               fontWeight: 600,
               color: "#FAF9F5",
@@ -1074,7 +1077,7 @@ function generateAboutOG({
           <div
             style={{
               display: "flex",
-              gap: "14px",
+              gap: "16px",
               transform: "rotate(-4deg)",
               position: "relative",
             }}
@@ -1084,22 +1087,22 @@ function generateAboutOG({
               style={{
                 display: "flex",
                 flexDirection: "column",
-                gap: "14px",
-                marginTop: "-30px",
+                gap: "16px",
+                marginTop: "-34px",
               }}
             >
               {validImages.slice(0, 2).map((src, i) => (
                 <div
                   key={`c1-${i}`}
                   style={{
-                    width: "185px",
-                    height: "235px",
-                    borderRadius: "16px",
+                    width: "215px",
+                    height: "265px",
+                    borderRadius: "20px",
                     overflow: "hidden",
-                    border: "1px solid rgba(250,249,245,0.12)",
+                    border: "2px solid rgba(250,249,245,0.16)",
                     background: "#1c1c1a",
                     position: "relative",
-                    boxShadow: "0 12px 32px rgba(0,0,0,0.5)",
+                    boxShadow: "0 16px 40px rgba(0,0,0,0.55)",
                     display: "flex",
                   }}
                 >
@@ -1134,8 +1137,8 @@ function generateAboutOG({
               style={{
                 display: "flex",
                 flexDirection: "column",
-                gap: "14px",
-                marginTop: "15px",
+                gap: "16px",
+                marginTop: "16px",
               }}
             >
               {(validImages.length >= 4
@@ -1145,14 +1148,14 @@ function generateAboutOG({
                 <div
                   key={`c2-${i}`}
                   style={{
-                    width: "185px",
-                    height: "235px",
-                    borderRadius: "16px",
+                    width: "215px",
+                    height: "265px",
+                    borderRadius: "20px",
                     overflow: "hidden",
-                    border: "1px solid rgba(250,249,245,0.12)",
+                    border: "2px solid rgba(250,249,245,0.16)",
                     background: "#1c1c1a",
                     position: "relative",
-                    boxShadow: "0 12px 32px rgba(0,0,0,0.5)",
+                    boxShadow: "0 16px 40px rgba(0,0,0,0.55)",
                     display: "flex",
                   }}
                 >
@@ -1277,7 +1280,7 @@ function generateLibraryOG({
           top: 0,
           left: 0,
           right: 0,
-          height: "4px",
+          height: "6px",
           background:
             "linear-gradient(90deg, #D97757 0%, #04A4BA 50%, #788C5D 100%)",
         }}
@@ -1290,7 +1293,7 @@ function generateLibraryOG({
           flexDirection: "column",
           justifyContent: "space-between",
           flex: "0 0 52%",
-          padding: "52px 64px 48px",
+          padding: "48px 56px 44px 60px",
           position: "relative",
         }}
       >
@@ -1299,12 +1302,12 @@ function generateLibraryOG({
           style={{
             display: "flex",
             alignItems: "center",
-            gap: "10px",
+            gap: "12px",
           }}
         >
           <span
             style={{
-              fontSize: "14px",
+              fontSize: "18px",
               fontFamily: "sans-serif",
               color: "#D97757",
               textTransform: "uppercase",
@@ -1317,15 +1320,15 @@ function generateLibraryOG({
           <div
             style={{
               display: "flex",
-              width: "4px",
-              height: "4px",
+              width: "6px",
+              height: "6px",
               borderRadius: "50%",
               background: "#78766E",
             }}
           />
           <span
             style={{
-              fontSize: "14px",
+              fontSize: "18px",
               fontFamily: "sans-serif",
               color: "#B0AEA5",
               letterSpacing: "0.05em",
@@ -1342,13 +1345,13 @@ function generateLibraryOG({
           style={{
             display: "flex",
             flexDirection: "column",
-            gap: "16px",
+            gap: "18px",
           }}
         >
           <div
             style={{
               display: "flex",
-              fontSize: "64px",
+              fontSize: "76px",
               fontWeight: 400,
               lineHeight: 1.05,
               letterSpacing: "-0.025em",
@@ -1361,11 +1364,11 @@ function generateLibraryOG({
           <div
             style={{
               display: "flex",
-              fontSize: "20px",
+              fontSize: "24px",
               fontFamily: "sans-serif",
               color: "#B0AEA5",
-              lineHeight: 1.45,
-              maxWidth: "460px",
+              lineHeight: 1.42,
+              maxWidth: "500px",
             }}
           >
             {desc}
@@ -1381,7 +1384,7 @@ function generateLibraryOG({
         >
           <span
             style={{
-              fontSize: "17px",
+              fontSize: "22px",
               fontFamily: "sans-serif",
               fontWeight: 600,
               color: "#FAF9F5",
@@ -1401,7 +1404,7 @@ function generateLibraryOG({
           justifyContent: "center",
           flex: "0 0 48%",
           position: "relative",
-          paddingRight: "48px",
+          paddingRight: "44px",
         }}
       >
         {/* Layered books row */}
@@ -1409,7 +1412,7 @@ function generateLibraryOG({
           style={{
             display: "flex",
             alignItems: "center",
-            gap: "14px",
+            gap: "16px",
             position: "relative",
           }}
         >
@@ -1421,14 +1424,14 @@ function generateLibraryOG({
               <div
                 key={book.id}
                 style={{
-                  width: "160px",
-                  height: "240px",
-                  borderRadius: "8px",
+                  width: "185px",
+                  height: "275px",
+                  borderRadius: "12px",
                   overflow: "hidden",
-                  border: "1px solid rgba(250,249,245,0.15)",
-                  borderLeft: "3px solid rgba(250,249,245,0.3)",
+                  border: "1px solid rgba(250,249,245,0.18)",
+                  borderLeft: "4px solid rgba(250,249,245,0.35)",
                   background: "#1e1e1c",
-                  boxShadow: "0 20px 40px rgba(0,0,0,0.6)",
+                  boxShadow: "0 24px 48px rgba(0,0,0,0.65)",
                   position: "relative",
                   transform: `rotate(${rotation}deg)`,
                   display: "flex",
@@ -1454,7 +1457,7 @@ function generateLibraryOG({
                       display: "flex",
                       flexDirection: "column",
                       justifyContent: "space-between",
-                      padding: "16px",
+                      padding: "20px",
                       background:
                         "linear-gradient(145deg, #262522 0%, #171715 100%)",
                     }}
@@ -1462,11 +1465,12 @@ function generateLibraryOG({
                     <div
                       style={{
                         display: "flex",
-                        fontSize: "11px",
+                        fontSize: "14px",
                         fontFamily: "sans-serif",
                         color: "#D97757",
                         textTransform: "uppercase",
-                        letterSpacing: "0.1em",
+                        letterSpacing: "0.12em",
+                        fontWeight: 600,
                       }}
                     >
                       Book
@@ -1475,13 +1479,13 @@ function generateLibraryOG({
                       style={{
                         display: "flex",
                         flexDirection: "column",
-                        gap: "6px",
+                        gap: "8px",
                       }}
                     >
                       <span
                         style={{
                           fontFamily: "serif",
-                          fontSize: "15px",
+                          fontSize: "19px",
                           fontStyle: "italic",
                           lineHeight: 1.25,
                           color: "#FAF9F5",
@@ -1492,7 +1496,7 @@ function generateLibraryOG({
                       <span
                         style={{
                           fontFamily: "sans-serif",
-                          fontSize: "11px",
+                          fontSize: "14px",
                           color: "#B0AEA5",
                         }}
                       >
@@ -1536,9 +1540,9 @@ function generateScribbleOG({
   const featured = entries.slice(0, 3);
 
   const cardAccents = [
-    { borderLeft: "4px solid #D97757", color: "#D97757", rot: -2.5 },
-    { borderLeft: "4px solid #04A4BA", color: "#04A4BA", rot: 1.5 },
-    { borderLeft: "4px solid #788C5D", color: "#788C5D", rot: -1.0 },
+    { borderLeft: "5px solid #D97757", color: "#D97757", rot: -2.5 },
+    { borderLeft: "5px solid #04A4BA", color: "#04A4BA", rot: 1.5 },
+    { borderLeft: "5px solid #788C5D", color: "#788C5D", rot: -1.0 },
   ];
 
   return new ImageResponse(
@@ -1563,7 +1567,7 @@ function generateScribbleOG({
           top: 0,
           left: 0,
           right: 0,
-          height: "4px",
+          height: "6px",
           background:
             "linear-gradient(90deg, #D97757 0%, #04A4BA 50%, #788C5D 100%)",
         }}
@@ -1576,7 +1580,7 @@ function generateScribbleOG({
           flexDirection: "column",
           justifyContent: "space-between",
           flex: "0 0 48%",
-          padding: "52px 64px 48px",
+          padding: "48px 56px 44px 60px",
           position: "relative",
         }}
       >
@@ -1585,12 +1589,12 @@ function generateScribbleOG({
           style={{
             display: "flex",
             alignItems: "center",
-            gap: "10px",
+            gap: "12px",
           }}
         >
           <span
             style={{
-              fontSize: "14px",
+              fontSize: "18px",
               fontFamily: "sans-serif",
               color: "#D97757",
               textTransform: "uppercase",
@@ -1603,15 +1607,15 @@ function generateScribbleOG({
           <div
             style={{
               display: "flex",
-              width: "4px",
-              height: "4px",
+              width: "6px",
+              height: "6px",
               borderRadius: "50%",
               background: "#78766E",
             }}
           />
           <span
             style={{
-              fontSize: "14px",
+              fontSize: "18px",
               fontFamily: "sans-serif",
               color: "#B0AEA5",
               letterSpacing: "0.05em",
@@ -1626,13 +1630,13 @@ function generateScribbleOG({
           style={{
             display: "flex",
             flexDirection: "column",
-            gap: "16px",
+            gap: "18px",
           }}
         >
           <div
             style={{
               display: "flex",
-              fontSize: "64px",
+              fontSize: "76px",
               fontWeight: 400,
               lineHeight: 1.05,
               letterSpacing: "-0.025em",
@@ -1645,11 +1649,11 @@ function generateScribbleOG({
           <div
             style={{
               display: "flex",
-              fontSize: "20px",
+              fontSize: "24px",
               fontFamily: "sans-serif",
               color: "#B0AEA5",
-              lineHeight: 1.45,
-              maxWidth: "440px",
+              lineHeight: 1.42,
+              maxWidth: "480px",
             }}
           >
             {desc}
@@ -1665,7 +1669,7 @@ function generateScribbleOG({
         >
           <span
             style={{
-              fontSize: "17px",
+              fontSize: "22px",
               fontFamily: "sans-serif",
               fontWeight: 600,
               color: "#FAF9F5",
@@ -1685,7 +1689,7 @@ function generateScribbleOG({
           justifyContent: "center",
           flex: "0 0 52%",
           position: "relative",
-          paddingRight: "48px",
+          paddingRight: "44px",
         }}
       >
         {/* Staggered layered ledger cards */}
@@ -1693,16 +1697,16 @@ function generateScribbleOG({
           style={{
             display: "flex",
             flexDirection: "column",
-            gap: "14px",
+            gap: "16px",
             width: "100%",
-            maxWidth: "480px",
+            maxWidth: "520px",
             position: "relative",
           }}
         >
           {featured.map((entry, i) => {
             const accent = cardAccents[i] || cardAccents[0];
             const snippet = entry.description
-              ? entry.description.slice(0, 95)
+              ? entry.description.slice(0, 90)
               : "";
 
             return (
@@ -1715,9 +1719,9 @@ function generateScribbleOG({
                   background: "#191917",
                   border: "1px solid rgba(250,249,245,0.13)",
                   borderLeft: accent.borderLeft,
-                  borderRadius: "12px",
-                  padding: "16px 20px",
-                  boxShadow: "0 14px 30px rgba(0,0,0,0.5)",
+                  borderRadius: "14px",
+                  padding: "18px 22px",
+                  boxShadow: "0 16px 36px rgba(0,0,0,0.55)",
                   transform: `rotate(${accent.rot}deg)`,
                 }}
               >
@@ -1731,7 +1735,7 @@ function generateScribbleOG({
                 >
                   <span
                     style={{
-                      fontSize: "11px",
+                      fontSize: "14px",
                       fontFamily: "sans-serif",
                       color: accent.color,
                       textTransform: "uppercase",
@@ -1744,7 +1748,7 @@ function generateScribbleOG({
                   {entry.persona && (
                     <span
                       style={{
-                        fontSize: "11px",
+                        fontSize: "14px",
                         fontFamily: "sans-serif",
                         color: "#8A8780",
                         textTransform: "capitalize",
@@ -1758,7 +1762,7 @@ function generateScribbleOG({
                 <div
                   style={{
                     display: "flex",
-                    fontSize: "18px",
+                    fontSize: "22px",
                     fontFamily: "serif",
                     lineHeight: 1.25,
                     color: "#FAF9F5",
@@ -1772,10 +1776,10 @@ function generateScribbleOG({
                   <div
                     style={{
                       display: "flex",
-                      fontSize: "13px",
+                      fontSize: "16px",
                       fontFamily: "sans-serif",
                       color: "#9E9C94",
-                      lineHeight: 1.4,
+                      lineHeight: 1.35,
                     }}
                   >
                     {snippet}…
@@ -1849,7 +1853,7 @@ function generateNowOG({
           top: 0,
           left: 0,
           right: 0,
-          height: "4px",
+          height: "6px",
           background:
             "linear-gradient(90deg, #D97757 0%, #04A4BA 50%, #788C5D 100%)",
         }}
@@ -1862,7 +1866,7 @@ function generateNowOG({
           flexDirection: "column",
           justifyContent: "space-between",
           flex: "0 0 52%",
-          padding: "52px 64px 48px",
+          padding: "48px 56px 44px 60px",
           position: "relative",
         }}
       >
@@ -1871,21 +1875,21 @@ function generateNowOG({
           style={{
             display: "flex",
             alignItems: "center",
-            gap: "10px",
+            gap: "12px",
           }}
         >
           <div
             style={{
               display: "flex",
-              width: "8px",
-              height: "8px",
+              width: "11px",
+              height: "11px",
               borderRadius: "50%",
               background: "#04A4BA",
             }}
           />
           <span
             style={{
-              fontSize: "14px",
+              fontSize: "18px",
               fontFamily: "sans-serif",
               color: "#04A4BA",
               textTransform: "uppercase",
@@ -1898,15 +1902,15 @@ function generateNowOG({
           <div
             style={{
               display: "flex",
-              width: "4px",
-              height: "4px",
+              width: "6px",
+              height: "6px",
               borderRadius: "50%",
               background: "#78766E",
             }}
           />
           <span
             style={{
-              fontSize: "14px",
+              fontSize: "18px",
               fontFamily: "sans-serif",
               color: "#B0AEA5",
               letterSpacing: "0.05em",
@@ -1921,13 +1925,13 @@ function generateNowOG({
           style={{
             display: "flex",
             flexDirection: "column",
-            gap: "16px",
+            gap: "18px",
           }}
         >
           <div
             style={{
               display: "flex",
-              fontSize: "64px",
+              fontSize: "76px",
               fontWeight: 400,
               lineHeight: 1.05,
               letterSpacing: "-0.025em",
@@ -1940,11 +1944,11 @@ function generateNowOG({
           <div
             style={{
               display: "flex",
-              fontSize: "20px",
+              fontSize: "24px",
               fontFamily: "sans-serif",
               color: "#B0AEA5",
-              lineHeight: 1.45,
-              maxWidth: "460px",
+              lineHeight: 1.42,
+              maxWidth: "500px",
             }}
           >
             {desc}
@@ -1960,7 +1964,7 @@ function generateNowOG({
         >
           <span
             style={{
-              fontSize: "17px",
+              fontSize: "22px",
               fontFamily: "sans-serif",
               fontWeight: 600,
               color: "#FAF9F5",
@@ -1980,7 +1984,7 @@ function generateNowOG({
           justifyContent: "center",
           flex: "0 0 48%",
           position: "relative",
-          paddingRight: "56px",
+          paddingRight: "50px",
         }}
       >
         {/* Timeline visualization */}
@@ -1988,9 +1992,9 @@ function generateNowOG({
           style={{
             display: "flex",
             flexDirection: "column",
-            gap: "20px",
+            gap: "24px",
             width: "100%",
-            maxWidth: "440px",
+            maxWidth: "480px",
             position: "relative",
           }}
         >
@@ -2000,12 +2004,12 @@ function generateNowOG({
               style={{
                 display: "flex",
                 flexDirection: "column",
-                gap: "12px",
+                gap: "14px",
                 background: "#1c1c1a",
-                border: "1px solid rgba(4,164,186,0.3)",
-                borderRadius: "16px",
-                padding: "24px 26px",
-                boxShadow: "0 16px 36px rgba(0,0,0,0.5)",
+                border: "2px solid rgba(4,164,186,0.35)",
+                borderRadius: "18px",
+                padding: "26px 28px",
+                boxShadow: "0 20px 44px rgba(0,0,0,0.55)",
                 position: "relative",
               }}
             >
@@ -2018,11 +2022,11 @@ function generateNowOG({
               >
                 <span
                   style={{
-                    fontSize: "12px",
+                    fontSize: "15px",
                     fontFamily: "sans-serif",
                     color: "#04A4BA",
                     fontWeight: 600,
-                    letterSpacing: "0.08em",
+                    letterSpacing: "0.1em",
                     textTransform: "uppercase",
                   }}
                 >
@@ -2030,7 +2034,7 @@ function generateNowOG({
                 </span>
                 <span
                   style={{
-                    fontSize: "12px",
+                    fontSize: "15px",
                     fontFamily: "sans-serif",
                     color: "#B0AEA5",
                   }}
@@ -2043,7 +2047,7 @@ function generateNowOG({
                 <div
                   style={{
                     display: "flex",
-                    fontSize: "15px",
+                    fontSize: "20px",
                     fontFamily: "sans-serif",
                     color: "#FAF9F5",
                     lineHeight: 1.45,
@@ -2067,8 +2071,8 @@ function generateNowOG({
             <div
               style={{
                 display: "flex",
-                width: "10px",
-                height: "10px",
+                width: "12px",
+                height: "12px",
                 borderRadius: "50%",
                 background: "#04A4BA",
               }}
@@ -2076,9 +2080,26 @@ function generateNowOG({
             <div
               style={{
                 display: "flex",
-                height: "2px",
-                width: "60px",
+                height: "3px",
+                width: "65px",
                 background: "rgba(250,249,245,0.15)",
+              }}
+            />
+            <div
+              style={{
+                display: "flex",
+                width: "10px",
+                height: "10px",
+                borderRadius: "50%",
+                background: "rgba(250,249,245,0.2)",
+              }}
+            />
+            <div
+              style={{
+                display: "flex",
+                height: "3px",
+                width: "45px",
+                background: "rgba(250,249,245,0.1)",
               }}
             />
             <div
@@ -2087,32 +2108,15 @@ function generateNowOG({
                 width: "8px",
                 height: "8px",
                 borderRadius: "50%",
-                background: "rgba(250,249,245,0.2)",
-              }}
-            />
-            <div
-              style={{
-                display: "flex",
-                height: "2px",
-                width: "40px",
-                background: "rgba(250,249,245,0.1)",
-              }}
-            />
-            <div
-              style={{
-                display: "flex",
-                width: "6px",
-                height: "6px",
-                borderRadius: "50%",
                 background: "rgba(250,249,245,0.15)",
               }}
             />
             <span
               style={{
-                fontSize: "12px",
+                fontSize: "15px",
                 fontFamily: "sans-serif",
                 color: "#8A8780",
-                marginLeft: "8px",
+                marginLeft: "10px",
               }}
             >
               {entryCount} updates recorded
@@ -2126,8 +2130,8 @@ function generateNowOG({
             display: "flex",
             position: "absolute",
             right: "24px",
-            bottom: "24px",
-            fontSize: "140px",
+            bottom: "16px",
+            fontSize: "180px",
             fontWeight: 400,
             lineHeight: 1,
             color: "rgba(250,249,245,0.025)",
@@ -2290,7 +2294,7 @@ function generatePostOG({
           top: 0,
           left: 0,
           right: 0,
-          height: "4px",
+          height: "6px",
           background:
             "linear-gradient(90deg, #D97757 0%, #04A4BA 50%, #788C5D 100%)",
         }}
@@ -2309,7 +2313,7 @@ function generatePostOG({
         {(typeLabel || personaLabel) && (
           <div
             style={{
-              padding: "48px 72px 0",
+              padding: "48px 64px 0",
               display: "flex",
               alignItems: "center",
               gap: "12px",
@@ -2317,7 +2321,7 @@ function generatePostOG({
           >
             <span
               style={{
-                fontSize: "15px",
+                fontSize: "18px",
                 fontFamily: "sans-serif",
                 color: "#D97757",
                 textTransform: "uppercase",
@@ -2331,8 +2335,8 @@ function generatePostOG({
               <div
                 style={{
                   display: "flex",
-                  width: "4px",
-                  height: "4px",
+                  width: "6px",
+                  height: "6px",
                   borderRadius: "50%",
                   background: "#78766E",
                 }}
@@ -2341,7 +2345,7 @@ function generatePostOG({
             {personaLabel && (
               <span
                 style={{
-                  fontSize: "15px",
+                  fontSize: "18px",
                   fontFamily: "sans-serif",
                   color: "#D97757",
                   textTransform: "uppercase",
@@ -2362,18 +2366,18 @@ function generatePostOG({
             flexDirection: "column",
             flex: 1,
             justifyContent: "center",
-            padding: "0 72px",
+            padding: "0 64px",
           }}
         >
           {/* Title */}
           <div
             style={{
               display: "flex",
-              fontSize: isHome ? "80px" : "64px",
+              fontSize: isHome ? "86px" : (hasCover ? "68px" : "76px"),
               fontWeight: 400,
-              lineHeight: 1.05,
+              lineHeight: 1.08,
               letterSpacing: "-0.025em",
-              maxWidth: hasCover ? "580px" : "900px",
+              maxWidth: hasCover ? "620px" : "1000px",
             }}
           >
             {displayTitle}
@@ -2384,11 +2388,11 @@ function generatePostOG({
             <div
               style={{
                 display: "flex",
-                fontSize: "21px",
+                fontSize: "25px",
                 fontFamily: "sans-serif",
                 color: "#B0AEA5",
-                marginTop: "24px",
-                maxWidth: hasCover ? "480px" : "800px",
+                marginTop: "20px",
+                maxWidth: hasCover ? "560px" : "960px",
                 lineHeight: 1.4,
               }}
             >
@@ -2402,13 +2406,13 @@ function generatePostOG({
           style={{
             display: "flex",
             alignItems: "center",
-            padding: "0 72px 48px",
+            padding: "0 64px 44px",
           }}
         >
           <div
             style={{
               display: "flex",
-              fontSize: "18px",
+              fontSize: "22px",
               fontFamily: "sans-serif",
               fontWeight: 600,
               color: "#FAF9F5",
@@ -2426,8 +2430,8 @@ function generatePostOG({
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            flex: "0 0 38%",
-            padding: "56px 64px 56px 0",
+            flex: "0 0 40%",
+            padding: "44px 56px 44px 0",
             position: "relative",
           }}
         >
@@ -2436,8 +2440,8 @@ function generatePostOG({
             src={coverImageB64}
             alt=""
             style={{
-              maxWidth: "85%",
-              maxHeight: "80%",
+              maxWidth: "92%",
+              maxHeight: "88%",
               objectFit: "contain",
               position: "relative",
             }}
@@ -2462,7 +2466,7 @@ function generateFallbackOG() {
         display: "flex",
         flexDirection: "column",
         justifyContent: "space-between",
-        padding: "48px 72px",
+        padding: "48px 64px 44px",
         background: "#141413",
         color: "#FAF9F5",
         fontFamily: "serif",
@@ -2478,7 +2482,7 @@ function generateFallbackOG() {
           top: 0,
           left: 0,
           right: 0,
-          height: "4px",
+          height: "6px",
           background:
             "linear-gradient(90deg, #D97757 0%, #04A4BA 50%, #788C5D 100%)",
         }}
@@ -2495,7 +2499,7 @@ function generateFallbackOG() {
         <div
           style={{
             display: "flex",
-            fontSize: "80px",
+            fontSize: "92px",
             fontWeight: 400,
             lineHeight: 1.05,
             letterSpacing: "-0.025em",
@@ -2514,7 +2518,7 @@ function generateFallbackOG() {
         <div
           style={{
             display: "flex",
-            fontSize: "18px",
+            fontSize: "24px",
             fontFamily: "sans-serif",
             fontWeight: 600,
             color: "#FAF9F5",
@@ -2531,3 +2535,4 @@ function generateFallbackOG() {
     },
   );
 }
+
