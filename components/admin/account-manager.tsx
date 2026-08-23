@@ -113,22 +113,8 @@ export function AccountManager({
     try {
       let credentialId: string | undefined = undefined;
 
-      // 1. Try Supabase browser client if configured
-      const supabase = getSupabaseBrowser();
-      if (supabase) {
-        try {
-          const { data, error } = await supabase.auth.registerPasskey();
-          if (!error && data) {
-            credentialId = (data as { id?: string })?.id;
-          }
-        } catch {
-          // Fallback to standard WebAuthn
-        }
-      }
-
-      // 2. Standard WebAuthn ceremony in browser
+      // Standard WebAuthn ceremony in browser
       if (
-        !credentialId &&
         typeof window !== 'undefined' &&
         window.PublicKeyCredential &&
         navigator.credentials
@@ -138,7 +124,7 @@ export function AccountManager({
           window.crypto.getRandomValues(challenge);
           const userIdBytes = new TextEncoder().encode(userEmail || 'admin');
 
-          const credential = await navigator.credentials.create({
+          const credential = (await navigator.credentials.create({
             publicKey: {
               challenge,
               rp: {
@@ -164,7 +150,7 @@ export function AccountManager({
               },
               attestation: 'none',
             },
-          });
+          })) as PublicKeyCredential | null;
 
           if (credential) {
             credentialId = credential.id;
@@ -176,7 +162,12 @@ export function AccountManager({
             setIsRegistering(false);
             return;
           }
+          throw webauthnErr;
         }
+      } else {
+        showToast('WebAuthn / Passkeys are not supported by this browser.');
+        setIsRegistering(false);
+        return;
       }
 
       // 3. Persist via server action
