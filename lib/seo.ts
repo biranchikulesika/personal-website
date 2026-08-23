@@ -170,6 +170,132 @@ export function noteMetadata(note: NoteItem): Metadata {
   };
 }
 
+/**
+ * Generate metadata for the About page.
+ */
+export function aboutMetadata(): Metadata {
+  const url = `${SITE_URL}/about`;
+  const title = 'About';
+  const description =
+    'A little about Biranchi Kulesika, his work, writing, interests, and the things he is learning along the way.';
+  const ogUrl = `${SITE_URL}/api/og?type=about`;
+
+  return {
+    title,
+    description,
+    alternates: { canonical: url },
+    openGraph: {
+      type: 'profile',
+      title: 'About | Biranchi Kulesika',
+      description,
+      url,
+      siteName: SITE_NAME,
+      images: [{ url: ogUrl, width: 1200, height: 630, alt: 'About Biranchi Kulesika' }],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      creator: '@BKulesika',
+      title: 'About | Biranchi Kulesika',
+      description,
+      images: [ogUrl],
+    },
+  };
+}
+
+/**
+ * Generate metadata for the Library page.
+ */
+export function libraryMetadata(): Metadata {
+  const url = `${SITE_URL}/library`;
+  const title = 'Library';
+  const description = 'Books I’ve read, loved, and think are worth recommending.';
+  const ogUrl = `${SITE_URL}/api/og?type=library`;
+
+  return {
+    title,
+    description,
+    alternates: { canonical: url },
+    openGraph: {
+      type: 'website',
+      title: 'Library | Biranchi Kulesika',
+      description,
+      url,
+      siteName: SITE_NAME,
+      images: [{ url: ogUrl, width: 1200, height: 630, alt: 'Library' }],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      creator: '@BKulesika',
+      title: 'Library | Biranchi Kulesika',
+      description,
+      images: [ogUrl],
+    },
+  };
+}
+
+/**
+ * Generate metadata for the Scribble page.
+ */
+export function scribbleMetadata(): Metadata {
+  const url = `${SITE_URL}/scribble`;
+  const title = 'Scribble';
+  const description = 'Writing and thinking, shared openly.';
+  const ogUrl = `${SITE_URL}/api/og?type=scribble`;
+
+  return {
+    title,
+    description,
+    alternates: { canonical: url },
+    openGraph: {
+      type: 'website',
+      title: 'Scribble | Biranchi Kulesika',
+      description,
+      url,
+      siteName: SITE_NAME,
+      images: [{ url: ogUrl, width: 1200, height: 630, alt: 'Scribble' }],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      creator: '@BKulesika',
+      title: 'Scribble | Biranchi Kulesika',
+      description,
+      images: [ogUrl],
+    },
+  };
+}
+
+/**
+ * Generate metadata for the Now page.
+ */
+export function nowMetadata(): Metadata {
+  const url = `${SITE_URL}/now`;
+  const title = 'Now';
+  const description =
+    'What I’m reading, exploring, working on, and thinking about these days.';
+  const ogUrl = `${SITE_URL}/api/og?type=now`;
+
+  return {
+    title,
+    description,
+    alternates: { canonical: url },
+    openGraph: {
+      type: 'website',
+      title: 'Now | Biranchi Kulesika',
+      description,
+      url,
+      siteName: SITE_NAME,
+      images: [{ url: ogUrl, width: 1200, height: 630, alt: 'Now' }],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      creator: '@BKulesika',
+      title: 'Now | Biranchi Kulesika',
+      description,
+      images: [ogUrl],
+    },
+  };
+}
+
 // ── Structured data (JSON-LD) ───────────────────────────────────────────────
 
 /**
