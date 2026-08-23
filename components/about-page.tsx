@@ -76,7 +76,7 @@ export function AboutPageView({ site, featuredWriting }: AboutPageProps) {
           </div>
 
           <div className="mt-8">
-            <LandscapeGallery images={ABOUT_GALLERY_IMAGES} />
+            <LandscapeGallery images={ABOUT_GALLERY_IMAGES} priority />
           </div>
         </div>
 
@@ -87,6 +87,7 @@ export function AboutPageView({ site, featuredWriting }: AboutPageProps) {
               src="/selfiewithmiku.jpeg"
               alt="Biranchi with Miku"
               fill
+              priority
               sizes="(min-width: 1024px) 240px, 45vw"
               className="object-cover object-center transition-transform duration-500 group-hover:scale-105"
             />
@@ -97,6 +98,7 @@ export function AboutPageView({ site, featuredWriting }: AboutPageProps) {
               src="/selfiewithblessie.jpeg"
               alt="Biranchi with Blessie"
               fill
+              priority
               sizes="(min-width: 1024px) 240px, 45vw"
               className="object-cover object-center transition-transform duration-500 group-hover:scale-105"
             />
