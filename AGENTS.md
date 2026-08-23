@@ -171,3 +171,16 @@ All tests must pass with zero errors and zero warnings.
 * Do **not** run `npm run clean` or any command that removes build artifacts.
 * Next.js Fast Refresh automatically detects and reloads file changes. Let it do its job.
 * If a server restart is genuinely required, stop and ask — only the repository owner starts and stops the dev server.
+
+---
+
+## 9. Concurrent User Changes & Non-Destructive Git Policy (CRITICAL)
+
+* **Never revert, overwrite, or discard user working changes.**
+* The repository owner frequently makes edits and tweaks directly in the background while tasks are being performed.
+* If uncommitted edits or modified files exist that you did not make, **they are intentional changes made by the user**.
+* **Strictly forbidden actions**:
+  * Never run `git checkout -- <file>`, `git restore <file>`, `git reset`, `git clean`, or any command to discard/revert uncommitted modifications unless explicitly instructed by the user.
+  * Never overwrite or revert files that contain user edits.
+* Always preserve and respect all user modifications and continue working alongside them seamlessly.
+

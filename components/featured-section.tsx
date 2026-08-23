@@ -79,7 +79,7 @@ export function FeaturedSection({ posts, books }: FeaturedSectionProps) {
               <FeaturedPostCard key={post.slug} post={post} />
             ))}
           </div>
-          <div className="no-scrollbar -mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-1 sm:hidden">
+          <div className="no-scrollbar -mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto overscroll-x-contain px-4 pb-1 sm:hidden">
             {posts.map((post) => (
               <div key={post.slug} className="w-[82%] shrink-0 snap-start">
                 <FeaturedPostCard post={post} />
@@ -97,7 +97,7 @@ export function FeaturedSection({ posts, books }: FeaturedSectionProps) {
               <FeaturedBookCard key={book.slug} book={book} />
             ))}
           </div>
-          <div className="no-scrollbar -mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-1 sm:hidden">
+          <div className="no-scrollbar -mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto overscroll-x-contain px-4 pb-1 sm:hidden">
             {books.map((book) => (
               <article
                 key={book.slug}

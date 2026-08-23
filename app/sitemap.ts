@@ -6,14 +6,12 @@ import { SITE_URL } from '@/lib/constants';
  * Dynamic sitemap generation.
  *
  * Includes:
- * - Static public pages (/, /about, /library, /scribble, /support)
+ * - Static public pages (/, /about, /library, /scribble, /support, /now)
  * - Published blog posts (/p/[slug])
  * - Published notes (/n/[slug])
  *
  * Excludes:
  * - Admin routes (/admin)
- * - Now page (force-dynamic, personal)
- * - Support page (not primary content)
  * - Fund page (not primary content)
  * - Error pages
  */
@@ -45,6 +43,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: new Date(),
       changeFrequency: 'weekly',
       priority: 0.9,
+    },
+    {
+      url: `${SITE_URL}/now`,
+      lastModified: new Date(),
+      changeFrequency: 'weekly',
+      priority: 0.8,
     },
     {
       url: `${SITE_URL}/support`,
