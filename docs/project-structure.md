@@ -14,7 +14,7 @@ biranchi/
 ├── next.config.ts        # Next.js server configuration & headers
 ├── package.json          # Dependencies & npm scripts
 ├── proxy.ts              # Route proxy & security boundary middleware
-├── schema.sql            # Idempotent database schema & RLS policies
+├── supabase/schema.sql   # Idempotent database schema & RLS policies
 └── tsconfig.json         # TypeScript compiler configuration
 ```
 

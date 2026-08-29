@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { ContentService } from '@/lib/services/content.service';
+import { getSupabaseServer } from '@/lib/supabase/server';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,12 +15,53 @@ export async function POST(request: Request) {
       name,
       email,
       note,
-      source,
+      source = 'razorpay',
     } = body;
 
     if (!paymentId || typeof amount !== 'number' || amount <= 0) {
       return NextResponse.json(
         { error: 'paymentId and positive amount are required' },
+        { status: 400 },
+      );
+    }
+
+    // Manual/offline contributions require authenticated administrative privileges
+    if (source === 'manual') {
+      let isAuthorized = false;
+      try {
+        const supabase = await getSupabaseServer();
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+
+        if (user) {
+          const service = new ContentService();
+          const role = await service.getUserRole(user.id);
+          if (role === 'super_admin' || role === 'content_admin') {
+            isAuthorized = true;
+          }
+        }
+      } catch {
+        isAuthorized = false;
+      }
+
+      if (!isAuthorized) {
+        return NextResponse.json(
+          { error: 'Unauthorized: Manual contribution recording requires administrative privileges' },
+          { status: 403 },
+        );
+      }
+    } else if (source === 'razorpay') {
+      // If Razorpay key secret is configured, require orderId and signature
+      if (process.env.RAZORPAY_KEY_SECRET && (!orderId || !signature)) {
+        return NextResponse.json(
+          { error: 'orderId and signature are required for Razorpay payment verification' },
+          { status: 400 },
+        );
+      }
+    } else {
+      return NextResponse.json(
+        { error: 'Invalid contribution source' },
         { status: 400 },
       );
     }
@@ -33,7 +75,7 @@ export async function POST(request: Request) {
       name,
       email,
       note,
-      source: source || 'razorpay',
+      source,
     });
 
     return NextResponse.json({

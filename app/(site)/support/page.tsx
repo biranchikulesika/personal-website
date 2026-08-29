@@ -1,9 +1,22 @@
 import { SupportPageView } from "@/components/support-page";
-import { supportMetadata } from "@/lib/seo";
+import { supportMetadata, breadcrumbJsonLd, safeJsonLd } from "@/lib/seo";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = supportMetadata();
 
 export default function SupportPage() {
-  return <SupportPageView />;
+  const breadcrumbs = breadcrumbJsonLd([
+    { name: "Home", url: "/" },
+    { name: "Support", url: "/support" },
+  ]);
+
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(breadcrumbs) }}
+      />
+      <SupportPageView />
+    </>
+  );
 }

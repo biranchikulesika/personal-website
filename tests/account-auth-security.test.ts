@@ -159,3 +159,23 @@ test("content service enforces at least one connected auth provider", async () =
   const afterFailedDisconnect = await service.getConnectedProviders("default");
   assert.deepEqual(afterFailedDisconnect, ["google"]);
 });
+
+// ── Passkey Authentication Actions ──────────────────────────────────────────
+
+test("startPasskeyRegistration returns configuration error when unauthenticated", async () => {
+  const { startPasskeyRegistration } = await import("../app/admin/login/actions");
+  const result = await startPasskeyRegistration();
+  // In test environment without active Supabase credentials, returns error
+  assert.ok(result.error !== undefined);
+});
+
+test("verifyPasskeyLoginAction handles missing environment gracefully", async () => {
+  const { verifyPasskeyLoginAction } = await import("../app/admin/login/actions");
+  const result = await verifyPasskeyLoginAction({
+    credentialId: "test-credential-id",
+  });
+  // In test environment without Supabase URL/key, safely returns failure object without throwing
+  assert.equal(result.success, false);
+  assert.ok(result.error !== undefined);
+});
+

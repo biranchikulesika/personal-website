@@ -16,6 +16,7 @@ import {
   breadcrumbJsonLd,
   safeJsonLd,
 } from "../lib/seo";
+import { SITE_URL } from "../lib/constants";
 import type { BlogPost, NoteItem } from "../lib/types";
 
 // ── rootMetadata ────────────────────────────────────────────────────────────
@@ -23,7 +24,7 @@ import type { BlogPost, NoteItem } from "../lib/types";
 test("rootMetadata has metadataBase pointing to production domain", () => {
   assert.ok(rootMetadata.metadataBase);
   const base = rootMetadata.metadataBase as URL;
-  assert.equal(base.origin, "https://biranchikulesika.com");
+  assert.equal(base.origin, SITE_URL);
 });
 
 test("rootMetadata has title template with site name", () => {
@@ -170,6 +171,8 @@ test("noteMetadata generates correct metadata for a note", () => {
   assert.equal(og.type, "article");
   assert.ok((og.tags as string[]).includes("philosophy"));
   assert.ok((og.tags as string[]).includes("Thinker"));
+  const images = og.images as Array<{ url: string }>;
+  assert.ok(images[0].url.includes("/api/og?slug=test-note&type=note"));
 
   const noteWithSubtitle: NoteItem = {
     ...note,
@@ -186,7 +189,7 @@ test("websiteJsonLd returns valid Person + WebSite schema", () => {
 
   assert.equal(jsonLd["@type"], "WebSite");
   assert.equal(jsonLd.name, "Biranchi Kulesika");
-  assert.equal(jsonLd.url, "https://biranchikulesika.com");
+  assert.equal(jsonLd.url, SITE_URL);
   assert.equal(jsonLd.author["@type"], "Person");
   assert.equal(jsonLd.author.name, "Biranchi Kulesika");
   assert.ok(jsonLd.author.sameAs.length > 0);
@@ -214,8 +217,9 @@ test("articleJsonLd returns valid Article schema", () => {
   assert.equal(jsonLd.headline, "Test Article");
   assert.equal(jsonLd.datePublished, "2026-03-03");
   assert.equal(jsonLd.dateModified, "2026-08-21");
-  assert.equal(jsonLd.url, "https://biranchikulesika.com/p/test-article");
+  assert.equal(jsonLd.url, `${SITE_URL}/p/test-article`);
   assert.equal(jsonLd.keywords, "craft");
+  assert.ok(jsonLd.image.startsWith("http"), "Article image must be an absolute URL");
   assert.ok(jsonLd.inLanguage.startsWith("en"));
 });
 
@@ -238,7 +242,8 @@ test("noteJsonLd returns valid Article/Document schema for atomic note", () => {
   assert.equal(jsonLd["@type"], "Article");
   assert.equal(jsonLd.headline, "Note on Clarity");
   assert.equal(jsonLd.datePublished, "2026-08-21");
-  assert.equal(jsonLd.url, "https://biranchikulesika.com/n/note-on-clarity");
+  assert.equal(jsonLd.url, `${SITE_URL}/n/note-on-clarity`);
+  assert.ok(jsonLd.image.startsWith("http"), "Note image must be an absolute URL");
 });
 
 test("breadcrumbJsonLd generates valid BreadcrumbList schema", () => {
@@ -270,7 +275,7 @@ test("safeJsonLd escapes < to prevent </script> tag injection breakout", () => {
 test("aboutMetadata generates correct metadata pointing to dynamic OG route", () => {
   const meta = aboutMetadata();
   assert.equal(meta.title, "About");
-  assert.equal(meta.alternates?.canonical, "https://biranchikulesika.com/about");
+  assert.equal(meta.alternates?.canonical, `${SITE_URL}/about`);
   const og = meta.openGraph as Record<string, unknown>;
   const images = og.images as Array<{ url: string }>;
   assert.ok(images[0].url.includes("/api/og?type=about"));
@@ -279,7 +284,7 @@ test("aboutMetadata generates correct metadata pointing to dynamic OG route", ()
 test("libraryMetadata generates correct metadata pointing to dynamic OG route", () => {
   const meta = libraryMetadata();
   assert.equal(meta.title, "Library");
-  assert.equal(meta.alternates?.canonical, "https://biranchikulesika.com/library");
+  assert.equal(meta.alternates?.canonical, `${SITE_URL}/library`);
   const og = meta.openGraph as Record<string, unknown>;
   const images = og.images as Array<{ url: string }>;
   assert.ok(images[0].url.includes("/api/og?type=library"));
@@ -288,7 +293,7 @@ test("libraryMetadata generates correct metadata pointing to dynamic OG route", 
 test("scribbleMetadata generates correct metadata pointing to dynamic OG route", () => {
   const meta = scribbleMetadata();
   assert.equal(meta.title, "Scribble");
-  assert.equal(meta.alternates?.canonical, "https://biranchikulesika.com/scribble");
+  assert.equal(meta.alternates?.canonical, `${SITE_URL}/scribble`);
   const og = meta.openGraph as Record<string, unknown>;
   const images = og.images as Array<{ url: string }>;
   assert.ok(images[0].url.includes("/api/og?type=scribble"));
@@ -297,7 +302,7 @@ test("scribbleMetadata generates correct metadata pointing to dynamic OG route",
 test("nowMetadata generates correct metadata pointing to dynamic OG route", () => {
   const meta = nowMetadata();
   assert.equal(meta.title, "Now");
-  assert.equal(meta.alternates?.canonical, "https://biranchikulesika.com/now");
+  assert.equal(meta.alternates?.canonical, `${SITE_URL}/now`);
   const og = meta.openGraph as Record<string, unknown>;
   const images = og.images as Array<{ url: string }>;
   assert.ok(images[0].url.includes("/api/og?type=now"));
@@ -313,8 +318,41 @@ test("homeMetadata generates correct metadata pointing to dynamic OG route", () 
 test("supportMetadata generates correct metadata pointing to dynamic OG route", () => {
   const meta = supportMetadata();
   assert.equal(meta.title, "Support & Patronage");
-  assert.equal(meta.alternates?.canonical, "https://biranchikulesika.com/support");
+  assert.equal(meta.alternates?.canonical, `${SITE_URL}/support`);
   const og = meta.openGraph as Record<string, unknown>;
   const images = og.images as Array<{ url: string }>;
   assert.ok(images[0].url.includes("/api/og?type=support"));
 });
+
+// ── OG route handler tests ──────────────────────────────────────────────────
+
+test("GET /api/og?type=about generates valid PNG and uses response caching", async () => {
+  const { GET } = await import("../app/api/og/route");
+  const { NextRequest } = await import("next/server");
+
+  const req1 = new NextRequest(`${SITE_URL}/api/og?type=about`);
+  const res1 = await GET(req1);
+  assert.equal(res1.status, 200);
+  assert.equal(res1.headers.get("content-type"), "image/png");
+  assert.ok(res1.headers.get("cache-control")?.includes("public"));
+
+  const buf1 = await res1.arrayBuffer();
+  assert.ok(buf1.byteLength > 1000, "OG image buffer should be non-empty PNG");
+
+  // Subsequent call should hit cache
+  const req2 = new NextRequest(`${SITE_URL}/api/og?type=about`);
+  const res2 = await GET(req2);
+  assert.equal(res2.status, 200);
+  assert.equal(res2.headers.get("x-og-cache"), "HIT");
+  const buf2 = await res2.arrayBuffer();
+  assert.equal(buf2.byteLength, buf1.byteLength);
+});
+
+test("OPTIONS /api/og returns 204 with CORS and cache headers", async () => {
+  const { OPTIONS } = await import("../app/api/og/route");
+  const res = await OPTIONS();
+  assert.equal(res.status, 204);
+  assert.equal(res.headers.get("access-control-allow-origin"), "*");
+  assert.equal(res.headers.get("cross-origin-resource-policy"), "cross-origin");
+});
+

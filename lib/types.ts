@@ -237,6 +237,17 @@ export interface PasskeyItem {
   createdAt: string;
   lastUsedAt: string;
   credentialId?: string;
+  publicKey?: string;
+  counter?: number;
+  transports?: string[];
+  deviceType?: string;
+  backedUp?: boolean;
+}
+
+export interface PasskeyCredentialRecord {
+  userId: string;
+  userEmail: string;
+  passkey: PasskeyItem;
 }
 
 export interface UserSession {

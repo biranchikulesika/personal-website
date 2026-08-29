@@ -15,6 +15,7 @@ import type {
   WritingItem,
   Contribution,
   PasskeyItem,
+  PasskeyCredentialRecord,
   UserSession,
   NewsletterSubscriber,
 } from '@/lib/types';
@@ -227,15 +228,23 @@ export class ContentService {
       source = 'razorpay',
     } = params;
 
-    // If signature verification is possible (Razorpay order checkout), verify signature
-    if (source === 'razorpay' && orderId && signature) {
+    if (!paymentId || typeof amount !== 'number' || amount <= 0) {
+      throw new Error('Invalid payment parameters: paymentId and positive amount are required');
+    }
+
+    // If source is razorpay and key secret is configured, enforce valid signature verification
+    if (source === 'razorpay' && process.env.RAZORPAY_KEY_SECRET) {
+      if (!orderId || !signature) {
+        throw new Error('orderId and signature are required for Razorpay payment verification');
+      }
+
       const isValid = verifyPaymentSignature({
         orderId,
         paymentId,
         signature,
       });
 
-      if (process.env.RAZORPAY_KEY_SECRET && !isValid) {
+      if (!isValid) {
         throw new Error('Invalid Razorpay payment signature');
       }
     }
@@ -259,6 +268,7 @@ export class ContentService {
 
   /**
    * Process Razorpay webhook event with signature verification and idempotent recording.
+   * Strictly fails closed if the webhook secret is missing or signature is invalid.
    */
   async processRazorpayWebhook(
     rawBody: string,
@@ -269,22 +279,38 @@ export class ContentService {
     contribution?: Contribution | null;
     error?: string;
   }> {
-    // 1. Verify webhook signature if secret is configured
-    if (process.env.RAZORPAY_WEBHOOK_SECRET) {
-      const isValid = verifyWebhookSignature({
-        rawBody,
-        signature,
-      });
-
-      if (!isValid) {
-        return {
-          success: false,
-          error: 'Invalid webhook signature',
-        };
-      }
+    // 1. Webhook secret MUST be configured (fail closed)
+    const secret = process.env.RAZORPAY_WEBHOOK_SECRET;
+    if (!secret) {
+      return {
+        success: false,
+        error: 'Razorpay webhook secret is not configured on server',
+      };
     }
 
-    // 2. Parse payload JSON
+    // 2. Signature header MUST be provided
+    if (!signature) {
+      return {
+        success: false,
+        error: 'Missing webhook signature header',
+      };
+    }
+
+    // 3. Verify webhook signature
+    const isValid = verifyWebhookSignature({
+      rawBody,
+      signature,
+      secret,
+    });
+
+    if (!isValid) {
+      return {
+        success: false,
+        error: 'Invalid webhook signature',
+      };
+    }
+
+    // 4. Parse payload JSON
     let parsed: Record<string, unknown>;
     try {
       parsed = JSON.parse(rawBody);
@@ -295,10 +321,10 @@ export class ContentService {
       };
     }
 
-    // 3. Extract event & contribution details
+    // 5. Extract event & contribution details
     const { event, contribution } = parseRazorpayWebhookEvent(parsed);
 
-    // 4. Idempotently record contribution if valid
+    // 6. Idempotently record contribution if valid
     if (contribution) {
       const saved = await this.repo.recordContribution(contribution);
       return {
@@ -327,6 +353,14 @@ export class ContentService {
 
   deletePasskey(userId: string, passkeyId: string): Promise<boolean> {
     return this.repo.deletePasskey(userId, passkeyId);
+  }
+
+  findPasskeyCredential(credentialId: string): Promise<PasskeyCredentialRecord | null> {
+    return this.repo.findPasskeyCredential(credentialId);
+  }
+
+  getAllAdminPasskeys(): Promise<PasskeyItem[]> {
+    return this.repo.getAllAdminPasskeys();
   }
 
   // ── Active Sessions ─────────────────────────────────────────────────────

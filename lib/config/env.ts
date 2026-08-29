@@ -51,3 +51,39 @@ export function getPostgresUrl(): string | undefined {
     process.env.POSTGRES_URL_NON_POOLING
   );
 }
+
+/**
+ * Resolves the canonical site URL from environment variables or falls back to the default.
+ * Automatically checks NEXT_PUBLIC_SITE_URL, SITE_URL, VERCEL_PROJECT_PRODUCTION_URL, and VERCEL_URL.
+ */
+export function getSiteUrl(): string {
+  const envUrl =
+    process.env.NEXT_PUBLIC_SITE_URL ||
+    process.env.SITE_URL ||
+    (process.env.VERCEL_PROJECT_PRODUCTION_URL
+      ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+      : undefined) ||
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : undefined);
+
+  if (envUrl) {
+    const trimmed = envUrl.trim().replace(/\/+$/, "");
+    return trimmed.startsWith("http://") || trimmed.startsWith("https://")
+      ? trimmed
+      : `https://${trimmed}`;
+  }
+
+  return "https://biranchikulesika.com";
+}
+
+/**
+ * Resolves the domain hostname from the canonical SITE_URL.
+ */
+export function getSiteDomain(): string {
+  try {
+    const url = new URL(getSiteUrl());
+    return url.hostname;
+  } catch {
+    return "biranchikulesika.com";
+  }
+}
+

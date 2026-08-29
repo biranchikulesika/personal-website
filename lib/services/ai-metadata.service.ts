@@ -1,3 +1,4 @@
+import { SITE_DOMAIN } from '@/lib/constants';
 import type { Persona } from '@/lib/types';
 import { slugify } from '@/lib/utils';
 
@@ -133,7 +134,7 @@ export async function generateDocumentAiMetadata(input: {
     return heuristic;
   }
 
-  const systemPrompt = `You are an editorial assistant for a quiet, high-craft personal website and publishing platform ("biranchikulesika.com").
+  const systemPrompt = `You are an editorial assistant for a quiet, high-craft personal website and publishing platform ("${SITE_DOMAIN}").
 The author writes thoughtful essays, technical notes, and marginalia under four personas:
 - Builder (craft, software systems, tools, architecture)
 - Operator (execution, focus, business discipline, workflows)

@@ -1,12 +1,13 @@
 import type { Persona } from "@/lib/types";
+import { getSiteDomain, getSiteUrl } from "@/lib/config/env";
 
 // ── Site Metadata ───────────────────────────────────────────────────────────
 
-/** Canonical production domain. */
-export const SITE_DOMAIN = "biranchikulesika.com";
+/** Full canonical origin (protocol + domain) dynamically resolved from environment. */
+export const SITE_URL = getSiteUrl();
 
-/** Full canonical origin (protocol + domain). */
-export const SITE_URL = `https://${SITE_DOMAIN}`;
+/** Canonical domain dynamically resolved from SITE_URL. */
+export const SITE_DOMAIN = getSiteDomain();
 
 /** Site title used in metadata templates. */
 export const SITE_NAME = "Biranchi Kulesika";

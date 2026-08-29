@@ -400,6 +400,21 @@ CREATE POLICY "Admin access subscribers"
   USING (public.is_admin())
   WITH CHECK (public.is_admin());
 
+-- ── Table-Level Grants ──────────────────────────────────────────────────────
+-- The service_role key bypasses RLS but still requires table-level privileges.
+-- Grant full access to service_role on all content tables.
+
+GRANT ALL ON TABLE public.posts TO service_role;
+GRANT ALL ON TABLE public.notes TO service_role;
+GRANT ALL ON TABLE public.books TO service_role;
+GRANT ALL ON TABLE public.now_entries TO service_role;
+GRANT ALL ON TABLE public.media TO service_role;
+GRANT ALL ON TABLE public.featured_items TO service_role;
+GRANT ALL ON TABLE public.storage_files TO service_role;
+GRANT ALL ON TABLE public.contributions TO service_role;
+GRANT ALL ON TABLE public.user_roles TO service_role;
+GRANT ALL ON TABLE public.subscribers TO service_role;
+
 -- ── Storage Bucket & Policies ────────────────────────────────────────────────
 
 INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
