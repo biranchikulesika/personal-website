@@ -6,168 +6,37 @@ import { Fragment } from "react";
 import {
   ArrowLeftIcon,
   ArrowRightIcon,
+  CalendarIcon,
   ChevronDownIcon,
+  EditHistoryIcon,
   ExternalLinkIcon,
 } from "./icons";
 import { ShareMenu } from "./share-menu";
 import { BookCover } from "./ui/book-cover";
-
-/**
- * Inline rendering for post paragraphs. Handles `^[n]` footnote markers by
- * turning them into superscript anchors pointing at the section's footnote
- * list. Plain strings pass through untouched.
- */
-function renderInline(
-  text: string,
-  _prefix: string,
-  _footnotes: string[] | undefined,
-) {
-  const parts = text.split(/(\^\[\d+\])/g);
-  const hasMarker = parts.some((p) => /^\^\[\d+\]$/.test(p));
-  if (!hasMarker) return text;
-
-  return parts.map((part, index) => {
-    const match = part.match(/^\^\[(\d+)\]$/);
-    if (!match) return part;
-    const n = Number(match[1]);
-    return (
-      <sup key={index}>
-        <a
-          id={`fnref-${n}`}
-          href={`#fn-${n}`}
-          className="font-medium text-accent no-underline hover:underline"
-          title={`Footnote ${n}`}
-        >
-          [{n}]
-        </a>
-      </sup>
-    );
-  });
-}
+import { PersonaBadge } from "./persona-badge";
+import {
+  renderMarkdownBlock,
+  MarkdownFigure,
+} from "./markdown-renderer";
 
 function footnoteRefs(text: string): number[] {
   const refs = new Set<number>();
-  const re = /\^\[(\d+)\]/g;
+  const re = /(?:\^\[(\d+)\]|\[\^(\d+)\])/g;
   let match: RegExpExecArray | null;
   while ((match = re.exec(text)) !== null) {
-    refs.add(Number(match[1]));
+    refs.add(Number(match[1] || match[2]));
   }
   return [...refs];
 }
 
 function Figure({ src, alt, caption }: PostFigure) {
   return (
-    <figure className="my-8 block lg:col-start-1">
-      <div className="overflow-hidden rounded-xl border border-tinted/20 bg-post-card shadow-md">
-        {/* eslint-disable-next-line @next/next/no-img-element -- user-authored content may reference arbitrary image hosts */}
-        <img src={src} alt={alt} className="w-full h-auto max-h-[550px] object-cover object-center" loading="lazy" />
-      </div>
-      {(caption || alt) && (
-        <figcaption className="mt-2.5 text-center font-serif text-xs italic text-ink-soft">
-          {caption || alt}
-        </figcaption>
-      )}
-    </figure>
-  );
-}
-
-/**
- * Renders a post paragraph or rich markdown block (Image, Figure, YouTube, Alert, Quote).
- */
-function renderParagraphOrFigure(
-  paragraph: string,
-  prefix: string,
-  footnotes?: string[],
-  isFirstIntroParagraph = false,
-) {
-  const trimmed = paragraph.trim();
-
-  // 1. Markdown Image block: ![alt](src) optionally with title or next-line *caption*
-  const mdImgMatch = trimmed.match(/^!\[([\s\S]*?)\]\(([\s\S]*?)\)(?:\s*\*([\s\S]*?)\*)?$/);
-  if (mdImgMatch) {
-    const alt = mdImgMatch[1];
-    let src = mdImgMatch[2].trim();
-    let caption = mdImgMatch[3] ? mdImgMatch[3].trim() : "";
-
-    const titleMatch = src.match(/^(.*?)\s+["'](.*?)["']$/);
-    if (titleMatch) {
-      src = titleMatch[1];
-      if (!caption) caption = titleMatch[2];
-    }
-
-    return <Figure key={prefix} src={src} alt={alt || "Document Image"} caption={caption} />;
-  }
-
-  // 2. MDX / HTML Image: <img ... /> or <Image ... />
-  const htmlImgMatch = trimmed.match(/^<(img|Image)\s+([^>]*?)\/?>$/i);
-  if (htmlImgMatch) {
-    const tagContent = htmlImgMatch[2];
-    const srcMatch = tagContent.match(/(?:src|path)=["']([^"']+)["']/i);
-    const altMatch = tagContent.match(/alt=["']([^"']+)["']/i);
-    const capMatch = tagContent.match(/caption=["']([^"']+)["']/i);
-
-    const src = srcMatch ? srcMatch[1] : "";
-    const alt = altMatch ? altMatch[1] : "Document Image";
-    const caption = capMatch ? capMatch[1] : "";
-
-    if (src) {
-      return <Figure key={prefix} src={src} alt={alt} caption={caption} />;
-    }
-  }
-
-  // 3. YouTube Embed: <YouTube id="..." />
-  const ytMatch = trimmed.match(/^<YouTube\s+([^>]*?)\/?>$/i);
-  if (ytMatch) {
-    const idMatch = ytMatch[1].match(/(?:id|src)=["']([^"']+)["']/i);
-    const cleanId = idMatch
-      ? idMatch[1].replace(/https?:\/\/(www\.)?youtube\.com\/watch\?v=/, "").replace(/https?:\/\/youtu\.be\//, "")
-      : "";
-    if (cleanId) {
-      return (
-        <div key={prefix} className="my-8 aspect-video w-full overflow-hidden rounded-xl border border-tinted/20 bg-black shadow-md lg:col-start-1">
-          <iframe
-            src={`https://www.youtube-nocookie.com/embed/${cleanId}`}
-            title="YouTube video player"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowFullScreen
-            className="h-full w-full border-0"
-          />
-        </div>
-      );
-    }
-  }
-
-  // 4. GitHub-style alerts: > [!NOTE], etc.
-  if (trimmed.startsWith(">")) {
-    const alertMatch = trimmed.match(/^>\s*\[!(NOTE|TIP|WARNING|IMPORTANT|CAUTION)\]\s*(.*)$/im);
-    if (alertMatch) {
-      const alertType = alertMatch[1].toUpperCase();
-      const body = trimmed.replace(/^>\s*\[!.*?\]\s*/im, "").replace(/^>\s?/gm, "").trim();
-      return (
-        <div key={prefix} className="my-6 rounded-xl border border-tinted/20 bg-post-card p-5 shadow-2xs lg:col-start-1">
-          <span className="rounded bg-night px-2 py-0.5 text-[11px] font-bold uppercase tracking-wider text-accent border border-tinted/20">
-            {alertType}
-          </span>
-          <p className="mt-2 text-sm leading-relaxed text-paper/90 font-serif">
-            {renderInline(body, prefix, footnotes)}
-          </p>
-        </div>
-      );
-    }
-  }
-
-  // Regular text paragraph
-  return (
-    <p
-      key={prefix}
-      className={
-        isFirstIntroParagraph
-          ? "leading-[1.85] first-letter:float-left first-letter:mr-3 first-letter:mt-1 first-letter:font-serif first-letter:text-6xl first-letter:leading-[0.8] first-letter:text-paper lg:col-start-1"
-          : "leading-[1.85] lg:col-start-1"
-      }
-    >
-      {renderInline(paragraph, prefix, footnotes)}
-    </p>
+    <MarkdownFigure
+      src={src}
+      alt={alt}
+      caption={caption}
+      className="lg:col-start-1"
+    />
   );
 }
 
@@ -258,50 +127,52 @@ export function BlogPostView({ post }: { post: BlogPost }) {
               {post.subtitle || post.description}
             </p>
 
-            <hr className="my-6 border-t border-tinted/20" />
+            <div className="no-scrollbar mt-8 flex w-full items-center justify-between gap-2.5 overflow-x-auto border-y border-tinted/20 py-2.5 whitespace-nowrap sm:gap-3 sm:py-3">
+              {/* Left: Persona Split Identifier Badge + Content Tags */}
+              <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+                <PersonaBadge persona={post.persona} />
 
-            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-paper sm:text-sm">
-              {personaLabel && (
-                <span className="rounded-full border border-tinted/20 bg-night-soft/60 px-2.5 py-0.5 text-[10px] leading-none text-ink-soft sm:px-3 sm:py-1 sm:text-xs">
-                  {personaLabel}
-                </span>
-              )}
-
-              {post.tags.slice(0, 3).map((tag) => (
-                <span
-                  key={tag}
-                  className="hidden rounded-full border border-tinted/20 bg-night-soft/60 px-2 py-0.5 text-[10px] leading-none text-ink-soft sm:inline-flex sm:px-3 sm:py-1 sm:text-xs"
-                >
-                  {tag}
-                </span>
-              ))}
-
-              {(personaLabel || post.tags.length > 0) && (
-                <span className="text-ink-soft" aria-hidden>
-                  ·
-                </span>
-              )}
-
-              <span className="text-ink-soft">Pub.</span>
-              <span className="text-paper">{formatDisplayDate(post.publishedAt)}</span>
-              {post.lastEditedAt !== post.publishedAt && (
-                <span className="hidden sm:inline-flex sm:items-center sm:gap-x-2">
-                  <span className="text-ink-soft" aria-hidden>
-                    ·
+                {post.tags.slice(0, 4).map((tag) => (
+                  <span
+                    key={tag}
+                    className="hidden shrink-0 items-center rounded-md border border-tinted/30 bg-night-soft/40 px-1.5 py-0.5 font-mono text-[11px] text-ink-soft transition-colors hover:border-tinted/60 hover:text-paper sm:inline-flex sm:px-2 sm:text-xs"
+                  >
+                    <span className="mr-0.5 text-tinted/80">#</span>
+                    {tag}
                   </span>
-                  <span className="text-ink-soft">Ed.</span>
-                  <span className="text-paper">{formatDisplayDate(post.lastEditedAt)}</span>
-                </span>
-              )}
+                ))}
+              </div>
 
-              <span className="text-ink-soft" aria-hidden>
-                ·
-              </span>
+              {/* Right: Pub. / Ed. Dates & Elevated Share Menu */}
+              <div className="flex shrink-0 items-center gap-2 text-[11px] font-mono sm:gap-3 sm:text-xs">
+                <div
+                  className="flex shrink-0 items-center gap-1 text-ink-soft sm:gap-1.5"
+                  title={`Published: ${formatDisplayDate(post.publishedAt)}`}
+                >
+                  <CalendarIcon className="h-3 w-3 text-ink-soft/80 sm:h-3.5 sm:w-3.5" />
+                  <span className="font-sans text-paper/95">{formatDisplayDate(post.publishedAt)}</span>
+                </div>
 
-              <ShareMenu
-                title={post.title}
-                description={post.subtitle || post.description}
-              />
+                {post.lastEditedAt !== post.publishedAt && (
+                  <>
+                    <span className="text-tinted" aria-hidden="true">·</span>
+                    <div
+                      className="flex shrink-0 items-center gap-1 text-ink-soft sm:gap-1.5"
+                      title={`Last Edited: ${formatDisplayDate(post.lastEditedAt)}`}
+                    >
+                      <EditHistoryIcon className="h-3 w-3 text-ink-soft/80 sm:h-3.5 sm:w-3.5" />
+                      <span className="font-sans text-paper/95">{formatDisplayDate(post.lastEditedAt)}</span>
+                    </div>
+                  </>
+                )}
+
+                <div className="h-3 w-[1px] bg-tinted/30 shrink-0 sm:h-3.5" aria-hidden="true" />
+
+                <ShareMenu
+                  title={post.title}
+                  description={post.subtitle || post.description}
+                />
+              </div>
             </div>
           </header>
         </div>
@@ -325,7 +196,10 @@ export function BlogPostView({ post }: { post: BlogPost }) {
           {/* Intro — the first paragraph gets a drop cap */}
           <div className="mt-8 space-y-5 lg:col-start-1 text-paper/85">
             {post.intro.map((paragraph, index) =>
-              renderParagraphOrFigure(paragraph, `intro-${index}`, undefined, index === 0),
+              renderMarkdownBlock(paragraph, `intro-${index}`, {
+                isFirstIntroParagraph: index === 0,
+                gridColClass: "lg:col-start-1",
+              }),
             )}
           </div>
 
@@ -346,10 +220,13 @@ export function BlogPostView({ post }: { post: BlogPost }) {
                   const refs = section.footnotes ? footnoteRefs(paragraph) : [];
                   return (
                     <Fragment key={paragraphIndex}>
-                      {renderParagraphOrFigure(
+                      {renderMarkdownBlock(
                         paragraph,
                         `sec-${sectionIndex}-${paragraphIndex}`,
-                        section.footnotes,
+                        {
+                          footnotes: section.footnotes,
+                          gridColClass: "lg:col-start-1",
+                        },
                       )}
                       {refs.length > 0 && (
                         <aside

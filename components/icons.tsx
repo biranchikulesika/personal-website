@@ -589,6 +589,40 @@ export function ShareIcon({ className }: IconProps) {
 }
 
 /**
+ * Reddit brand icon.
+ */
+export function RedditIcon({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden>
+      <path d="M12 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0zm5.01 4.744c.688 0 1.25.561 1.25 1.249a1.25 1.25 0 0 1-2.498.056l-2.597-.547-.8 3.747c1.824.07 3.48.632 4.674 1.488.308-.309.73-.491 1.207-.491.968 0 1.754.786 1.754 1.754 0 .716-.435 1.333-1.01 1.614a3.111 3.111 0 0 1 .042.52c0 2.694-3.13 4.87-7.004 4.87-3.874 0-7.004-2.176-7.004-4.87 0-.183.015-.366.043-.534A1.748 1.748 0 0 1 4.028 12c0-.968.786-1.754 1.754-1.754.463 0 .898.196 1.207.49 1.207-.883 2.878-1.43 4.744-1.487l.885-4.182a.342.342 0 0 1 .14-.197.35.35 0 0 1 .238-.042l2.906.617a1.214 1.214 0 0 1 1.108-.701zM9.25 12C8.56 12 8 12.56 8 13.25c0 .69.56 1.25 1.25 1.25s1.25-.56 1.25-1.25C10.5 12.56 9.94 12 9.25 12zm5.5 0c-.69 0-1.25.56-1.25 1.25 0 .69.56 1.25 1.25 1.25s1.25-.56 1.25-1.25c0-.69-.56-1.25-1.25-1.25zm-5.465 4.5a.342.342 0 0 0-.258.558c.813.916 2.012 1.32 2.973 1.32.962 0 2.16-.404 2.973-1.32a.342.342 0 0 0-.515-.448c-.64.72-1.61 1.03-2.458 1.03-.848 0-1.818-.31-2.458-1.03a.34.34 0 0 0-.257-.11z"/>
+    </svg>
+  );
+}
+
+/**
+ * Telegram brand icon.
+ */
+export function TelegramIcon({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden>
+      <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/>
+    </svg>
+  );
+}
+
+/**
+ * Mail / Email icon.
+ */
+export function MailIcon({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden>
+      <rect width="20" height="16" x="2" y="4" rx="2" />
+      <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+    </svg>
+  );
+}
+
+/**
  * Download icon — used for receipt exports.
  */
 export function DownloadIcon({ className }: IconProps) {
@@ -667,4 +701,162 @@ export function CloseIcon({ className }: IconProps) {
       <path d="M6 18 18 6M6 6l12 12" />
     </svg>
   );
+}
+
+/**
+ * Calendar — used for publication date.
+ */
+export function CalendarIcon({ className }: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden
+    >
+      <rect width="18" height="18" x="3" y="4" rx="2" ry="2" />
+      <line x1="16" y1="2" x2="16" y2="6" />
+      <line x1="8" y1="2" x2="8" y2="6" />
+      <line x1="3" y1="10" x2="21" y2="10" />
+    </svg>
+  );
+}
+
+/**
+ * Clock / History — used for last edited / updated date.
+ */
+export function EditHistoryIcon({ className }: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden
+    >
+      <path d="M12 8v4l3 3" />
+      <circle cx="12" cy="12" r="9" />
+    </svg>
+  );
+}
+
+/**
+ * Code / Programming — Builder persona icon (software, coding).
+ */
+export function CodeIcon({ className }: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.6}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden
+    >
+      <polyline points="16 18 22 12 16 6" />
+      <polyline points="8 6 2 12 8 18" />
+      <line x1="14.5" y1="4" x2="9.5" y2="20" />
+    </svg>
+  );
+}
+
+/**
+ * Cyber Security / Terminal Shield — Operator persona icon (ethical hacking, security).
+ */
+export function CyberSecurityIcon({ className }: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden
+    >
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+      <path d="m9 10 2 2-2 2" />
+      <line x1="13" y1="14" x2="15" y2="14" />
+    </svg>
+  );
+}
+
+/**
+ * Philosophy / Idea Spark — Thinker persona icon (thinking, philosophy, deep thoughts).
+ */
+export function PhilosophyIcon({ className }: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden
+    >
+      <path d="M9 18h6" />
+      <path d="M10 22h4" />
+      <path d="M12 2a7 7 0 0 0-4.95 11.95A2.99 2.99 0 0 1 8 16h8a2.99 2.99 0 0 1 .95-2.05A7 7 0 0 0 12 2Z" />
+      <path d="M12 6v4" />
+      <path d="m10 8 4 0" />
+    </svg>
+  );
+}
+
+/**
+ * Travel Vlog / Story Lens — Wanderer persona icon (vlogs, travel, personal stories).
+ */
+export function TravelVlogIcon({ className }: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden
+    >
+      <path d="m15 10 6-3.5v11L15 14" />
+      <rect x="2" y="6" width="13" height="12" rx="2.5" />
+      <circle cx="8.5" cy="12" r="2" />
+    </svg>
+  );
+}
+
+/**
+ * PersonaIcon — renders the corresponding iconic depiction for a persona.
+ */
+export function PersonaIcon({
+  persona,
+  className,
+}: {
+  persona?: string | null;
+  className?: string;
+}) {
+  switch (persona?.toLowerCase()) {
+    case "builder":
+      return <CodeIcon className={className} />;
+    case "operator":
+      return <CyberSecurityIcon className={className} />;
+    case "thinker":
+      return <PhilosophyIcon className={className} />;
+    case "wanderer":
+      return <TravelVlogIcon className={className} />;
+    default:
+      return <UserIcon className={className} />;
+  }
 }
