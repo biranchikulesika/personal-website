@@ -1,6 +1,6 @@
 # Database & Schema Architecture
 
-The database architecture is built on PostgreSQL / Supabase. The entire schema is declaratively defined in a single, idempotent file at the root: **[`schema.sql`](file:///home/biranchikulesika/Projects/biranchi/schema.sql)**.
+The database architecture is built on PostgreSQL / Supabase. The entire schema is declaratively defined in a single, idempotent file: **[`supabase/schema.sql`](file:///home/biranchikulesika/Projects/biranchi/supabase/schema.sql)**.
 
 ---
 
@@ -164,7 +164,7 @@ The `media` bucket is configured in Supabase Storage:
 
 ## 6. How to Apply Schema Changes
 
-1. Edit [`schema.sql`](file:///home/biranchikulesika/Projects/biranchi/schema.sql) directly.
+1. Edit [`supabase/schema.sql`](file:///home/biranchikulesika/Projects/biranchi/supabase/schema.sql) directly.
 2. Ensure every statement remains **idempotent**:
    - `CREATE TABLE IF NOT EXISTS`
    - `CREATE INDEX IF NOT EXISTS`
@@ -172,8 +172,7 @@ The `media` bucket is configured in Supabase Storage:
    - `DROP POLICY IF EXISTS ... CREATE POLICY`
    - `INSERT ... ON CONFLICT DO UPDATE`
 3. Execute against Supabase:
-   ```bash
-   # Via Supabase SQL Editor: paste schema.sql
+   ```bash    # Via Supabase SQL Editor: paste supabase/schema.sql
    # Or via Supabase CLI:
    supabase db push
    ```

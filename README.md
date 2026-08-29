@@ -57,7 +57,7 @@ For in-depth architectural breakdowns, see [`docs/architecture.md`](./docs/archi
 | **Framework** | Next.js 16 (App Router, Server Actions, Server Components) |
 | **UI Library** | React 19, Tailwind CSS v4, `@tailwindcss/typography` |
 | **Language** | TypeScript (Strict mode) |
-| **Database** | PostgreSQL 16 via Supabase (`schema.sql`) |
+| **Database** | PostgreSQL 16 via Supabase (`supabase/schema.sql`) |
 | **Storage** | Supabase Storage (`media` bucket) |
 | **Validation** | Zod v4 |
 | **Payments** | Razorpay (Checkout + Webhooks) |
@@ -78,7 +78,7 @@ biranchi/
 ├── lib/                  # Services, repositories, Supabase client, validations, types, SEO
 ├── public/               # Static assets & public media
 ├── tests/                # Automated unit and integration test suite
-├── schema.sql            # Idempotent PostgreSQL/Supabase database schema
+├── supabase/schema.sql   # Idempotent PostgreSQL/Supabase database schema
 └── next.config.ts        # Next.js production configuration & security headers
 ```
 
@@ -124,11 +124,11 @@ For production environment variables (Supabase, Razorpay, etc.), refer to [`docs
 
 ## Database Setup
 
-The database schema is defined declaratively and idempotently in [`schema.sql`](./schema.sql).
+The database schema is defined declaratively and idempotently in [`supabase/schema.sql`](./supabase/schema.sql).
 
 To initialize or migrate a Supabase database:
 1. Open the SQL Editor in your Supabase dashboard.
-2. Paste and run [`schema.sql`](./schema.sql).
+2. Paste and run [`supabase/schema.sql`](./supabase/schema.sql).
 3. The script will automatically create all tables (`posts`, `notes`, `books`, `now_entries`, `media`, `featured_items`, `user_roles`, `contributions`, `storage_files`), cross-collection triggers, RLS policies, and the `media` storage bucket.
 
 For full database documentation, see [`docs/database.md`](./docs/database.md).

@@ -288,6 +288,11 @@ test("POST /api/contributions accepts valid payment with source: razorpay", asyn
   setContentRepositoryForTesting(repo);
   const { POST } = await import("../app/api/contributions/route");
 
+  // Temporarily remove RAZORPAY_KEY_SECRET to allow unsigned Razorpay payments
+  // (simulates local dev mode where signature verification is optional)
+  const savedSecret = process.env.RAZORPAY_KEY_SECRET;
+  delete process.env.RAZORPAY_KEY_SECRET;
+
   const request = new Request("http://localhost:3000/api/contributions", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -303,6 +308,9 @@ test("POST /api/contributions accepts valid payment with source: razorpay", asyn
 
   const response = await POST(request);
   assert.equal(response.status, 200);
+
+  // Restore the secret for other tests
+  if (savedSecret) process.env.RAZORPAY_KEY_SECRET = savedSecret;
 
   const json = await response.json();
   assert.equal(json.success, true);

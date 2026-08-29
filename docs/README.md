@@ -13,7 +13,7 @@ This codebase is a modern, high-performance web platform built with **Next.js 16
 | [**Architecture**](./architecture.md) | The 4-tier layer model (`UI → Service → Repository → Database`), data flow, and design boundaries. |
 | [**Project Structure**](./project-structure.md) | Walkthrough of the directory tree, naming conventions, and file placement rules. |
 | [**Data Layer**](./data-layer.md) | Repository pattern, Supabase PostgreSQL data access, and `ContentService`. |
-| [**Database & Schema**](./database.md) | PostgreSQL / Supabase schema, `schema.sql`, tables, indexes, triggers, and RLS policies. |
+| [**Database & Schema**](./database.md) | PostgreSQL / Supabase schema, `supabase/schema.sql`, tables, indexes, triggers, and RLS policies. |
 | [**Authentication & Security**](./authentication.md) | Role-based authorization (`user_roles`), proxy guards, and environment safety locks. |
 | [**Content System**](./content-system.md) | Essays (posts), atomic notes, library books, now timeline, and scribble feed. |
 | [**Admin & Composer**](./admin.md) | Admin dashboard, IDE-grade MDX composer workspace, split live preview, and diff viewer. |
@@ -41,7 +41,7 @@ This codebase is a modern, high-performance web platform built with **Next.js 16
 4. **Absolute Admin Isolation**
    - The `/admin` surface is never referenced in public sitemaps, robots.txt, navigation menus, or search metadata.
 5. **Idempotency Everywhere**
-   - Database schemas (`schema.sql`), payment processing (Razorpay webhooks & client confirmations), and content mutations are fully idempotent.
+   - Database schemas (`supabase/schema.sql`), payment processing (Razorpay webhooks & client confirmations), and content mutations are fully idempotent.
 
 ---
 
