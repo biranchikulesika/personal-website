@@ -143,21 +143,8 @@ export function noteMetadata(note: NoteItem): Metadata {
   const url = `${SITE_URL}/n/${note.slug}`;
   const title = note.title;
   const description = note.subtitle || note.description || "";
-  const personaLabel = PERSONA_LABELS[note.persona];
-  const noteOgParams: {
-    title: string;
-    description: string;
-    type: string;
-    persona?: string;
-    cover?: string;
-  } = {
-    title,
-    description,
-    type: "note",
-  };
-  if (personaLabel) noteOgParams.persona = personaLabel;
-  if (note.coverImage) noteOgParams.cover = note.coverImage;
-  const noteOgUrl = ogImage(noteOgParams);
+  const personaLabel = note.persona ? PERSONA_LABELS[note.persona] : undefined;
+  const noteOgUrl = `${SITE_URL}/api/og?slug=${encodeURIComponent(note.slug)}&type=note`;
 
   const isDraft = note.status === "unpublished";
 
@@ -175,7 +162,7 @@ export function noteMetadata(note: NoteItem): Metadata {
       publishedTime: note.date,
       modifiedTime: note.date,
       authors: [SITE_NAME],
-      tags: [...note.tags, personaLabel],
+      tags: [...note.tags, ...(personaLabel ? [personaLabel] : [])],
       images: [{ url: noteOgUrl, width: 1200, height: 630, alt: title }],
     },
     twitter: {
@@ -436,7 +423,9 @@ export function breadcrumbJsonLd(items: Array<{ name: string; url: string }>) {
       "@type": "ListItem",
       position: index + 1,
       name: item.name,
-      item: item.url.startsWith("http") ? item.url : `${SITE_URL}${item.url}`,
+      item: item.url.startsWith("http")
+        ? item.url
+        : `${SITE_URL}${item.url.startsWith("/") ? item.url : `/${item.url}`}`,
     })),
   };
 }
@@ -445,6 +434,12 @@ export function breadcrumbJsonLd(items: Array<{ name: string; url: string }>) {
  * JSON-LD for a blog post article.
  */
 export function articleJsonLd(post: BlogPost) {
+  const postImage = post.coverImage
+    ? post.coverImage.startsWith("http")
+      ? post.coverImage
+      : `${SITE_URL}${post.coverImage.startsWith("/") ? post.coverImage : `/${post.coverImage}`}`
+    : `${SITE_URL}/api/og?slug=${encodeURIComponent(post.slug)}`;
+
   return {
     "@context": "https://schema.org",
     "@type": "Article",
@@ -467,7 +462,7 @@ export function articleJsonLd(post: BlogPost) {
     datePublished: post.publishedAt,
     dateModified: post.lastEditedAt || post.publishedAt,
     url: `${SITE_URL}/p/${post.slug}`,
-    image: post.coverImage || ogImage({ title: post.title, type: "post" }),
+    image: postImage,
     keywords: post.tags.join(", "),
     inLanguage: "en-US",
   };
@@ -477,6 +472,12 @@ export function articleJsonLd(post: BlogPost) {
  * JSON-LD for an atomic note.
  */
 export function noteJsonLd(note: NoteItem) {
+  const noteImage = note.coverImage
+    ? note.coverImage.startsWith("http")
+      ? note.coverImage
+      : `${SITE_URL}${note.coverImage.startsWith("/") ? note.coverImage : `/${note.coverImage}`}`
+    : `${SITE_URL}/api/og?slug=${encodeURIComponent(note.slug)}&type=note`;
+
   return {
     "@context": "https://schema.org",
     "@type": "Article",
@@ -485,7 +486,7 @@ export function noteJsonLd(note: NoteItem) {
       "@id": `${SITE_URL}/n/${note.slug}`,
     },
     headline: note.title,
-    description: note.description || "",
+    description: note.subtitle || note.description || "",
     author: {
       "@type": "Person",
       name: SITE_NAME,
@@ -499,7 +500,7 @@ export function noteJsonLd(note: NoteItem) {
     datePublished: note.date,
     dateModified: note.date,
     url: `${SITE_URL}/n/${note.slug}`,
-    image: note.coverImage || ogImage({ title: note.title, type: "note" }),
+    image: noteImage,
     keywords: note.tags.join(", "),
     inLanguage: "en-US",
   };

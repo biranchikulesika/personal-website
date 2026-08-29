@@ -171,6 +171,8 @@ test("noteMetadata generates correct metadata for a note", () => {
   assert.equal(og.type, "article");
   assert.ok((og.tags as string[]).includes("philosophy"));
   assert.ok((og.tags as string[]).includes("Thinker"));
+  const images = og.images as Array<{ url: string }>;
+  assert.ok(images[0].url.includes("/api/og?slug=test-note&type=note"));
 
   const noteWithSubtitle: NoteItem = {
     ...note,
@@ -217,6 +219,7 @@ test("articleJsonLd returns valid Article schema", () => {
   assert.equal(jsonLd.dateModified, "2026-08-21");
   assert.equal(jsonLd.url, `${SITE_URL}/p/test-article`);
   assert.equal(jsonLd.keywords, "craft");
+  assert.ok(jsonLd.image.startsWith("http"), "Article image must be an absolute URL");
   assert.ok(jsonLd.inLanguage.startsWith("en"));
 });
 
@@ -240,6 +243,7 @@ test("noteJsonLd returns valid Article/Document schema for atomic note", () => {
   assert.equal(jsonLd.headline, "Note on Clarity");
   assert.equal(jsonLd.datePublished, "2026-08-21");
   assert.equal(jsonLd.url, `${SITE_URL}/n/note-on-clarity`);
+  assert.ok(jsonLd.image.startsWith("http"), "Note image must be an absolute URL");
 });
 
 test("breadcrumbJsonLd generates valid BreadcrumbList schema", () => {
