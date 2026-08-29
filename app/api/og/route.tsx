@@ -10,13 +10,23 @@ import { NextRequest } from "next/server";
 import fs from "node:fs";
 import path from "node:path";
 
+interface CachedOGResponse {
+  buffer: ArrayBuffer;
+  createdAt: number;
+}
+
+const OG_RESPONSE_CACHE = new Map<string, CachedOGResponse>();
+const COVER_IMAGE_CACHE = new Map<string, string>();
+const MAX_OG_CACHE_ENTRIES = 60;
+const OG_CACHE_TTL_MS = 1000 * 60 * 60 * 24; // 24 hours
+
 export const OG_HEADERS = {
   "Content-Type": "image/png",
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, HEAD, OPTIONS",
   "Access-Control-Allow-Headers": "*",
   "Cross-Origin-Resource-Policy": "cross-origin",
-  "Cache-Control": "public, max-age=86400, stale-while-revalidate=604800",
+  "Cache-Control": "public, max-age=86400, s-maxage=86400, stale-while-revalidate=604800",
 };
 
 export async function OPTIONS() {
@@ -27,9 +37,50 @@ export async function OPTIONS() {
 }
 
 /**
- * Dynamic OG image generation.
+ * Dynamic OG image generation with high-performance response caching.
  */
-export async function GET(request: NextRequest) {
+export async function GET(request: NextRequest): Promise<Response> {
+  const cacheKey = request.nextUrl.search || "?type=home";
+  const cached = OG_RESPONSE_CACHE.get(cacheKey);
+
+  if (cached && Date.now() - cached.createdAt < OG_CACHE_TTL_MS) {
+    return new Response(cached.buffer, {
+      status: 200,
+      headers: {
+        ...OG_HEADERS,
+        "X-OG-Cache": "HIT",
+      },
+    });
+  }
+
+  try {
+    const imageResponse = await generateOG(request);
+    const buffer = await imageResponse.arrayBuffer();
+
+    if (OG_RESPONSE_CACHE.size >= MAX_OG_CACHE_ENTRIES) {
+      const firstKey = OG_RESPONSE_CACHE.keys().next().value;
+      if (firstKey) OG_RESPONSE_CACHE.delete(firstKey);
+    }
+
+    OG_RESPONSE_CACHE.set(cacheKey, {
+      buffer,
+      createdAt: Date.now(),
+    });
+
+    return new Response(buffer, {
+      status: 200,
+      headers: {
+        ...OG_HEADERS,
+        "X-OG-Cache": "MISS",
+      },
+    });
+  } catch (error) {
+    console.error("[OG] Generation error:", error);
+    return generateFallbackOG();
+  }
+}
+
+async function generateOG(request: NextRequest): Promise<ImageResponse> {
   const { searchParams } = request.nextUrl;
   const slug = searchParams.get("slug");
 
@@ -123,7 +174,9 @@ export async function GET(request: NextRequest) {
       // Use fallback
     }
 
-    const heroImageB64 = await resolveCoverImage(heroImageSrc);
+    const heroImageB64 =
+      (await resolveCoverImage("/og/biranchi.jpeg")) ||
+      (await resolveCoverImage(heroImageSrc));
 
     return generateHomeOG({
       siteName,
@@ -882,6 +935,13 @@ function generateSupportOG({
 // ── 1. About page dynamic OG ────────────────────────────────────────────────
 
 const ABOUT_PAGE_IMAGES = [
+  "/og/about-1.jpeg",
+  "/og/about-2.jpeg",
+  "/og/about-3.jpeg",
+  "/og/about-4.jpeg",
+];
+
+const ABOUT_PAGE_FALLBACKS = [
   "/selfiewithmiku.jpeg",
   "/selfiewithblessie.jpeg",
   "/selfiewithfriends.jpeg",
@@ -889,7 +949,14 @@ const ABOUT_PAGE_IMAGES = [
 ];
 
 async function resolveAboutImages(): Promise<(string | null)[]> {
-  return Promise.all(ABOUT_PAGE_IMAGES.map((src) => resolveCoverImage(src)));
+  return Promise.all(
+    ABOUT_PAGE_IMAGES.map(async (src, i) => {
+      const resolved = await resolveCoverImage(src);
+      if (resolved) return resolved;
+      const fallbackSrc = ABOUT_PAGE_FALLBACKS[i];
+      return fallbackSrc ? resolveCoverImage(fallbackSrc) : null;
+    }),
+  );
 }
 
 function generateAboutOG({
@@ -1099,10 +1166,10 @@ function generateAboutOG({
                     height: "265px",
                     borderRadius: "20px",
                     overflow: "hidden",
-                    border: "2px solid rgba(250,249,245,0.16)",
+                    border: "2px solid rgba(250,249,245,0.18)",
                     background: "#1c1c1a",
                     position: "relative",
-                    boxShadow: "0 16px 40px rgba(0,0,0,0.55)",
+                    boxShadow: "0 4px 12px rgba(0,0,0,0.45)",
                     display: "flex",
                   }}
                 >
@@ -1152,10 +1219,10 @@ function generateAboutOG({
                     height: "265px",
                     borderRadius: "20px",
                     overflow: "hidden",
-                    border: "2px solid rgba(250,249,245,0.16)",
+                    border: "2px solid rgba(250,249,245,0.18)",
                     background: "#1c1c1a",
                     position: "relative",
-                    boxShadow: "0 16px 40px rgba(0,0,0,0.55)",
+                    boxShadow: "0 4px 12px rgba(0,0,0,0.45)",
                     display: "flex",
                   }}
                 >
@@ -2176,6 +2243,10 @@ async function resolveCoverImage(
   if (!trimmed || trimmed.startsWith("//") || trimmed.startsWith("/\\"))
     return null;
 
+  if (COVER_IMAGE_CACHE.has(trimmed)) {
+    return COVER_IMAGE_CACHE.get(trimmed)!;
+  }
+
   // 1. Try resolving local files directly from public directory
   if (trimmed.startsWith("/")) {
     try {
@@ -2193,7 +2264,9 @@ async function resolveCoverImage(
                 : "image/jpeg";
         const buffer = await fs.promises.readFile(localFilePath);
         if (buffer.byteLength <= 5 * 1024 * 1024) {
-          return `data:${mime};base64,${buffer.toString("base64")}`;
+          const b64 = `data:${mime};base64,${buffer.toString("base64")}`;
+          COVER_IMAGE_CACHE.set(trimmed, b64);
+          return b64;
         }
       }
     } catch {
@@ -2239,7 +2312,9 @@ async function resolveCoverImage(
       if (buf.byteLength > 5 * 1024 * 1024) {
         return null;
       }
-      return `data:${contentType};base64,${Buffer.from(buf).toString("base64")}`;
+      const b64 = `data:${contentType};base64,${Buffer.from(buf).toString("base64")}`;
+      COVER_IMAGE_CACHE.set(trimmed, b64);
+      return b64;
     }
   } catch {
     // If cover fetch fails or is aborted, proceed without artwork

@@ -319,3 +319,36 @@ test("supportMetadata generates correct metadata pointing to dynamic OG route", 
   const images = og.images as Array<{ url: string }>;
   assert.ok(images[0].url.includes("/api/og?type=support"));
 });
+
+// ── OG route handler tests ──────────────────────────────────────────────────
+
+test("GET /api/og?type=about generates valid PNG and uses response caching", async () => {
+  const { GET } = await import("../app/api/og/route");
+  const { NextRequest } = await import("next/server");
+
+  const req1 = new NextRequest(`${SITE_URL}/api/og?type=about`);
+  const res1 = await GET(req1);
+  assert.equal(res1.status, 200);
+  assert.equal(res1.headers.get("content-type"), "image/png");
+  assert.ok(res1.headers.get("cache-control")?.includes("public"));
+
+  const buf1 = await res1.arrayBuffer();
+  assert.ok(buf1.byteLength > 1000, "OG image buffer should be non-empty PNG");
+
+  // Subsequent call should hit cache
+  const req2 = new NextRequest(`${SITE_URL}/api/og?type=about`);
+  const res2 = await GET(req2);
+  assert.equal(res2.status, 200);
+  assert.equal(res2.headers.get("x-og-cache"), "HIT");
+  const buf2 = await res2.arrayBuffer();
+  assert.equal(buf2.byteLength, buf1.byteLength);
+});
+
+test("OPTIONS /api/og returns 204 with CORS and cache headers", async () => {
+  const { OPTIONS } = await import("../app/api/og/route");
+  const res = await OPTIONS();
+  assert.equal(res.status, 204);
+  assert.equal(res.headers.get("access-control-allow-origin"), "*");
+  assert.equal(res.headers.get("cross-origin-resource-policy"), "cross-origin");
+});
+
