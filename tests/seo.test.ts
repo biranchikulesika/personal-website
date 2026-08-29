@@ -369,7 +369,16 @@ test("getGtmId returns trimmed ID when configured and undefined when missing/emp
     process.env.NEXT_PUBLIC_GTM_ID = "  GTM-TRIMTEST  ";
     assert.equal(getGtmId(), "GTM-TRIMTEST");
 
+    process.env.NEXT_PUBLIC_GTM_ID = '"GTM-DOUBLEQUOTE"';
+    assert.equal(getGtmId(), "GTM-DOUBLEQUOTE");
+
+    process.env.NEXT_PUBLIC_GTM_ID = "'GTM-SINGLEQUOTE'";
+    assert.equal(getGtmId(), "GTM-SINGLEQUOTE");
+
     process.env.NEXT_PUBLIC_GTM_ID = "";
+    assert.equal(getGtmId(), undefined);
+
+    process.env.NEXT_PUBLIC_GTM_ID = '""';
     assert.equal(getGtmId(), undefined);
 
     delete process.env.NEXT_PUBLIC_GTM_ID;
