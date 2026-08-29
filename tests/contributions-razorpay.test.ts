@@ -283,7 +283,7 @@ test("getContribution retrieves contribution by id, paymentId, or orderId", asyn
 
 // ── API Route Handler Tests ────────────────────────────────────────────────
 
-test("POST /api/contributions accepts valid payment and confirms", async () => {
+test("POST /api/contributions accepts valid payment with source: razorpay", async () => {
   const repo = new InMemoryTestContentRepository();
   setContentRepositoryForTesting(repo);
   const { POST } = await import("../app/api/contributions/route");
@@ -297,7 +297,7 @@ test("POST /api/contributions accepts valid payment and confirms", async () => {
       name: "API Tester",
       email: "tester@example.com",
       note: "Testing API route",
-      source: "manual",
+      source: "razorpay",
     }),
   });
 
@@ -308,6 +308,89 @@ test("POST /api/contributions accepts valid payment and confirms", async () => {
   assert.equal(json.success, true);
   assert.equal(json.contribution.id, "pay_ROUTE_TEST_001");
   assert.equal(json.contribution.amount, 750);
+});
+
+test("POST /api/contributions rejects unauthenticated manual contributions with 403", async () => {
+  const repo = new InMemoryTestContentRepository();
+  setContentRepositoryForTesting(repo);
+  const { POST } = await import("../app/api/contributions/route");
+
+  const request = new Request("http://localhost:3000/api/contributions", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      paymentId: "pay_FAKE_MANUAL_001",
+      amount: 5000,
+      name: "Attacker",
+      source: "manual",
+    }),
+  });
+
+  const response = await POST(request);
+  assert.equal(response.status, 403);
+  const json = await response.json();
+  assert.ok(json.error.includes("Unauthorized") || json.error.includes("administrative privileges"));
+});
+
+test("POST /api/contributions enforces signature check when RAZORPAY_KEY_SECRET is configured", async () => {
+  const repo = new InMemoryTestContentRepository();
+  setContentRepositoryForTesting(repo);
+  const { POST } = await import("../app/api/contributions/route");
+
+  const secret = "key_secret_test_12345";
+  process.env.RAZORPAY_KEY_SECRET = secret;
+
+  // 1. Missing signature when secret is set -> rejects 400
+  const unsignedReq = new Request("http://localhost:3000/api/contributions", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      paymentId: "pay_UNVERIFIED_123",
+      amount: 1000,
+      source: "razorpay",
+    }),
+  });
+  const unsignedRes = await POST(unsignedReq);
+  assert.equal(unsignedRes.status, 400);
+
+  // 2. Invalid signature -> rejects 400
+  const invalidSigReq = new Request("http://localhost:3000/api/contributions", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      paymentId: "pay_VALID_123",
+      orderId: "order_VALID_123",
+      signature: "invalid_tampered_signature_hex",
+      amount: 1000,
+      source: "razorpay",
+    }),
+  });
+  const invalidSigRes = await POST(invalidSigReq);
+  assert.equal(invalidSigRes.status, 400);
+
+  // 3. Valid HMAC signature -> succeeds 200
+  const orderId = "order_VALID_123";
+  const paymentId = "pay_VALID_123";
+  const validSignature = crypto
+    .createHmac("sha256", secret)
+    .update(`${orderId}|${paymentId}`)
+    .digest("hex");
+
+  const validReq = new Request("http://localhost:3000/api/contributions", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      paymentId,
+      orderId,
+      signature: validSignature,
+      amount: 1000,
+      source: "razorpay",
+    }),
+  });
+  const validRes = await POST(validReq);
+  assert.equal(validRes.status, 200);
+
+  delete process.env.RAZORPAY_KEY_SECRET;
 });
 
 test("POST /api/contributions rejects invalid requests", async () => {
@@ -378,7 +461,27 @@ test("POST /api/webhooks/razorpay processes valid webhook request", async () => 
   delete process.env.RAZORPAY_WEBHOOK_SECRET;
 });
 
-test("POST /api/webhooks/razorpay rejects tampered signature", async () => {
+test("POST /api/webhooks/razorpay fails closed with 500 when secret is not configured", async () => {
+  const { POST } = await import("../app/api/webhooks/razorpay/route");
+
+  delete process.env.RAZORPAY_WEBHOOK_SECRET;
+
+  const request = new Request("http://localhost:3000/api/webhooks/razorpay", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-razorpay-signature": "some_signature",
+    },
+    body: JSON.stringify({ event: "payment.captured" }),
+  });
+
+  const response = await POST(request);
+  assert.equal(response.status, 500);
+  const json = await response.json();
+  assert.ok(json.error.includes("not configured"));
+});
+
+test("POST /api/webhooks/razorpay rejects with 400 when signature header is missing", async () => {
   const { POST } = await import("../app/api/webhooks/razorpay/route");
 
   process.env.RAZORPAY_WEBHOOK_SECRET = "secret_route_test";
@@ -387,7 +490,6 @@ test("POST /api/webhooks/razorpay rejects tampered signature", async () => {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "x-razorpay-signature": "bad_signature",
     },
     body: JSON.stringify({ event: "payment.captured" }),
   });

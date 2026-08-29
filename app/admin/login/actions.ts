@@ -4,12 +4,25 @@ import { createServerClient } from "@supabase/ssr";
 import { cookies, headers } from "next/headers";
 import { getSupabaseUrl, getSupabasePublishableKey } from "@/lib/config/env";
 import { getSupabaseAdmin } from "@/lib/supabase/server";
+import { ContentService } from "@/lib/services/content.service";
+import {
+  generateAuthenticationOptions,
+  verifyAuthenticationResponse,
+  type AuthenticationResponseJSON,
+  type PublicKeyCredentialRequestOptionsJSON,
+} from "@simplewebauthn/server";
+import {
+  getWebAuthnExpectedOrigin,
+  getWebAuthnRpID,
+  setPasskeyChallengeCookie,
+  consumePasskeyChallengeCookie,
+} from "@/lib/auth/webauthn";
 import type { PasskeyItem } from "@/lib/types";
 
-// ── Rate Limiting ──────────────────────────────────────────────────────────
-// Simple in-memory rate limiter: max 5 attempts per 5 minutes per IP.
-// In production, consider using Redis or an external rate-limiting service.
+const contentService = new ContentService();
 
+// ── Rate Limiting ──────────────────────────────────────────────────────────
+// In-memory rate limiter: max 5 attempts per 5 minutes per IP.
 const attempts = new Map<string, { count: number; resetAt: number }>();
 
 function getRateLimitKey(ip: string): string {
@@ -36,6 +49,19 @@ function checkRateLimit(ip: string): boolean {
 
 function resetRateLimit(ip: string): void {
   attempts.delete(getRateLimitKey(ip));
+}
+
+async function getClientIp(): Promise<string> {
+  try {
+    const headersList = await headers();
+    return (
+      headersList.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+      headersList.get("x-real-ip") ||
+      "unknown"
+    );
+  } catch {
+    return "unknown";
+  }
 }
 
 // ── Supabase Client Helper ────────────────────────────────────────────────
@@ -65,7 +91,7 @@ async function createAuthClient() {
               cookieStore.set(name, value, options),
             );
           } catch {
-            // Server Action — safe to ignore.
+            // Server Action — safe to ignore outside request context.
           }
         },
       },
@@ -113,22 +139,18 @@ export async function signInWithGitHub(): Promise<{
   return { url: data.url };
 }
 
-// ── Passkey Actions ────────────────────────────────────────────────────────
+// ── WebAuthn / Passkey Authentication Actions ──────────────────────────────
 
-export async function verifyPasskeyLoginAction(params?: {
-  credentialId?: string;
-}): Promise<{ success: boolean; error?: string }> {
-  let ip = "unknown";
-  try {
-    const headersList = await headers();
-    ip =
-      headersList.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-      headersList.get("x-real-ip") ||
-      "unknown";
-  } catch {
-    // Handled safely outside request scope
-  }
-
+/**
+ * Generates WebAuthn authentication options for the client.
+ * Binds a cryptographically secure challenge to an HTTP-only cookie.
+ */
+export async function generatePasskeyAuthenticationOptionsAction(): Promise<{
+  success: boolean;
+  options?: PublicKeyCredentialRequestOptionsJSON;
+  error?: string;
+}> {
+  const ip = await getClientIp();
   if (!checkRateLimit(ip)) {
     return {
       success: false,
@@ -136,108 +158,185 @@ export async function verifyPasskeyLoginAction(params?: {
     };
   }
 
-  const supabase = await createAuthClient();
-  if (!supabase) {
-    return { success: false, error: "Authentication is not configured" };
+  try {
+    let hostname: string | undefined;
+    try {
+      const headerList = await headers();
+      hostname = headerList.get("host") || undefined;
+    } catch {
+      // Handled safely
+    }
+
+    const rpID = getWebAuthnRpID(hostname);
+    const adminPasskeys = await contentService.getAllAdminPasskeys();
+
+    // Prepare list of allowed credentials if available (supports discoverable & non-discoverable passkeys)
+    const allowCredentials = adminPasskeys
+      .filter((p) => Boolean(p.credentialId || p.id))
+      .map((p) => ({
+        id: p.credentialId || p.id,
+        transports: p.transports as any,
+      }));
+
+    const options = await generateAuthenticationOptions({
+      rpID,
+      userVerification: "preferred",
+      allowCredentials: allowCredentials.length > 0 ? allowCredentials : undefined,
+    });
+
+    await setPasskeyChallengeCookie({
+      challenge: options.challenge,
+      action: "authentication",
+    });
+
+    return {
+      success: true,
+      options,
+    };
+  } catch (err: unknown) {
+    return {
+      success: false,
+      error: (err as Error).message || "Failed to generate passkey authentication options",
+    };
+  }
+}
+
+/**
+ * Verifies a WebAuthn authentication assertion from the client.
+ * Requires genuine cryptographic signature verification against the stored public key.
+ * Only after cryptographic verification succeeds does it establish an authenticated Supabase session.
+ */
+export async function verifyPasskeyLoginAction(params?: {
+  response?: AuthenticationResponseJSON;
+  credentialId?: string;
+}): Promise<{ success: boolean; error?: string }> {
+  const ip = await getClientIp();
+  if (!checkRateLimit(ip)) {
+    return {
+      success: false,
+      error: "Too many attempts. Please try again later.",
+    };
+  }
+
+  // 1. Consume and invalidate the challenge cookie (prevents replay attacks)
+  const expectedChallenge = await consumePasskeyChallengeCookie("authentication");
+  if (!expectedChallenge) {
+    return {
+      success: false,
+      error: "Authentication session expired or invalid. Please try again.",
+    };
+  }
+
+  if (!params?.response || !params.response.id) {
+    return {
+      success: false,
+      error: "Missing or invalid WebAuthn response.",
+    };
   }
 
   try {
+    let hostname: string | undefined;
+    let origin: string | undefined;
+    try {
+      const headerList = await headers();
+      hostname = headerList.get("host") || undefined;
+      origin = headerList.get("origin") || undefined;
+    } catch {
+      // Handled safely
+    }
+
+    const expectedRPID = getWebAuthnRpID(hostname);
+    const expectedOrigin = getWebAuthnExpectedOrigin(origin);
+
+    // 2. Look up the registered credential by credential ID
+    const credRecord = await contentService.findPasskeyCredential(params.response.id);
+    if (!credRecord || !credRecord.passkey) {
+      return {
+        success: false,
+        error: "Unrecognized passkey credential. Please sign in with Google or GitHub and re-register your passkey.",
+      };
+    }
+
+    // If credential exists from legacy registration without public key, require re-registration
+    if (!credRecord.passkey.publicKey) {
+      return {
+        success: false,
+        error: "This passkey was registered under a legacy format and must be re-registered. Please sign in with Google or GitHub to re-add it.",
+      };
+    }
+
+    // 3. Cryptographically verify the WebAuthn assertion signature
+    const verification = await verifyAuthenticationResponse({
+      response: params.response,
+      expectedChallenge,
+      expectedOrigin,
+      expectedRPID,
+      credential: {
+        id: credRecord.passkey.credentialId || credRecord.passkey.id,
+        publicKey: Buffer.from(credRecord.passkey.publicKey, "base64url"),
+        counter: credRecord.passkey.counter || 0,
+        transports: credRecord.passkey.transports as any,
+      },
+    });
+
+    if (!verification.verified || !verification.authenticationInfo) {
+      return {
+        success: false,
+        error: "WebAuthn assertion verification failed.",
+      };
+    }
+
+    // 4. Update the stored counter & last used date
+    const updatedPasskey: PasskeyItem = {
+      ...credRecord.passkey,
+      counter: verification.authenticationInfo.newCounter,
+      lastUsedAt: new Date().toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      }),
+    };
+    await contentService.savePasskey(credRecord.userId, updatedPasskey);
+
+    // 5. Verify that the user still has an active administrative role in the trusted role store
+    const role = await contentService.getUserRole(credRecord.userId);
+    if (role !== "super_admin" && role !== "content_admin") {
+      return {
+        success: false,
+        error: "Forbidden: Account does not possess administrative privileges.",
+      };
+    }
+
+    // 6. Establish the authenticated session in Supabase SSR
     const adminClient = getSupabaseAdmin();
     if (!adminClient) {
       return {
         success: false,
-        error: "Database authentication is not configured",
+        error: "Database authentication is not configured.",
       };
     }
 
-    // 1. Query existing users
-    const { data: usersData, error: listError } =
-      await adminClient.auth.admin.listUsers({
-        perPage: 100,
-      });
-
-    if (listError) {
-      return { success: false, error: listError.message };
-    }
-
-    const users = usersData?.users || [];
-
-    // Match by registered credentialId if provided
-    let targetUser = users.find((u) => {
-      if (params?.credentialId) {
-        const passkeys =
-          ((u.app_metadata?.passkeys ||
-            u.user_metadata?.passkeys) as PasskeyItem[]) || [];
-        if (passkeys.some((p) => p.credentialId === params.credentialId)) {
-          return true;
-        }
-      }
-      return false;
-    });
-
-    // If not matched by credentialId, find by admin role in user_roles
-    if (!targetUser) {
-      const { data: rolesData } = await adminClient
-        .from("user_roles")
-        .select("user_id, role")
-        .in("role", ["content_admin", "super_admin"]);
-
-      if (rolesData && rolesData.length > 0) {
-        const adminUserIds = new Set(rolesData.map((r) => r.user_id));
-        targetUser = users.find((u) => adminUserIds.has(u.id));
-      }
-    }
-
-    // Fallback: pick the first user in the system
-    if (!targetUser && users.length > 0) {
-      targetUser = users[0];
-    }
-
-    // If no users exist in database yet (e.g. fresh installation), initialize the admin user
-    if (!targetUser) {
-      const defaultEmail = "hello@kulesika.in";
-      const { data: createData, error: createError } =
-        await adminClient.auth.admin.createUser({
-          email: defaultEmail,
-          email_confirm: true,
-          user_metadata: { name: "Biranchi Kulesika" },
-          app_metadata: { role: "super_admin" },
-        });
-
-      if (createError || !createData?.user) {
-        return {
-          success: false,
-          error: createError?.message || "Failed to initialize admin account",
-        };
-      }
-
-      targetUser = createData.user;
-
-      await adminClient.from("user_roles").upsert(
-        { user_id: targetUser.id, role: "super_admin" },
-        { onConflict: "user_id" },
-      );
-    }
-
-    if (!targetUser?.email) {
-      return { success: false, error: "Admin email address not found" };
-    }
-
-    // 2. Generate a magiclink token hash for session establishment
     const { data: linkData, error: linkError } =
       await adminClient.auth.admin.generateLink({
         type: "magiclink",
-        email: targetUser.email,
+        email: credRecord.userEmail,
       });
 
     if (linkError || !linkData?.properties?.hashed_token) {
       return {
         success: false,
-        error: linkError?.message || "Failed to generate authentication token",
+        error: linkError?.message || "Failed to establish authenticated session.",
       };
     }
 
-    // 3. Verify OTP on the SSR client to set session cookies
+    const supabase = await createAuthClient();
+    if (!supabase) {
+      return {
+        success: false,
+        error: "Authentication client is not available.",
+      };
+    }
+
     const { error: otpError } = await supabase.auth.verifyOtp({
       token_hash: linkData.properties.hashed_token,
       type: "email",
@@ -250,7 +349,10 @@ export async function verifyPasskeyLoginAction(params?: {
       });
 
       if (magicError) {
-        return { success: false, error: magicError.message };
+        return {
+          success: false,
+          error: magicError.message,
+        };
       }
     }
 
@@ -259,42 +361,23 @@ export async function verifyPasskeyLoginAction(params?: {
   } catch (err: unknown) {
     return {
       success: false,
-      error:
-        (err as Error).message ||
-        "Passkey authentication failed. Please try again.",
+      error: (err as Error).message || "Passkey authentication failed.",
     };
   }
 }
 
 export async function signInWithPasskey(): Promise<{ error?: string }> {
-  const result = await verifyPasskeyLoginAction();
-  if (!result.success) {
-    return {
-      error:
-        result.error || "Passkey authentication failed. Please try again.",
-    };
-  }
-  return {};
+  return {
+    error: "Please use the passkey button on the login screen to perform biometric or security key authentication.",
+  };
 }
 
 export async function startPasskeyRegistration(): Promise<{
   options?: string;
   error?: string;
 }> {
-  const supabase = await createAuthClient();
-  if (!supabase) return { error: "Authentication is not configured" };
-
-  // Get current user
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { error: "You must be signed in to register a passkey." };
-
   return {
-    options: JSON.stringify({
-      userId: user.id,
-      userEmail: user.email,
-    }),
+    error: "Passkey registration must be performed from the Account Settings panel while logged in.",
   };
 }
 

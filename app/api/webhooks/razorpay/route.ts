@@ -12,9 +12,10 @@ export async function POST(request: Request) {
     const result = await contentService.processRazorpayWebhook(rawBody, signature);
 
     if (!result.success) {
+      const isConfigError = result.error?.includes('not configured');
       return NextResponse.json(
         { error: result.error || 'Webhook verification failed' },
-        { status: 400 },
+        { status: isConfigError ? 500 : 400 },
       );
     }
 

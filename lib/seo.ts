@@ -172,6 +172,8 @@ export function noteMetadata(note: NoteItem): Metadata {
       description,
       url,
       siteName: SITE_NAME,
+      publishedTime: note.date,
+      modifiedTime: note.date,
       authors: [SITE_NAME],
       tags: [...note.tags, personaLabel],
       images: [{ url: noteOgUrl, width: 1200, height: 630, alt: title }],

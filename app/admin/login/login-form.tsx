@@ -6,9 +6,10 @@ import { useSearchParams } from 'next/navigation';
 import {
   signInWithGoogle,
   signInWithGitHub,
-  signInWithPasskey,
+  generatePasskeyAuthenticationOptionsAction,
   verifyPasskeyLoginAction,
 } from './actions';
+import { startAuthentication, browserSupportsWebAuthn } from '@simplewebauthn/browser';
 import { getSupabaseBrowser } from '@/lib/supabase/client';
 import { SITE_DOMAIN } from '@/lib/constants';
 
@@ -78,52 +79,48 @@ export function LoginForm() {
     setPasskeyLoading(true);
 
     try {
-      let credentialId: string | undefined = undefined;
-
-      // 1. Standard WebAuthn assertion ceremony in browser
-      if (typeof window !== 'undefined' && window.PublicKeyCredential && navigator.credentials) {
-        try {
-          const challenge = new Uint8Array(32);
-          window.crypto.getRandomValues(challenge);
-
-          const credential = (await navigator.credentials.get({
-            publicKey: {
-              challenge,
-              timeout: 60000,
-              userVerification: 'preferred',
-              rpId:
-                window.location.hostname === 'localhost'
-                  ? undefined
-                  : window.location.hostname,
-            },
-          })) as PublicKeyCredential | null;
-
-          if (credential) {
-            credentialId = credential.id;
-          }
-        } catch (webauthnErr: unknown) {
-          const errName = (webauthnErr as { name?: string })?.name;
-          if (errName === 'NotAllowedError' || errName === 'AbortError') {
-            setError('Passkey prompt cancelled or timed out.');
-            setPasskeyLoading(false);
-            return;
-          }
-          // Fall through to server action verification
-        }
+      if (!browserSupportsWebAuthn()) {
+        setError('WebAuthn / Passkeys are not supported by this browser.');
+        setPasskeyLoading(false);
+        return;
       }
 
-      // 2. Call server action to verify and establish session
+      // 1. Fetch authentication options from the server
+      const optResult = await generatePasskeyAuthenticationOptionsAction();
+      if (!optResult.success || !optResult.options) {
+        setError(optResult.error || 'Failed to initialize passkey authentication.');
+        setPasskeyLoading(false);
+        return;
+      }
+
+      // 2. Perform WebAuthn authentication ceremony in the browser
+      let authResponse;
+      try {
+        authResponse = await startAuthentication({
+          optionsJSON: optResult.options,
+        });
+      } catch (webauthnErr: unknown) {
+        const errName = (webauthnErr as { name?: string })?.name;
+        if (errName === 'NotAllowedError' || errName === 'AbortError') {
+          setError('Passkey prompt cancelled or timed out.');
+          setPasskeyLoading(false);
+          return;
+        }
+        throw webauthnErr;
+      }
+
+      // 3. Cryptographically verify the assertion response on the server
       const verifyResult = await verifyPasskeyLoginAction({
-        credentialId,
+        response: authResponse,
       });
 
       if (!verifyResult.success || verifyResult.error) {
-        setError(verifyResult.error || 'Authentication failed. Please try again.');
+        setError(verifyResult.error || 'Passkey authentication failed. Please try again.');
       } else {
         window.location.href = '/admin';
       }
-    } catch {
-      setError('Passkey authentication failed. Please try again.');
+    } catch (err: unknown) {
+      setError((err as Error).message || 'Passkey authentication failed. Please try again.');
     } finally {
       setPasskeyLoading(false);
     }

@@ -13,6 +13,7 @@ import type {
   WritingItem,
   Contribution,
   PasskeyItem,
+  PasskeyCredentialRecord,
   UserSession,
   NewsletterSubscriber,
 } from '@/lib/types';
@@ -72,6 +73,8 @@ export interface ContentRepository {
   getPasskeys(userId: string): Promise<PasskeyItem[]>;
   savePasskey(userId: string, passkey: PasskeyItem): Promise<PasskeyItem>;
   deletePasskey(userId: string, passkeyId: string): Promise<boolean>;
+  findPasskeyCredential(credentialId: string): Promise<PasskeyCredentialRecord | null>;
+  getAllAdminPasskeys(): Promise<PasskeyItem[]>;
 
   // Active Sessions
   getSessions(userId: string, currentSessionId?: string): Promise<UserSession[]>;

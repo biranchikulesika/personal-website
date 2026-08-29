@@ -11,6 +11,7 @@ import type {
   NoteItem,
   NowEntry,
   PasskeyItem,
+  PasskeyCredentialRecord,
   Persona,
   PostSection,
   ScribbleEntry,
@@ -1051,6 +1052,66 @@ export class SupabaseContentRepository implements ContentRepository {
       return false;
     } catch {
       return false;
+    }
+  }
+
+  async findPasskeyCredential(
+    credentialId: string,
+  ): Promise<PasskeyCredentialRecord | null> {
+    try {
+      const { data: listData, error } = await this.db.auth.admin.listUsers({
+        perPage: 100,
+      });
+      if (error || !listData?.users) return null;
+
+      for (const user of listData.users) {
+        const passkeys =
+          ((user.app_metadata?.passkeys ||
+            user.user_metadata?.passkeys) as PasskeyItem[]) || [];
+        const match = passkeys.find(
+          (p) => p.credentialId === credentialId || p.id === credentialId,
+        );
+        if (match && user.email) {
+          return {
+            userId: user.id,
+            userEmail: user.email,
+            passkey: match,
+          };
+        }
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  }
+
+  async getAllAdminPasskeys(): Promise<PasskeyItem[]> {
+    try {
+      const { data: rolesData } = await this.db
+        .from("user_roles")
+        .select("user_id, role")
+        .in("role", ["content_admin", "super_admin"]);
+
+      if (!rolesData || rolesData.length === 0) return [];
+
+      const adminUserIds = new Set(rolesData.map((r) => r.user_id));
+      const { data: listData } = await this.db.auth.admin.listUsers({
+        perPage: 100,
+      });
+      if (!listData?.users) return [];
+
+      const result: PasskeyItem[] = [];
+      for (const user of listData.users) {
+        if (adminUserIds.has(user.id)) {
+          const passkeys =
+            ((user.app_metadata?.passkeys ||
+              user.user_metadata?.passkeys) as PasskeyItem[]) || [];
+          result.push(...passkeys);
+        }
+      }
+      return result;
+    } catch {
+      return [];
     }
   }
 

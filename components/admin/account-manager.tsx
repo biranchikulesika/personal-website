@@ -16,8 +16,10 @@ import {
 import { NoContentState } from '@/components/ui/states';
 import { getSupabaseBrowser } from '@/lib/supabase/client';
 import { SITE_DOMAIN } from '@/lib/constants';
+import { startRegistration, browserSupportsWebAuthn } from '@simplewebauthn/browser';
 import {
-  registerPasskeyAction,
+  startPasskeyRegistrationAction,
+  verifyPasskeyRegistrationAction,
   deletePasskeyAction,
   connectProviderAction,
   disconnectProviderAction,
@@ -111,79 +113,50 @@ export function AccountManager({
     const label = getDeviceLabel();
 
     try {
-      let credentialId: string | undefined = undefined;
-
-      // Standard WebAuthn ceremony in browser
-      if (
-        typeof window !== 'undefined' &&
-        window.PublicKeyCredential &&
-        navigator.credentials
-      ) {
-        try {
-          const challenge = new Uint8Array(32);
-          window.crypto.getRandomValues(challenge);
-          const userIdBytes = new TextEncoder().encode(userEmail || 'admin');
-
-          const credential = (await navigator.credentials.create({
-            publicKey: {
-              challenge,
-              rp: {
-                name: 'Biranchi Kulesika Admin',
-                id:
-                  window.location.hostname === 'localhost'
-                    ? undefined
-                    : window.location.hostname,
-              },
-              user: {
-                id: userIdBytes,
-                name: userEmail || `admin@${SITE_DOMAIN}`,
-                displayName: userName || 'Admin',
-              },
-              pubKeyCredParams: [
-                { alg: -7, type: 'public-key' },
-                { alg: -257, type: 'public-key' },
-              ],
-              timeout: 60000,
-              authenticatorSelection: {
-                residentKey: 'preferred',
-                userVerification: 'preferred',
-              },
-              attestation: 'none',
-            },
-          })) as PublicKeyCredential | null;
-
-          if (credential) {
-            credentialId = credential.id;
-          }
-        } catch (webauthnErr: unknown) {
-          const errName = (webauthnErr as { name?: string })?.name;
-          if (errName === 'NotAllowedError' || errName === 'AbortError') {
-            showToast('Passkey registration was cancelled.');
-            setIsRegistering(false);
-            return;
-          }
-          throw webauthnErr;
-        }
-      } else {
+      if (!browserSupportsWebAuthn()) {
         showToast('WebAuthn / Passkeys are not supported by this browser.');
         setIsRegistering(false);
         return;
       }
 
-      // 3. Persist via server action
-      const result = await registerPasskeyAction({
+      // 1. Fetch server registration options
+      const optResult = await startPasskeyRegistrationAction();
+      if (!optResult.success || !optResult.options) {
+        showToast(optResult.error || 'Failed to initialize passkey registration');
+        setIsRegistering(false);
+        return;
+      }
+
+      // 2. Perform WebAuthn registration ceremony in browser
+      let regResponse;
+      try {
+        regResponse = await startRegistration({
+          optionsJSON: optResult.options,
+        });
+      } catch (webauthnErr: unknown) {
+        const errName = (webauthnErr as { name?: string })?.name;
+        if (errName === 'NotAllowedError' || errName === 'AbortError') {
+          showToast('Passkey registration was cancelled.');
+          setIsRegistering(false);
+          return;
+        }
+        throw webauthnErr;
+      }
+
+      // 3. Cryptographically verify and persist credential on server
+      const verifyResult = await verifyPasskeyRegistrationAction({
+        response: regResponse,
         label,
-        credentialId,
       });
 
-      if (result.success && result.passkey) {
+      if (verifyResult.success && verifyResult.passkey) {
         setPasskeys((prev) => [
-          result.passkey!,
-          ...prev.filter((p) => p.id !== result.passkey!.id),
+          verifyResult.passkey!,
+          ...prev.filter((p) => p.id !== verifyResult.passkey!.id),
         ]);
-        showToast(`Passkey added for ${label}`);
+        showToast(`Passkey registered: ${label}`);
       } else {
-        showToast(result.error || 'Failed to add passkey');
+        showToast(verifyResult.error || 'Failed to verify and save passkey');
       }
     } catch (err: unknown) {
       showToast((err as Error).message || 'Failed to register passkey');

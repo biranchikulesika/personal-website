@@ -10,6 +10,7 @@ import type {
   NoteItem,
   NowEntry,
   PasskeyItem,
+  PasskeyCredentialRecord,
   Persona,
   ScribbleEntry,
   SectionGroup,
@@ -407,10 +408,28 @@ export class InMemoryTestContentRepository implements ContentRepository {
   }
 
   async deletePasskey(userId: string, id: string): Promise<boolean> {
-    const index = this.passkeys.findIndex((p) => p.id === id);
+    const index = this.passkeys.findIndex((p) => p.id === id || p.credentialId === id);
     if (index < 0) return false;
     this.passkeys.splice(index, 1);
     return true;
+  }
+
+  async findPasskeyCredential(
+    credentialId: string,
+  ): Promise<PasskeyCredentialRecord | null> {
+    const match = this.passkeys.find(
+      (p) => p.credentialId === credentialId || p.id === credentialId,
+    );
+    if (!match) return null;
+    return {
+      userId: "test-admin-id",
+      userEmail: "hello@kulesika.in",
+      passkey: match,
+    };
+  }
+
+  async getAllAdminPasskeys(): Promise<PasskeyItem[]> {
+    return [...this.passkeys];
   }
 
   async getSessions(

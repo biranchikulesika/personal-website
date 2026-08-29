@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import Script from 'next/script';
 import { Space_Grotesk, Newsreader } from 'next/font/google';
+import { SpeedInsights } from '@vercel/speed-insights/next';
 import './globals.css';
 import { rootMetadata, websiteJsonLd, safeJsonLd } from '@/lib/seo';
 
@@ -49,6 +50,7 @@ export default function RootLayout({
       </head>
       <body className="min-h-screen bg-night text-paper antialiased">
         {children}
+        <SpeedInsights />
       </body>
     </html>
   );
