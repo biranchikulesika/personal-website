@@ -5,12 +5,7 @@ import './globals.css';
 import { rootMetadata, websiteJsonLd, safeJsonLd } from '@/lib/seo';
 import { SvgElementGuard } from '@/components/svg-element-guard';
 
-export const metadata: Metadata = {
-  ...rootMetadata,
-  other: {
-    'application/ld+json': safeJsonLd(websiteJsonLd()),
-  },
-};
+export const metadata: Metadata = rootMetadata;
 
 const spaceGrotesk = Space_Grotesk({
   subsets: ['latin'],
@@ -41,6 +36,10 @@ export default function RootLayout({
       className={`${spaceGrotesk.variable} ${newsreader.variable}`}
     >
       <body className="min-h-screen bg-night text-paper antialiased">
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: safeJsonLd(websiteJsonLd()) }}
+        />
         {children}
         <SpeedInsights />
         <SvgElementGuard />
