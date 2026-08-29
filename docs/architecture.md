@@ -68,7 +68,7 @@ The Biranchi Kulesika platform follows a strict **4-tier layered architecture**.
 - **Strict Boundary**: Repositories do not perform business operations (e.g., they do not verify webhook signatures or calculate payment taxes); they only store and retrieve.
 
 ### Tier 4: Database / Persistence Layer
-- **Database**: Supabase PostgreSQL with schema defined in [`schema.sql`](file:///home/biranchikulesika/Projects/biranchi/schema.sql).
+- **Database**: Supabase PostgreSQL with schema defined in [`supabase/schema.sql`](file:///home/biranchikulesika/Projects/biranchi/supabase/schema.sql).
 
 ---
 
