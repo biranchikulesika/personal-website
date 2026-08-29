@@ -356,3 +356,30 @@ test("OPTIONS /api/og returns 204 with CORS and cache headers", async () => {
   assert.equal(res.headers.get("cross-origin-resource-policy"), "cross-origin");
 });
 
+// ── Google Tag Manager (GTM) ────────────────────────────────────────────────
+
+test("getGtmId returns trimmed ID when configured and undefined when missing/empty", async () => {
+  const { getGtmId } = await import("../lib/config/env");
+
+  const originalGtmId = process.env.NEXT_PUBLIC_GTM_ID;
+  try {
+    process.env.NEXT_PUBLIC_GTM_ID = "GTM-KW8LD5TQ";
+    assert.equal(getGtmId(), "GTM-KW8LD5TQ");
+
+    process.env.NEXT_PUBLIC_GTM_ID = "  GTM-TRIMTEST  ";
+    assert.equal(getGtmId(), "GTM-TRIMTEST");
+
+    process.env.NEXT_PUBLIC_GTM_ID = "";
+    assert.equal(getGtmId(), undefined);
+
+    delete process.env.NEXT_PUBLIC_GTM_ID;
+    assert.equal(getGtmId(), undefined);
+  } finally {
+    if (originalGtmId !== undefined) {
+      process.env.NEXT_PUBLIC_GTM_ID = originalGtmId;
+    } else {
+      delete process.env.NEXT_PUBLIC_GTM_ID;
+    }
+  }
+});
+
