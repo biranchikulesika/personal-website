@@ -87,3 +87,30 @@ export function getSiteDomain(): string {
   }
 }
 
+/**
+ * Resolves the Google Tag Manager (GTM) Container ID.
+ * Returns the trimmed container ID (stripping any accidental quotes) if configured and non-empty, or undefined.
+ */
+export function getGtmId(): string | undefined {
+  const raw = process.env.NEXT_PUBLIC_GTM_ID?.trim();
+  if (!raw) return undefined;
+  const cleaned = raw.replace(/^["']|["']$/g, "").trim();
+  return cleaned.length > 0 ? cleaned : undefined;
+}
+
+/**
+ * Resolves the Google Tag / Google Analytics ID (gtag.js / GA4 Measurement ID).
+ * Returns the trimmed tag ID (e.g. G-XXXXXXX or GT-XXXXXXX) if configured and non-empty, or undefined.
+ */
+export function getGoogleTagId(): string | undefined {
+  const raw = (
+    process.env.NEXT_PUBLIC_GA_ID ||
+    process.env.NEXT_PUBLIC_GOOGLE_TAG_ID ||
+    process.env.NEXT_PUBLIC_GTAG_ID
+  )?.trim();
+  if (!raw) return undefined;
+  const cleaned = raw.replace(/^["']|["']$/g, "").trim();
+  return cleaned.length > 0 ? cleaned : undefined;
+}
+
+

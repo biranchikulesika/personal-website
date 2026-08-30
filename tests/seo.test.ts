@@ -356,3 +356,87 @@ test("OPTIONS /api/og returns 204 with CORS and cache headers", async () => {
   assert.equal(res.headers.get("cross-origin-resource-policy"), "cross-origin");
 });
 
+// ── Google Tag Manager (GTM) ────────────────────────────────────────────────
+
+test("getGtmId returns trimmed ID when configured and undefined when missing/empty", async () => {
+  const { getGtmId } = await import("../lib/config/env");
+
+  const originalGtmId = process.env.NEXT_PUBLIC_GTM_ID;
+  try {
+    process.env.NEXT_PUBLIC_GTM_ID = "GTM-KW8LD5TQ";
+    assert.equal(getGtmId(), "GTM-KW8LD5TQ");
+
+    process.env.NEXT_PUBLIC_GTM_ID = "  GTM-TRIMTEST  ";
+    assert.equal(getGtmId(), "GTM-TRIMTEST");
+
+    process.env.NEXT_PUBLIC_GTM_ID = '"GTM-DOUBLEQUOTE"';
+    assert.equal(getGtmId(), "GTM-DOUBLEQUOTE");
+
+    process.env.NEXT_PUBLIC_GTM_ID = "'GTM-SINGLEQUOTE'";
+    assert.equal(getGtmId(), "GTM-SINGLEQUOTE");
+
+    process.env.NEXT_PUBLIC_GTM_ID = "";
+    assert.equal(getGtmId(), undefined);
+
+    process.env.NEXT_PUBLIC_GTM_ID = '""';
+    assert.equal(getGtmId(), undefined);
+
+    delete process.env.NEXT_PUBLIC_GTM_ID;
+    assert.equal(getGtmId(), undefined);
+  } finally {
+    if (originalGtmId !== undefined) {
+      process.env.NEXT_PUBLIC_GTM_ID = originalGtmId;
+    } else {
+      delete process.env.NEXT_PUBLIC_GTM_ID;
+    }
+  }
+});
+
+// ── Google Tag (gtag.js / GA4) ──────────────────────────────────────────────
+
+test("getGoogleTagId returns trimmed ID when configured and undefined when missing/empty", async () => {
+  const { getGoogleTagId } = await import("../lib/config/env");
+
+  const originalGaId = process.env.NEXT_PUBLIC_GA_ID;
+  const originalGoogleTagId = process.env.NEXT_PUBLIC_GOOGLE_TAG_ID;
+  try {
+    delete process.env.NEXT_PUBLIC_GOOGLE_TAG_ID;
+    process.env.NEXT_PUBLIC_GA_ID = "G-JCY5R9SRR6";
+    assert.equal(getGoogleTagId(), "G-JCY5R9SRR6");
+
+    process.env.NEXT_PUBLIC_GA_ID = "  G-TRIMTEST  ";
+    assert.equal(getGoogleTagId(), "G-TRIMTEST");
+
+    process.env.NEXT_PUBLIC_GA_ID = '"G-DOUBLEQUOTE"';
+    assert.equal(getGoogleTagId(), "G-DOUBLEQUOTE");
+
+    process.env.NEXT_PUBLIC_GA_ID = "'G-SINGLEQUOTE'";
+    assert.equal(getGoogleTagId(), "G-SINGLEQUOTE");
+
+    delete process.env.NEXT_PUBLIC_GA_ID;
+    process.env.NEXT_PUBLIC_GOOGLE_TAG_ID = "GT-TEST12345";
+    assert.equal(getGoogleTagId(), "GT-TEST12345");
+
+    process.env.NEXT_PUBLIC_GOOGLE_TAG_ID = "";
+    assert.equal(getGoogleTagId(), undefined);
+
+    process.env.NEXT_PUBLIC_GOOGLE_TAG_ID = '""';
+    assert.equal(getGoogleTagId(), undefined);
+
+    delete process.env.NEXT_PUBLIC_GOOGLE_TAG_ID;
+    assert.equal(getGoogleTagId(), undefined);
+  } finally {
+    if (originalGaId !== undefined) {
+      process.env.NEXT_PUBLIC_GA_ID = originalGaId;
+    } else {
+      delete process.env.NEXT_PUBLIC_GA_ID;
+    }
+    if (originalGoogleTagId !== undefined) {
+      process.env.NEXT_PUBLIC_GOOGLE_TAG_ID = originalGoogleTagId;
+    } else {
+      delete process.env.NEXT_PUBLIC_GOOGLE_TAG_ID;
+    }
+  }
+});
+
+

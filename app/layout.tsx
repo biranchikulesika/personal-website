@@ -3,6 +3,8 @@ import { Space_Grotesk, Newsreader } from 'next/font/google';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import './globals.css';
 import { rootMetadata, websiteJsonLd, safeJsonLd } from '@/lib/seo';
+import GoogleAnalytics from '@/components/google-analytics';
+import GoogleTagManager from '@/components/google-tag-manager';
 import { SvgElementGuard } from '@/components/svg-element-guard';
 
 export const metadata: Metadata = rootMetadata;
@@ -36,6 +38,8 @@ export default function RootLayout({
       className={`${spaceGrotesk.variable} ${newsreader.variable}`}
     >
       <body className="min-h-screen bg-night text-paper antialiased">
+        <GoogleTagManager />
+        <GoogleAnalytics />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: safeJsonLd(websiteJsonLd()) }}
