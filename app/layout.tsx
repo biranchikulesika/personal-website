@@ -32,7 +32,9 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const gtmId = getGtmId();
+  const gtmId =
+    process.env.NEXT_PUBLIC_GTM_ID?.trim().replace(/^["']|["']$/g, '') ||
+    getGtmId();
 
   return (
     <html
