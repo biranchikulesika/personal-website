@@ -87,3 +87,14 @@ export function getSiteDomain(): string {
   }
 }
 
+/**
+ * Resolves the Google Tag Manager (GTM) Container ID.
+ * Returns the trimmed container ID (stripping any accidental quotes) if configured and non-empty, or undefined.
+ */
+export function getGtmId(): string | undefined {
+  const raw = process.env.NEXT_PUBLIC_GTM_ID?.trim();
+  if (!raw) return undefined;
+  const cleaned = raw.replace(/^["']|["']$/g, "").trim();
+  return cleaned.length > 0 ? cleaned : undefined;
+}
+
