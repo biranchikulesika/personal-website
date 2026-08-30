@@ -3,7 +3,7 @@ import { Space_Grotesk, Newsreader } from 'next/font/google';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import './globals.css';
 import { rootMetadata, websiteJsonLd, safeJsonLd } from '@/lib/seo';
-import { getGtmId } from '@/lib/config/env';
+import { getGtmId, getGoogleTagId } from '@/lib/config/env';
 import { SvgElementGuard } from '@/components/svg-element-guard';
 
 export const metadata: Metadata = rootMetadata;
@@ -35,12 +35,38 @@ export default function RootLayout({
     process.env.NEXT_PUBLIC_GTM_ID?.trim().replace(/^["']|["']$/g, '') ||
     getGtmId();
 
+  const googleTagId =
+    (
+      process.env.NEXT_PUBLIC_GA_ID ||
+      process.env.NEXT_PUBLIC_GOOGLE_TAG_ID ||
+      process.env.NEXT_PUBLIC_GTAG_ID
+    )
+      ?.trim()
+      .replace(/^["']|["']$/g, '') || getGoogleTagId();
+
   return (
     <html
       lang="en"
       className={`${spaceGrotesk.variable} ${newsreader.variable}`}
     >
       <head>
+        {googleTagId ? (
+          <>
+            <script
+              async
+              src={`https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(googleTagId)}`}
+            />
+            <script
+              id="google-tag-gtag"
+              dangerouslySetInnerHTML={{
+                __html: `window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', ${JSON.stringify(googleTagId)});`,
+              }}
+            />
+          </>
+        ) : null}
         {gtmId ? (
           /* eslint-disable-next-line @next/next/next-script-for-ga */
           <script

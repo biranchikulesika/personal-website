@@ -392,3 +392,51 @@ test("getGtmId returns trimmed ID when configured and undefined when missing/emp
   }
 });
 
+// ── Google Tag (gtag.js / GA4) ──────────────────────────────────────────────
+
+test("getGoogleTagId returns trimmed ID when configured and undefined when missing/empty", async () => {
+  const { getGoogleTagId } = await import("../lib/config/env");
+
+  const originalGaId = process.env.NEXT_PUBLIC_GA_ID;
+  const originalGoogleTagId = process.env.NEXT_PUBLIC_GOOGLE_TAG_ID;
+  try {
+    delete process.env.NEXT_PUBLIC_GOOGLE_TAG_ID;
+    process.env.NEXT_PUBLIC_GA_ID = "G-JCY5R9SRR6";
+    assert.equal(getGoogleTagId(), "G-JCY5R9SRR6");
+
+    process.env.NEXT_PUBLIC_GA_ID = "  G-TRIMTEST  ";
+    assert.equal(getGoogleTagId(), "G-TRIMTEST");
+
+    process.env.NEXT_PUBLIC_GA_ID = '"G-DOUBLEQUOTE"';
+    assert.equal(getGoogleTagId(), "G-DOUBLEQUOTE");
+
+    process.env.NEXT_PUBLIC_GA_ID = "'G-SINGLEQUOTE'";
+    assert.equal(getGoogleTagId(), "G-SINGLEQUOTE");
+
+    delete process.env.NEXT_PUBLIC_GA_ID;
+    process.env.NEXT_PUBLIC_GOOGLE_TAG_ID = "GT-TEST12345";
+    assert.equal(getGoogleTagId(), "GT-TEST12345");
+
+    process.env.NEXT_PUBLIC_GOOGLE_TAG_ID = "";
+    assert.equal(getGoogleTagId(), undefined);
+
+    process.env.NEXT_PUBLIC_GOOGLE_TAG_ID = '""';
+    assert.equal(getGoogleTagId(), undefined);
+
+    delete process.env.NEXT_PUBLIC_GOOGLE_TAG_ID;
+    assert.equal(getGoogleTagId(), undefined);
+  } finally {
+    if (originalGaId !== undefined) {
+      process.env.NEXT_PUBLIC_GA_ID = originalGaId;
+    } else {
+      delete process.env.NEXT_PUBLIC_GA_ID;
+    }
+    if (originalGoogleTagId !== undefined) {
+      process.env.NEXT_PUBLIC_GOOGLE_TAG_ID = originalGoogleTagId;
+    } else {
+      delete process.env.NEXT_PUBLIC_GOOGLE_TAG_ID;
+    }
+  }
+});
+
+
