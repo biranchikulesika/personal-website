@@ -52,7 +52,7 @@ const nextConfig: NextConfig = {
         },
         {
           key: 'Cross-Origin-Opener-Policy',
-          value: 'same-origin',
+          value: 'same-origin-allow-popups',
         },
         {
           key: 'Cross-Origin-Resource-Policy',

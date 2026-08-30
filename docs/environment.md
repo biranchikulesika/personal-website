@@ -236,6 +236,26 @@ Next.js loads environment files in the following order of precedence (highest to
 
 ---
 
+### `NEXT_PUBLIC_GA_ID` / `NEXT_PUBLIC_GOOGLE_TAG_ID`
+
+1. **Variable name**: `NEXT_PUBLIC_GA_ID` (or `NEXT_PUBLIC_GOOGLE_TAG_ID`)
+2. **What it is**: Google Tag / GA4 Measurement ID (gtag.js).
+3. **Why the app needs it**: Loads the official Google tag (`gtag.js`) script globally.
+4. **Where to get it**: Google Analytics (`analytics.google.com`) → Admin → Data Streams → Measurement ID (e.g. `G-JCY5R9SRR6`).
+5. **Expected format**: `G-XXXXXXXXXX` or `GT-XXXXXXXXXX`
+6. **Where it is used**:
+   - `lib/config/env.ts` -> `getGoogleTagId()`
+   - `app/layout.tsx` -> Google tag (gtag.js) `<script>` tags in `<head>`
+7. **Server vs Client**: **Client-safe** (`NEXT_PUBLIC_` prefix).
+8. **Security implications**: Public measurement identifier.
+9. **Common mistakes**: Adding surrounding quotes or spaces.
+10. **Troubleshooting**: If unset or empty, gtag.js is completely omitted from page rendering without error.
+11. **Required**: **Optional** (only loaded if configured).
+12. **Environment behavior**: Configured in production or staging if Google Tag/GA4 is active.
+
+---
+
+
 ## 3. Feature Relationship Map
 
 ```
