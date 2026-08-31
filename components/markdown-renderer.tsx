@@ -259,8 +259,8 @@ export function MarkdownFigure({
           alt={alt || 'Document Image'}
           width={1200}
           height={675}
-          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 720px, 800px"
-          className="h-auto w-full max-h-[550px] object-cover object-center transition-all duration-300"
+          sizes="(max-width: 640px) calc(100vw - 2.5rem), (max-width: 1024px) 720px, 800px"
+          className="h-auto w-full object-contain object-center transition-all duration-300"
           loading={priority ? undefined : 'lazy'}
           priority={priority}
         />
@@ -388,24 +388,26 @@ export function renderMarkdownBlock(
   }
 
   // 4. Markdown Image block: ![alt](src) optionally with title or caption
-  const mdImgMatch = trimmed.match(/^!\[([\s\S]*?)\]\(([\s\S]*?)\)(?:\s*\*([\s\S]*?)\*)?$/);
+  const mdImgMatch = trimmed.match(/^!\[([\s\S]*?)\]\(([\s\S]*?)\)(?:[\s\n]*([\s\S]*))?$/);
   if (mdImgMatch) {
-    const alt = mdImgMatch[1];
-    let src = mdImgMatch[2].trim();
-    let caption = mdImgMatch[3] ? mdImgMatch[3].trim() : '';
+    const alt = mdImgMatch[1]?.trim() || '';
+    let src = mdImgMatch[2]?.trim() || '';
+    let rawCaption = mdImgMatch[3]?.trim() || '';
 
     const titleMatch = src.match(/^(.*?)\s+["'](.*?)["']$/);
     if (titleMatch) {
       src = titleMatch[1];
-      if (!caption) caption = titleMatch[2];
+      if (!rawCaption) rawCaption = titleMatch[2];
     }
+
+    const caption = rawCaption.replace(/^(\*|_)+|(\*|_)+$/g, '').trim();
 
     return (
       <MarkdownFigure
         key={keyPrefix}
         src={src}
         alt={alt || 'Document Image'}
-        caption={caption}
+        caption={caption || undefined}
         className={colClass}
         priority={options?.isFirstImage}
       />

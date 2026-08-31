@@ -1,5 +1,23 @@
 import type { NextConfig } from 'next';
 
+const cspDirectives = [
+  "default-src 'self'",
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com https://static.cloudflareinsights.com https://va.vercel-scripts.com https://checkout.razorpay.com https://api.razorpay.com",
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' blob: data: https://*.supabase.co https://upload.wikimedia.org https://images.unsplash.com https://*.googleusercontent.com https://avatars.githubusercontent.com https://*.githubusercontent.com https://images.pexels.com https://kulesika.in https://m.media-amazon.com https://images-na.ssl-images-amazon.com https://images-eu.ssl-images-amazon.com https://covers.openlibrary.org https://books.google.com https://www.google-analytics.com https://www.googletagmanager.com",
+  "font-src 'self' data:",
+  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://www.google-analytics.com https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com https://static.cloudflareinsights.com https://cloudflareinsights.com https://va.vercel-scripts.com https://vitals.vercel-insights.com https://api.razorpay.com https://lumberjack.razorpay.com https://*.razorpay.com",
+  "frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com https://api.razorpay.com https://checkout.razorpay.com https://accounts.google.com https://github.com",
+  "media-src 'self' blob: data: https://*.supabase.co",
+  "object-src 'none'",
+  "base-uri 'self'",
+  "form-action 'self' https://accounts.google.com https://github.com https://api.razorpay.com",
+  "frame-ancestors 'self'",
+  "upgrade-insecure-requests",
+];
+
+const contentSecurityPolicy = cspDirectives.join('; ');
+
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   typescript: {
@@ -25,6 +43,14 @@ const nextConfig: NextConfig = {
     {
       source: '/(.*)',
       headers: [
+        {
+          key: 'Content-Security-Policy',
+          value: contentSecurityPolicy,
+        },
+        {
+          key: 'Cross-Origin-Opener-Policy',
+          value: 'same-origin-allow-popups',
+        },
         {
           key: 'X-Content-Type-Options',
           value: 'nosniff',

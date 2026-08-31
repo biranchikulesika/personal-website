@@ -653,6 +653,7 @@ export class SupabaseContentRepository implements ContentRepository {
             .from("media")
             .upload(storagePath, buffer, {
               contentType: mimeType,
+              cacheControl: '31536000, immutable',
               upsert: true,
             });
 
