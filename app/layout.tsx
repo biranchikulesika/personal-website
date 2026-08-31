@@ -39,10 +39,6 @@ export default function RootLayout({
     >
       <head>
         <link
-          rel="preconnect"
-          href="https://ojzxdgzkrjmfeqyxvfud.supabase.co"
-        />
-        <link
           rel="dns-prefetch"
           href="https://ojzxdgzkrjmfeqyxvfud.supabase.co"
         />
