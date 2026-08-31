@@ -15,9 +15,11 @@ import Image from 'next/image';
 export function EssayCover({
   title,
   coverImage,
+  priority = false,
 }: {
   title: string;
   coverImage?: string;
+  priority?: boolean;
 }) {
   if (coverImage) {
     return (
@@ -28,7 +30,8 @@ export function EssayCover({
           fill
           sizes="(max-width: 640px) 82vw, (max-width: 1024px) 50vw, 400px"
           className="object-contain"
-          loading="lazy"
+          loading={priority ? undefined : 'lazy'}
+          priority={priority}
         />
       </div>
     );

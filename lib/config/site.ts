@@ -31,7 +31,7 @@ export const SITE_CONFIG: SiteContent = {
       button: "Subscribe",
     },
     image: {
-      src: "/biranchi.jpeg",
+      src: "/biranchi.webp",
       alt: "A portrait of Biranchi Kulesika",
     },
   },

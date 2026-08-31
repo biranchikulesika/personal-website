@@ -10,7 +10,7 @@ interface WritingSectionProps {
   featured?: BlogPost[];
 }
 
-function EssayCard({ item }: { item: WritingItem }) {
+function EssayCard({ item, priority = false }: { item: WritingItem; priority?: boolean }) {
   return (
     <article className="group h-full">
       <Link
@@ -18,7 +18,7 @@ function EssayCard({ item }: { item: WritingItem }) {
         className="flex h-full flex-col justify-between rounded-2xl border border-tinted/20 bg-post-card p-4 sm:p-5 shadow-xs transition-all duration-300 hover:scale-[1.02] hover:shadow-md"
       >
         <div>
-          <EssayCover title={item.title} coverImage={item.coverImage} />
+          <EssayCover title={item.title} coverImage={item.coverImage} priority={priority} />
           <h3 className="mt-4 font-serif text-lg font-normal leading-snug text-paper transition-colors duration-300 group-hover:text-accent">
             {item.title}
           </h3>
@@ -72,16 +72,16 @@ export function WritingSection({ writing, limit = 4, featured }: WritingSectionP
 
       {/* Desktop Mode: 2 by 2 Grid */}
       <div className="hidden sm:grid sm:grid-cols-2 sm:gap-6">
-        {items.map((item) => (
-          <EssayCard key={item.slug} item={item} />
+        {items.map((item, index) => (
+          <EssayCard key={item.slug} item={item} priority={index < 2} />
         ))}
       </div>
 
       {/* Mobile Mode: Sideways Scroll */}
       <div className="no-scrollbar -mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto overscroll-x-contain px-4 pb-1 sm:hidden">
-        {items.map((item) => (
+        {items.map((item, index) => (
           <div key={item.slug} className="w-[82%] shrink-0 snap-start">
-            <EssayCard item={item} />
+            <EssayCard item={item} priority={index < 1} />
           </div>
         ))}
       </div>

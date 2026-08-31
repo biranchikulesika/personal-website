@@ -55,9 +55,9 @@ function NoteCard({ entry }: { entry: ScribbleEntry }) {
   return (
     <article className="py-2">
       <Link href={entry.href} className="group block">
-        <h3 className="font-serif text-xl font-normal leading-snug text-paper transition-colors duration-300 group-hover:text-accent">
+        <h2 className="font-serif text-xl font-normal leading-snug text-paper transition-colors duration-300 group-hover:text-accent">
           {entry.title}
-        </h3>
+        </h2>
         <p className="mt-2 text-sm leading-relaxed text-gray-mid">
           {mainSnippet}
           {isTruncated && (
@@ -75,18 +75,18 @@ function NoteCard({ entry }: { entry: ScribbleEntry }) {
   );
 }
 
-function EssayCard({ entry }: { entry: ScribbleEntry }) {
+function EssayCard({ entry, priority = false }: { entry: ScribbleEntry; priority?: boolean }) {
   return (
     <article>
       <Link
         href={entry.href}
         className="group block rounded-2xl border border-tinted/20 bg-post-card p-4 shadow-xs transition-all duration-300 hover:scale-[1.02] hover:shadow-md"
       >
-        <EssayCover title={entry.title} coverImage={entry.coverImage} />
+        <EssayCover title={entry.title} coverImage={entry.coverImage} priority={priority} />
         <div className="mt-3.5">
-          <h3 className="font-serif text-lg font-normal leading-snug text-paper transition-colors duration-300 group-hover:text-accent">
+          <h2 className="font-serif text-lg font-normal leading-snug text-paper transition-colors duration-300 group-hover:text-accent">
             {entry.title}
-          </h3>
+          </h2>
           <p className="mt-1.5 text-sm leading-relaxed text-gray-mid">{entry.description}</p>
           <CardMeta
             type={entry.type}
@@ -100,7 +100,7 @@ function EssayCard({ entry }: { entry: ScribbleEntry }) {
 
 const CARD_BY_TYPE: Record<
   string,
-  (props: { entry: ScribbleEntry }) => ReactNode
+  (props: { entry: ScribbleEntry; priority?: boolean }) => ReactNode
 > = {
   essay: EssayCard,
   note: NoteCard,
@@ -289,7 +289,7 @@ export function ScribblePage({ entries }: ScribblePageProps) {
       </div>
 
       <div className="scribble-grid mt-10">
-        {entries.map((entry) => {
+        {entries.map((entry, index) => {
           const Card = CARD_BY_TYPE[entry.type];
           const hidden = !filtered.includes(entry);
           return (
@@ -297,7 +297,7 @@ export function ScribblePage({ entries }: ScribblePageProps) {
               key={entry.id}
               className={`grid-item ${hidden ? 'filtered-out' : ''}`}
             >
-              <Card entry={entry} />
+              <Card entry={entry} priority={index < 2} />
             </div>
           );
         })}

@@ -46,7 +46,7 @@ export default async function AdminPage() {
         user.user_metadata?.avatar ||
         user.identities?.[0]?.identity_data?.avatar_url ||
         user.identities?.[0]?.identity_data?.picture ||
-        '/biranchi.jpeg';
+        '/biranchi.webp';
 
       const role = await contentService.getUserRole(user.id);
       userRole = role || 'user';
