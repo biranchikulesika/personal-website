@@ -39,7 +39,7 @@ export function EssayCover({
 
   return (
     <div className="flex min-h-[220px] items-center justify-center overflow-hidden rounded-xl bg-[radial-gradient(ellipse_at_center,rgba(250,249,245,0.08)_15%,transparent_75%)]">
-      <span className="font-serif text-5xl italic text-paper/40">
+      <span className="font-serif text-5xl italic text-paper/70">
         {title.charAt(0)}
       </span>
     </div>

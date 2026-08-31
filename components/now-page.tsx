@@ -328,7 +328,7 @@ export function NowPageView({ entries }: NowPageViewProps) {
             started by Derek Sivers.
           </p>
           {entries.length > 0 && (
-            <p className="mt-3 font-serif text-base italic text-ink-soft/70">
+            <p className="mt-3 font-serif text-base italic text-ink-soft">
               Odisha, India · Updated {entries[0].title}
             </p>
           )}

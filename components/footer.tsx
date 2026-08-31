@@ -29,7 +29,7 @@ export function Footer({ footer }: FooterProps) {
           <div className="grid grid-cols-3 gap-8 md:col-span-6 md:col-start-7">
             {footer.columns.map((column) => (
               <nav key={column.title} aria-label={column.title}>
-                <h2 className="text-xs font-semibold uppercase tracking-wider text-ink-soft/80">
+                <h2 className="text-xs font-semibold uppercase tracking-wider text-ink-soft">
                   {column.title}
                 </h2>
                 <ul className="mt-6 space-y-4">
@@ -49,7 +49,7 @@ export function Footer({ footer }: FooterProps) {
           </div>
         </div>
 
-        <p className="mt-12 text-sm font-semibold text-ink-soft/80">{footer.bottom}</p>
+        <p className="mt-12 text-sm font-semibold text-ink-soft">{footer.bottom}</p>
       </div>
     </footer>
   );

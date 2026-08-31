@@ -172,7 +172,7 @@ function SupporterModal({
             </button>
           </div>
 
-          <p className="text-center text-[10px] text-gray-mid/70 sm:text-[11px]">
+          <p className="text-center text-[10px] text-gray-mid sm:text-[11px]">
             Processed securely via Razorpay
           </p>
         </form>
@@ -595,7 +595,7 @@ export function SupportPageView() {
             {/* Patron Metadata */}
             <div className="mt-6 grid grid-cols-2 gap-4 border-t border-tinted/20 pt-4 text-xs text-gray-mid sm:mt-8 sm:gap-6 sm:pt-6">
               <div>
-                <span className="block text-[10px] font-semibold uppercase tracking-wider text-ink-soft/60 sm:text-xs">
+                <span className="block text-[10px] font-semibold uppercase tracking-wider text-ink-soft sm:text-xs">
                   Supporter
                 </span>
                 <span className="mt-0.5 block text-xs font-medium text-paper sm:mt-1 sm:text-sm">
@@ -603,7 +603,7 @@ export function SupportPageView() {
                 </span>
               </div>
               <div>
-                <span className="block text-[10px] font-semibold uppercase tracking-wider text-ink-soft/60 sm:text-xs">
+                <span className="block text-[10px] font-semibold uppercase tracking-wider text-ink-soft sm:text-xs">
                   Date
                 </span>
                 <span className="mt-0.5 block font-mono text-xs text-paper sm:mt-1 sm:text-sm">
@@ -743,7 +743,7 @@ export function SupportPageView() {
                     </span>
                   </button>
 
-                  <p className="text-center text-[10px] text-gray-mid/80 sm:text-xs">
+                  <p className="text-center text-[10px] text-gray-mid sm:text-xs">
                     One-time contribution
                   </p>
                 </form>
