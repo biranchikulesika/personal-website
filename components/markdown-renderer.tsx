@@ -1,4 +1,5 @@
 import React, { Fragment, type ReactNode } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { isSafeUrl, slugify } from '@/lib/utils';
 import {
@@ -29,10 +30,12 @@ export interface MarkdownFigureProps {
   alt: string;
   caption?: string;
   className?: string;
+  priority?: boolean;
 }
 
 export interface MarkdownBlockOptions {
   isFirstIntroParagraph?: boolean;
+  isFirstImage?: boolean;
   footnotes?: string[];
   gridColClass?: string;
 }
@@ -241,6 +244,7 @@ export function MarkdownFigure({
   alt,
   caption,
   className = '',
+  priority = false,
 }: MarkdownFigureProps) {
   const cleanSrc =
     src && !src.startsWith('http') && !src.startsWith('/') && !src.startsWith('blob:')
@@ -249,13 +253,16 @@ export function MarkdownFigure({
 
   return (
     <figure className={`my-8 block ${className}`}>
-      <div className="overflow-hidden rounded-xl border border-tinted/20 bg-post-card shadow-md">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
+      <div className="relative overflow-hidden rounded-xl border border-tinted/20 bg-post-card shadow-md">
+        <Image
           src={cleanSrc}
           alt={alt || 'Document Image'}
-          className="w-full h-auto max-h-[550px] object-cover object-center transition-all duration-300"
-          loading="lazy"
+          width={1200}
+          height={675}
+          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 720px, 800px"
+          className="h-auto w-full max-h-[550px] object-cover object-center transition-all duration-300"
+          loading={priority ? undefined : 'lazy'}
+          priority={priority}
         />
       </div>
       {(caption || alt) && (
@@ -400,6 +407,7 @@ export function renderMarkdownBlock(
         alt={alt || 'Document Image'}
         caption={caption}
         className={colClass}
+        priority={options?.isFirstImage}
       />
     );
   }
@@ -420,6 +428,7 @@ export function renderMarkdownBlock(
           alt={alt}
           caption={caption}
           className={colClass}
+          priority={options?.isFirstImage}
         />
       );
     }

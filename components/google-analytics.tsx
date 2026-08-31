@@ -16,7 +16,7 @@ export type GoogleAnalyticsProps = {
  */
 export default function GoogleAnalytics({
   gaId,
-  strategy = 'afterInteractive',
+  strategy = 'lazyOnload',
 }: GoogleAnalyticsProps) {
   const measurementId =
     gaId ||

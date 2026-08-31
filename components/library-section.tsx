@@ -44,9 +44,9 @@ export function LibrarySection({ library, limit = 4, featured }: LibrarySectionP
                 </span>
                 <BookCover title={item.title} cover={item.cover} />
                 <span className="mt-3 block transition-transform duration-300 group-hover:translate-y-1">
-                  <p className="font-sans text-base font-normal leading-snug text-paper transition-colors duration-300 group-hover:text-accent">
+                  <h3 className="font-sans text-base font-normal leading-snug text-paper transition-colors duration-300 group-hover:text-accent">
                     {item.title}
-                  </p>
+                  </h3>
                   <p className="mt-1 text-xs text-gray-mid">{item.author}</p>
                 </span>
               </Link>
@@ -67,9 +67,9 @@ export function LibrarySection({ library, limit = 4, featured }: LibrarySectionP
               <Link href={safeLink ?? library.href} {...(safeLink ? { target: '_blank', rel: 'noopener noreferrer' } : {})} className="block">
                 <BookCover title={item.title} cover={item.cover} />
                 <span className="mt-3 block">
-                  <p className="font-sans text-sm font-normal leading-snug text-paper transition-colors duration-300 group-hover:text-accent">
+                  <h3 className="font-sans text-sm font-normal leading-snug text-paper transition-colors duration-300 group-hover:text-accent">
                     {item.title}
-                  </p>
+                  </h3>
                   <p className="mt-1 text-xs text-gray-mid">{item.author}</p>
                 </span>
               </Link>

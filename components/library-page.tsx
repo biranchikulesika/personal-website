@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useRef, useState } from 'react';
+import Image from 'next/image';
 import type { BookItem, Persona } from '@/lib/types';
 import { ChevronLeftIcon, ChevronRightIcon, ExternalLinkIcon, SearchIcon } from './icons';
 import { PERSONA_LABELS, ALL_PERSONAS } from '@/lib/constants';
@@ -23,20 +24,23 @@ function BookCover({
   author,
   cover,
   link,
+  priority = false,
 }: {
   title: string;
   author: string;
   cover?: string;
   link?: string;
+  priority?: boolean;
 }) {
   const inner = cover ? (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img
+    <Image
       src={cover}
       alt={`${title} cover`}
-      className="absolute inset-0 h-full w-full object-cover"
-      loading="lazy"
-      decoding="async"
+      fill
+      sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 20vw"
+      className="object-cover"
+      loading={priority ? undefined : 'lazy'}
+      priority={priority}
     />
   ) : (
     <>
@@ -240,16 +244,17 @@ export function LibraryPageView({ books, title, subheader }: LibraryPageProps) {
 
       {/* Book Grid */}
       <div className="mt-10 grid grid-cols-2 gap-6 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-        {filtered.map((item) => (
+        {filtered.map((item, index) => (
           <article key={item.id} className="group">
             <BookCover
               title={item.title}
               author={item.author}
               cover={item.cover}
               link={item.link}
+              priority={index < 4}
             />
             <div className="mt-3">
-              <h3 className="font-serif text-base font-normal leading-snug text-paper transition-colors duration-300 group-hover:text-accent">
+              <h2 className="font-serif text-base font-normal leading-snug text-paper transition-colors duration-300 group-hover:text-accent">
                 {item.link ? (
                   <a
                     href={item.link}
@@ -261,7 +266,7 @@ export function LibraryPageView({ books, title, subheader }: LibraryPageProps) {
                 ) : (
                   item.title
                 )}
-              </h3>
+              </h2>
               <p className="mt-0.5 text-xs text-ink-soft">{item.author}</p>
             </div>
           </article>

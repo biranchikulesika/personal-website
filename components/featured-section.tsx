@@ -19,9 +19,9 @@ function FeaturedPostCard({ post }: { post: BlogPost }) {
       >
         <div>
           <EssayCover title={post.title} coverImage={post.coverImage} />
-          <h4 className="mt-4 font-serif text-lg font-normal leading-snug text-paper transition-colors duration-300 group-hover:text-accent">
+          <h3 className="mt-4 font-serif text-lg font-normal leading-snug text-paper transition-colors duration-300 group-hover:text-accent">
             {post.title}
-          </h4>
+          </h3>
           <p className="mt-2 text-sm leading-relaxed text-gray-mid line-clamp-2">
             {post.description}
           </p>

@@ -47,7 +47,7 @@ export function PersonaBadge({ persona, className = '' }: PersonaBadgeProps) {
       title={config.title}
     >
       <span
-        className={`hidden sm:flex items-center justify-center border-r border-tinted/25 bg-tinted/20 px-1.5 py-0.5 ${config.iconText} sm:py-1`}
+        className={`flex items-center justify-center border-r border-tinted/25 bg-tinted/20 px-1.5 py-0.5 ${config.iconText} sm:py-1`}
       >
         <PersonaIcon persona={key} className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
       </span>

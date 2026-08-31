@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import type { NowBook } from '@/lib/types';
 
 /**
@@ -19,19 +20,23 @@ export function BookBlock({ title, author, description, cover, link }: NowBook) 
               className="absolute inset-0 block"
               aria-label={`Open ${title}`}
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
+              <Image
                 src={cover}
                 alt={`${title} cover`}
-                className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 hover:scale-105"
+                fill
+                sizes="(max-width: 640px) 112px, 128px"
+                className="object-cover transition-transform duration-300 hover:scale-105"
+                loading="lazy"
               />
             </a>
           ) : (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
+            <Image
               src={cover}
               alt={`${title} cover`}
-              className="absolute inset-0 h-full w-full object-cover"
+              fill
+              sizes="(max-width: 640px) 112px, 128px"
+              className="object-cover"
+              loading="lazy"
             />
           )
         ) : (
