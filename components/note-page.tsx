@@ -35,9 +35,9 @@ export function NotePageView({ note }: { note: NoteItem }) {
               </p>
             )}
 
-            <div className="no-scrollbar mt-8 flex w-full items-center justify-between gap-2.5 overflow-x-auto border-y border-tinted/20 py-2.5 whitespace-nowrap sm:gap-3 sm:py-3">
+            <div className="mt-8 flex w-full items-center justify-between gap-2.5 border-y border-tinted/20 py-2.5 sm:gap-3 sm:py-3">
               {/* Left: Persona Split Identifier Badge + Content Tags */}
-              <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+              <div className="no-scrollbar flex min-w-0 shrink items-center gap-1.5 overflow-x-auto whitespace-nowrap sm:gap-2">
                 <PersonaBadge persona={note.persona} />
 
                 {note.tags.slice(0, 4).map((tag) => (
@@ -52,7 +52,7 @@ export function NotePageView({ note }: { note: NoteItem }) {
               </div>
 
               {/* Right: Pub. Date & Elevated Share Menu */}
-              <div className="flex shrink-0 items-center gap-2 text-[11px] font-mono sm:gap-3 sm:text-xs">
+              <div className="flex shrink-0 items-center gap-2 font-mono text-[11px] whitespace-nowrap sm:gap-3 sm:text-xs">
                 <div
                   className="flex shrink-0 items-center gap-1 text-ink-soft sm:gap-1.5"
                   title={`Published: ${formatDisplayDate(note.date)}`}
@@ -75,9 +75,20 @@ export function NotePageView({ note }: { note: NoteItem }) {
 
       <div className="container-site mt-10 md:mt-14 lg:grid lg:grid-cols-[1fr_minmax(0,72ch)_1fr] lg:gap-8">
         <div className="lg:col-start-2 space-y-5 text-paper/85">
-          {note.content.map((paragraph, index) =>
-            renderMarkdownBlock(paragraph, `note-${index}`),
-          )}
+          {(() => {
+            let imageCount = 0;
+            return note.content.map((paragraph, index) => {
+              const isImg =
+                paragraph.trim().startsWith('![') ||
+                /^<(img|Image)\s/i.test(paragraph.trim());
+              const isFirstImage = isImg && imageCount === 0;
+              if (isImg) imageCount++;
+
+              return renderMarkdownBlock(paragraph, `note-${index}`, {
+                isFirstImage,
+              });
+            });
+          })()}
         </div>
       </div>
     </article>

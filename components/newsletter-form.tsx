@@ -70,7 +70,7 @@ export function NewsletterForm({
         <button
           type="submit"
           disabled={status === 'loading' || status === 'success'}
-          className="w-full rounded-full bg-accent px-6 py-3.5 text-base font-semibold text-paper shadow-sm transition-colors hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-80"
+          className="w-full rounded-full bg-accent px-6 py-3.5 text-base font-semibold text-night shadow-sm transition-colors hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-80"
         >
           {status === 'loading'
             ? 'Subscribing…'
@@ -99,7 +99,7 @@ export function NewsletterForm({
         <button
           type="submit"
           disabled={status === 'loading' || status === 'success'}
-          className="w-full whitespace-nowrap rounded-full bg-accent px-6 py-3 text-base font-semibold text-paper transition-colors hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-80 sm:w-auto"
+          className="w-full whitespace-nowrap rounded-full bg-accent px-6 py-3 text-base font-semibold text-night transition-colors hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-80 sm:w-auto"
         >
           {status === 'loading'
             ? 'Subscribing…'

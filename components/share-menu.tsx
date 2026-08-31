@@ -81,9 +81,33 @@ export function ShareMenu({ title, description }: ShareMenuProps) {
     }
   };
 
+  const handleShareClick = async () => {
+    const currentUrl = url || (typeof window !== 'undefined' ? window.location.href : '');
+    if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
+      try {
+        await navigator.share({
+          title,
+          text: description || title,
+          url: currentUrl,
+        });
+        setIsOpen(false);
+        return;
+      } catch (err: unknown) {
+        if (err instanceof Error && err.name === 'AbortError') {
+          // User dismissed device share sheet
+          return;
+        }
+        // Fallback to dropdown menu on share failure
+        setIsOpen((prev) => !prev);
+      }
+    } else {
+      setIsOpen((prev) => !prev);
+    }
+  };
+
   const handleNativeShare = async () => {
     const currentUrl = url || (typeof window !== 'undefined' ? window.location.href : '');
-    if (typeof navigator !== 'undefined' && navigator.share) {
+    if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
       try {
         await navigator.share({
           title,
@@ -100,16 +124,16 @@ export function ShareMenu({ title, description }: ShareMenuProps) {
   return (
     <div ref={menuRef} className="relative inline-flex shrink-0 items-center">
       {/* Horizontal Bar: X, LinkedIn, WhatsApp, Divider, More Share */}
-      <div className="inline-flex shrink-0 items-center gap-0.5 rounded-full border border-tinted/30 bg-night-soft/80 p-0.5 shadow-2xs backdrop-blur-xs">
+      <div className="inline-flex shrink-0 items-center gap-1 sm:gap-0.5 rounded-full border border-tinted/30 bg-night-soft/80 p-1 sm:p-0.5 shadow-2xs backdrop-blur-xs">
         <a
           href={twitterHref}
           target="_blank"
           rel="noopener noreferrer"
           aria-label="Share on X"
           title="Share on X"
-          className="inline-flex h-5 w-5 sm:h-5.5 sm:w-5.5 items-center justify-center rounded-full text-ink-soft transition-all duration-200 hover:bg-tinted/40 hover:text-paper"
+          className="inline-flex h-7 w-7 sm:h-6 sm:w-6 items-center justify-center rounded-full text-ink-soft transition-all duration-200 hover:bg-tinted/40 hover:text-paper"
         >
-          <TwitterIcon className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+          <TwitterIcon className="h-3.5 w-3.5 sm:h-3 sm:w-3" />
         </a>
 
         <a
@@ -118,9 +142,9 @@ export function ShareMenu({ title, description }: ShareMenuProps) {
           rel="noopener noreferrer"
           aria-label="Share on LinkedIn"
           title="Share on LinkedIn"
-          className="inline-flex h-5 w-5 sm:h-5.5 sm:w-5.5 items-center justify-center rounded-full text-ink-soft transition-all duration-200 hover:bg-tinted/40 hover:text-paper"
+          className="inline-flex h-7 w-7 sm:h-6 sm:w-6 items-center justify-center rounded-full text-ink-soft transition-all duration-200 hover:bg-tinted/40 hover:text-paper"
         >
-          <LinkedInIcon className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+          <LinkedInIcon className="h-3.5 w-3.5 sm:h-3 sm:w-3" />
         </a>
 
         <a
@@ -129,27 +153,27 @@ export function ShareMenu({ title, description }: ShareMenuProps) {
           rel="noopener noreferrer"
           aria-label="Share on WhatsApp"
           title="Share on WhatsApp"
-          className="inline-flex h-5 w-5 sm:h-5.5 sm:w-5.5 items-center justify-center rounded-full text-ink-soft transition-all duration-200 hover:bg-tinted/40 hover:text-paper"
+          className="inline-flex h-7 w-7 sm:h-6 sm:w-6 items-center justify-center rounded-full text-ink-soft transition-all duration-200 hover:bg-tinted/40 hover:text-paper"
         >
-          <WhatsAppIcon className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+          <WhatsAppIcon className="h-3.5 w-3.5 sm:h-3 sm:w-3" />
         </a>
 
-        <div className="h-2.5 sm:h-3 w-[1px] bg-tinted/40 mx-0.5" aria-hidden="true" />
+        <div className="h-3.5 sm:h-3 w-[1px] bg-tinted/40 mx-0.5" aria-hidden="true" />
 
         <button
           type="button"
-          onClick={() => setIsOpen((prev) => !prev)}
+          onClick={handleShareClick}
           aria-expanded={isOpen}
           aria-haspopup="true"
-          aria-label="More share options"
-          title="More share options"
-          className={`inline-flex h-5 w-5 sm:h-5.5 sm:w-5.5 items-center justify-center rounded-full transition-all duration-200 ${
+          aria-label={hasNativeShare ? 'Share via device' : 'More share options'}
+          title={hasNativeShare ? 'Share via device' : 'More share options'}
+          className={`inline-flex h-7 w-7 sm:h-6 sm:w-6 items-center justify-center rounded-full transition-all duration-200 ${
             isOpen
               ? 'bg-tinted/60 text-paper'
               : 'text-ink-soft hover:bg-tinted/40 hover:text-paper'
           }`}
         >
-          <ShareIcon className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+          <ShareIcon className="h-3.5 w-3.5 sm:h-3 sm:w-3" />
         </button>
       </div>
 
@@ -158,7 +182,7 @@ export function ShareMenu({ title, description }: ShareMenuProps) {
         <div
           role="menu"
           aria-label="Share options"
-          className="absolute right-0 top-full mt-2 z-50 min-w-[175px] origin-top-right rounded-lg border border-tinted/40 bg-night-soft/95 p-1.5 shadow-xl backdrop-blur-md text-xs font-sans animate-in fade-in zoom-in-95 duration-150"
+          className="absolute right-0 top-full mt-2 z-50 min-w-[185px] origin-top-right rounded-lg border border-tinted/40 bg-night-soft/95 p-1.5 shadow-2xl backdrop-blur-md text-xs font-sans animate-in fade-in zoom-in-95 duration-150"
         >
           <div className="px-2 py-1 text-[10px] font-mono font-semibold uppercase tracking-wider text-ink-soft/60">
             Share via

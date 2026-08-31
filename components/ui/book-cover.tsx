@@ -6,23 +6,28 @@
  * Scribble index. The library-page uses a more elaborate variant with
  * a spine accent and link wrapper, so it keeps its own version.
  */
+import Image from 'next/image';
+
 export function BookCover({
   title,
   cover,
+  priority = false,
 }: {
   title: string;
   cover?: string;
+  priority?: boolean;
 }) {
   if (cover) {
     return (
-      <div className="aspect-[2/3] overflow-hidden rounded-lg shadow-sm ring-1 ring-tinted/20 transition-all duration-300">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
+      <div className="relative aspect-[2/3] overflow-hidden rounded-lg shadow-sm ring-1 ring-tinted/20 transition-all duration-300">
+        <Image
           src={cover}
           alt={`${title} cover`}
-          className="h-full w-full object-cover"
-          loading="lazy"
-          decoding="async"
+          fill
+          sizes="(max-width: 640px) 42vw, (max-width: 1024px) 25vw, 220px"
+          className="object-cover"
+          loading={priority ? undefined : 'lazy'}
+          priority={priority}
         />
       </div>
     );

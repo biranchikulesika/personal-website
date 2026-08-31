@@ -7,7 +7,7 @@ export type GoogleTagManagerProps = {
 
 export default function GoogleTagManager({
   gtmId,
-  strategy = 'afterInteractive',
+  strategy = 'lazyOnload',
 }: GoogleTagManagerProps) {
   const containerId =
     gtmId || process.env.NEXT_PUBLIC_GTM_ID?.trim().replace(/^["']|["']$/g, '');

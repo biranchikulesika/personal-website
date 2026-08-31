@@ -10,6 +10,8 @@
  * Uses min-height rather than a fixed aspect ratio so cards have a
  * rectangular baseline shape but grow taller when content requires it.
  */
+import Image from 'next/image';
+
 export function EssayCover({
   title,
   coverImage,
@@ -19,12 +21,13 @@ export function EssayCover({
 }) {
   if (coverImage) {
     return (
-      <div className="flex min-h-[220px] items-center justify-center overflow-hidden rounded-xl">
-        {/* eslint-disable-next-line @next/next/no-img-element -- cover artwork may be transparent WebP served from any origin */}
-        <img
+      <div className="relative flex h-[220px] w-full items-center justify-center overflow-hidden rounded-xl">
+        <Image
           src={coverImage}
           alt={`Cover for ${title}`}
-          className="max-h-full w-full object-contain"
+          fill
+          sizes="(max-width: 640px) 82vw, (max-width: 1024px) 50vw, 400px"
+          className="object-contain"
           loading="lazy"
         />
       </div>

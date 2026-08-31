@@ -1,4 +1,5 @@
 import { Fragment } from 'react';
+import Image from 'next/image';
 import type { NowEntry } from '@/lib/types';
 import {
   parseBlockAttributes,
@@ -8,7 +9,7 @@ import {
 /**
  * Inline markdown tokens: bold, italic, inline code, images, and links.
  */
-function renderInlineTokens(text: string, keyBase: string): React.ReactNode[] {
+function renderInlineTokens(text: string, keyBase: string, priority = false): React.ReactNode[] {
   const pattern =
     /(\*\*[^*\n]+\*\*|\*[^*\n]+\*|`[^`\n]+`|!\[[^\]]*\]\([^)]+\)|\[[^\]]+\]\([^)]+\))/g;
   return text.split(pattern).map((part, i) => {
@@ -32,13 +33,18 @@ function renderInlineTokens(text: string, keyBase: string): React.ReactNode[] {
     const img = part.match(/^!\[([^\]]*)\]\(([^)]+)\)$/);
     if (img) {
       return (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          key={key}
-          src={img[2]}
-          alt={img[1]}
-          className="my-2 w-full rounded-xl border border-tinted/20 shadow-lg"
-        />
+        <div key={key} className="my-3 overflow-hidden rounded-xl border border-tinted/20 shadow-lg">
+          <Image
+            src={img[2]}
+            alt={img[1] || 'Image'}
+            width={1200}
+            height={675}
+            sizes="(max-width: 768px) 100vw, 760px"
+            className="h-auto w-full object-cover"
+            loading={priority ? undefined : 'lazy'}
+            priority={priority}
+          />
+        </div>
       );
     }
     const link = part.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
@@ -64,7 +70,7 @@ function renderInlineTokens(text: string, keyBase: string): React.ReactNode[] {
  * blockquotes, headings, lists, horizontal rules, code fences, images, and
  * library blocks (e.g. `<Book ... />`).
  */
-function renderBlocks(content: string): React.ReactNode[] {
+function renderBlocks(content: string, priority = false): React.ReactNode[] {
   const lines = content.split('\n');
   const nodes: React.ReactNode[] = [];
   let key = 0;
@@ -79,7 +85,7 @@ function renderBlocks(content: string): React.ReactNode[] {
   const flushPara = () => {
     if (para.length > 0) {
       nodes.push(
-        <p key={`p-${key++}`}>{renderInlineTokens(para.join(' '), `p-${key}`)}</p>
+        <p key={`p-${key++}`}>{renderInlineTokens(para.join(' '), `p-${key}`, priority)}</p>
       );
       para = [];
     }
@@ -92,7 +98,7 @@ function renderBlocks(content: string): React.ReactNode[] {
           className="my-8 border-y border-tinted/20 py-6 text-center font-serif text-lg italic text-paper md:text-xl"
         >
           {quote.map((q, i) => (
-            <span key={i}>{renderInlineTokens(q, `q-${key}-${i}`)}</span>
+            <span key={i}>{renderInlineTokens(q, `q-${key}-${i}`, priority)}</span>
           ))}
         </blockquote>
       );
@@ -104,17 +110,17 @@ function renderBlocks(content: string): React.ReactNode[] {
       const items = list.items;
       if (list.ordered) {
         nodes.push(
-          <ol key={`ol-${key++}`} className="my-4 list-decimal space-y-1.5 pl-6 text-paper/85">
-            {items.map((it, i) => (
-              <li key={i}>{renderInlineTokens(it, `li-${key}-${i}`)}</li>
+          <ol key={`ol-${key++}`} className="my-6 list-decimal space-y-2 pl-6">
+            {items.map((item, i) => (
+              <li key={i}>{renderInlineTokens(item, `li-${key}-${i}`, priority)}</li>
             ))}
           </ol>
         );
       } else {
         nodes.push(
-          <ul key={`ul-${key++}`} className="my-4 list-disc space-y-1.5 pl-6 text-paper/85">
-            {items.map((it, i) => (
-              <li key={i}>{renderInlineTokens(it, `li-${key}-${i}`)}</li>
+          <ul key={`ul-${key++}`} className="my-6 list-disc space-y-2 pl-6 marker:text-accent">
+            {items.map((item, i) => (
+              <li key={i}>{renderInlineTokens(item, `li-${key}-${i}`, priority)}</li>
             ))}
           </ul>
         );
@@ -123,23 +129,26 @@ function renderBlocks(content: string): React.ReactNode[] {
     }
   };
 
-  for (const line of lines) {
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
     const t = line.trim();
 
     if (inCode) {
-      if (t.startsWith('```')) {
+      if (t === '```') {
         inCode = false;
         nodes.push(
           <div
             key={`code-${key++}`}
-            className="my-6 overflow-x-auto rounded-xl border border-tinted/20 bg-night-soft p-4 font-mono text-xs leading-relaxed text-paper shadow-md"
+            className="relative my-6 overflow-hidden rounded-xl border border-tinted/30 bg-night-soft p-4 shadow-sm"
           >
             {codeLang && (
-              <span className="mb-2 block text-[10px] font-semibold uppercase tracking-widest text-ink-soft">
-                {codeLang}
-              </span>
+              <div className="mb-2.5 flex items-center justify-between border-b border-tinted/20 pb-2">
+                <span className="font-mono text-[10px] font-semibold uppercase tracking-widest text-ink-soft">
+                  {codeLang}
+                </span>
+              </div>
             )}
-            <pre>
+            <pre className="overflow-x-auto font-mono text-[13px] leading-relaxed text-paper/90 selection:bg-accent/30">
               <code>{codeLines.join('\n')}</code>
             </pre>
           </div>
@@ -181,7 +190,7 @@ function renderBlocks(content: string): React.ReactNode[] {
       flushList();
       nodes.push(
         <h3 key={`h-${key++}`} className="mt-8 mb-2 font-serif text-xl font-normal text-paper">
-          {renderInlineTokens(t.replace(/^#+\s/, ''), `h-${key}`)}
+          {renderInlineTokens(t.replace(/^#+\s/, ''), `h-${key}`, priority)}
         </h3>
       );
       continue;
@@ -234,12 +243,18 @@ function renderBlocks(content: string): React.ReactNode[] {
       flushList();
       nodes.push(
         <figure key={`img-${key++}`} className="my-8">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={imgMatch[2]}
-            alt={imgMatch[1]}
-            className="w-full rounded-xl border border-tinted/20 shadow-lg"
-          />
+          <div className="overflow-hidden rounded-xl border border-tinted/20 shadow-lg">
+            <Image
+              src={imgMatch[2]}
+              alt={imgMatch[1] || 'Image'}
+              width={1200}
+              height={675}
+              sizes="(max-width: 768px) 100vw, 760px"
+              className="h-auto w-full object-cover"
+              loading={priority ? undefined : 'lazy'}
+              priority={priority}
+            />
+          </div>
         </figure>
       );
       continue;
@@ -292,7 +307,7 @@ export function NowPageView({ entries }: NowPageViewProps) {
                   {entry.title}
                 </h3>
 
-                <div className="space-y-5">{renderBlocks(entry.content)}</div>
+                <div className="space-y-5">{renderBlocks(entry.content, index === 0)}</div>
               </article>
             </section>
           ))}
