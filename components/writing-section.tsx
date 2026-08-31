@@ -72,16 +72,16 @@ export function WritingSection({ writing, limit = 4, featured }: WritingSectionP
 
       {/* Desktop Mode: 2 by 2 Grid */}
       <div className="hidden sm:grid sm:grid-cols-2 sm:gap-6">
-        {items.map((item, index) => (
-          <EssayCard key={item.slug} item={item} priority={index < 2} />
+        {items.map((item) => (
+          <EssayCard key={item.slug} item={item} />
         ))}
       </div>
 
       {/* Mobile Mode: Sideways Scroll */}
       <div className="no-scrollbar -mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto overscroll-x-contain px-4 pb-1 sm:hidden">
-        {items.map((item, index) => (
+        {items.map((item) => (
           <div key={item.slug} className="w-[82%] shrink-0 snap-start">
-            <EssayCard item={item} priority={index < 1} />
+            <EssayCard item={item} />
           </div>
         ))}
       </div>
