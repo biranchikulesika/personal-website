@@ -97,7 +97,7 @@ export function ErrorView({
             type="button"
             onClick={() => setShowDetails((prev) => !prev)}
             aria-expanded={showDetails}
-            className="inline-flex items-center justify-center text-xs font-medium text-gray-secondary transition-colors hover:text-paper focus-visible:outline-none select-none"
+            className="inline-flex items-center justify-center text-xs font-medium text-ink-soft transition-colors hover:text-paper focus-visible:outline-none select-none"
           >
             <span className="underline decoration-tinted/40 underline-offset-4">
               {showDetails ? 'Hide technical details' : 'Show technical details'}
@@ -113,7 +113,7 @@ export function ErrorView({
                 <button
                   type="button"
                   onClick={handleCopy}
-                  className="inline-flex items-center gap-1 rounded px-2 py-0.5 text-[11px] font-medium text-gray-secondary transition-colors hover:bg-post-card hover:text-paper"
+                  className="inline-flex items-center gap-1 rounded px-2 py-0.5 text-[11px] font-medium text-ink-soft transition-colors hover:bg-post-card hover:text-paper"
                   aria-label="Copy error details"
                 >
                   {copied ? (
@@ -136,7 +136,7 @@ export function ErrorView({
                 </p>
               )}
               {error.digest && (
-                <p className="mt-2 text-[11px] text-gray-secondary">
+                <p className="mt-2 text-[11px] text-ink-soft">
                   Digest: {error.digest}
                 </p>
               )}

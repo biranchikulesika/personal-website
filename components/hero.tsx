@@ -62,7 +62,7 @@ export function Hero({ hero }: HeroProps) {
             src={hero.image.src}
             alt={hero.image.alt}
             fill
-            priority
+            loading="eager"
             sizes="(min-width: 1024px) 360px, 100vw"
             className="object-cover object-[center_60%]"
           />

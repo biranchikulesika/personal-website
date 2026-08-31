@@ -18,7 +18,7 @@ export function UserAvatar({
   className = '',
   priority = false,
 }: UserAvatarProps) {
-  const defaultFallback = '/biranchi.jpeg';
+  const defaultFallback = '/biranchi.webp';
   const initialSrc = src && src.trim().length > 0 ? src : defaultFallback;
   const [currentSrc, setCurrentSrc] = useState<string>(initialSrc);
   const [hasError, setHasError] = useState(false);

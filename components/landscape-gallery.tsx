@@ -94,12 +94,12 @@ export function LandscapeGallery({
       ) : (
         <div className="flex h-full w-full flex-col items-center justify-center p-6 text-center">
           <div className="flex h-12 w-12 items-center justify-center rounded-full bg-post-card/80 ring-1 ring-tinted/20">
-            <span className="font-serif text-lg italic text-ink-soft/60">✦</span>
+            <span className="font-serif text-lg italic text-ink-soft">✦</span>
           </div>
           <p className="mt-3 font-serif text-base italic text-ink-soft">
             Visual journal & atmosphere
           </p>
-          <span className="mt-1 text-xs text-ink-soft/60">
+          <span className="mt-1 text-xs text-ink-soft">
             Landscape gallery frame
           </span>
         </div>

@@ -1,3 +1,6 @@
+'use client';
+
+import { useEffect, useState } from 'react';
 import Script from 'next/script';
 
 export type GoogleTagManagerProps = {
@@ -7,12 +10,38 @@ export type GoogleTagManagerProps = {
 
 export default function GoogleTagManager({
   gtmId,
-  strategy = 'lazyOnload',
 }: GoogleTagManagerProps) {
   const containerId =
     gtmId || process.env.NEXT_PUBLIC_GTM_ID?.trim().replace(/^["']|["']$/g, '');
+  const [shouldLoad, setShouldLoad] = useState(false);
 
-  if (!containerId) {
+  useEffect(() => {
+    if (!containerId) return;
+
+    const trigger = () => {
+      setShouldLoad(true);
+      window.removeEventListener('scroll', trigger);
+      window.removeEventListener('pointerdown', trigger);
+      window.removeEventListener('keydown', trigger);
+      window.removeEventListener('touchstart', trigger);
+    };
+
+    window.addEventListener('scroll', trigger, { passive: true, once: true });
+    window.addEventListener('pointerdown', trigger, { passive: true, once: true });
+    window.addEventListener('keydown', trigger, { passive: true, once: true });
+    window.addEventListener('touchstart', trigger, { passive: true, once: true });
+
+    const timer = setTimeout(trigger, 4000);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('scroll', trigger);
+      window.removeEventListener('pointerdown', trigger);
+      window.removeEventListener('keydown', trigger);
+      window.removeEventListener('touchstart', trigger);
+    };
+  }, [containerId]);
+
+  if (!containerId || !shouldLoad) {
     return null;
   }
 
@@ -28,7 +57,7 @@ export default function GoogleTagManager({
       </noscript>
       <Script
         id="google-tag-manager"
-        strategy={strategy}
+        strategy="afterInteractive"
         dangerouslySetInnerHTML={{
           __html: `(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
 new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],

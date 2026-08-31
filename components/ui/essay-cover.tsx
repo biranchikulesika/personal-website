@@ -15,9 +15,11 @@ import Image from 'next/image';
 export function EssayCover({
   title,
   coverImage,
+  priority = false,
 }: {
   title: string;
   coverImage?: string;
+  priority?: boolean;
 }) {
   if (coverImage) {
     return (
@@ -28,7 +30,8 @@ export function EssayCover({
           fill
           sizes="(max-width: 640px) 82vw, (max-width: 1024px) 50vw, 400px"
           className="object-contain"
-          loading="lazy"
+          loading={priority ? undefined : 'lazy'}
+          priority={priority}
         />
       </div>
     );
@@ -36,7 +39,7 @@ export function EssayCover({
 
   return (
     <div className="flex min-h-[220px] items-center justify-center overflow-hidden rounded-xl bg-[radial-gradient(ellipse_at_center,rgba(250,249,245,0.08)_15%,transparent_75%)]">
-      <span className="font-serif text-5xl italic text-paper/40">
+      <span className="font-serif text-5xl italic text-paper/70">
         {title.charAt(0)}
       </span>
     </div>

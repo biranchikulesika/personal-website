@@ -37,6 +37,12 @@ export default function RootLayout({
       lang="en"
       className={`${spaceGrotesk.variable} ${newsreader.variable}`}
     >
+      <head>
+        <link
+          rel="dns-prefetch"
+          href="https://ojzxdgzkrjmfeqyxvfud.supabase.co"
+        />
+      </head>
       <body className="min-h-screen bg-night text-paper antialiased">
         <GoogleTagManager />
         <GoogleAnalytics />
