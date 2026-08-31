@@ -34,7 +34,7 @@ export function BookCover({
   }
   return (
     <div className="flex aspect-[2/3] items-center justify-center overflow-hidden rounded-lg bg-night-soft p-3 shadow-sm ring-1 ring-tinted/20 transition-all duration-300">
-      <span className="text-center font-serif text-lg italic leading-snug text-paper/50">
+      <span className="text-center font-serif text-lg italic leading-snug text-paper/80">
         {title}
       </span>
     </div>

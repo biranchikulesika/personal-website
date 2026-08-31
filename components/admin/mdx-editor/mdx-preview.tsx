@@ -76,7 +76,7 @@ export function MDXPreview({
                   key={tag}
                   className="hidden shrink-0 items-center rounded-md border border-tinted/30 bg-night-soft/40 px-1.5 py-0.5 font-mono text-[11px] text-ink-soft transition-colors hover:border-tinted/60 hover:text-paper sm:inline-flex sm:px-2 sm:text-xs"
                 >
-                  <span className="mr-0.5 text-tinted/80">#</span>
+                  <span className="mr-0.5 text-accent" aria-hidden="true">#</span>
                   {tag}
                 </span>
               ))}
@@ -87,7 +87,7 @@ export function MDXPreview({
               className="flex shrink-0 items-center gap-1 text-[11px] font-mono text-ink-soft sm:gap-1.5 sm:text-xs"
               title={`Published: ${effectiveDate}`}
             >
-              <CalendarIcon className="h-3 w-3 text-ink-soft/80 sm:h-3.5 sm:w-3.5" />
+              <CalendarIcon className="h-3 w-3 text-ink-soft sm:h-3.5 sm:w-3.5" />
               <span className="font-sans text-paper/95">{effectiveDate}</span>
             </div>
           </div>

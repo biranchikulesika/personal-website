@@ -189,9 +189,9 @@ function renderBlocks(content: string, priority = false): React.ReactNode[] {
       flushQuote();
       flushList();
       nodes.push(
-        <h3 key={`h-${key++}`} className="mt-8 mb-2 font-serif text-xl font-normal text-paper">
+        <h4 key={`h-${key++}`} className="mt-8 mb-2 font-serif text-xl font-normal text-paper">
           {renderInlineTokens(t.replace(/^#+\s/, ''), `h-${key}`, priority)}
-        </h3>
+        </h4>
       );
       continue;
     }
@@ -328,7 +328,7 @@ export function NowPageView({ entries }: NowPageViewProps) {
             started by Derek Sivers.
           </p>
           {entries.length > 0 && (
-            <p className="mt-3 font-serif text-base italic text-ink-soft/70">
+            <p className="mt-3 font-serif text-base italic text-ink-soft">
               Odisha, India · Updated {entries[0].title}
             </p>
           )}

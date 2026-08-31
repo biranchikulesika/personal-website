@@ -1,3 +1,6 @@
+'use client';
+
+import { useEffect, useState } from 'react';
 import Script from 'next/script';
 
 export type GoogleAnalyticsProps = {
@@ -5,18 +8,8 @@ export type GoogleAnalyticsProps = {
   strategy?: 'afterInteractive' | 'lazyOnload';
 };
 
-/**
- * Google Analytics 4 (gtag.js) integration for Next.js App Router.
- *
- * Uses `next/script` with `strategy="afterInteractive"` by default to ensure:
- * - Non-blocking asynchronous loading
- * - Zero impact on Core Web Vitals
- * - Global availability across all routes
- * - Native SPA history change tracking via GA4 Enhanced Measurement
- */
 export default function GoogleAnalytics({
   gaId,
-  strategy = 'lazyOnload',
 }: GoogleAnalyticsProps) {
   const measurementId =
     gaId ||
@@ -24,7 +17,35 @@ export default function GoogleAnalytics({
     process.env.NEXT_PUBLIC_GOOGLE_TAG_ID?.trim().replace(/^["']|["']$/g, '') ||
     process.env.NEXT_PUBLIC_GTAG_ID?.trim().replace(/^["']|["']$/g, '');
 
-  if (!measurementId) {
+  const [shouldLoad, setShouldLoad] = useState(false);
+
+  useEffect(() => {
+    if (!measurementId) return;
+
+    const trigger = () => {
+      setShouldLoad(true);
+      window.removeEventListener('scroll', trigger);
+      window.removeEventListener('pointerdown', trigger);
+      window.removeEventListener('keydown', trigger);
+      window.removeEventListener('touchstart', trigger);
+    };
+
+    window.addEventListener('scroll', trigger, { passive: true, once: true });
+    window.addEventListener('pointerdown', trigger, { passive: true, once: true });
+    window.addEventListener('keydown', trigger, { passive: true, once: true });
+    window.addEventListener('touchstart', trigger, { passive: true, once: true });
+
+    const timer = setTimeout(trigger, 4000);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('scroll', trigger);
+      window.removeEventListener('pointerdown', trigger);
+      window.removeEventListener('keydown', trigger);
+      window.removeEventListener('touchstart', trigger);
+    };
+  }, [measurementId]);
+
+  if (!measurementId || !shouldLoad) {
     return null;
   }
 
@@ -32,11 +53,11 @@ export default function GoogleAnalytics({
     <>
       <Script
         src={`https://www.googletagmanager.com/gtag/js?id=${measurementId}`}
-        strategy={strategy}
+        strategy="afterInteractive"
       />
       <Script
         id="google-analytics-init"
-        strategy={strategy}
+        strategy="afterInteractive"
         dangerouslySetInnerHTML={{
           __html: `
             window.dataLayer = window.dataLayer || [];

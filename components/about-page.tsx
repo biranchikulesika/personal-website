@@ -13,12 +13,12 @@ interface AboutPageProps {
 
 const ABOUT_GALLERY_IMAGES = [
   {
-    src: "/groupphotowithfriends.jpeg",
+    src: "/groupphotowithfriends.webp",
     alt: "Biranchi with friends",
     caption: "With friends & university companions",
   },
   {
-    src: "/melayingonsciencemuseum.jpeg",
+    src: "/melayingonsciencemuseum.webp",
     alt: "Biranchi at the science museum",
     caption: "Moments of curiosity at the science museum",
   },
@@ -84,10 +84,9 @@ export function AboutPageView({ site, featuredWriting }: AboutPageProps) {
         <div className="grid grid-cols-2 gap-4">
           <div className="group relative aspect-4/5 w-full overflow-hidden rounded-2xl bg-night-soft shadow-2xl ring-1 ring-tinted/20">
             <Image
-              src="/selfiewithmiku.jpeg"
+              src="/selfiewithmiku.webp"
               alt="Biranchi with Miku"
               fill
-              priority
               sizes="(min-width: 1024px) 240px, 45vw"
               className="object-cover object-center transition-transform duration-500 group-hover:scale-105"
             />
@@ -95,10 +94,9 @@ export function AboutPageView({ site, featuredWriting }: AboutPageProps) {
 
           <div className="group relative aspect-4/5 w-full overflow-hidden rounded-2xl bg-night-soft shadow-2xl ring-1 ring-tinted/20">
             <Image
-              src="/selfiewithblessie.jpeg"
+              src="/selfiewithblessie.webp"
               alt="Biranchi with Blessie"
               fill
-              priority
               sizes="(min-width: 1024px) 240px, 45vw"
               className="object-cover object-center transition-transform duration-500 group-hover:scale-105"
             />
@@ -106,7 +104,7 @@ export function AboutPageView({ site, featuredWriting }: AboutPageProps) {
 
           <div className="group relative aspect-4/5 w-full overflow-hidden rounded-2xl bg-night-soft shadow-2xl ring-1 ring-tinted/20">
             <Image
-              src="/selfiewithfriends.jpeg"
+              src="/selfiewithfriends.webp"
               alt="Biranchi with friends"
               fill
               sizes="(min-width: 1024px) 240px, 45vw"
@@ -116,7 +114,7 @@ export function AboutPageView({ site, featuredWriting }: AboutPageProps) {
 
           <div className="group relative aspect-4/5 w-full overflow-hidden rounded-2xl bg-night-soft shadow-2xl ring-1 ring-tinted/20">
             <Image
-              src="/selfiewithbhabani.jpeg"
+              src="/selfiewithbhabani.webp"
               alt="Biranchi with Bhabani"
               fill
               sizes="(min-width: 1024px) 240px, 45vw"
@@ -282,9 +280,9 @@ export function AboutPageView({ site, featuredWriting }: AboutPageProps) {
 
       {/* 5. Small Details & Curiosities */}
       <div className="mx-auto max-w-2xl border-t border-tinted/20 pt-12 text-center">
-        <h3 className="mb-6 text-xs font-semibold uppercase tracking-widest text-ink-soft">
+        <h2 className="mb-6 text-xs font-semibold uppercase tracking-widest text-ink-soft">
           Small details & curiosities
-        </h3>
+        </h2>
         <div className="flex flex-wrap justify-center gap-x-6 gap-y-3">
           {CURIOSITIES.map((item) => (
             <span

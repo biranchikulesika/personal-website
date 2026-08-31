@@ -129,7 +129,7 @@ export function NewsletterForm({
       )}
 
       {status !== 'success' && status !== 'error' && showNote && (
-        <p className="mt-2.5 px-1 text-xs sm:text-[13px] leading-relaxed text-gray-mid/75">
+        <p className="mt-2.5 px-1 text-xs sm:text-[13px] leading-relaxed text-gray-mid">
           {newsletter.note}
         </p>
       )}

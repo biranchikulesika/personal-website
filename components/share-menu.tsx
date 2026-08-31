@@ -184,7 +184,7 @@ export function ShareMenu({ title, description }: ShareMenuProps) {
           aria-label="Share options"
           className="absolute right-0 top-full mt-2 z-50 min-w-[185px] origin-top-right rounded-lg border border-tinted/40 bg-night-soft/95 p-1.5 shadow-2xl backdrop-blur-md text-xs font-sans animate-in fade-in zoom-in-95 duration-150"
         >
-          <div className="px-2 py-1 text-[10px] font-mono font-semibold uppercase tracking-wider text-ink-soft/60">
+          <div className="px-2 py-1 text-[10px] font-mono font-semibold uppercase tracking-wider text-ink-soft">
             Share via
           </div>
 
