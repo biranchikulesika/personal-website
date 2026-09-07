@@ -45,7 +45,7 @@ export function Hero({ hero }: HeroProps) {
         )}
 
         <div className="mt-10 md:mt-12">
-          <NewsletterForm newsletter={hero.newsletter} />
+          <NewsletterForm newsletter={hero.newsletter} showNote={false} />
         </div>
       </div>
 

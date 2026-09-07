@@ -15,12 +15,10 @@ const ABOUT_GALLERY_IMAGES = [
   {
     src: "/groupphotowithfriends.webp",
     alt: "Biranchi with friends",
-    caption: "With friends & university companions",
   },
   {
     src: "/melayingonsciencemuseum.webp",
     alt: "Biranchi at the science museum",
-    caption: "Moments of curiosity at the science museum",
   },
 ];
 
@@ -81,43 +79,43 @@ export function AboutPageView({ site, featuredWriting }: AboutPageProps) {
         </div>
 
         {/* Profile / Atmosphere mosaic grid */}
-        <div className="grid grid-cols-2 gap-4">
-          <div className="group relative aspect-4/5 w-full overflow-hidden rounded-2xl bg-night-soft shadow-2xl ring-1 ring-tinted/20">
+        <div className="-mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto overflow-y-hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden px-4 pb-2 sm:mx-0 sm:grid sm:grid-cols-2 sm:overflow-visible sm:px-0 sm:pb-0">
+          <div className="group relative aspect-3/4 w-[75%] shrink-0 snap-center overflow-hidden rounded-2xl bg-night-soft shadow-2xl ring-1 ring-tinted/20 sm:aspect-4/5 sm:w-full">
             <Image
               src="/selfiewithmiku.webp"
               alt="Biranchi with Miku"
               fill
-              sizes="(min-width: 1024px) 240px, 45vw"
+              sizes="(min-width: 1024px) 240px, 75vw"
               className="object-cover object-center transition-transform duration-500 group-hover:scale-105"
             />
           </div>
 
-          <div className="group relative aspect-4/5 w-full overflow-hidden rounded-2xl bg-night-soft shadow-2xl ring-1 ring-tinted/20">
+          <div className="group relative aspect-3/4 w-[75%] shrink-0 snap-center overflow-hidden rounded-2xl bg-night-soft shadow-2xl ring-1 ring-tinted/20 sm:aspect-4/5 sm:w-full">
             <Image
               src="/selfiewithblessie.webp"
               alt="Biranchi with Blessie"
               fill
-              sizes="(min-width: 1024px) 240px, 45vw"
+              sizes="(min-width: 1024px) 240px, 75vw"
               className="object-cover object-center transition-transform duration-500 group-hover:scale-105"
             />
           </div>
 
-          <div className="group relative aspect-4/5 w-full overflow-hidden rounded-2xl bg-night-soft shadow-2xl ring-1 ring-tinted/20">
+          <div className="group relative aspect-3/4 w-[75%] shrink-0 snap-center overflow-hidden rounded-2xl bg-night-soft shadow-2xl ring-1 ring-tinted/20 sm:aspect-4/5 sm:w-full">
             <Image
               src="/selfiewithfriends.webp"
               alt="Biranchi with friends"
               fill
-              sizes="(min-width: 1024px) 240px, 45vw"
+              sizes="(min-width: 1024px) 240px, 75vw"
               className="object-cover object-center transition-transform duration-500 group-hover:scale-105"
             />
           </div>
 
-          <div className="group relative aspect-4/5 w-full overflow-hidden rounded-2xl bg-night-soft shadow-2xl ring-1 ring-tinted/20">
+          <div className="group relative aspect-3/4 w-[75%] shrink-0 snap-center overflow-hidden rounded-2xl bg-night-soft shadow-2xl ring-1 ring-tinted/20 sm:aspect-4/5 sm:w-full">
             <Image
               src="/selfiewithbhabani.webp"
               alt="Biranchi with Bhabani"
               fill
-              sizes="(min-width: 1024px) 240px, 45vw"
+              sizes="(min-width: 1024px) 240px, 75vw"
               className="object-cover object-center transition-transform duration-500 group-hover:scale-105"
             />
           </div>
