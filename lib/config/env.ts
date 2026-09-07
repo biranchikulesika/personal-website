@@ -41,18 +41,6 @@ export function getSupabaseJwtSecret(): string | undefined {
 }
 
 /**
- * Resolves the Postgres connection URL.
- * Automatically checks POSTGRES_URL, POSTGRES_PRISMA_URL, and POSTGRES_URL_NON_POOLING.
- */
-export function getPostgresUrl(): string | undefined {
-  return (
-    process.env.POSTGRES_URL ||
-    process.env.POSTGRES_PRISMA_URL ||
-    process.env.POSTGRES_URL_NON_POOLING
-  );
-}
-
-/**
  * Resolves the canonical site URL from environment variables or falls back to the default.
  * Automatically checks NEXT_PUBLIC_SITE_URL, SITE_URL, VERCEL_PROJECT_PRODUCTION_URL, and VERCEL_URL.
  */
@@ -85,32 +73,6 @@ export function getSiteDomain(): string {
   } catch {
     return "biranchikulesika.com";
   }
-}
-
-/**
- * Resolves the Google Tag Manager (GTM) Container ID.
- * Returns the trimmed container ID (stripping any accidental quotes) if configured and non-empty, or undefined.
- */
-export function getGtmId(): string | undefined {
-  const raw = process.env.NEXT_PUBLIC_GTM_ID?.trim();
-  if (!raw) return undefined;
-  const cleaned = raw.replace(/^["']|["']$/g, "").trim();
-  return cleaned.length > 0 ? cleaned : undefined;
-}
-
-/**
- * Resolves the Google Tag / Google Analytics ID (gtag.js / GA4 Measurement ID).
- * Returns the trimmed tag ID (e.g. G-XXXXXXX or GT-XXXXXXX) if configured and non-empty, or undefined.
- */
-export function getGoogleTagId(): string | undefined {
-  const raw = (
-    process.env.NEXT_PUBLIC_GA_ID ||
-    process.env.NEXT_PUBLIC_GOOGLE_TAG_ID ||
-    process.env.NEXT_PUBLIC_GTAG_ID
-  )?.trim();
-  if (!raw) return undefined;
-  const cleaned = raw.replace(/^["']|["']$/g, "").trim();
-  return cleaned.length > 0 ? cleaned : undefined;
 }
 
 
