@@ -24,16 +24,14 @@ const ABOUT_GALLERY_IMAGES = [
 
 const CURIOSITIES = [
   "Linux",
-  "Systems thinking",
-  "Writing things down",
-  "Slow internet",
-  "Craft & attention",
-  "Thoughtful conversations",
-  "Late nights",
-  "Digital gardens",
-  "Curiosity",
-  "Plain text",
   "Building in public",
+  "Vibe coding",
+  "Writing things down",
+  "Late night thoughts",
+  "Living Life",
+  "Curiosity",
+  "Cyber security",
+  "Philosophy",
 ];
 
 /**
@@ -80,45 +78,25 @@ export function AboutPageView({ site, featuredWriting }: AboutPageProps) {
 
         {/* Profile / Atmosphere mosaic grid */}
         <div className="-mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto overflow-y-hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden px-4 pb-2 sm:mx-0 sm:grid sm:grid-cols-2 sm:overflow-visible sm:px-0 sm:pb-0">
-          <div className="group relative aspect-3/4 w-[75%] shrink-0 snap-center overflow-hidden rounded-2xl bg-night-soft shadow-2xl ring-1 ring-tinted/20 sm:aspect-4/5 sm:w-full">
-            <Image
-              src="/selfiewithmiku.webp"
-              alt="Biranchi with Miku"
-              fill
-              sizes="(min-width: 1024px) 240px, 75vw"
-              className="object-cover object-center transition-transform duration-500 group-hover:scale-105"
-            />
-          </div>
-
-          <div className="group relative aspect-3/4 w-[75%] shrink-0 snap-center overflow-hidden rounded-2xl bg-night-soft shadow-2xl ring-1 ring-tinted/20 sm:aspect-4/5 sm:w-full">
-            <Image
-              src="/selfiewithblessie.webp"
-              alt="Biranchi with Blessie"
-              fill
-              sizes="(min-width: 1024px) 240px, 75vw"
-              className="object-cover object-center transition-transform duration-500 group-hover:scale-105"
-            />
-          </div>
-
-          <div className="group relative aspect-3/4 w-[75%] shrink-0 snap-center overflow-hidden rounded-2xl bg-night-soft shadow-2xl ring-1 ring-tinted/20 sm:aspect-4/5 sm:w-full">
-            <Image
-              src="/selfiewithfriends.webp"
-              alt="Biranchi with friends"
-              fill
-              sizes="(min-width: 1024px) 240px, 75vw"
-              className="object-cover object-center transition-transform duration-500 group-hover:scale-105"
-            />
-          </div>
-
-          <div className="group relative aspect-3/4 w-[75%] shrink-0 snap-center overflow-hidden rounded-2xl bg-night-soft shadow-2xl ring-1 ring-tinted/20 sm:aspect-4/5 sm:w-full">
-            <Image
-              src="/selfiewithbhabani.webp"
-              alt="Biranchi with Bhabani"
-              fill
-              sizes="(min-width: 1024px) 240px, 75vw"
-              className="object-cover object-center transition-transform duration-500 group-hover:scale-105"
-            />
-          </div>
+          {[
+            { src: "/selfiewithmiku.webp", alt: "Biranchi with Miku" },
+            { src: "/selfiewithblessie.webp", alt: "Biranchi with Blessie" },
+            { src: "/selfiewithfriends.webp", alt: "Biranchi with friends" },
+            { src: "/selfiewithbhabani.webp", alt: "Biranchi with Bhabani" },
+          ].map((img) => (
+            <div
+              key={img.src}
+              className="group relative aspect-3/4 w-[75%] shrink-0 snap-center overflow-hidden rounded-2xl bg-night-soft shadow-2xl ring-1 ring-tinted/20 sm:aspect-4/5 sm:w-full"
+            >
+              <Image
+                src={img.src}
+                alt={img.alt}
+                fill
+                sizes="(min-width: 1024px) 240px, 75vw"
+                className="object-cover object-center transition-transform duration-500 group-hover:scale-105"
+              />
+            </div>
+          ))}
         </div>
       </div>
 

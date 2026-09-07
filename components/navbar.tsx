@@ -143,9 +143,6 @@ export function Navbar({ identity, links }: NavbarProps) {
       {menuOpen && (
         <div
           onClick={closeMenu}
-          onKeyDown={(e) => {
-            if (e.key === 'Escape') closeMenu();
-          }}
           className="fixed inset-0 z-40 bg-black/60 backdrop-blur-xs md:hidden"
           aria-hidden="true"
         />

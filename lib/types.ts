@@ -197,7 +197,6 @@ export interface NowBook {
   title: string;
   author: string;
   description: string;
-  year?: string;
   cover?: string;
   link?: string;
 }
@@ -259,17 +258,6 @@ export interface UserSession {
   startedAt: string;
   lastActiveAt: string;
   isCurrent: boolean;
-}
-
-export interface AccountDetails {
-  userId: string;
-  userName: string;
-  userEmail: string;
-  userAvatarUrl: string | null;
-  userRole: AppRole;
-  passkeys: PasskeyItem[];
-  connectedProviders: string[];
-  sessions: UserSession[];
 }
 
 // Contributions & Patronage ---------------------------------------------------

@@ -14,13 +14,11 @@ import { subscribeToNewsletterAction } from '@/app/admin/actions';
 interface NewsletterFormProps {
   newsletter: NewsletterConfig;
   showNote?: boolean;
-  source?: string;
 }
 
 export function NewsletterForm({
   newsletter,
   showNote = true,
-  source = 'website',
 }: NewsletterFormProps) {
   const [email, setEmail] = useState('');
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
@@ -34,7 +32,7 @@ export function NewsletterForm({
     setMessage('');
 
     try {
-      const res = await subscribeToNewsletterAction({ email, source });
+      const res = await subscribeToNewsletterAction({ email });
       if (res.success) {
         setStatus('success');
         setMessage(res.message || "You're on the list! Thank you.");

@@ -73,7 +73,6 @@ components/
 │   ├── admin-dashboard.tsx
 │   ├── book-cover-picker.tsx
 │   ├── content-manager.tsx
-│   ├── featured-manager.tsx
 │   └── media-manager.tsx
 ├── ui/                   # Shared UI primitives
 │   ├── actions-menu.tsx  # Context menu popover

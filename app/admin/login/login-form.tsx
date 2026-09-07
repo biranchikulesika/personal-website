@@ -150,12 +150,11 @@ export function LoginForm() {
           {/* Profile picture */}
           <div className="relative mb-6 h-32 w-32 overflow-hidden rounded-full border-2 border-tinted/20 bg-night-soft opacity-90">
             <Image
-              src="https://kulesika.in/profile.jpeg"
+              src="/favicon/web-app-manifest-512x512.png"
               alt="Biranchi Kulesika"
               fill
               className="object-cover"
               priority
-              unoptimized
             />
           </div>
 
