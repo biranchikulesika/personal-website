@@ -667,9 +667,13 @@ CREATE POLICY "auth_full_access_featured" ON "public"."featured_items" TO "authe
 
 
 -- Name: user_roles auth_full_access_roles; Type: POLICY; Schema: public; Owner: postgres
+--
+-- DELETED: the exhaustive "auth_full_access_roles" policy (USING true WITH CHECK true)
+-- allowed ANY authenticated user to INSERT/SELECT/UPDATE/DELETE every row in
+-- user_roles, enabling self-escaltion to super_admin via PostgREST. Removed;
+-- only the own-row SELECT policy remains.
 
 DROP POLICY IF EXISTS "auth_full_access_roles" ON "public"."user_roles";
-CREATE POLICY "auth_full_access_roles" ON "public"."user_roles" TO "authenticated" USING (true) WITH CHECK (true);
 
 
 -- Name: books; Type: ROW SECURITY; Schema: public; Owner: postgres
@@ -827,9 +831,14 @@ GRANT ALL ON TABLE "public"."subscribers" TO "service_role";
 
 
 -- Name: TABLE "user_roles"; Type: ACL; Schema: public; Owner: postgres
+--
+-- Only service_role and the own-row SELECT policy grant access. anon and
+-- authenticated get NO table privilege (own-row reads flow through the
+-- users_read_own_role SELECT policy, which requires the SELECT grant).
 
-GRANT ALL ON TABLE "public"."user_roles" TO "anon";
-GRANT ALL ON TABLE "public"."user_roles" TO "authenticated";
+REVOKE ALL ON TABLE "public"."user_roles" FROM "anon";
+REVOKE ALL ON TABLE "public"."user_roles" FROM "authenticated";
+GRANT SELECT ON TABLE "public"."user_roles" TO "authenticated";
 GRANT ALL ON TABLE "public"."user_roles" TO "service_role";
 
 

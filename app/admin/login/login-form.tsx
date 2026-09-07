@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import {
   signInWithGoogle,
   signInWithGitHub,
@@ -10,7 +10,6 @@ import {
   verifyPasskeyLoginAction,
 } from './actions';
 import { startAuthentication, browserSupportsWebAuthn } from '@simplewebauthn/browser';
-import { getSupabaseBrowser } from '@/lib/supabase/client';
 import { SITE_DOMAIN } from '@/lib/constants';
 
 interface DailyBackground {
@@ -22,6 +21,8 @@ interface DailyBackground {
 
 export function LoginForm() {
   const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
   const [error, setError] = useState('');
   const [oauthLoading, setOAuthLoading] = useState<string | null>(null);
   const [passkeyLoading, setPasskeyLoading] = useState(false);
@@ -29,17 +30,17 @@ export function LoginForm() {
 
   const errorParam = searchParams.get('error');
 
-  // If already authenticated on client mount, redirect to /admin
+  // Auto-dismiss error messages after a few seconds.
   useEffect(() => {
-    const supabase = getSupabaseBrowser();
-    if (supabase) {
-      supabase.auth.getUser().then(({ data: { user } }) => {
-        if (user) {
-          window.location.href = '/admin';
-        }
-      });
-    }
-  }, []);
+    if (!errorParam && !error) return;
+    const timer = setTimeout(() => {
+      setError('');
+      if (errorParam) {
+        router.replace(pathname);
+      }
+    }, 4000);
+    return () => clearTimeout(timer);
+  }, [errorParam, error, pathname, router]);
 
   // Fetch daily background on mount
   useEffect(() => {
@@ -172,7 +173,12 @@ export function LoginForm() {
               role="alert"
               className="mb-5 w-full rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-2.5 text-center text-sm text-red-400"
             >
-              {error || 'Authentication failed. Please try again.'}
+              {error ||
+                (errorParam === 'forbidden'
+                  ? 'This account is not authorized to access the admin panel.'
+                  : errorParam === 'auth_not_configured'
+                    ? 'Authentication is not configured yet.'
+                    : 'Authentication failed. Please try again.')}
             </div>
           )}
 

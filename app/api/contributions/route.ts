@@ -52,8 +52,16 @@ export async function POST(request: Request) {
         );
       }
     } else if (source === 'razorpay') {
-      // If Razorpay key secret is configured, require orderId and signature
-      if (process.env.RAZORPAY_KEY_SECRET && (!orderId || !signature)) {
+      // Razorpay payments MUST carry a verifiable signature. If the key secret
+      // is unconfigured, there is no way to verify authenticity, so reject
+      // rather than record unauthenticated contributions.
+      if (!process.env.RAZORPAY_KEY_SECRET) {
+        return NextResponse.json(
+          { error: 'Payment verification is not configured on server' },
+          { status: 500 },
+        );
+      }
+      if (!orderId || !signature) {
         return NextResponse.json(
           { error: 'orderId and signature are required for Razorpay payment verification' },
           { status: 400 },

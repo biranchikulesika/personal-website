@@ -13,6 +13,7 @@ import type {
   UserSession,
 } from '@/lib/types';
 import { getSupabaseServer } from '@/lib/supabase/server';
+import { isAdminRole } from '@/lib/auth/admin';
 import { getSupabaseUrl, getSupabasePublishableKey } from '@/lib/config/env';
 import {
   BlogPostSchema,
@@ -47,9 +48,7 @@ const contentService = new ContentService();
  * and possesses an administrative role ('content_admin' or 'super_admin') from the trusted database.
  * Throws an Error if unauthenticated or unauthorized.
  */
-async function assertAdminUser(
-  allowedRoles: ('content_admin' | 'super_admin')[] = ['content_admin', 'super_admin']
-) {
+async function assertAdminUser() {
   let user = null;
   try {
     const supabase = await getSupabaseServer();
@@ -70,13 +69,12 @@ async function assertAdminUser(
   }
 
   const role = await contentService.getUserRole(user.id);
-  const effectiveRole = role || (user.app_metadata?.role as 'content_admin' | 'super_admin' | undefined);
 
-  if (!effectiveRole || !allowedRoles.includes(effectiveRole as 'content_admin' | 'super_admin')) {
+  if (!isAdminRole(role)) {
     throw new Error('Forbidden: Administrative privileges required');
   }
 
-  return { user, role: effectiveRole };
+  return { user, role };
 }
 
 /**
