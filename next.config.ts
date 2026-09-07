@@ -29,6 +29,25 @@ const nextConfig: NextConfig = {
 
   // ── Redirects ─────────────────────────────────────────────────────────────
   redirects: async () => [
+    // Host normalization (production only): collapse http:// and http(s)://www
+    // onto the canonical https://biranchikulesika.com. Skipped in dev so
+    // http://localhost:3000 keeps serving normally.
+    ...(process.env.NODE_ENV === 'production'
+      ? [
+          {
+            source: '/:path*',
+            has: [{ type: 'scheme', value: 'http' }],
+            destination: 'https://biranchikulesika.com/:path*',
+            permanent: true,
+          },
+          {
+            source: '/:path*',
+            has: [{ type: 'host', value: 'www.biranchikulesika.com' }],
+            destination: 'https://biranchikulesika.com/:path*',
+            permanent: true,
+          },
+        ]
+      : []),
     {
       source: '/fund',
       destination: '/support',
