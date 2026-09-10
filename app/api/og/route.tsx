@@ -4,6 +4,7 @@ import {
   SITE_NAME,
   SITE_URL,
 } from "@/lib/constants";
+import { SITE_CONFIG } from "@/lib/config/site";
 import { ContentService } from "@/lib/services/content.service";
 import { stripMarkdown, textSnippet } from "@/lib/utils";
 import { ImageResponse } from "next/og";
@@ -164,8 +165,7 @@ async function generateOG(request: NextRequest): Promise<ImageResponse> {
     let heroImageSrc = "/biranchi.jpeg";
 
     try {
-      const service = new ContentService();
-      const site = service.getSiteContent();
+      const site = SITE_CONFIG;
       if (site?.identity?.name) siteName = site.identity.name;
       if (site?.hero?.greeting) greeting = site.hero.greeting;
       if (site?.hero?.headline) headline = site.hero.headline;
@@ -202,8 +202,7 @@ async function generateOG(request: NextRequest): Promise<ImageResponse> {
   if (type === "about") {
     let siteName = SITE_NAME;
     try {
-      const service = new ContentService();
-      const site = service.getSiteContent();
+      const site = SITE_CONFIG;
       if (site?.identity?.name) siteName = site.identity.name;
     } catch {
       // Use fallback
