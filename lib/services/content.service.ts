@@ -11,7 +11,6 @@ import type {
   ScribbleEntry,
   HomeContent,
   SectionGroup,
-  SiteContent,
   WritingItem,
   Contribution,
   PasskeyItem,
@@ -26,7 +25,6 @@ import {
 } from '@/lib/razorpay';
 import { getContentRepository } from '@/lib/repositories';
 import type { ContentRepository } from '@/lib/repositories/content.repository';
-import { SITE_CONFIG } from '@/lib/config/site';
 
 // ── Per-Request Memoization ────────────────────────────────────────────────
 // React.cache deduplicates identical read queries across Server Components and
@@ -44,14 +42,10 @@ const getCachedAllNotes = cache((repo: ContentRepository) => repo.getAllNotes())
 const getCachedAllBooks = cache((repo: ContentRepository) => repo.getAllBooks());
 
 // Application layer for site content. Components and pages interact with content
-// via intent methods (getSiteContent, getWriting, ...).
+// via intent methods (getHomeContent, getWriting, ...).
 
 export class ContentService {
   constructor(private repo: ContentRepository = getContentRepository()) {}
-
-  getSiteContent(): SiteContent {
-    return SITE_CONFIG;
-  }
 
   getHomeContent(): Promise<HomeContent> {
     return getCachedHomeContent(this.repo);

@@ -1,6 +1,6 @@
 # Database & Schema Architecture
 
-The database architecture is built on PostgreSQL / Supabase. The entire schema is declaratively defined in a single, idempotent file: **[`supabase/schema.sql`](file:///home/biranchikulesika/Projects/biranchi/supabase/schema.sql)**.
+The database architecture is built on PostgreSQL / Supabase. The entire schema is declaratively defined in a single, idempotent file: **[`supabase/migrations/20260830000000_initial_schema.sql`](supabase/migrations/20260830000000_initial_schema.sql)** — the only migration file tracked; it recreates all tables, types, functions, triggers, indexes, RLS policies, and grants.
 
 ---
 
@@ -164,7 +164,7 @@ The `media` bucket is configured in Supabase Storage:
 
 ## 6. How to Apply Schema Changes
 
-1. Edit [`supabase/schema.sql`](file:///home/biranchikulesika/Projects/biranchi/supabase/schema.sql) directly.
+1. Edit `supabase/migrations/20260830000000_initial_schema.sql` directly — it is the single source of truth. The three small `now_entries` column migrations (status, location, last_edited_at) are already merged into it; do not add new migration files.
 2. Ensure every statement remains **idempotent**:
    - `CREATE TABLE IF NOT EXISTS`
    - `CREATE INDEX IF NOT EXISTS`
@@ -172,8 +172,6 @@ The `media` bucket is configured in Supabase Storage:
    - `DROP POLICY IF EXISTS ... CREATE POLICY`
    - `INSERT ... ON CONFLICT DO UPDATE`
 3. Execute against Supabase:
-   ```bash    # Via Supabase SQL Editor: paste supabase/schema.sql
-   # Or via Supabase CLI:
-   supabase db push
-   ```
-4. Update [`lib/supabase/database.types.ts`](file:///home/biranchikulesika/Projects/biranchi/lib/supabase/database.types.ts) to keep TypeScript types strictly in sync.
+   - Local: `psql postgres://postgres:postgres@127.0.0.1:54322/postgres -f supabase/migrations/20260830000000_initial_schema.sql`
+   - Live: `supabase db query --linked -f supabase/migrations/20260830000000_initial_schema.sql` (or paste into the Supabase SQL Editor)
+4. Update [`lib/supabase/database.types.ts`](../lib/supabase/database.types.ts) to keep TypeScript types strictly in sync.

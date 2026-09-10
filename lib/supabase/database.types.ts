@@ -151,20 +151,29 @@ export interface Database {
           title: string;
           date: string;
           content: string;
+          location: string | null;
+          status: 'published' | 'unpublished';
           created_at: string;
           updated_at: string;
+          last_edited_at: string | null;
         };
         Insert: {
           id: string;
           title: string;
           date: string;
           content?: string;
+          location?: string | null;
+          status?: 'published' | 'unpublished';
+          last_edited_at?: string | null;
         };
         Update: {
           id?: string;
           title?: string;
           date?: string;
           content?: string;
+          location?: string | null;
+          status?: 'published' | 'unpublished';
+          last_edited_at?: string | null;
         };
         Relationships: [];
       };

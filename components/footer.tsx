@@ -33,16 +33,22 @@ export function Footer({ footer }: FooterProps) {
                   {column.title}
                 </h2>
                 <ul className="mt-6 space-y-4">
-                  {column.links.map((link) => (
-                    <li key={link.href}>
-                      <Link
-                        href={link.href}
-                        className="inline-flex items-center gap-1.5 text-base text-paper/90 transition-colors hover:text-accent"
-                      >
-                        {link.label}
-                      </Link>
-                    </li>
-                  ))}
+                  {column.links.map((link) => {
+                    const isExternal =
+                      link.href.startsWith('http') || link.href.startsWith('mailto:');
+                    return (
+                      <li key={link.href}>
+                        <Link
+                          href={link.href}
+                          target={isExternal ? '_blank' : undefined}
+                          rel={isExternal ? 'noopener noreferrer' : undefined}
+                          className="inline-flex items-center gap-1.5 text-base text-paper/90 transition-colors hover:text-accent"
+                        >
+                          {link.label}
+                        </Link>
+                      </li>
+                    );
+                  })}
                 </ul>
               </nav>
             ))}

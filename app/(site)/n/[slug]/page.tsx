@@ -41,8 +41,24 @@ export default async function NotePage({
     { name: note.title, url: `/n/${note.slug}` },
   ]);
 
+  const hasSupabaseMedia =
+    (note.coverImage && note.coverImage.includes('supabase.co')) ||
+    note.content.some((p) => p.includes('supabase.co'));
+
   return (
     <>
+      {hasSupabaseMedia && (
+        <>
+          <link
+            rel="preconnect"
+            href="https://ojzxdgzkrjmfeqyxvfud.supabase.co"
+          />
+          <link
+            rel="dns-prefetch"
+            href="https://ojzxdgzkrjmfeqyxvfud.supabase.co"
+          />
+        </>
+      )}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: safeJsonLd(noteJsonLd(note)) }}

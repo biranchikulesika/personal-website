@@ -1,14 +1,15 @@
 import { AboutPageView } from "@/components/about-page";
 import { aboutMetadata, breadcrumbJsonLd, safeJsonLd } from "@/lib/seo";
 import { ContentService } from "@/lib/services/content.service";
+import { SITE_CONFIG } from "@/lib/config/site";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = aboutMetadata();
 
 export default async function AboutPage() {
+  const site = SITE_CONFIG;
   const service = new ContentService();
-  const [site, writing] = await Promise.all([
-    service.getSiteContent(),
+  const [writing] = await Promise.all([
     service.getWriting(),
   ]);
 

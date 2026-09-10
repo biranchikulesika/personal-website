@@ -225,7 +225,6 @@ Next.js loads environment files in the following order of precedence (highest to
 4. **Where to get it**: Google Tag Manager Dashboard (`tagmanager.google.com`) → Select Container → Container ID (e.g. `GTM-KW8LD5TQ`).
 5. **Expected format**: `GTM-XXXXXXX`
 6. **Where it is used**:
-   - `lib/config/env.ts` -> `getGtmId()`
    - `app/layout.tsx` -> Google Tag Manager Script & noscript fallback
 7. **Server vs Client**: **Client-safe** (`NEXT_PUBLIC_` prefix).
 8. **Security implications**: Public container identifier.
@@ -244,7 +243,6 @@ Next.js loads environment files in the following order of precedence (highest to
 4. **Where to get it**: Google Analytics (`analytics.google.com`) → Admin → Data Streams → Measurement ID (e.g. `G-JCY5R9SRR6`).
 5. **Expected format**: `G-XXXXXXXXXX` or `GT-XXXXXXXXXX`
 6. **Where it is used**:
-   - `lib/config/env.ts` -> `getGoogleTagId()`
    - `app/layout.tsx` -> Google tag (gtag.js) `<script>` tags in `<head>`
 7. **Server vs Client**: **Client-safe** (`NEXT_PUBLIC_` prefix).
 8. **Security implications**: Public measurement identifier.

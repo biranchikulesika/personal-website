@@ -7,6 +7,23 @@ import {
 import type { BlogPost, NoteItem } from "@/lib/types";
 import type { Metadata } from "next";
 
+// Build commit SHA (available on Vercel) — bumps static-page OG URLs on every
+// deploy so crawlers/CDNs can't serve a stale cached banner after a release.
+const DEPLOY_VERSION = process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7);
+
+/**
+ * Appendix a cache-busting `v` param to an OG image URL. The value changes
+ * whenever the rendered image would change (an edit for posts/notes, a deploy
+ * for static pages), forcing social scrapers to fetch the latest image. The
+ * parameter is ignored by the OG route, so bare old URLs keep resolving.
+ */
+function versionedOgUrl(base: string, version?: string): string {
+  const v = version || DEPLOY_VERSION;
+  if (!v) return base;
+  const sep = base.includes("?") ? "&" : "?";
+  return `${base}${sep}v=${encodeURIComponent(v)}`;
+}
+
 /**
  * Generate a dynamic OG image URL.
  * Falls back to a static endpoint that generates the image on the fly.
@@ -27,7 +44,7 @@ function ogImage(
   if (params.persona) searchParams.set("persona", params.persona);
   if (params.cover) searchParams.set("cover", params.cover);
   const qs = searchParams.toString();
-  return `${SITE_URL}/api/og${qs ? `?${qs}` : ""}`;
+  return versionedOgUrl(`${SITE_URL}/api/og${qs ? `?${qs}` : ""}`);
 }
 
 // ── Base metadata ───────────────────────────────────────────────────────────
@@ -105,7 +122,7 @@ export function postMetadata(post: BlogPost): Metadata {
   const description = post.description || post.subtitle || "";
   const personaLabel = post.persona ? PERSONA_LABELS[post.persona] : undefined;
   // Use the dynamic OG route that resolves post data and generates a composed image
-  const ogUrl = `${SITE_URL}/api/og?slug=${encodeURIComponent(post.slug)}`;
+  const ogUrl = versionedOgUrl(`${SITE_URL}/api/og?slug=${encodeURIComponent(post.slug)}`, post.lastEditedAt);
 
   const isDraft = post.status === "unpublished";
 
@@ -144,7 +161,7 @@ export function noteMetadata(note: NoteItem): Metadata {
   const title = note.title;
   const description = note.subtitle || note.description || "";
   const personaLabel = note.persona ? PERSONA_LABELS[note.persona] : undefined;
-  const noteOgUrl = `${SITE_URL}/api/og?slug=${encodeURIComponent(note.slug)}&type=note`;
+  const noteOgUrl = versionedOgUrl(`${SITE_URL}/api/og?slug=${encodeURIComponent(note.slug)}&type=note`, note.date);
 
   const isDraft = note.status === "unpublished";
 
@@ -183,7 +200,7 @@ export function aboutMetadata(): Metadata {
   const title = "About";
   const description =
     "A little about Biranchi Kulesika, his work, writing, interests, and the things he is learning along the way.";
-  const ogUrl = `${SITE_URL}/api/og?type=about`;
+  const ogUrl = versionedOgUrl(`${SITE_URL}/api/og?type=about`);
 
   return {
     title,
@@ -222,7 +239,7 @@ export function libraryMetadata(): Metadata {
   const title = "Library";
   const description =
     "Books I've read, loved, and recommend for others to read.";
-  const ogUrl = `${SITE_URL}/api/og?type=library`;
+  const ogUrl = versionedOgUrl(`${SITE_URL}/api/og?type=library`);
 
   return {
     title,
@@ -253,7 +270,7 @@ export function scribbleMetadata(): Metadata {
   const url = `${SITE_URL}/scribble`;
   const title = "Scribble";
   const description = "Writing and thinking, shared openly.";
-  const ogUrl = `${SITE_URL}/api/og?type=scribble`;
+  const ogUrl = versionedOgUrl(`${SITE_URL}/api/og?type=scribble`);
 
   return {
     title,
@@ -285,7 +302,7 @@ export function nowMetadata(): Metadata {
   const title = "Now";
   const description =
     "What I’m reading, exploring, working on, and thinking about these days.";
-  const ogUrl = `${SITE_URL}/api/og?type=now`;
+  const ogUrl = versionedOgUrl(`${SITE_URL}/api/og?type=now`);
 
   return {
     title,
@@ -316,7 +333,7 @@ export function homeMetadata(): Metadata {
   const url = SITE_URL;
   const title = SITE_NAME;
   const description = SITE_DESCRIPTION;
-  const ogUrl = `${SITE_URL}/api/og?type=home`;
+  const ogUrl = versionedOgUrl(`${SITE_URL}/api/og?type=home`);
 
   return {
     title: { absolute: title },
@@ -348,7 +365,7 @@ export function supportMetadata(): Metadata {
   const title = "Support & Patronage";
   const description =
     "Support my work and help me keep building, writing, and sharing things openly.";
-  const ogUrl = `${SITE_URL}/api/og?type=support`;
+  const ogUrl = versionedOgUrl(`${SITE_URL}/api/og?type=support`);
 
   return {
     title,
@@ -438,7 +455,7 @@ export function articleJsonLd(post: BlogPost) {
     ? post.coverImage.startsWith("http")
       ? post.coverImage
       : `${SITE_URL}${post.coverImage.startsWith("/") ? post.coverImage : `/${post.coverImage}`}`
-    : `${SITE_URL}/api/og?slug=${encodeURIComponent(post.slug)}`;
+    : versionedOgUrl(`${SITE_URL}/api/og?slug=${encodeURIComponent(post.slug)}`, post.lastEditedAt);
 
   return {
     "@context": "https://schema.org",
@@ -476,7 +493,7 @@ export function noteJsonLd(note: NoteItem) {
     ? note.coverImage.startsWith("http")
       ? note.coverImage
       : `${SITE_URL}${note.coverImage.startsWith("/") ? note.coverImage : `/${note.coverImage}`}`
-    : `${SITE_URL}/api/og?slug=${encodeURIComponent(note.slug)}&type=note`;
+    : versionedOgUrl(`${SITE_URL}/api/og?slug=${encodeURIComponent(note.slug)}&type=note`, note.date);
 
   return {
     "@context": "https://schema.org",

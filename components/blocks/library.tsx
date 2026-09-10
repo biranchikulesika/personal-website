@@ -84,7 +84,6 @@ export function renderBlock(
           key={key}
           title={attrs.title || 'Untitled'}
           author={attrs.author || ''}
-          year={attrs.year}
           description={attrs.description || ''}
           cover={attrs.cover}
           link={attrs.link}

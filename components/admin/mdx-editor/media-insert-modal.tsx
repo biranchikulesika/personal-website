@@ -69,7 +69,7 @@ export function MediaInsertModal({
                 key={item.id}
                 type="button"
                 onClick={() => {
-                  onSelect(`![${item.alt || item.name}](${item.src})`);
+                  onSelect(`![${item.alt || item.name}](${item.src} "${item.alt || item.name}")`);
                   onClose();
                 }}
                 className="group flex flex-col overflow-hidden rounded-2xl border border-tinted/20 bg-post-card text-left shadow-2xs transition-all hover:border-accent/40 hover:shadow-md focus:outline-none"

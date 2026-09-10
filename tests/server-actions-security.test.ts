@@ -14,8 +14,6 @@ import {
   addMediaAction,
   deleteMediaAction,
   deleteOrphanedMediaAction,
-  setFeaturedPostsAction,
-  setFeaturedBooksAction,
   generateAiMetadataAction,
   deleteSubscriberAction,
   getPasskeysAction,
@@ -197,16 +195,6 @@ test('unauthenticated caller cannot invoke AI metadata generation via generateAi
   });
   assert.equal(res.success, false);
   assert.ok(res.error?.includes('Unauthorized') || res.error?.includes('Authentication'));
-});
-
-test('unauthenticated caller cannot set featured posts or books', async () => {
-  const postsRes = await setFeaturedPostsAction(['slug-1', 'slug-2']);
-  assert.equal(postsRes.success, false);
-  assert.ok(postsRes.error?.includes('Unauthorized') || postsRes.error?.includes('Authentication'));
-
-  const booksRes = await setFeaturedBooksAction(['book-1', 'book-2']);
-  assert.equal(booksRes.success, false);
-  assert.ok(booksRes.error?.includes('Unauthorized') || booksRes.error?.includes('Authentication'));
 });
 
 test('unauthenticated caller cannot delete newsletter subscriber via deleteSubscriberAction', async () => {

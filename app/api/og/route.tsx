@@ -4,7 +4,9 @@ import {
   SITE_NAME,
   SITE_URL,
 } from "@/lib/constants";
+import { SITE_CONFIG } from "@/lib/config/site";
 import { ContentService } from "@/lib/services/content.service";
+import { stripMarkdown, textSnippet } from "@/lib/utils";
 import { ImageResponse } from "next/og";
 import { NextRequest } from "next/server";
 import fs from "node:fs";
@@ -92,7 +94,7 @@ async function generateOG(request: NextRequest): Promise<ImageResponse> {
     if (typeParam === "note") {
       try {
         const note = await service.getNote(slug);
-        if (note) {
+        if (note && note.status !== "unpublished") {
           const personaLabel = note.persona
             ? (PERSONA_LABELS[note.persona] ?? note.persona)
             : "";
@@ -114,7 +116,7 @@ async function generateOG(request: NextRequest): Promise<ImageResponse> {
 
     try {
       const post = await service.getPost(slug);
-      if (post) {
+      if (post && post.status !== "unpublished") {
         const personaLabel = post.persona ? PERSONA_LABELS[post.persona] : "";
         const coverImageB64 = await resolveCoverImage(post.coverImage);
 
@@ -129,7 +131,7 @@ async function generateOG(request: NextRequest): Promise<ImageResponse> {
       }
 
       const note = await service.getNote(slug);
-      if (note) {
+      if (note && note.status !== "unpublished") {
         const personaLabel = note.persona
           ? (PERSONA_LABELS[note.persona] ?? note.persona)
           : "";
@@ -163,8 +165,7 @@ async function generateOG(request: NextRequest): Promise<ImageResponse> {
     let heroImageSrc = "/biranchi.jpeg";
 
     try {
-      const service = new ContentService();
-      const site = service.getSiteContent();
+      const site = SITE_CONFIG;
       if (site?.identity?.name) siteName = site.identity.name;
       if (site?.hero?.greeting) greeting = site.hero.greeting;
       if (site?.hero?.headline) headline = site.hero.headline;
@@ -201,8 +202,7 @@ async function generateOG(request: NextRequest): Promise<ImageResponse> {
   if (type === "about") {
     let siteName = SITE_NAME;
     try {
-      const service = new ContentService();
-      const site = service.getSiteContent();
+      const site = SITE_CONFIG;
       if (site?.identity?.name) siteName = site.identity.name;
     } catch {
       // Use fallback
@@ -347,8 +347,7 @@ async function generateOG(request: NextRequest): Promise<ImageResponse> {
   }
 
   if (type === "now") {
-    let latestEntry: { title: string; date: string; content: string } | null =
-      null;
+    let latestEntry: { title: string; content: string } | null = null;
     let entryCount = 1;
     const description =
       searchParams.get("description") ||
@@ -356,7 +355,9 @@ async function generateOG(request: NextRequest): Promise<ImageResponse> {
 
     try {
       const service = new ContentService();
-      const entries = await service.getNowEntries();
+      const entries = (await service.getNowEntries()).filter(
+        (e) => e.status !== "unpublished",
+      );
       if (entries?.length) {
         latestEntry = entries[0];
         entryCount = entries.length;
@@ -368,7 +369,6 @@ async function generateOG(request: NextRequest): Promise<ImageResponse> {
     if (!latestEntry) {
       latestEntry = {
         title: "Present Focus",
-        date: "August 2026",
         content:
           "Reading philosophy, exploring systems thinking, building lightweight web craft, and thinking about technology outside the internet.",
       };
@@ -1773,7 +1773,7 @@ function generateScribbleOG({
           {featured.map((entry, i) => {
             const accent = cardAccents[i] || cardAccents[0];
             const snippet = entry.description
-              ? entry.description.slice(0, 90)
+              ? textSnippet(entry.description, 90)
               : "";
 
             return (
@@ -1872,7 +1872,7 @@ function generateNowOG({
 }: {
   title: string;
   description: string;
-  latestEntry: { title: string; date: string; content: string } | null;
+  latestEntry: { title: string; content: string } | null;
   entryCount: number;
 }) {
   const desc =
@@ -1881,21 +1881,7 @@ function generateNowOG({
 
   // Extract snippet from latest entry content
   const contentSnippet = latestEntry
-    ? latestEntry.content
-        .split("\n")
-        .map((l) => l.trim())
-        .filter(
-          (l) =>
-            l &&
-            !l.startsWith("#") &&
-            !l.startsWith("```") &&
-            !l.startsWith("![") &&
-            !l.startsWith(">") &&
-            !l.startsWith("<"),
-        )
-        .slice(0, 2)
-        .join(" ")
-        .slice(0, 130)
+    ? textSnippet(latestEntry.content, 130)
     : "";
 
   return new ImageResponse(
@@ -2344,8 +2330,11 @@ function generatePostOG({
   isHome = false,
 }: PostOGParams) {
   const displayTitle = title.length > 80 ? title.slice(0, 77) + "…" : title;
+  const cleanedDescription = stripMarkdown(description);
   const displayDescription =
-    description.length > 120 ? description.slice(0, 117) + "…" : description;
+    cleanedDescription.length > 120
+      ? cleanedDescription.slice(0, 117) + "…"
+      : cleanedDescription;
 
   return new ImageResponse(
     <div

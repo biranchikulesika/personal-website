@@ -9,7 +9,8 @@ export const dynamic = "force-dynamic";
 
 export default async function NowPage() {
   const contentService = new ContentService();
-  const entries = await contentService.getNowEntries();
+  const allEntries = await contentService.getNowEntries();
+  const entries = allEntries.filter((e) => e.status !== "unpublished");
 
   const breadcrumbs = breadcrumbJsonLd([
     { name: "Home", url: "/" },

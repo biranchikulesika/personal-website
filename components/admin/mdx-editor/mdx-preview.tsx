@@ -4,6 +4,7 @@ import React, { useMemo, Fragment } from 'react';
 import type { Persona, BookCard } from '@/lib/types';
 import { slugify } from '@/lib/utils';
 import { renderMarkdownBlock } from '@/components/markdown-renderer';
+import { renderNowBlocks } from '@/components/now-blocks';
 import { PersonaBadge } from '@/components/persona-badge';
 import { CalendarIcon } from '@/components/icons';
 
@@ -16,6 +17,8 @@ interface MDXPreviewProps {
   tags?: string[];
   targetAudience?: string;
   books?: BookCard[];
+  docType?: 'post' | 'note' | 'now';
+  location?: string;
   className?: string;
 }
 
@@ -37,6 +40,8 @@ export function MDXPreview({
   date,
   tags = ['craft', 'software'],
   targetAudience,
+  docType,
+  location,
   className = '',
 }: MDXPreviewProps) {
   const { introNodes, sections, footnotes } = useMemo(() => {
@@ -48,6 +53,36 @@ export function MDXPreview({
   );
 
   const effectiveDate = date || new Date().toISOString().split('T')[0];
+
+  // Now entries are a timeline log, not a full post: same layout the public
+  // /now page renders (title + shared now blocks + Posted date + location).
+  if (docType === 'now') {
+    return (
+      <div
+        className={`h-full overflow-y-auto bg-night text-paper selection:bg-accent selection:text-white ${className}`}
+      >
+        <article className="mx-auto max-w-4xl px-6 py-10 sm:px-10 md:py-16">
+          <div className="space-y-5 text-base leading-[1.85] text-paper/85 md:text-lg">
+            <h3 className="font-serif text-2xl font-normal text-paper md:text-3xl">
+              {title || 'Timeline Update'}
+            </h3>
+
+            <div className="space-y-5">{renderNowBlocks(content)}</div>
+
+            <p className="pt-2 text-xs font-mono uppercase tracking-wider text-ink-soft/80 border-t border-tinted/15">
+              Posted{' '}
+              {new Date().toLocaleDateString('en-US', {
+                month: 'long',
+                day: 'numeric',
+                year: 'numeric',
+              })}
+              {location ? ` · ${location}` : ''}
+            </p>
+          </div>
+        </article>
+      </div>
+    );
+  }
 
   return (
     <div

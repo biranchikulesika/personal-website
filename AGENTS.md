@@ -132,9 +132,8 @@ The platform strictly follows a **4-tier layered architecture**. Maintain clean,
   - **Contributions / Patronage** (`public.contributions`)
   - **Newsletter Subscribers** (`public.newsletter_subscribers`)
 - **Schema Integrity & Migrations**:
-  - Master schema lives in `supabase/schema.sql`.
-  - Migration files live in `supabase/migrations/`.
-  - All database scripts must be **idempotent** (`CREATE TABLE IF NOT EXISTS`, `CREATE INDEX IF NOT EXISTS`, `DROP POLICY IF EXISTS`).
+  - **`supabase/migrations/20260830000000_initial_schema.sql` is the single source of truth** — the one authoritative, idempotent schema file that recreates the entire database (all tables, types, functions, triggers, indexes, RLS policies, and grants).
+  - **No other migration files are tracked.** The three small `now_entries` column migrations (status, location, last_edited_at) are already merged into this initial schema. Schema changes are made directly in this file (idempotently: `CREATE TABLE IF NOT EXISTS`, `CREATE INDEX IF NOT EXISTS`, `DROP POLICY IF EXISTS`), then applied to local (`psql postgres://postgres:postgres@127.0.0.1:54322/postgres -f supabase/migrations/20260830000000_initial_schema.sql`) and live (via `supabase db query --linked`).
   - Row Level Security (RLS) is compulsory on all public tables with explicit policies.
   - Direct data queries must always route through `SupabaseContentRepository`.
 

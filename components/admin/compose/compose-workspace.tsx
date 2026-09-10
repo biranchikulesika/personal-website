@@ -49,7 +49,7 @@ interface DocumentTab {
   rawPost?: BlogPost;
   rawNote?: NoteItem;
   rawNow?: NowEntry;
-  date?: string;
+  location?: string;
 }
 
 interface ComposeWorkspaceProps {
@@ -79,9 +79,7 @@ export function ComposeWorkspace({
   const [isPending, startTransition] = useTransition();
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const isDraggingRef = useRef(false);
   const tabCounterRef = useRef(0);
 
   // Create initial tab based on passed document
@@ -136,7 +134,7 @@ export function ComposeWorkspace({
         content: e.content,
         isDirty: false,
         rawNow: e,
-        date: e.date,
+        location: e.location || "",
       };
     }
 
@@ -144,7 +142,6 @@ export function ComposeWorkspace({
     if (docType === "now") {
       tabCounterRef.current += 1;
       const n = tabCounterRef.current;
-      const defaultNowDate = new Date().toISOString().slice(0, 7);
       const defaultNowTitle = new Date().toLocaleDateString("en-US", {
         month: "long",
         year: "numeric",
@@ -152,7 +149,7 @@ export function ComposeWorkspace({
       return {
         id: `tab-new-now-${n}`,
         docType: "now",
-        slug: `now-${n}`,
+        slug: slugify(defaultNowTitle),
         title: defaultNowTitle,
         subtitle: "",
         description: "",
@@ -161,7 +158,7 @@ export function ComposeWorkspace({
         content:
           "A short note on what you are reading, exploring, and thinking about this month.",
         isDirty: true,
-        date: defaultNowDate,
+        location: "",
       };
     }
 
@@ -193,8 +190,7 @@ export function ComposeWorkspace({
   const activeTab = tabs.find((t) => t.id === activeTabId) || tabs[0];
 
   // UI state
-  const [isSplitView, setIsSplitView] = useState(true);
-  const [editorWidthPercent, setEditorWidthPercent] = useState(50);
+  const [view, setView] = useState<"write" | "preview" | "split">("write");
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isPublishDrawerOpen, setIsPublishDrawerOpen] = useState(false);
   const [isMediaModalOpen, setIsMediaModalOpen] = useState(false);
@@ -231,35 +227,11 @@ export function ComposeWorkspace({
     function handleKeyDown(e: KeyboardEvent) {
       if ((e.metaKey || e.ctrlKey) && e.key === "s") {
         e.preventDefault();
-        handleSaveRef.current("published");
+        handleSaveRef.current("unpublished");
       }
     }
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, []);
-
-  // Resizable split view handlers
-  const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    isDraggingRef.current = true;
-
-    const handleMouseMove = (ev: MouseEvent) => {
-      if (!isDraggingRef.current || !containerRef.current) return;
-      const rect = containerRef.current.getBoundingClientRect();
-      const newWidthPercent = ((ev.clientX - rect.left) / rect.width) * 100;
-      if (newWidthPercent >= 20 && newWidthPercent <= 80) {
-        setEditorWidthPercent(newWidthPercent);
-      }
-    };
-
-    const handleMouseUp = () => {
-      isDraggingRef.current = false;
-      window.removeEventListener("mousemove", handleMouseMove);
-      window.removeEventListener("mouseup", handleMouseUp);
-    };
-
-    window.addEventListener("mousemove", handleMouseMove);
-    window.addEventListener("mouseup", handleMouseUp);
   }, []);
 
   // Formatting helpers for text insertion
@@ -393,13 +365,7 @@ export function ComposeWorkspace({
   ) {
     const isNowDoc = activeTab.docType === "now";
     const effectiveNowTitle =
-      activeTab.title.trim() ||
-      (activeTab.date
-        ? new Date(`${activeTab.date}-01`).toLocaleDateString("en-US", {
-            month: "long",
-            year: "numeric",
-          })
-        : "Timeline Update");
+      activeTab.title.trim() || "Timeline Update";
 
     if (!activeTab.title.trim() && !isNowDoc) {
       showToast("Please provide a document title before saving.");
@@ -479,23 +445,24 @@ export function ComposeWorkspace({
           showToast(res.error || "Failed to save essay");
         }
       } else if (activeTab.docType === "now") {
+        // Append-only timeline: always create a new row so previous entries are preserved.
         const nowPayload: NowEntry = {
-          id: activeTab.rawNow?.id || activeTab.slug || `now-${Date.now()}`,
+          id: `now-${Date.now()}`,
           title: effectiveNowTitle,
-          date: activeTab.date || new Date().toISOString().slice(0, 7),
           content: activeTab.content.trim(),
+          location: activeTab.location?.trim() || undefined,
+          status: statusToSet,
         };
 
         const res = await saveNowEntryAction(nowPayload);
         if (res.success && res.entry) {
           updateActiveTab({
-            title: effectiveNowTitle,
-            slug: res.entry.id,
+            rawNow: undefined,
             isDirty: false,
-            rawNow: res.entry,
+            content: "",
           });
           setIsPublishDrawerOpen(false);
-          showToast(`Now entry "${effectiveNowTitle}" saved to the timeline!`);
+          showToast(`Now entry added to the timeline.`);
         } else {
           showToast(res.error || "Failed to save now entry");
         }
@@ -598,12 +565,17 @@ export function ComposeWorkspace({
       return (
         activeTab.isDirty ||
         activeTab.title !== activeTab.rawNow.title ||
-        (activeTab.date || "") !== (activeTab.rawNow.date || "") ||
         activeTab.content !== activeTab.rawNow.content
       );
     }
     return activeTab.isDirty;
   })();
+
+  // Save/Publish are only meaningful when there is something pending to persist,
+  // or (for publish) when the active document is a synced draft awaiting release.
+  const canSaveDraft = hasUnpublishedChanges && !isPending;
+  const canPublish =
+    !isPending && (hasUnpublishedChanges || activeTab.status === "unpublished");
 
   // Discard handler: revert active tab back to original published / saved state
   function handleDiscardChanges() {
@@ -641,7 +613,6 @@ export function ComposeWorkspace({
       const now = activeTab.rawNow;
       updateActiveTab({
         title: now.title,
-        date: now.date,
         content: now.content,
         isDirty: false,
       });
@@ -656,7 +627,6 @@ export function ComposeWorkspace({
           description: "",
           content: "A short note on what you are reading, exploring, and thinking about this month.",
           isDirty: false,
-          date: new Date().toISOString().slice(0, 7),
         });
       } else {
         updateActiveTab({
@@ -719,7 +689,11 @@ export function ComposeWorkspace({
         {/* Tab List */}
         {tabs.map((tab) => {
           const isSelected = tab.id === activeTabId;
-          const displayTabName = `${slugify(tab.slug || tab.title || "untitled")}.mdx`;
+          const displayTabName = `${slugify(
+            tab.docType === "now"
+              ? tab.title || "untitled"
+              : tab.slug || tab.title || "untitled",
+          )}.mdx`;
 
           return (
             <div
@@ -816,33 +790,23 @@ export function ComposeWorkspace({
 
           <div className="h-4 w-px bg-tinted/20" />
 
-          {/* Link & Code */}
-          <div className="flex items-center gap-0.5">
-            <button
-              type="button"
-              onClick={() => insertFormat("[", "](https://)")}
-              className="rounded p-1.5 text-xs text-paper/80 hover:bg-tinted/10 hover:text-paper transition-colors"
-              title="Link (Cmd+K)"
-            >
-              🔗
-            </button>
-            <button
-              type="button"
-              onClick={() => insertFormat("`")}
-              className="rounded p-1.5 text-xs text-paper/80 hover:bg-tinted/10 hover:text-paper transition-colors font-mono"
-              title="Inline Code"
-            >
-              &lt;/&gt;
-            </button>
-          </div>
+          {/* Link */}
+          <button
+            type="button"
+            onClick={() => insertFormat("[", "](https://)")}
+            className="rounded p-1.5 text-xs text-paper/80 hover:bg-tinted/10 hover:text-paper transition-colors"
+            title="Link (Cmd+K)"
+          >
+            🔗
+          </button>
 
           <div className="h-4 w-px bg-tinted/20" />
 
-          {/* Structure: Headings, Quotes, Tables, Callouts */}
+          {/* Headings */}
           <div className="flex items-center gap-0.5">
             <button
               type="button"
-              onClick={() => insertBlock("## Section Heading")}
+              onClick={() => insertBlock("## Section Heading\n")}
               className="rounded p-1.5 text-xs text-paper/80 hover:bg-tinted/10 hover:text-paper transition-colors font-semibold"
               title="Heading 2"
             >
@@ -850,64 +814,22 @@ export function ComposeWorkspace({
             </button>
             <button
               type="button"
-              onClick={() => insertBlock("### Subsection")}
+              onClick={() => insertBlock("### Subsection\n")}
               className="rounded p-1.5 text-xs text-paper/80 hover:bg-tinted/10 hover:text-paper transition-colors font-semibold"
               title="Heading 3"
             >
               H3
             </button>
-            <button
-              type="button"
-              onClick={() =>
-                insertBlock(
-                  '> "A quote exploring quiet attention."\n> — Author',
-                )
-              }
-              className="rounded p-1.5 text-xs text-paper/80 hover:bg-tinted/10 hover:text-paper transition-colors"
-              title="Blockquote"
-            >
-              “
-            </button>
-            <button
-              type="button"
-              onClick={() =>
-                insertBlock("```typescript\n// Code block here\n```")
-              }
-              className="rounded p-1.5 text-xs text-paper/80 hover:bg-tinted/10 hover:text-paper transition-colors font-mono"
-              title="Code Block"
-            >
-              Pre
-            </button>
-            <button
-              type="button"
-              onClick={() =>
-                insertBlock(
-                  "| Column 1 | Column 2 |\n| :--- | :--- |\n| Value A | Value B |",
-                )
-              }
-              className="rounded p-1.5 text-xs text-paper/80 hover:bg-tinted/10 hover:text-paper transition-colors"
-              title="Table"
-            >
-              ▦
-            </button>
-            <button
-              type="button"
-              onClick={() => insertBlock("> [!NOTE]\n> Key context note here.")}
-              className="rounded p-1.5 text-xs text-paper/80 hover:bg-tinted/10 hover:text-paper transition-colors"
-              title="Callout Box"
-            >
-              💡
-            </button>
           </div>
 
           <div className="h-4 w-px bg-tinted/20" />
 
-          {/* Embeds: Images, Media, Video */}
+          {/* Images & Media */}
           <div className="flex items-center gap-0.5">
             <button
               type="button"
               onClick={() =>
-                insertBlock("![Image Alt](https://)\n*Caption text*")
+                insertBlock('![Alt Text](https://image-url.com/image.jpg "Image Caption")')
               }
               className="rounded p-1.5 text-xs text-paper/80 hover:bg-tinted/10 hover:text-paper transition-colors"
               title="Insert Image URL"
@@ -930,14 +852,6 @@ export function ComposeWorkspace({
             >
               ☁ Upload
             </button>
-            <button
-              type="button"
-              onClick={() => insertBlock('<YouTube id="dQw4w9WgXcQ" />')}
-              className="rounded p-1.5 text-xs text-paper/80 hover:bg-tinted/10 hover:text-paper transition-colors"
-              title="Embed YouTube Video"
-            >
-              ▶ Video
-            </button>
           </div>
         </div>
 
@@ -953,7 +867,6 @@ export function ComposeWorkspace({
               const reader = new FileReader();
               reader.onload = async () => {
                 const dataUrl = reader.result as string;
-                insertBlock(`![${file.name}](${dataUrl})\n*${file.name}*`);
                 try {
                   const mediaItem: MediaItem = {
                     id: `media-${Date.now()}`,
@@ -964,9 +877,16 @@ export function ComposeWorkspace({
                     uploadedAt: new Date().toISOString().split("T")[0],
                     tag: "atmosphere",
                   };
-                  await addMediaAction(mediaItem);
+                  const res = await addMediaAction(mediaItem);
+                  const imgUrl =
+                    res.success && res.media ? res.media.src : dataUrl;
+                  insertBlock(
+                    `![${file.name}](${imgUrl} "${file.name}")`,
+                  );
                 } catch {
-                  // Media item registration is non-blocking
+                  insertBlock(
+                    `![${file.name}](${dataUrl} "${file.name}")`,
+                  );
                 }
               };
               reader.readAsDataURL(file);
@@ -975,22 +895,26 @@ export function ComposeWorkspace({
           }}
         />
 
-        {/* Right Placement: Split Preview, Preview, Save Draft, Publish Buttons */}
+        {/* Right Placement: View Toggle, Discard, Save Draft, Publish Buttons */}
         <div className="flex items-center gap-2.5 shrink-0">
-          {/* Split Preview Toggle Button */}
-          <button
-            type="button"
-            onClick={() => setIsSplitView(!isSplitView)}
-            className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-colors border ${
-              isSplitView
-                ? "border-tinted/30 bg-night-soft text-accent"
-                : "border-transparent text-ink-soft hover:bg-tinted/10 hover:text-paper"
-            }`}
-            title="Toggle Split Preview"
-          >
-            <span>◫</span>
-            <span>Split Preview</span>
-          </button>
+          {/* Write / Preview View Toggle */}
+          <div className="flex items-center rounded-md border border-tinted/20 bg-ink/70 p-0.5 text-xs font-medium select-none">
+            {(["write", "split", "preview"] as const).map((mode) => (
+              <button
+                key={mode}
+                type="button"
+                onClick={() => setView(mode)}
+                className={`px-2.5 py-1 rounded transition-colors capitalize ${
+                  view === mode
+                    ? "bg-night-soft text-accent"
+                    : "text-ink-soft hover:bg-tinted/10 hover:text-paper"
+                }`}
+                title={`Switch to ${mode} view`}
+              >
+                {mode}
+              </button>
+            ))}
+          </div>
 
           {/* Discard Unpublished Changes Button */}
           <button
@@ -1011,7 +935,7 @@ export function ComposeWorkspace({
           {/* Save Draft Button with Pulse / Check status */}
           <button
             type="button"
-            disabled={isPending}
+            disabled={!canSaveDraft}
             onClick={() => handleSaveDocument("unpublished")}
             className={`flex items-center gap-1.5 rounded-md px-3 py-1 text-xs font-medium transition-colors border ${
               activeTab.isDirty
@@ -1041,12 +965,9 @@ export function ComposeWorkspace({
           {/* Publish Live Button */}
           <button
             type="button"
-            onClick={() =>
-              activeTab.docType === "now"
-                ? handleSaveDocument("published")
-                : setIsPublishDrawerOpen(true)
-            }
-            className="flex items-center gap-1.5 rounded-md bg-accent hover:bg-accent-hover text-paper px-3.5 py-1 text-xs font-bold transition-all shadow-sm"
+            disabled={!canPublish}
+            onClick={() => setIsPublishDrawerOpen(true)}
+            className="flex items-center gap-1.5 rounded-md bg-accent hover:bg-accent-hover text-paper px-3.5 py-1 text-xs font-bold transition-all shadow-sm disabled:bg-night-soft disabled:text-ink-soft disabled:shadow-none disabled:cursor-not-allowed"
           >
             <span>Publish</span>
           </button>
@@ -1132,15 +1053,17 @@ export function ComposeWorkspace({
           {/* Subtitle Row */}
           <div className="flex items-center min-h-7.5 bg-ink px-4 text-paper/80 shrink-0 border-b border-tinted/20 justify-between">
             {activeTab.docType === "now" ? (
-              <div className="flex items-center gap-2 flex-1">
+              <div className="flex items-center gap-2 min-w-0 flex-1">
                 <span className="text-[10px] uppercase tracking-wider text-ink-soft shrink-0">
-                  Date
+                  Location
                 </span>
                 <input
-                  type="month"
-                  value={activeTab.date || ""}
-                  onChange={(e) => updateActiveTab({ date: e.target.value })}
-                  className="bg-transparent border-none outline-none text-paper/70 placeholder-ink-soft/50 py-1 text-xs font-mono"
+                  type="text"
+                  value={activeTab.location || ""}
+                  onChange={(e) => updateActiveTab({ location: e.target.value })}
+                  placeholder="e.g. Bhubaneswar, Odisha"
+                  maxLength={200}
+                  className="bg-transparent border-none outline-none text-paper/70 placeholder-ink-soft/50 py-1 text-xs flex-1 min-w-0"
                 />
               </div>
             ) : (
@@ -1164,45 +1087,29 @@ export function ComposeWorkspace({
             )}
           </div>
 
-          {/* Editor & Live Split View */}
-          <div
-            className="flex-1 flex flex-row relative min-h-0"
-            ref={containerRef}
-          >
-            {/* Left Editor Area */}
-            <div
-              className="relative h-full min-w-0 bg-ink"
-              style={{ width: isSplitView ? `${editorWidthPercent}%` : "100%" }}
-            >
-              <textarea
-                ref={textareaRef}
-                value={activeTab.content}
-                onChange={(e) => updateActiveTab({ content: e.target.value })}
-                placeholder="Write your article in Markdown / MDX..."
-                className="w-full h-full resize-none bg-ink p-6 font-mono text-xs leading-relaxed text-paper/90 focus:outline-none selection:bg-accent/30"
-                spellCheck={false}
-              />
-            </div>
-
-            {/* Split Resizer Handle */}
-            {isSplitView && (
+          {/* Editor & Preview (full-width write, preview, or side-by-side split) */}
+          <div className="flex-1 flex flex-row relative min-h-0 overflow-hidden divide-x divide-tinted/20">
+            {(view === "write" || view === "split") && (
               <div
-                className="w-1.5 bg-night-soft border-x border-tinted/20 hover:bg-accent cursor-col-resize transition-colors z-10 shrink-0 relative"
-                onMouseDown={handleMouseDown}
+                className={`relative h-full min-w-0 bg-ink ${
+                  view === "split" ? "w-1/2" : "w-full"
+                }`}
               >
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col gap-1 pointer-events-none opacity-40">
-                  <div className="w-0.5 h-1 bg-tinted rounded-full" />
-                  <div className="w-0.5 h-1 bg-tinted rounded-full" />
-                  <div className="w-0.5 h-1 bg-tinted rounded-full" />
-                </div>
+                <textarea
+                  ref={textareaRef}
+                  value={activeTab.content}
+                  onChange={(e) => updateActiveTab({ content: e.target.value })}
+                  placeholder="Write your article in Markdown / MDX..."
+                  className="w-full h-full resize-none bg-ink p-6 font-mono text-xs leading-relaxed text-paper/90 focus:outline-none selection:bg-accent/30"
+                  spellCheck={false}
+                />
               </div>
             )}
-
-            {/* Right Live Preview Area */}
-            {isSplitView && (
+            {(view === "preview" || view === "split") && (
               <div
-                className="relative h-full overflow-hidden bg-night"
-                style={{ width: `calc(${100 - editorWidthPercent}% - 6px)` }}
+                className={`relative h-full min-w-0 overflow-hidden bg-night ${
+                  view === "split" ? "w-1/2" : "w-full"
+                }`}
               >
                 <MDXPreview
                   content={activeTab.content}
@@ -1212,6 +1119,8 @@ export function ComposeWorkspace({
                   tags={activeTab.tags}
                   books={activeTab.rawPost?.books}
                   targetAudience={activeTab.rawPost?.targetAudience}
+                  docType={activeTab.docType}
+                  location={activeTab.location}
                   className="h-full"
                 />
               </div>
@@ -1279,8 +1188,8 @@ export function ComposeWorkspace({
         onSave={handleSaveDocument}
         isSaving={isPending}
         docType={activeTab.docType}
-        date={activeTab.date}
-        onDateChange={(date) => updateActiveTab({ date })}
+        location={activeTab.location}
+        onLocationChange={(location) => updateActiveTab({ location })}
         hasUnpublishedChanges={hasUnpublishedChanges}
         onDiscard={() => {
           setIsPublishDrawerOpen(false);

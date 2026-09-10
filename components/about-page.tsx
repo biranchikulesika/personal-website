@@ -15,27 +15,23 @@ const ABOUT_GALLERY_IMAGES = [
   {
     src: "/groupphotowithfriends.webp",
     alt: "Biranchi with friends",
-    caption: "With friends & university companions",
   },
   {
     src: "/melayingonsciencemuseum.webp",
     alt: "Biranchi at the science museum",
-    caption: "Moments of curiosity at the science museum",
   },
 ];
 
 const CURIOSITIES = [
   "Linux",
-  "Systems thinking",
-  "Writing things down",
-  "Slow internet",
-  "Craft & attention",
-  "Thoughtful conversations",
-  "Late nights",
-  "Digital gardens",
-  "Curiosity",
-  "Plain text",
   "Building in public",
+  "Vibe coding",
+  "Writing things down",
+  "Late night thoughts",
+  "Living Life",
+  "Curiosity",
+  "Cyber security",
+  "Philosophy",
 ];
 
 /**
@@ -81,46 +77,26 @@ export function AboutPageView({ site, featuredWriting }: AboutPageProps) {
         </div>
 
         {/* Profile / Atmosphere mosaic grid */}
-        <div className="grid grid-cols-2 gap-4">
-          <div className="group relative aspect-4/5 w-full overflow-hidden rounded-2xl bg-night-soft shadow-2xl ring-1 ring-tinted/20">
-            <Image
-              src="/selfiewithmiku.webp"
-              alt="Biranchi with Miku"
-              fill
-              sizes="(min-width: 1024px) 240px, 45vw"
-              className="object-cover object-center transition-transform duration-500 group-hover:scale-105"
-            />
-          </div>
-
-          <div className="group relative aspect-4/5 w-full overflow-hidden rounded-2xl bg-night-soft shadow-2xl ring-1 ring-tinted/20">
-            <Image
-              src="/selfiewithblessie.webp"
-              alt="Biranchi with Blessie"
-              fill
-              sizes="(min-width: 1024px) 240px, 45vw"
-              className="object-cover object-center transition-transform duration-500 group-hover:scale-105"
-            />
-          </div>
-
-          <div className="group relative aspect-4/5 w-full overflow-hidden rounded-2xl bg-night-soft shadow-2xl ring-1 ring-tinted/20">
-            <Image
-              src="/selfiewithfriends.webp"
-              alt="Biranchi with friends"
-              fill
-              sizes="(min-width: 1024px) 240px, 45vw"
-              className="object-cover object-center transition-transform duration-500 group-hover:scale-105"
-            />
-          </div>
-
-          <div className="group relative aspect-4/5 w-full overflow-hidden rounded-2xl bg-night-soft shadow-2xl ring-1 ring-tinted/20">
-            <Image
-              src="/selfiewithbhabani.webp"
-              alt="Biranchi with Bhabani"
-              fill
-              sizes="(min-width: 1024px) 240px, 45vw"
-              className="object-cover object-center transition-transform duration-500 group-hover:scale-105"
-            />
-          </div>
+        <div className="-mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto overflow-y-hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden px-4 pb-2 sm:mx-0 sm:grid sm:grid-cols-2 sm:overflow-visible sm:px-0 sm:pb-0">
+          {[
+            { src: "/selfiewithmiku.webp", alt: "Biranchi with Miku" },
+            { src: "/selfiewithblessie.webp", alt: "Biranchi with Blessie" },
+            { src: "/selfiewithfriends.webp", alt: "Biranchi with friends" },
+            { src: "/selfiewithbhabani.webp", alt: "Biranchi with Bhabani" },
+          ].map((img) => (
+            <div
+              key={img.src}
+              className="group relative aspect-3/4 w-[75%] shrink-0 snap-center overflow-hidden rounded-2xl bg-night-soft shadow-2xl ring-1 ring-tinted/20 sm:aspect-4/5 sm:w-full"
+            >
+              <Image
+                src={img.src}
+                alt={img.alt}
+                fill
+                sizes="(min-width: 1024px) 240px, 75vw"
+                className="object-cover object-center transition-transform duration-500 group-hover:scale-105"
+              />
+            </div>
+          ))}
         </div>
       </div>
 
@@ -214,7 +190,7 @@ export function AboutPageView({ site, featuredWriting }: AboutPageProps) {
             particularly impressive.
           </p>
 
-          <blockquote className="my-8 rounded-2xl border-l-4 border-sea-blue bg-night-soft/60 p-6 font-serif text-xl italic leading-relaxed text-paper md:text-2xl">
+          <blockquote className="my-8 border-y border-tinted/20 py-6 text-center font-serif text-lg italic leading-relaxed text-paper md:text-xl">
             “No one is perfect. No one ever will be. Leave some room for
             mistakes”
           </blockquote>
@@ -268,7 +244,7 @@ export function AboutPageView({ site, featuredWriting }: AboutPageProps) {
             </Link>
             , or say hello via{" "}
             <a
-              href="mailto:hello@kulesika.in"
+              href="mailto:biranchi@kulesika.in"
               className="text-paper underline decoration-tinted/40 underline-offset-4 transition-colors hover:text-accent hover:decoration-accent"
             >
               email

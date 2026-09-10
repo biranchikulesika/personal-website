@@ -6,7 +6,7 @@ import { useToast } from '@/hooks/use-toast';
 import { ToastView } from '@/components/ui/toast-view';
 import { UserAvatar } from '@/components/ui/user-avatar';
 import {
-  EnvelopeIcon,
+  MailIcon,
   FingerprintIcon,
   LaptopIcon,
   TrashIcon,
@@ -59,16 +59,6 @@ function getDeviceLabel(): string {
   if (/Android/i.test(ua)) return 'Android Biometric';
   if (/Linux/i.test(ua)) return 'Linux Computer';
   return 'Security Key / Passkey';
-}
-
-function getInitials(name: string): string {
-  return name
-    .split(' ')
-    .map((part) => part[0])
-    .filter(Boolean)
-    .slice(0, 2)
-    .join('')
-    .toUpperCase();
 }
 
 function IconChip({ children }: { children: React.ReactNode }) {
@@ -304,7 +294,7 @@ export function AccountManager({
                 </span>
               </div>
               <p className="mt-1 flex items-center gap-1.5 truncate text-xs text-gray-mid">
-                <EnvelopeIcon className="h-3.5 w-3.5 shrink-0" />
+                <MailIcon className="h-3.5 w-3.5 shrink-0" />
                 <span>{userEmail || `admin@${SITE_DOMAIN}`}</span>
               </p>
             </div>
@@ -364,7 +354,6 @@ export function AccountManager({
                     <NoContentState
                       compact
                       title="No passkeys registered"
-                      description="Add a passkey to sign in with your device biometrics or security key."
                     />
                   )}
                 </div>

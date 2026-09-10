@@ -97,7 +97,7 @@ export function HomeOverview({
       id: `now-${e.id}`,
       type: "now" as const,
       title: e.title || "Now Timeline",
-      subtitle: e.content.slice(0, 90),
+      subtitle: undefined,
       date: e.date || "",
       status: "published" as const,
       extra: "timeline",
@@ -219,7 +219,7 @@ export function HomeOverview({
               <h2 id="now-heading" className="text-xs font-semibold uppercase tracking-wider text-gray-mid">
                 Current Status (/now)
               </h2>
-              <span className="text-[11px] text-gray-mid">· {formatDisplayDate(latestNow.date)}</span>
+              <span className="text-[11px] text-gray-mid">· {latestNow.date ? formatDisplayDate(latestNow.date) : "Draft"}</span>
             </div>
             <Link
               href="/admin/compose?type=now"
@@ -228,8 +228,8 @@ export function HomeOverview({
               Update →
             </Link>
           </div>
-          <p className="text-sm text-paper/80 leading-relaxed font-serif italic pt-1">
-            &ldquo;{latestNow.content}&rdquo;
+          <p className="text-sm text-paper/80 leading-relaxed font-serif pt-1">
+            {latestNow.title || "Now Timeline overview"}
           </p>
         </section>
       )}

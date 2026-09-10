@@ -1,13 +1,13 @@
 import { Navbar } from '@/components/navbar';
 import { Footer } from '@/components/footer';
-import { ContentService } from '@/lib/services/content.service';
+import { SITE_CONFIG } from '@/lib/config/site';
 
 export default async function SiteLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const site = await new ContentService().getSiteContent();
+  const site = SITE_CONFIG;
 
   return (
     <div className="flex min-h-screen flex-col">

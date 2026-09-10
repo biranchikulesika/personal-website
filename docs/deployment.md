@@ -45,7 +45,7 @@ When `npm run build` executes:
 Before deploying the application code:
 1. Create a Supabase project.
 2. Open the Supabase SQL Editor.
-3. Paste and execute [`supabase/schema.sql`](file:///home/biranchikulesika/Projects/biranchi/supabase/schema.sql).
+3. Paste `supabase/migrations/20260830000000_initial_schema.sql` into the SQL Editor (or run `supabase db query --linked -f supabase/migrations/20260830000000_initial_schema.sql`). This single idempotent file recreates the entire database.
 4. Verify that:
    - All 9 tables exist in the `public` schema.
    - Triggers for `updated_at` and cross-collection slug uniqueness are active.

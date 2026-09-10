@@ -14,7 +14,7 @@ biranchi/
 ├── next.config.ts        # Next.js server configuration & headers
 ├── package.json          # Dependencies & npm scripts
 ├── proxy.ts              # Route proxy & security boundary middleware
-├── supabase/schema.sql   # Idempotent database schema & RLS policies
+├── supabase/migrations/20260830000000_initial_schema.sql   # Single idempotent schema: tables, RLS, grants
 └── tsconfig.json         # TypeScript compiler configuration
 ```
 
@@ -73,7 +73,6 @@ components/
 │   ├── admin-dashboard.tsx
 │   ├── book-cover-picker.tsx
 │   ├── content-manager.tsx
-│   ├── featured-manager.tsx
 │   └── media-manager.tsx
 ├── ui/                   # Shared UI primitives
 │   ├── actions-menu.tsx  # Context menu popover

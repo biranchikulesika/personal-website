@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useEffect, useTransition } from "react";
 import type { NewsletterSubscriber } from "@/lib/types";
 import { formatDisplayDate } from "@/lib/utils";
 import { deleteSubscriberAction } from "@/app/admin/actions";
@@ -21,6 +21,13 @@ export function SubscriberManager({
   const [feedback, setFeedback] = useState<{ type: "success" | "error"; text: string } | null>(
     null
   );
+
+  // Auto-dismiss feedback after a few seconds.
+  useEffect(() => {
+    if (!feedback) return;
+    const timer = setTimeout(() => setFeedback(null), 3500);
+    return () => clearTimeout(timer);
+  }, [feedback]);
 
   const filtered = subscribers.filter((s) =>
     s.email.toLowerCase().includes(search.toLowerCase().trim())
