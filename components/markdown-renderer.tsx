@@ -511,13 +511,13 @@ export function renderMarkdownBlock(
     return (
       <blockquote
         key={keyPrefix}
-        className={`my-8 rounded-2xl border-l-4 border-sea-blue bg-night-soft/60 p-6 ${colClass}`}
+        className={`my-8 border-y border-tinted/20 py-6 text-center font-serif text-lg italic leading-relaxed text-paper md:text-xl ${colClass}`}
       >
-        <p className="font-serif text-xl italic leading-relaxed text-paper md:text-2xl">
+        <p>
           “{quoteText}”
         </p>
         {attribution && (
-          <cite className="mt-3 block text-sm not-italic text-ink-soft">
+          <cite className="mt-3 block text-[11px] not-italic uppercase tracking-widest text-ink-soft">
             — {attribution}
           </cite>
         )}

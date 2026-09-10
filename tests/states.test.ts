@@ -41,7 +41,7 @@ test("NoSearchResults handles empty query with fallback description", () => {
 test("NoContentState defaults to human-friendly collection empty text", () => {
   const element = NoContentState({});
   assert.equal(element.props.title, "No entries yet");
-  assert.equal(element.props.description, "Nothing has been published here yet.");
+  assert.equal(element.props.description, undefined);
 });
 
 test("EmptyTableState renders table row with appropriate colSpan", () => {

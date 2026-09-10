@@ -790,33 +790,23 @@ export function ComposeWorkspace({
 
           <div className="h-4 w-px bg-tinted/20" />
 
-          {/* Link & Code */}
-          <div className="flex items-center gap-0.5">
-            <button
-              type="button"
-              onClick={() => insertFormat("[", "](https://)")}
-              className="rounded p-1.5 text-xs text-paper/80 hover:bg-tinted/10 hover:text-paper transition-colors"
-              title="Link (Cmd+K)"
-            >
-              🔗
-            </button>
-            <button
-              type="button"
-              onClick={() => insertFormat("`")}
-              className="rounded p-1.5 text-xs text-paper/80 hover:bg-tinted/10 hover:text-paper transition-colors font-mono"
-              title="Inline Code"
-            >
-              &lt;/&gt;
-            </button>
-          </div>
+          {/* Link */}
+          <button
+            type="button"
+            onClick={() => insertFormat("[", "](https://)")}
+            className="rounded p-1.5 text-xs text-paper/80 hover:bg-tinted/10 hover:text-paper transition-colors"
+            title="Link (Cmd+K)"
+          >
+            🔗
+          </button>
 
           <div className="h-4 w-px bg-tinted/20" />
 
-          {/* Structure: Headings, Quotes, Tables, Callouts */}
+          {/* Headings */}
           <div className="flex items-center gap-0.5">
             <button
               type="button"
-              onClick={() => insertBlock("## Section Heading")}
+              onClick={() => insertBlock("## Section Heading\n")}
               className="rounded p-1.5 text-xs text-paper/80 hover:bg-tinted/10 hover:text-paper transition-colors font-semibold"
               title="Heading 2"
             >
@@ -824,64 +814,22 @@ export function ComposeWorkspace({
             </button>
             <button
               type="button"
-              onClick={() => insertBlock("### Subsection")}
+              onClick={() => insertBlock("### Subsection\n")}
               className="rounded p-1.5 text-xs text-paper/80 hover:bg-tinted/10 hover:text-paper transition-colors font-semibold"
               title="Heading 3"
             >
               H3
             </button>
-            <button
-              type="button"
-              onClick={() =>
-                insertBlock(
-                  '> "A quote exploring quiet attention."\n> — Author',
-                )
-              }
-              className="rounded p-1.5 text-xs text-paper/80 hover:bg-tinted/10 hover:text-paper transition-colors"
-              title="Blockquote"
-            >
-              “
-            </button>
-            <button
-              type="button"
-              onClick={() =>
-                insertBlock("```typescript\n// Code block here\n```")
-              }
-              className="rounded p-1.5 text-xs text-paper/80 hover:bg-tinted/10 hover:text-paper transition-colors font-mono"
-              title="Code Block"
-            >
-              Pre
-            </button>
-            <button
-              type="button"
-              onClick={() =>
-                insertBlock(
-                  "| Column 1 | Column 2 |\n| :--- | :--- |\n| Value A | Value B |",
-                )
-              }
-              className="rounded p-1.5 text-xs text-paper/80 hover:bg-tinted/10 hover:text-paper transition-colors"
-              title="Table"
-            >
-              ▦
-            </button>
-            <button
-              type="button"
-              onClick={() => insertBlock("> [!NOTE]\n> Key context note here.")}
-              className="rounded p-1.5 text-xs text-paper/80 hover:bg-tinted/10 hover:text-paper transition-colors"
-              title="Callout Box"
-            >
-              💡
-            </button>
           </div>
 
           <div className="h-4 w-px bg-tinted/20" />
 
-          {/* Embeds: Images, Media, Video */}
+          {/* Images & Media */}
           <div className="flex items-center gap-0.5">
             <button
               type="button"
               onClick={() =>
-                insertBlock("![Image Alt](https://)\n*Caption text*")
+                insertBlock('![Alt Text](https://image-url.com/image.jpg "Image Caption")')
               }
               className="rounded p-1.5 text-xs text-paper/80 hover:bg-tinted/10 hover:text-paper transition-colors"
               title="Insert Image URL"
@@ -903,14 +851,6 @@ export function ComposeWorkspace({
               title="Upload Local Image"
             >
               ☁ Upload
-            </button>
-            <button
-              type="button"
-              onClick={() => insertBlock('<YouTube id="dQw4w9WgXcQ" />')}
-              className="rounded p-1.5 text-xs text-paper/80 hover:bg-tinted/10 hover:text-paper transition-colors"
-              title="Embed YouTube Video"
-            >
-              ▶ Video
             </button>
           </div>
         </div>
@@ -941,11 +881,11 @@ export function ComposeWorkspace({
                   const imgUrl =
                     res.success && res.media ? res.media.src : dataUrl;
                   insertBlock(
-                    `![${file.name}](${imgUrl})\n*${file.name}*`,
+                    `![${file.name}](${imgUrl} "${file.name}")`,
                   );
                 } catch {
                   insertBlock(
-                    `![${file.name}](${dataUrl})\n*${file.name}*`,
+                    `![${file.name}](${dataUrl} "${file.name}")`,
                   );
                 }
               };

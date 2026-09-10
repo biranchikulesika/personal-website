@@ -104,7 +104,7 @@ export interface NoContentStateProps {
 
 export function NoContentState({
   title = 'No entries yet',
-  description = 'Nothing has been published here yet.',
+  description,
   action,
   compact = false,
   className,

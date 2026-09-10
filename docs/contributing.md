@@ -35,7 +35,7 @@ npm run build
 1. **Layer Separation**: UI components (`components/`) must **never** connect to databases directly. Always go through `ContentService`.
 2. **Repository Consistency**: Every data operation must be declared in `ContentRepository` and implemented in `SupabaseContentRepository`.
 3. **Admin Privacy**: Never expose admin routes (`/admin`) in public sitemaps, robots.txt, navigation headers, or JSON-LD.
-4. **Idempotency**: All database changes in `supabase/schema.sql` and payment/webhook mutations must be idempotent.
+4. **Idempotency**: All database changes in `supabase/migrations/20260830000000_initial_schema.sql` (the single schema file — no other migrations are tracked) and payment/webhook mutations must be idempotent.
 5. **No Card Boxes**: Adhere to the editorial, horizontal-ruled ledger aesthetic. Do not introduce boxed container cards with arbitrary shadows.
 
 ---
@@ -89,8 +89,8 @@ export function ProjectsPageView({ projects }) {
 
 ### Guide 2: Adding a New Database Table & Entity
 
-#### Step 1: Update `supabase/schema.sql`
-Add the table definition idempotently:
+#### Step 1: Update `supabase/migrations/20260830000000_initial_schema.sql`
+This file is the single source of truth for the entire database. Add or edit the table definition idempotently:
 ```sql
 CREATE TABLE IF NOT EXISTS public.projects (
   id          TEXT PRIMARY KEY,

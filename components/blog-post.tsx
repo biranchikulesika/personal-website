@@ -284,12 +284,12 @@ export function BlogPostView({ post }: { post: BlogPost }) {
                       )}
 
                       {section.quote && (
-                        <blockquote className="mt-8 rounded-2xl border-l-4 border-sea-blue bg-night-soft/60 p-6 lg:col-start-1">
-                          <p className="font-serif text-xl italic leading-relaxed text-paper md:text-2xl">
+                        <blockquote className="mt-8 border-y border-tinted/20 py-6 text-center font-serif text-lg italic leading-relaxed text-paper lg:col-start-1 md:text-xl">
+                          <p>
                             “{section.quote.text}”
                           </p>
                           {section.quote.attribution && (
-                            <cite className="mt-3 block text-sm not-italic text-ink-soft">
+                            <cite className="mt-3 block text-[11px] not-italic uppercase tracking-widest text-ink-soft">
                               — {section.quote.attribution}
                             </cite>
                           )}
