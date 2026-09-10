@@ -6,13 +6,12 @@ export interface ComponentEntry {
   name: string;
   tag: string;
   snippet: string;
-  description: string;
-  group: 'Embeds' | 'Import' | 'Structure' | 'Headings' | 'Lists' | 'Callouts';
+  group: 'Embeds' | 'Structure' | 'Callouts';
   icon: string;
 }
 
 export interface ComponentGroup {
-  label: 'Embeds' | 'Import' | 'Structure' | 'Headings' | 'Lists' | 'Callouts';
+  label: 'Embeds' | 'Structure' | 'Callouts';
   items: ComponentEntry[];
 }
 
@@ -23,8 +22,14 @@ export const COMPONENT_GROUPS: ComponentGroup[] = [
       {
         name: 'Image',
         tag: 'Image',
-        snippet: '![Image Description](/image.jpg)\n*Figure caption*',
-        description: 'MDX image with figure caption',
+        snippet: '![Alt Text](https://image-url.com/image.jpg "Image Caption")',
+        group: 'Embeds',
+        icon: '🖼',
+      },
+      {
+        name: 'Image (MDX)',
+        tag: 'Image',
+        snippet: '<Image src="https://image-url.com/image.jpg" alt="Description" caption="Caption text" />',
         group: 'Embeds',
         icon: '🖼',
       },
@@ -32,92 +37,36 @@ export const COMPONENT_GROUPS: ComponentGroup[] = [
         name: 'YouTube',
         tag: 'YouTube',
         snippet: '<YouTube id="dQw4w9WgXcQ" />',
-        description: 'Embed a responsive video',
         group: 'Embeds',
         icon: '▶',
       },
       {
         name: 'Media Asset',
         tag: 'Media',
-        snippet: '![Asset Description](/selfie.jpeg)',
-        description: 'Pick asset from media library',
+        snippet: '',
         group: 'Embeds',
         icon: '📁',
       },
       {
         name: 'Book Card',
         tag: 'Book',
-        snippet:
-          '<Book title="The Shallows" author="Nicholas Carr" year="2025" description="A one-line note about the book." cover="/book-cover.jpg" link="https://example.com/book" />',
-        description: 'Book card with cover, link, and description',
+        snippet: '<Book title="The Shallows" author="Nicholas Carr" year="2025" description="A short note about the book." cover="https://covers.openlibrary.org/b/id/8119836-L.jpg" link="https://example.com" />',
         group: 'Embeds',
         icon: '📖',
       },
-    ],
-  },
-  {
-    label: 'Import',
-    items: [
       {
-        name: 'Import Book',
-        tag: 'Book',
-        snippet: '',
-        description: 'Pick a book from your library to embed',
-        group: 'Import',
-        icon: '📖',
-      },
-      {
-        name: 'Import Essay',
+        name: 'Essay Embed',
         tag: 'Post',
         snippet: '',
-        description: 'Pick an essay to embed as a card',
-        group: 'Import',
+        group: 'Embeds',
         icon: '📄',
       },
       {
-        name: 'Import Note',
+        name: 'Note Embed',
         tag: 'Note',
         snippet: '',
-        description: 'Pick a note to embed as a card',
-        group: 'Import',
+        group: 'Embeds',
         icon: '📝',
-      },
-    ],
-  },
-  {
-    label: 'Callouts',
-    items: [
-      {
-        name: 'Note Callout',
-        tag: 'Note',
-        snippet: '> [!NOTE]\n> Thoughtful reflection or context goes here.',
-        description: 'Quiet information callout',
-        group: 'Callouts',
-        icon: 'ℹ',
-      },
-      {
-        name: 'Tip Callout',
-        tag: 'Tip',
-        snippet: '> [!TIP]\n> Useful advice, shortcuts, or craft recommendation.',
-        description: 'Green highlight recommendation',
-        group: 'Callouts',
-        icon: '💡',
-      },
-      {
-        name: 'Important Callout',
-        tag: 'Important',
-        snippet: '> [!IMPORTANT]\n> Critical requirement or key take-away.',
-        description: 'Purple highlight note',
-        group: 'Callouts',
-        icon: '📌',
-      },
-      {
-        name: 'Warning Callout',
-        tag: 'Warning',
-        snippet: '> [!WARNING]\n> Potential pitfall, trade-off, or cautionary advice.',
-        description: 'Amber warning banner',
-        group: 'Callouts',
-        icon: '⚠️',
       },
     ],
   },
@@ -125,94 +74,107 @@ export const COMPONENT_GROUPS: ComponentGroup[] = [
     label: 'Structure',
     items: [
       {
-        name: 'Table',
-        tag: 'Table',
-        snippet: '| Concept | Principle | Status |\n| :--- | :--- | :--- |\n| Craft | Simplicity First | Active |\n| Attention | Guarded | Essential |',
-        description: 'Structured tabular data',
-        group: 'Structure',
-        icon: '▦',
-      },
-      {
-        name: 'Blockquote',
-        tag: 'Blockquote',
-        snippet: '> "Attention is a craftsperson\'s primary material."\n> — Biranchi',
-        description: 'Pull-quote with attribution',
-        group: 'Structure',
-        icon: '“',
-      },
-      {
-        name: 'Code Block (Pre)',
-        tag: 'Pre',
-        snippet: '```typescript\nfunction craftSoftware() {\n  return "Focus & Clarity";\n}\n```',
-        description: 'Fenced code with syntax highlighting',
-        group: 'Structure',
-        icon: '⟨/⟩',
-      },
-      {
-        name: 'Horizontal Rule',
-        tag: 'HR',
-        snippet: '\n---\n',
-        description: 'Thematic section divider',
-        group: 'Structure',
-        icon: '―',
-      },
-    ],
-  },
-  {
-    label: 'Headings',
-    items: [
-      {
-        name: 'Heading 1',
-        tag: 'H1',
-        snippet: '# Major Chapter Title\n',
-        description: 'Top-level document title',
-        group: 'Headings',
-        icon: 'H1',
-      },
-      {
         name: 'Heading 2',
         tag: 'H2',
-        snippet: '## Core Principle\n',
-        description: 'Section heading with TOC anchor',
-        group: 'Headings',
+        snippet: '## Section Heading\n',
+        group: 'Structure',
         icon: 'H2',
       },
       {
         name: 'Heading 3',
         tag: 'H3',
-        snippet: '### Subsection Detail\n',
-        description: 'Sub-tier heading for finer points',
-        group: 'Headings',
+        snippet: '### Subsection\n',
+        group: 'Structure',
         icon: 'H3',
       },
-    ],
-  },
-  {
-    label: 'Lists',
-    items: [
+      {
+        name: 'Blockquote',
+        tag: 'Blockquote',
+        snippet: '> "A quote worth sharing."\n> — Attribution',
+        group: 'Structure',
+        icon: '"',
+      },
+      {
+        name: 'Code Block',
+        tag: 'Pre',
+        snippet: '```typescript\n// code here\n```',
+        group: 'Structure',
+        icon: '</>',
+      },
+      {
+        name: 'Table',
+        tag: 'Table',
+        snippet: '| Concept | Principle |\n| :--- | :--- |\n| Craft | Simplicity |\n| Focus | Guarded |',
+        group: 'Structure',
+        icon: '▦',
+      },
+      {
+        name: 'Horizontal Rule',
+        tag: 'HR',
+        snippet: '\n---\n',
+        group: 'Structure',
+        icon: '―',
+      },
       {
         name: 'Unordered List',
         tag: 'UL',
-        snippet: '- First observation\n- Second observation\n- Third observation',
-        description: 'Bulleted item list',
-        group: 'Lists',
+        snippet: '- First item\n- Second item\n- Third item',
+        group: 'Structure',
         icon: '•',
       },
       {
         name: 'Ordered List',
         tag: 'OL',
-        snippet: '1. Establish first principles\n2. Iterate with patience\n3. Polish the details',
-        description: 'Numbered sequential list',
-        group: 'Lists',
+        snippet: '1. First step\n2. Second step\n3. Third step',
+        group: 'Structure',
         icon: '1.',
       },
       {
         name: 'Task List',
         tag: 'Tasks',
-        snippet: '- [x] Initial design\n- [ ] Editorial review\n- [ ] Publication',
-        description: 'Checkable checklist items',
-        group: 'Lists',
+        snippet: '- [x] Completed task\n- [ ] Pending task',
+        group: 'Structure',
         icon: '☑',
+      },
+    ],
+  },
+  {
+    label: 'Callouts',
+    items: [
+      {
+        name: 'Note',
+        tag: 'Note',
+        snippet: '> [!NOTE]\n> Key context or reference.',
+        group: 'Callouts',
+        icon: 'ℹ',
+      },
+      {
+        name: 'Tip',
+        tag: 'Tip',
+        snippet: '> [!TIP]\n> Useful advice or recommendation.',
+        group: 'Callouts',
+        icon: '💡',
+      },
+      {
+        name: 'Important',
+        tag: 'Important',
+        snippet: '> [!IMPORTANT]\n> Critical requirement or key take-away.',
+        group: 'Callouts',
+        icon: '📌',
+      },
+      {
+        name: 'Warning',
+        tag: 'Warning',
+        snippet: '> [!WARNING]\n> Potential pitfall or cautionary note.',
+        group: 'Callouts',
+        icon: '⚠️',
+      },
+      {
+        name: 'Caution',
+        tag: 'Caution',
+        snippet: '> [!CAUTION]\n> Action with serious consequences.',
+        group: 'Callouts',
+        icon: '🛑',
       },
     ],
   },
@@ -240,7 +202,6 @@ export function ComponentLibrarySidebar({
     items: group.items.filter(
       (c) =>
         c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        c.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
         c.tag.toLowerCase().includes(searchQuery.toLowerCase())
     ),
   })).filter((g) => g.items.length > 0);
@@ -251,55 +212,40 @@ export function ComponentLibrarySidebar({
         isCollapsed ? 'w-14' : 'w-72'
       } border-l border-tinted/20 bg-ink flex flex-col h-full shrink-0 transition-all duration-200`}
     >
-      {/* Sidebar Header */}
-      <div className="p-3 border-b border-tinted/20 bg-ink/90">
-        <div
-          className={`flex items-center ${
-            isCollapsed ? 'justify-center' : 'justify-between'
-          } ${!isCollapsed ? 'mb-2.5' : ''}`}
-        >
-          {!isCollapsed && (
-            <h3 className="text-[11px] font-sans uppercase tracking-widest text-ink-soft flex items-center gap-2">
-              <span>▦</span> Component Library
-            </h3>
-          )}
-          <button
-            type="button"
-            onClick={onToggleCollapse}
-            className="p-1 hover:bg-tinted/10 rounded text-ink-soft hover:text-paper transition-colors"
-            title={isCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'}
-          >
-            {isCollapsed ? '◀' : '▶'}
-          </button>
-        </div>
-
+      {/* Search + Collapse */}
+      <div className="p-2 border-b border-tinted/20 bg-ink/90 flex items-center gap-2">
         {!isCollapsed && (
-          <div className="relative">
-            <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-ink-soft text-xs">
-              🔍
-            </span>
+          <div className="relative flex-1 min-w-0">
             <input
               type="text"
-              placeholder="Search components..."
+              placeholder="Search..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-night-soft border border-tinted/20 rounded-md py-1.5 pl-8 pr-3 text-xs font-sans text-paper/80 focus:outline-none focus:border-tinted/40 transition-colors"
+              className="w-full bg-night-soft border border-tinted/20 rounded-md py-1.5 px-3 text-xs font-sans text-paper/80 focus:outline-none focus:border-tinted/40 transition-colors"
             />
           </div>
         )}
+        <button
+          type="button"
+          onClick={onToggleCollapse}
+          className="p-1.5 hover:bg-tinted/10 rounded text-ink-soft hover:text-paper transition-colors shrink-0"
+          title={isCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'}
+        >
+          {isCollapsed ? '◀' : '▶'}
+        </button>
       </div>
 
       {/* Components List */}
-      <div className="flex-1 overflow-y-auto p-2">
+      <div className="flex-1 overflow-y-auto px-1 py-1">
         {filteredGroups.length > 0 ? (
           filteredGroups.map((group) => (
-            <div key={group.label} className="mb-4">
+            <div key={group.label} className="mb-2">
               {!isCollapsed && (
-                <div className="px-2 py-1 text-[10px] font-mono uppercase tracking-widest text-ink-soft/70">
+                <div className="px-1.5 py-0.5 text-[10px] font-mono uppercase tracking-widest text-ink-soft/70">
                   {group.label}
                 </div>
               )}
-              <div className="space-y-1">
+              <div className="space-y-px">
                 {group.items.map((comp) => (
                   <button
                     key={comp.name}
@@ -308,24 +254,20 @@ export function ComponentLibrarySidebar({
                     onClick={() => {
                       if (comp.name === 'Media Asset') {
                         onOpenMediaPicker();
-                      } else if (comp.name === 'Import Book') {
-                        onOpenEmbedPicker('book');
-                      } else if (comp.name === 'Import Essay') {
+                      } else if (comp.name === 'Essay Embed') {
                         onOpenEmbedPicker('post');
-                      } else if (comp.name === 'Import Note') {
+                      } else if (comp.name === 'Note Embed') {
                         onOpenEmbedPicker('note');
                       } else {
                         onInsert(comp.snippet);
                       }
                     }}
-                    className={`w-full text-left p-2 rounded-md hover:bg-night-soft transition-colors flex items-start gap-2.5 group ${
+                    className={`w-full text-left px-1.5 py-1.5 rounded hover:bg-night-soft transition-colors flex items-center gap-2 group ${
                       isCollapsed ? 'justify-center' : ''
                     }`}
                   >
                     <div
-                      className={`h-7 w-7 flex items-center justify-center bg-ink border border-tinted/20 rounded text-xs text-ink-soft group-hover:text-paper group-hover:border-tinted/40 transition-colors shrink-0 ${
-                        !isCollapsed ? 'mt-0.5' : ''
-                      }`}
+                      className={`h-7 w-7 flex items-center justify-center bg-ink border border-tinted/20 rounded text-xs text-ink-soft group-hover:text-paper group-hover:border-tinted/40 transition-colors shrink-0`}
                     >
                       {comp.icon}
                     </div>
@@ -333,9 +275,6 @@ export function ComponentLibrarySidebar({
                       <div className="flex-1 min-w-0">
                         <div className="text-[12px] font-medium font-sans text-paper/80 group-hover:text-paper transition-colors truncate">
                           {comp.name}
-                        </div>
-                        <div className="text-[10px] font-sans text-ink-soft truncate mt-0.5">
-                          {comp.description}
                         </div>
                       </div>
                     )}

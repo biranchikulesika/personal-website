@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import type { ReactNode } from 'react';
 
 // Base State Props -------------------------------------------------------------
@@ -105,7 +104,7 @@ export interface NoContentStateProps {
 
 export function NoContentState({
   title = 'No entries yet',
-  description = 'Nothing has been published here yet.',
+  description,
   action,
   compact = false,
   className,
@@ -191,134 +190,6 @@ export function LoadingState({
         </p>
       )}
     </div>
-  );
-}
-
-// 5. Fetch Failed / Something Went Wrong (Error State) ------------------------
-
-export interface ErrorStateProps {
-  title?: string;
-  description?: string;
-  onRetry?: () => void;
-  action?: ReactNode;
-  compact?: boolean;
-  className?: string;
-}
-
-export function ErrorState({
-  title = 'Something went wrong',
-  description = 'We couldn’t load this content. Please try again.',
-  onRetry,
-  action,
-  compact = false,
-  className,
-}: ErrorStateProps) {
-  const actionElement =
-    action ||
-    (onRetry ? (
-      <button
-        type="button"
-        onClick={onRetry}
-        className="inline-flex items-center rounded-full bg-accent px-5 py-2 text-xs font-semibold text-paper shadow-sm transition-colors hover:bg-accent-hover"
-      >
-        Try again
-      </button>
-    ) : undefined);
-
-  return (
-    <StateView
-      compact={compact}
-      className={className}
-      title={title}
-      description={description}
-      action={actionElement}
-    />
-  );
-}
-
-// 6. Not Found State ----------------------------------------------------------
-
-export interface NotFoundStateProps {
-  title?: ReactNode;
-  description?: ReactNode;
-  action?: ReactNode;
-  homeHref?: string;
-  compact?: boolean;
-  className?: string;
-}
-
-export function NotFoundState({
-  title = 'Page not found',
-  description = (
-    <>
-      The page you’re looking for doesn’t exist
-      <br />
-      or may have been moved.
-    </>
-  ),
-  action,
-  homeHref = '/',
-  compact = false,
-  className,
-}: NotFoundStateProps) {
-  const actionElement =
-    action || (
-      <Link
-        href={homeHref}
-        className="inline-flex items-center rounded-full bg-accent px-5 py-2 text-xs font-semibold text-paper shadow-sm transition-colors hover:bg-accent-hover"
-      >
-        Go home
-      </Link>
-    );
-
-  return (
-    <StateView
-      compact={compact}
-      className={className}
-      title={title}
-      description={description}
-      action={actionElement}
-    />
-  );
-}
-
-// 7. Permission / Unauthorized State ------------------------------------------
-
-export interface UnauthorizedStateProps {
-  title?: string;
-  description?: string;
-  action?: ReactNode;
-  homeHref?: string;
-  compact?: boolean;
-  className?: string;
-}
-
-export function UnauthorizedState({
-  title = 'Access restricted',
-  description = 'You do not have permission to view this page.',
-  action,
-  homeHref = '/',
-  compact = false,
-  className,
-}: UnauthorizedStateProps) {
-  const actionElement =
-    action || (
-      <Link
-        href={homeHref}
-        className="inline-flex items-center rounded-full bg-accent px-5 py-2 text-xs font-semibold text-paper shadow-sm transition-colors hover:bg-accent-hover"
-      >
-        Return home
-      </Link>
-    );
-
-  return (
-    <StateView
-      compact={compact}
-      className={className}
-      title={title}
-      description={description}
-      action={actionElement}
-    />
   );
 }
 

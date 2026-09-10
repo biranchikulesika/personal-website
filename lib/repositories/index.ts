@@ -13,6 +13,3 @@ export function getContentRepository(): ContentRepository {
 export function setContentRepositoryForTesting(repo: ContentRepository | null): void {
   repository = repo;
 }
-
-export { SupabaseContentRepository };
-export type { ContentRepository };

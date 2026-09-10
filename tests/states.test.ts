@@ -7,9 +7,6 @@ import {
   NoContentState,
   EmptyTableState,
   LoadingState,
-  ErrorState,
-  NotFoundState,
-  UnauthorizedState,
   NoMediaState,
 } from "../components/ui/states";
 
@@ -44,7 +41,7 @@ test("NoSearchResults handles empty query with fallback description", () => {
 test("NoContentState defaults to human-friendly collection empty text", () => {
   const element = NoContentState({});
   assert.equal(element.props.title, "No entries yet");
-  assert.equal(element.props.description, "Nothing has been published here yet.");
+  assert.equal(element.props.description, undefined);
 });
 
 test("EmptyTableState renders table row with appropriate colSpan", () => {
@@ -63,38 +60,6 @@ test("LoadingState provides accessible status role", () => {
   const element = LoadingState({ title: "Loading entries…" });
   assert.equal(element.props.role, "status");
   assert.equal(element.props["aria-live"], "polite");
-});
-
-test("ErrorState provides default error copy and retry action", () => {
-  let retried = false;
-  const element = ErrorState({
-    onRetry: () => {
-      retried = true;
-    },
-  });
-  assert.equal(element.props.title, "Something went wrong");
-  assert.equal(
-    element.props.description,
-    "We couldn’t load this content. Please try again."
-  );
-  assert.ok(element.props.action);
-});
-
-test("NotFoundState defaults to 404 messaging and home link", () => {
-  const element = NotFoundState({});
-  assert.equal(element.props.title, "Page not found");
-  assert.ok(element.props.description);
-  assert.ok(element.props.action);
-});
-
-test("UnauthorizedState provides permission restriction messaging", () => {
-  const element = UnauthorizedState({});
-  assert.equal(element.props.title, "Access restricted");
-  assert.equal(
-    element.props.description,
-    "You do not have permission to view this page."
-  );
-  assert.ok(element.props.action);
 });
 
 test("NoMediaState renders upload action when onUpload callback is provided", () => {

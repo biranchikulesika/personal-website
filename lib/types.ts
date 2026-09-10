@@ -197,7 +197,6 @@ export interface NowBook {
   title: string;
   author: string;
   description: string;
-  year?: string;
   cover?: string;
   link?: string;
 }
@@ -205,8 +204,13 @@ export interface NowBook {
 export interface NowEntry {
   id: string;
   title: string;
-  date: string;
+  date?: string;
   content: string;
+  location?: string;
+  status?: "published" | "unpublished";
+  createdAt?: string;
+  updatedAt?: string;
+  lastEditedAt?: string;
 }
 
 // Media Resources -------------------------------------------------------------
@@ -259,17 +263,6 @@ export interface UserSession {
   startedAt: string;
   lastActiveAt: string;
   isCurrent: boolean;
-}
-
-export interface AccountDetails {
-  userId: string;
-  userName: string;
-  userEmail: string;
-  userAvatarUrl: string | null;
-  userRole: AppRole;
-  passkeys: PasskeyItem[];
-  connectedProviders: string[];
-  sessions: UserSession[];
 }
 
 // Contributions & Patronage ---------------------------------------------------

@@ -6,7 +6,7 @@ The application uses **Tailwind CSS v4** paired with `@tailwindcss/typography` a
 
 ## 1. Tailwind CSS v4 Configuration
 
-Tailwind v4 uses CSS-first configuration inside [`app/globals.css`](file:///home/biranchikulesika/Projects/biranchi/app/globals.css).
+Tailwind v4 uses CSS-first configuration inside [`app/globals.css`](../app/globals.css).
 
 ### Color Palette
 

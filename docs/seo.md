@@ -6,7 +6,7 @@ The website implements an SEO and AI-crawlable structure designed for modern sea
 
 ## 1. Metadata Engine (`lib/seo.ts`)
 
-All metadata generation is centralized in [`lib/seo.ts`](file:///home/biranchikulesika/Projects/biranchi/lib/seo.ts) to guarantee consistent Open Graph tags, canonical URLs, and structured data across the entire site.
+All metadata generation is centralized in [`lib/seo.ts`](../lib/seo.ts) to guarantee consistent Open Graph tags, canonical URLs, and structured data across the entire site.
 
 ### Base Metadata (`rootMetadata`)
 Applied at the root layout (`app/layout.tsx`):
@@ -139,6 +139,6 @@ Generates `robots.txt` dynamically:
 
 ## 6. Duplicate Route & Redirect Management
 
-- `/fund` permanently redirects (`308`) to canonical `/support` via [`next.config.ts`](file:///home/biranchikulesika/Projects/biranchi/next.config.ts) and [`app/(site)/fund/page.tsx`](file:///home/biranchikulesika/Projects/biranchi/app/%28site%29/fund/page.tsx).
+- `/fund` permanently redirects (`308`) to canonical `/support` via [`next.config.ts`](../next.config.ts) and [`app/(site)/fund/page.tsx`](../app/(site)/fund/page.tsx).
 - Search and query parameters on `/scribble` and `/library` are filtered client-side, preventing search engines from indexing thin query-string result pages.
 

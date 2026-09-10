@@ -21,7 +21,6 @@ components/
 │   ├── compose/            # Composer, live preview, diff viewer, media drawer
 │   ├── admin-dashboard.tsx
 │   ├── content-manager.tsx
-│   ├── featured-manager.tsx
 │   └── media-manager.tsx
 ├── blog-post.tsx           # Essay reader view
 ├── footer.tsx              # Global footer with bio & categorized links
@@ -43,12 +42,9 @@ components/
 Always reuse these standardized views instead of creating custom empty/loading markup:
 
 - **`LoadingState({ title })`**: Accessible `role="status"` live region for async data fetching.
-- **`ErrorState({ title, description, onRetry })`**: Error state with integrated retry button.
 - **`NoSearchResults({ query, onReset })`**: Displayed when search filters yield zero matches.
 - **`NoContentState({ title, description })`**: Empty collection view with friendly editorial copy.
 - **`EmptyTableState({ colSpan, title, description })`**: Clean table row empty placeholder.
-- **`NotFoundState({ title, description })`**: 404 inline page state.
-- **`UnauthorizedState({ title, description })`**: Access restricted placeholder.
 
 ### 2. Accessible Modal Dialog (`components/ui/dialog.tsx`)
 - Provides keyboard accessible dialog overlays (`role="dialog"`), Escape key listeners, body scroll locks, and backdrop blur.

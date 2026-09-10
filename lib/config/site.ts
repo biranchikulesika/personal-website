@@ -57,8 +57,7 @@ export const SITE_CONFIG: SiteContent = {
         links: [
           { label: "Now", href: "/now" },
           { label: "About", href: "/about" },
-          { label: "GitHub", href: "https://github.com/biranchikulesika" },
-          { label: "Email", href: "mailto:hello@kulesika.in" },
+          { label: "Email", href: "mailto:biranchi@kulesika.in" },
         ],
       },
       {
@@ -66,7 +65,7 @@ export const SITE_CONFIG: SiteContent = {
         links: [
           { label: "X/Twitter", href: "https://x.com/BKulesika" },
           { label: "LinkedIn", href: "https://linkedin.com/in/biranchikulesika" },
-          { label: "Instagram", href: "https://instagram.com/biranchikulesika" },
+          { label: "More", href: "https://kulesika.in" },
         ],
       },
     ],

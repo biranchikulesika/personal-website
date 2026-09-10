@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import {
   HeartIcon,
@@ -28,7 +28,6 @@ function SupporterModal({
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [note, setNote] = useState('');
-  const modalRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
@@ -69,7 +68,6 @@ function SupporterModal({
 
       {/* Modal Card */}
       <div
-        ref={modalRef}
         className="relative w-full max-w-lg overflow-hidden rounded-2xl border border-tinted/30 bg-[#161513] p-5 shadow-2xl transition-all sm:rounded-3xl sm:p-8"
       >
         {/* Close Button */}

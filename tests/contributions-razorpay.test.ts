@@ -283,13 +283,13 @@ test("getContribution retrieves contribution by id, paymentId, or orderId", asyn
 
 // ── API Route Handler Tests ────────────────────────────────────────────────
 
-test("POST /api/contributions accepts valid payment with source: razorpay", async () => {
+test("POST /api/contributions fails closed with 500 when RAZORPAY_KEY_SECRET is not configured", async () => {
   const repo = new InMemoryTestContentRepository();
   setContentRepositoryForTesting(repo);
   const { POST } = await import("../app/api/contributions/route");
 
-  // Temporarily remove RAZORPAY_KEY_SECRET to allow unsigned Razorpay payments
-  // (simulates local dev mode where signature verification is optional)
+  // Without a configured key secret, payment authenticity cannot be verified,
+  // so the route must reject rather than record unauthenticated contributions.
   const savedSecret = process.env.RAZORPAY_KEY_SECRET;
   delete process.env.RAZORPAY_KEY_SECRET;
 
@@ -307,15 +307,13 @@ test("POST /api/contributions accepts valid payment with source: razorpay", asyn
   });
 
   const response = await POST(request);
-  assert.equal(response.status, 200);
+  assert.equal(response.status, 500);
 
   // Restore the secret for other tests
   if (savedSecret) process.env.RAZORPAY_KEY_SECRET = savedSecret;
 
   const json = await response.json();
-  assert.equal(json.success, true);
-  assert.equal(json.contribution.id, "pay_ROUTE_TEST_001");
-  assert.equal(json.contribution.amount, 750);
+  assert.equal(json.error, "Payment verification is not configured on server");
 });
 
 test("POST /api/contributions rejects unauthenticated manual contributions with 403", async () => {

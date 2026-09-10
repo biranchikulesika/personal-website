@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { ContentService } from '@/lib/services/content.service';
 import { getSupabaseServer } from '@/lib/supabase/server';
+import { isAdminRole } from '@/lib/auth/admin';
 import { ComposeWorkspace } from './compose-workspace-loader';
 
 export const metadata: Metadata = {
@@ -34,6 +35,12 @@ export default async function ComposePage({ searchParams }: ComposePageProps) {
 
   if (!user) {
     redirect('/admin/login?next=/admin/compose');
+  }
+
+  // Defense in depth: only admin roles may use the composer.
+  const role = await new ContentService().getUserRole(user.id);
+  if (!isAdminRole(role)) {
+    redirect('/admin/login?error=forbidden');
   }
 
   const { slug, type } = await searchParams;

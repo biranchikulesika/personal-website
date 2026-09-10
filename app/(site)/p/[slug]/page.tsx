@@ -41,8 +41,29 @@ export default async function BlogPostPage({
     { name: post.title, url: `/p/${post.slug}` },
   ]);
 
+  const hasSupabaseMedia =
+    (post.coverImage && post.coverImage.includes('supabase.co')) ||
+    post.intro.some((p) => p.includes('supabase.co')) ||
+    post.sections.some(
+      (s) =>
+        (s.figure?.src && s.figure.src.includes('supabase.co')) ||
+        s.paragraphs.some((p) => p.includes('supabase.co')),
+    );
+
   return (
     <>
+      {hasSupabaseMedia && (
+        <>
+          <link
+            rel="preconnect"
+            href="https://ojzxdgzkrjmfeqyxvfud.supabase.co"
+          />
+          <link
+            rel="dns-prefetch"
+            href="https://ojzxdgzkrjmfeqyxvfud.supabase.co"
+          />
+        </>
+      )}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: safeJsonLd(articleJsonLd(post)) }}

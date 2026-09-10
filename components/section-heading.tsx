@@ -6,7 +6,6 @@ interface SectionHeadingProps {
   title: string;
   href?: string;
   subheader?: string;
-  level?: 'h2' | 'h3';
 }
 
 /**
@@ -21,9 +20,8 @@ export function SectionHeading({
   title,
   href,
   subheader,
-  level = 'h2',
 }: SectionHeadingProps) {
-  const HeadingTag = level;
+  const HeadingTag = 'h2' as 'h2';
 
   return (
     <div className="mb-6">

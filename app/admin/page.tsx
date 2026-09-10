@@ -4,6 +4,7 @@ import { headers } from 'next/headers';
 import { ContentService } from '@/lib/services/content.service';
 import { AdminDashboard } from '@/components/admin/admin-dashboard';
 import { getSupabaseServer } from '@/lib/supabase/server';
+import { isAdminRole } from '@/lib/auth/admin';
 import { parseUserAgent } from '@/lib/utils';
 import type { PasskeyItem, UserSession } from '@/lib/types';
 
@@ -58,6 +59,11 @@ export default async function AdminPage() {
 
   if (!user) {
     redirect('/admin/login?next=/admin');
+  }
+
+  // Defense in depth: even with a session, only admin roles may access the panel.
+  if (!isAdminRole(userRole)) {
+    redirect('/admin/login?error=forbidden');
   }
 
   // Parse current request headers for session tracking

@@ -38,33 +38,6 @@ export function getSupabaseAdmin() {
   return adminClient;
 }
 
-// ── Public Client (publishable key, respects RLS) ──────────────────────────
-// Used for public read queries where RLS policies control access.
-// This client does NOT have admin privileges.
-
-let publicClient: ReturnType<typeof createClient<Database>> | null = null;
-
-export function getSupabasePublic() {
-  const supabaseUrl = getSupabaseUrl();
-  const supabasePublishableKey = getSupabasePublishableKey();
-
-  if (!supabaseUrl || !supabasePublishableKey) {
-    throw new Error(
-      "Missing Supabase configuration. Set SUPABASE_URL / NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY / NEXT_PUBLIC_SUPABASE_ANON_KEY in your environment.",
-    );
-  }
-
-  if (!publicClient) {
-    publicClient = createClient<Database>(supabaseUrl, supabasePublishableKey, {
-      auth: {
-        experimental: { passkey: true },
-      },
-    });
-  }
-
-  return publicClient;
-}
-
 // ── Server Client (with cookie-based auth sessions) ────────────────────────
 // Used for operations that need the user's authentication context.
 // Reads the session from cookies — works in Server Components, Server Actions,

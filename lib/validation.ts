@@ -99,8 +99,13 @@ export const BookItemSchema = z.object({
 export const NowEntrySchema = z.object({
   id: z.string().min(1),
   title: z.string().min(1, 'Title is required').max(500),
-  date: z.string().min(1),
+  date: z.string().min(1).optional(),
   content: z.string().min(1).max(5000),
+  location: z.string().max(200).optional(),
+  status: StatusField.optional(),
+  createdAt: z.string().optional(),
+  updatedAt: z.string().optional(),
+  lastEditedAt: z.string().optional(),
 });
 
 // Media schema -----------------------------------------------------------------

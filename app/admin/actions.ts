@@ -13,6 +13,7 @@ import type {
   UserSession,
 } from '@/lib/types';
 import { getSupabaseServer } from '@/lib/supabase/server';
+import { isAdminRole } from '@/lib/auth/admin';
 import { getSupabaseUrl, getSupabasePublishableKey } from '@/lib/config/env';
 import {
   BlogPostSchema,
@@ -47,9 +48,7 @@ const contentService = new ContentService();
  * and possesses an administrative role ('content_admin' or 'super_admin') from the trusted database.
  * Throws an Error if unauthenticated or unauthorized.
  */
-async function assertAdminUser(
-  allowedRoles: ('content_admin' | 'super_admin')[] = ['content_admin', 'super_admin']
-) {
+async function assertAdminUser() {
   let user = null;
   try {
     const supabase = await getSupabaseServer();
@@ -70,13 +69,12 @@ async function assertAdminUser(
   }
 
   const role = await contentService.getUserRole(user.id);
-  const effectiveRole = role || (user.app_metadata?.role as 'content_admin' | 'super_admin' | undefined);
 
-  if (!effectiveRole || !allowedRoles.includes(effectiveRole as 'content_admin' | 'super_admin')) {
+  if (!isAdminRole(role)) {
     throw new Error('Forbidden: Administrative privileges required');
   }
 
-  return { user, role: effectiveRole };
+  return { user, role };
 }
 
 /**
@@ -123,6 +121,11 @@ function safeRevalidatePath(path: string) {
   }
 }
 
+function revalidateContent(paths: string[]): void {
+  safeRevalidatePath('/admin');
+  for (const path of paths) safeRevalidatePath(path);
+}
+
 // Post Actions ----------------------------------------------------------------
 
 export async function getAllPostsAction(): Promise<BlogPost[]> {
@@ -138,9 +141,7 @@ export async function savePostAction(
     await assertAdminUser();
     const validated = validateInput(BlogPostSchema, post);
     const saved = await contentService.savePost(validated, persona);
-    safeRevalidatePath('/admin');
-    safeRevalidatePath('/scribble');
-    safeRevalidatePath(`/p/${post.slug}`);
+    revalidateContent(['/scribble', `/p/${post.slug}`]);
     return { success: true, post: saved };
   } catch (err: unknown) {
     return { success: false, error: (err as Error).message || 'Failed to save post' };
@@ -155,9 +156,7 @@ export async function togglePostStatusAction(
     const { slug: validSlug } = validateInput(SlugParamSchema, { slug });
     const toggled = await contentService.togglePostStatus(validSlug);
     if (!toggled) return { success: false, error: 'Post not found' };
-    safeRevalidatePath('/admin');
-    safeRevalidatePath('/scribble');
-    safeRevalidatePath(`/p/${slug}`);
+    revalidateContent(['/scribble', `/p/${slug}`]);
     return { success: true, post: toggled };
   } catch (err: unknown) {
     return { success: false, error: (err as Error).message || 'Failed to toggle status' };
@@ -171,8 +170,7 @@ export async function deletePostAction(
     await assertAdminUser();
     const { slug: validSlug } = validateInput(SlugParamSchema, { slug });
     const deleted = await contentService.deletePost(validSlug);
-    safeRevalidatePath('/admin');
-    safeRevalidatePath('/scribble');
+    revalidateContent(['/scribble']);
     return { success: deleted };
   } catch (err: unknown) {
     return { success: false, error: (err as Error).message || 'Failed to delete post' };
@@ -193,9 +191,7 @@ export async function saveNoteAction(
     await assertAdminUser();
     const validated = validateInput(NoteItemSchema, note);
     const saved = await contentService.saveNote(validated);
-    safeRevalidatePath('/admin');
-    safeRevalidatePath('/scribble');
-    safeRevalidatePath(`/n/${note.slug}`);
+    revalidateContent(['/scribble', `/n/${note.slug}`]);
     return { success: true, note: saved };
   } catch (err: unknown) {
     return { success: false, error: (err as Error).message || 'Failed to save note' };
@@ -210,9 +206,7 @@ export async function toggleNoteStatusAction(
     const { slug: validSlug } = validateInput(SlugParamSchema, { slug });
     const toggled = await contentService.toggleNoteStatus(validSlug);
     if (!toggled) return { success: false, error: 'Note not found' };
-    safeRevalidatePath('/admin');
-    safeRevalidatePath('/scribble');
-    safeRevalidatePath(`/n/${slug}`);
+    revalidateContent(['/scribble', `/n/${slug}`]);
     return { success: true, note: toggled };
   } catch (err: unknown) {
     return { success: false, error: (err as Error).message || 'Failed to toggle status' };
@@ -226,8 +220,7 @@ export async function deleteNoteAction(
     await assertAdminUser();
     const { slug: validSlug } = validateInput(SlugParamSchema, { slug });
     const deleted = await contentService.deleteNote(validSlug);
-    safeRevalidatePath('/admin');
-    safeRevalidatePath('/scribble');
+    revalidateContent(['/scribble']);
     return { success: deleted };
   } catch (err: unknown) {
     return { success: false, error: (err as Error).message || 'Failed to delete note' };
@@ -248,9 +241,7 @@ export async function saveBookAction(
     await assertAdminUser();
     const validated = validateInput(BookItemSchema, book);
     const saved = await contentService.saveBook(validated);
-    safeRevalidatePath('/admin');
-    safeRevalidatePath('/library');
-    safeRevalidatePath('/scribble');
+    revalidateContent(['/scribble', '/library']);
     return { success: true, book: saved };
   } catch (err: unknown) {
     return { success: false, error: (err as Error).message || 'Failed to save book' };
@@ -264,9 +255,7 @@ export async function deleteBookAction(
     await assertAdminUser();
     const { slug: validSlug } = validateInput(SlugParamSchema, { slug });
     const deleted = await contentService.deleteBook(validSlug);
-    safeRevalidatePath('/admin');
-    safeRevalidatePath('/library');
-    safeRevalidatePath('/scribble');
+    revalidateContent(['/scribble', '/library']);
     return { success: deleted };
   } catch (err: unknown) {
     return { success: false, error: (err as Error).message || 'Failed to delete book' };
@@ -379,44 +368,6 @@ export async function generateAiMetadataAction(input: {
       success: false,
       error: (err as Error).message || 'Failed to generate AI metadata',
     };
-  }
-}
-
-// Featured Items Actions ------------------------------------------------------
-
-export async function getFeaturedPostsAction(): Promise<string[]> {
-  return await contentService.getFeaturedPosts();
-}
-
-export async function getFeaturedBooksAction(): Promise<string[]> {
-  return await contentService.getFeaturedBooks();
-}
-
-export async function setFeaturedPostsAction(
-  slugs: string[],
-): Promise<{ success: boolean; error?: string }> {
-  try {
-    await assertAdminUser();
-    await contentService.setFeaturedPosts(slugs.slice(0, 4));
-    safeRevalidatePath('/');
-    safeRevalidatePath('/admin');
-    return { success: true };
-  } catch (err: unknown) {
-    return { success: false, error: (err as Error).message || 'Failed to set featured posts' };
-  }
-}
-
-export async function setFeaturedBooksAction(
-  slugs: string[],
-): Promise<{ success: boolean; error?: string }> {
-  try {
-    await assertAdminUser();
-    await contentService.setFeaturedBooks(slugs.slice(0, 4));
-    safeRevalidatePath('/');
-    safeRevalidatePath('/admin');
-    return { success: true };
-  } catch (err: unknown) {
-    return { success: false, error: (err as Error).message || 'Failed to set featured books' };
   }
 }
 

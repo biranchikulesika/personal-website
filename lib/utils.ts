@@ -238,3 +238,49 @@ export function formatNoteSnippet(
   const cleanSnippet = lastSpace > 0 ? truncated.slice(0, lastSpace) : truncated;
   return `${cleanSnippet}...read now`;
 }
+
+/**
+ * Strips common Markdown/MDX syntax so raw content reads as plain prose
+ * (used for OG image snippets).
+ */
+export function stripMarkdown(src: string): string {
+  return src
+    .replace(/!\[([^\]]*)\]\([^)]*\)/g, '$1')
+    .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
+    .replace(/`/g, '')
+    .replace(/\*\*/g, '')
+    .replace(/\*/g, '')
+    .replace(/__/g, '')
+    .replace(/_/g, '')
+    .replace(/^\s{0,3}#{1,6}\s+/gm, '')
+    .replace(/^\s{0,3}>\s?/gm, '')
+    .replace(/^\s*[-*+]\s+/gm, '')
+    .replace(/^\s*\d+\.\s+/gm, '')
+    .replace(/~~([^~]+)~~/g, '$1')
+    .replace(/<[^>]*>/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/**
+ * Builds a short plain-text snippet from raw Markdown source, dropping
+ * structural lines (headings, code fences, images, quotes, HTML) first.
+ */
+export function textSnippet(source: string, maxLen: number): string {
+  return source
+    .split('\n')
+    .map((l) => l.trim())
+    .filter(
+      (l) =>
+        l &&
+        !l.startsWith('#') &&
+        !l.startsWith('```') &&
+        !l.startsWith('![') &&
+        !l.startsWith('>') &&
+        !l.startsWith('<'),
+    )
+    .map((l) => stripMarkdown(l))
+    .filter(Boolean)
+    .join(' ')
+    .slice(0, maxLen);
+}

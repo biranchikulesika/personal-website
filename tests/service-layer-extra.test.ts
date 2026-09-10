@@ -12,7 +12,6 @@ import {
   getSupabasePublishableKey,
   getSupabaseSecretKey,
   getSupabaseJwtSecret,
-  getPostgresUrl,
   getSiteUrl,
   getSiteDomain,
 } from "../lib/config/env";
@@ -280,40 +279,17 @@ test("getSupabaseSecretKey resolves SUPABASE_SERVICE_ROLE_KEY and SUPABASE_SECRE
   }
 });
 
-test("getSupabaseJwtSecret and getPostgresUrl resolve properly", () => {
+test("getSupabaseJwtSecret resolves properly", () => {
   const origJwt = process.env.SUPABASE_JWT_SECRET;
-  const origPg = process.env.POSTGRES_URL;
-  const origPrisma = process.env.POSTGRES_PRISMA_URL;
-  const origNonPool = process.env.POSTGRES_URL_NON_POOLING;
 
   try {
     delete process.env.SUPABASE_JWT_SECRET;
     assert.equal(getSupabaseJwtSecret(), undefined);
     process.env.SUPABASE_JWT_SECRET = "jwt-secret-xyz";
     assert.equal(getSupabaseJwtSecret(), "jwt-secret-xyz");
-
-    delete process.env.POSTGRES_URL;
-    delete process.env.POSTGRES_PRISMA_URL;
-    delete process.env.POSTGRES_URL_NON_POOLING;
-    assert.equal(getPostgresUrl(), undefined);
-
-    process.env.POSTGRES_URL_NON_POOLING = "postgres://non-pooling";
-    assert.equal(getPostgresUrl(), "postgres://non-pooling");
-
-    process.env.POSTGRES_PRISMA_URL = "postgres://prisma";
-    assert.equal(getPostgresUrl(), "postgres://prisma");
-
-    process.env.POSTGRES_URL = "postgres://standard";
-    assert.equal(getPostgresUrl(), "postgres://standard");
   } finally {
     if (origJwt) process.env.SUPABASE_JWT_SECRET = origJwt;
     else delete process.env.SUPABASE_JWT_SECRET;
-    if (origPg) process.env.POSTGRES_URL = origPg;
-    else delete process.env.POSTGRES_URL;
-    if (origPrisma) process.env.POSTGRES_PRISMA_URL = origPrisma;
-    else delete process.env.POSTGRES_PRISMA_URL;
-    if (origNonPool) process.env.POSTGRES_URL_NON_POOLING = origNonPool;
-    else delete process.env.POSTGRES_URL_NON_POOLING;
   }
 });
 

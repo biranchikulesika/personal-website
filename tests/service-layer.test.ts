@@ -2,15 +2,13 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { ContentService } from "../lib/services/content.service";
 import { InMemoryTestContentRepository } from "./in-memory-test-content-repository";
+import { SITE_CONFIG } from "../lib/config/site";
 
-test("content service reads hardcoded site config", async () => {
-  const repo = new InMemoryTestContentRepository();
-  const service = new ContentService(repo);
-  const site = service.getSiteContent();
-  assert.ok(site.identity.name.length > 0, "site should have an identity name");
-  assert.ok(site.nav.links.length > 0, "site should have nav links");
-  assert.ok(site.hero.headline.length > 0, "site should have a hero headline");
-  assert.ok(site.footer.bottom.length > 0, "site should have footer copy");
+test("site config exposes required navigation, hero, and footer content", () => {
+  assert.ok(SITE_CONFIG.identity.name.length > 0, "site should have an identity name");
+  assert.ok(SITE_CONFIG.nav.links.length > 0, "site should have nav links");
+  assert.ok(SITE_CONFIG.hero.headline.length > 0, "site should have a hero headline");
+  assert.ok(SITE_CONFIG.footer.bottom.length > 0, "site should have footer copy");
 });
 
 test("content service returns empty writing/library when DB is empty", async () => {

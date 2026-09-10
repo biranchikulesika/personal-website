@@ -7,6 +7,7 @@ import Image from 'next/image';
 import type { MediaItem } from '@/lib/types';
 import {
   addMediaAction,
+  deleteMediaAction,
   deleteOrphanedMediaAction,
 } from '@/app/admin/actions';
 import { TrashIcon, UploadIcon } from '@/components/icons';
@@ -36,6 +37,7 @@ export function MediaManager({
   } | null>(null);
   const [confirmTypedText, setConfirmTypedText] = useState('');
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const [isUploading, setIsUploading] = useState(false);
   const [activePhoto, setActivePhoto] = useState<MediaItem | null>(null);
@@ -135,22 +137,43 @@ export function MediaManager({
     setConfirmDelete({ items });
   }
 
+  function requestDeleteItem(media: MediaItem) {
+    setConfirmTypedText('');
+    setConfirmDelete({ items: [media] });
+  }
+
   function handleConfirmDelete() {
     if (!confirmDelete) return;
-    const srcs = confirmDelete.items.map((m) => m.src);
+    const items = confirmDelete.items;
+    const orphanItems = items.filter((m) => orphanedSrcs.has(m.src));
+    const recordItems = items.filter((m) => !orphanedSrcs.has(m.src));
     startTransition(async () => {
-      const res = await deleteOrphanedMediaAction(srcs);
-      if (res.success) {
-        const removed = new Set(srcs);
-        setOrphanedList((prev) => prev.filter((m) => !removed.has(m.src)));
+      let ok = true;
+      if (orphanItems.length > 0) {
+        const srcs = orphanItems.map((m) => m.src);
+        const res = await deleteOrphanedMediaAction(srcs);
+        if (res.success) {
+          const removed = new Set(srcs);
+          setOrphanedList((prev) => prev.filter((m) => !removed.has(m.src)));
+        } else {
+          showToast(res.error || 'Failed to delete assets');
+          ok = false;
+        }
+      }
+      for (const media of recordItems) {
+        const res = await deleteMediaAction(media.id);
+        if (res.success) {
+          setMediaList((prev) => prev.filter((m) => m.id !== media.id));
+        } else {
+          showToast(res.error || 'Failed to delete media');
+          ok = false;
+        }
+      }
+      if (ok) {
         setSelectedOrphanedIds(new Set());
         setConfirmDelete(null);
         setConfirmTypedText('');
-        showToast(
-          `Deleted ${srcs.length} orphaned asset${srcs.length > 1 ? 's' : ''}`,
-        );
-      } else {
-        showToast(res.error || 'Failed to delete assets');
+        showToast(`Deleted ${items.length} asset${items.length > 1 ? 's' : ''}`);
       }
     });
   }
@@ -505,63 +528,103 @@ export function MediaManager({
                 }`}
               >
                 {/* Thumbnail Preview */}
-                <div className="relative aspect-4/3 w-full overflow-hidden bg-night">
-                  {isOrphaned ? (
-                    <div className="flex h-full w-full flex-col items-center justify-center gap-2 bg-amber-950/20">
-                      <svg
-                        className="h-8 w-8 text-amber-500"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                        strokeWidth={1.5}
-                        aria-hidden
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z"
-                        />
-                      </svg>
-                      <span className="text-[10px] font-semibold uppercase tracking-wider text-amber-400">
-                        In bucket · unreferenced
-                      </span>
-                    </div>
-                  ) : (
-                    <Image
-                      src={media.src}
-                      alt={media.alt}
-                      fill
-                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-                      className="object-cover transition-transform duration-300 group-hover:scale-105"
-                      unoptimized
-                    />
-                  )}
+                <div className="relative">
+                  <div className="relative aspect-4/3 w-full overflow-hidden bg-night">
+                    {isOrphaned ? (
+                      <div className="flex h-full w-full flex-col items-center justify-center gap-2 bg-amber-950/20">
+                        <svg
+                          className="h-8 w-8 text-amber-500"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          strokeWidth={1.5}
+                          aria-hidden
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z"
+                          />
+                        </svg>
+                        <span className="text-[10px] font-semibold uppercase tracking-wider text-amber-400">
+                          In bucket · unreferenced
+                        </span>
+                      </div>
+                    ) : (
+                      <Image
+                        src={media.src}
+                        alt={media.alt}
+                        fill
+                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                        className="object-cover transition-transform duration-300 group-hover:scale-105"
+                        unoptimized
+                      />
+                    )}
 
-                  {isOrphaned && (
+                    {isOrphaned && (
+                      <button
+                        type="button"
+                        onClick={() => toggleOrphanedSelection(media.id)}
+                        aria-label={
+                          isSelected
+                            ? `Deselect ${media.name}`
+                            : `Select ${media.name}`
+                        }
+                        aria-pressed={isSelected}
+                        className={`absolute top-2 left-2 flex h-5 w-5 items-center justify-center rounded-full ring-1 transition-colors ${
+                          isSelected
+                            ? 'bg-amber-600 text-white ring-amber-600'
+                            : 'bg-night text-transparent ring-tinted/40 hover:ring-amber-500'
+                        }`}
+                      >
+                        <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+                        </svg>
+                      </button>
+                    )}
+
+                    <span className="absolute bottom-2 right-2 rounded bg-night/80 border border-tinted/20 px-2 py-0.5 text-[10px] font-semibold tracking-wider text-paper uppercase backdrop-blur-xs">
+                      {media.tag}
+                    </span>
+                  </div>
+
+                  {/* Three-dot overflow menu */}
+                  <div className="absolute top-2 right-2 z-40">
                     <button
                       type="button"
-                      onClick={() => toggleOrphanedSelection(media.id)}
-                      aria-label={
-                        isSelected
-                          ? `Deselect ${media.name}`
-                          : `Select ${media.name}`
+                      onClick={() =>
+                        setMenuOpenId(menuOpenId === media.id ? null : media.id)
                       }
-                      aria-pressed={isSelected}
-                      className={`absolute top-2 left-2 flex h-5 w-5 items-center justify-center rounded-full ring-1 transition-colors ${
-                        isSelected
-                          ? 'bg-amber-600 text-white ring-amber-600'
-                          : 'bg-night text-transparent ring-tinted/40 hover:ring-amber-500'
-                      }`}
+                      aria-label={`More actions for ${media.name}`}
+                      aria-expanded={menuOpenId === media.id}
+                      className="flex h-7 w-7 items-center justify-center rounded-md bg-night/80 border border-tinted/20 text-paper/90 backdrop-blur-xs hover:bg-night hover:text-paper transition-colors"
                     >
-                      <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
-                      </svg>
+                      <span className="text-sm leading-none">···</span>
                     </button>
-                  )}
-
-                  <span className="absolute top-2 right-2 rounded bg-night/80 border border-tinted/20 px-2 py-0.5 text-[10px] font-semibold tracking-wider text-paper uppercase backdrop-blur-xs">
-                    {media.tag}
-                  </span>
+                    {menuOpenId === media.id && (
+                      <>
+                        <button
+                          type="button"
+                          className="fixed inset-0 z-30 cursor-default"
+                          aria-label="Close menu"
+                          onClick={() => setMenuOpenId(null)}
+                        />
+                        <div className="absolute right-0 top-9 z-40 w-40 rounded-lg border border-tinted/20 bg-night-soft p-1 shadow-xl animate-in fade-in zoom-in-95">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setMenuOpenId(null);
+                              requestDeleteItem(media);
+                            }}
+                            className="flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-[11px] font-semibold text-red-400 hover:bg-red-950/40 transition-colors"
+                          >
+                            <TrashIcon className="h-3.5 w-3.5" />
+                            Delete image
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
                 </div>
 
                 {/* Metadata & Actions */}
@@ -675,22 +738,22 @@ export function MediaManager({
             tabIndex={-1}
           >
             <h3 className="font-serif text-xl font-normal text-paper">
-              Delete orphaned asset{confirmDelete.items.length > 1 ? 's' : ''}?
+              Delete {confirmDelete.items.length > 1 ? `${confirmDelete.items.length} assets` : 'image'}?
             </h3>
             <p className="mt-2 text-sm leading-relaxed text-gray-mid">
               {confirmDelete.items.length === 1 ? (
                 <>
                   Are you sure you want to delete{' '}
-                  <b className="text-paper">{confirmDelete.items[0].name}</b> from
-                  the storage bucket? This action cannot be undone.
+                  <b className="text-paper">{confirmDelete.items[0].name}</b>?
+                  This action cannot be undone.
                 </>
               ) : (
                 <>
                   Are you sure you want to delete{' '}
                   <b className="text-paper">
                     {confirmDelete.items.length} assets
-                  </b>{' '}
-                  from the storage bucket? This action cannot be undone.
+                  </b>
+                  ? This action cannot be undone.
                 </>
               )}
               <span className="mt-3 block">

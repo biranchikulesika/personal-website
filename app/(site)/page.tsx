@@ -1,14 +1,15 @@
 import type { Metadata } from 'next';
 import { HomeContent } from '@/components/home-content';
 import { ContentService } from '@/lib/services/content.service';
+import { SITE_CONFIG } from '@/lib/config/site';
 import { homeMetadata } from '@/lib/seo';
 
 export const metadata: Metadata = homeMetadata();
 
 export default async function Home() {
+  const site = SITE_CONFIG;
   const service = new ContentService();
-  const [site, home, featuredPostSlugs, featuredBookSlugs, allBooks] = await Promise.all([
-    service.getSiteContent(),
+  const [home, featuredPostSlugs, featuredBookSlugs, allBooks] = await Promise.all([
     service.getHomeContent(),
     service.getFeaturedPosts(),
     service.getFeaturedBooks(),
