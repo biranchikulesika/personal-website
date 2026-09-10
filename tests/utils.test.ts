@@ -4,6 +4,8 @@ import {
   slugify,
   formatDisplayDate,
   formatNoteSnippet,
+  stripMarkdown,
+  textSnippet,
   sectionsToMarkdown,
   markdownToPostSections,
   isSafeUrl,
@@ -195,4 +197,29 @@ test("formatNoteSnippet handles empty input gracefully", () => {
   assert.equal(formatNoteSnippet(""), "");
   assert.equal(formatNoteSnippet([]), "");
   assert.equal(formatNoteSnippet(undefined), "");
+});
+
+// ── stripMarkdown / textSnippet ─────────────────────────────────────────────
+
+test("stripMarkdown renders markdown syntax to plain prose", () => {
+  assert.equal(
+    stripMarkdown("- [GitHub](https://github.com) **Happy Me :)**"),
+    "GitHub Happy Me :)",
+  );
+  assert.equal(
+    stripMarkdown("prose with `inline code` and _emphasis_"),
+    "prose with inline code and emphasis",
+  );
+  assert.equal(stripMarkdown("> a quote\n\n# Heading"), "a quote Heading");
+});
+
+test("textSnippet drops structural lines and truncates", () => {
+  const raw =
+    "This whole month, I will be working on Netram.\n\n- [GitHub](https://github.com)\n![selfie](https://example.com/a.jpg)\n\n**Happy** day.\n# Heading";
+  const snippet = textSnippet(raw, 60);
+  assert.ok(!snippet.includes("["), "no raw link syntax remains");
+  assert.ok(!snippet.includes("**"), "no bold syntax remains");
+  assert.ok(!snippet.includes("("), "no raw URLs remain");
+  assert.equal(snippet.length, 60);
+  assert.ok(snippet.startsWith("This whole month"));
 });

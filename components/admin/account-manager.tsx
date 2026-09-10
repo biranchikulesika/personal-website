@@ -354,7 +354,6 @@ export function AccountManager({
                     <NoContentState
                       compact
                       title="No passkeys registered"
-                      description="Add a passkey to sign in with your device biometrics or security key."
                     />
                   )}
                 </div>

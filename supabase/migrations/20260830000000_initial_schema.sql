@@ -274,9 +274,11 @@ CREATE TABLE IF NOT EXISTS "public"."now_entries" (
     "title" "text" NOT NULL,
     "date" "text" NOT NULL,
     "content" "text" DEFAULT ''::"text" NOT NULL,
+    "location" "text" DEFAULT ''::"text" NOT NULL,
     "status" "public"."content_status" DEFAULT 'published' NOT NULL,
     "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
-    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "last_edited_at" timestamp with time zone
 );
 
 

@@ -76,8 +76,11 @@ interface NowRow {
   title: string;
   date: string;
   content: string;
+  location: string | null;
   status: "published" | "unpublished";
+  created_at: string;
   updated_at: string;
+  last_edited_at: string | null;
 }
 
 interface MediaRow {
@@ -148,10 +151,13 @@ function nowRowToDomain(row: NowRow): NowEntry {
   return {
     id: row.id,
     title: row.title,
-    date: row.date,
+    date: row.date || row.created_at.slice(0, 7),
     content: row.content,
+    location: row.location || undefined,
     status: row.status,
+    createdAt: row.created_at,
     updatedAt: row.updated_at,
+    lastEditedAt: row.last_edited_at ?? undefined,
   };
 }
 
@@ -602,9 +608,11 @@ export class SupabaseContentRepository implements ContentRepository {
     const row = {
       id: entry.id,
       title: entry.title,
-      date: entry.date,
+      date: entry.date || new Date().toISOString().slice(0, 7),
       content: entry.content.trim(),
+      location: entry.location || "",
       status: entry.status || "published",
+      last_edited_at: entry.lastEditedAt || null,
     };
 
     const { error } = await this.db
@@ -612,7 +620,12 @@ export class SupabaseContentRepository implements ContentRepository {
       .upsert(row, { onConflict: "id" });
 
     if (error) throw new Error(`Failed to save now entry: ${error.message}`);
-    return { ...entry, content: entry.content.trim(), status: row.status };
+    return {
+      ...entry,
+      content: entry.content.trim(),
+      status: row.status,
+      date: row.date,
+    };
   }
 
   async deleteNowEntry(id: string): Promise<boolean> {

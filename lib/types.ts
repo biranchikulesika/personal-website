@@ -204,10 +204,13 @@ export interface NowBook {
 export interface NowEntry {
   id: string;
   title: string;
-  date: string;
+  date?: string;
   content: string;
+  location?: string;
   status?: "published" | "unpublished";
+  createdAt?: string;
   updatedAt?: string;
+  lastEditedAt?: string;
 }
 
 // Media Resources -------------------------------------------------------------

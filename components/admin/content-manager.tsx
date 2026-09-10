@@ -410,7 +410,7 @@ export function ContentManager({
       id: n.id,
       slug: n.id,
       title: n.title,
-      date: n.date,
+      date: n.date || "",
       persona: undefined,
       status: undefined,
       rawPost: undefined,

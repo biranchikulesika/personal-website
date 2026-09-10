@@ -30,8 +30,8 @@ interface PublishDrawerProps {
   onSave: (statusToSet: 'published' | 'unpublished') => Promise<void>;
   isSaving: boolean;
   docType: 'post' | 'note' | 'now';
-  date?: string;
-  onDateChange?: (date: string) => void;
+  location?: string;
+  onLocationChange?: (location: string) => void;
   hasUnpublishedChanges?: boolean;
   onDiscard?: () => void;
 }
@@ -57,8 +57,8 @@ export function PublishDrawer({
   isSaving,
   docType,
   status,
-  date,
-  onDateChange,
+  location,
+  onLocationChange,
   hasUnpublishedChanges = false,
   onDiscard,
 }: PublishDrawerProps) {
@@ -241,18 +241,20 @@ export function PublishDrawer({
             </div>
           )}
 
-          {/* URL Slug / Now Date */}
+          {/* URL Slug / Now Details */}
           {isNow ? (
             <div className="space-y-1.5">
-              <span className="text-[11px] font-medium text-ink-soft">Timeline Date</span>
+              <span className="block text-[11px] font-medium text-ink-soft">Location</span>
               <input
-                type="month"
-                value={date || ''}
-                onChange={(e) => onDateChange?.(e.target.value)}
-                className="w-full rounded-lg border border-tinted/20 bg-night-soft px-3 py-2 text-xs font-mono text-paper focus:border-tinted/40 focus:outline-none"
+                type="text"
+                value={location || ''}
+                onChange={(e) => onLocationChange?.(e.target.value)}
+                placeholder="e.g. Bhubaneswar, Odisha, India"
+                maxLength={200}
+                className="w-full rounded-lg border border-tinted/20 bg-night-soft px-3 py-2 text-xs text-paper focus:border-tinted/40 focus:outline-none"
               />
               <p className="text-[10px] text-ink-soft">
-                Month shown on the Now page timeline.
+                Place shown near the posted date on the Now page.
               </p>
             </div>
           ) : (

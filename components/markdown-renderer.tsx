@@ -265,9 +265,9 @@ export function MarkdownFigure({
           priority={priority}
         />
       </div>
-      {(caption || alt) && (
+      {caption && (
         <figcaption className="mt-2.5 text-center font-serif text-xs italic text-ink-soft">
-          {caption || alt}
+          {caption}
         </figcaption>
       )}
     </figure>

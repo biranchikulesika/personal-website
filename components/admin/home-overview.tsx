@@ -219,7 +219,7 @@ export function HomeOverview({
               <h2 id="now-heading" className="text-xs font-semibold uppercase tracking-wider text-gray-mid">
                 Current Status (/now)
               </h2>
-              <span className="text-[11px] text-gray-mid">· {formatDisplayDate(latestNow.date)}</span>
+              <span className="text-[11px] text-gray-mid">· {latestNow.date ? formatDisplayDate(latestNow.date) : "Draft"}</span>
             </div>
             <Link
               href="/admin/compose?type=now"
