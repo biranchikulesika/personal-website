@@ -176,9 +176,11 @@ export function LoginForm() {
               {error ||
                 (errorParam === 'forbidden'
                   ? 'This account is not authorized to access the admin panel.'
-                  : errorParam === 'auth_not_configured'
-                    ? 'Authentication is not configured yet.'
-                    : 'Authentication failed. Please try again.')}
+                  : errorParam === 'not_registered'
+                    ? 'Signups are disabled. Only the authorized administrator may access this panel.'
+                    : errorParam === 'auth_not_configured'
+                      ? 'Authentication is not configured yet.'
+                      : 'Authentication failed. Please try again.')}
             </div>
           )}
 

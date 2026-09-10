@@ -151,6 +151,7 @@ export interface Database {
           title: string;
           date: string;
           content: string;
+          status: 'published' | 'unpublished';
           created_at: string;
           updated_at: string;
         };
@@ -159,12 +160,14 @@ export interface Database {
           title: string;
           date: string;
           content?: string;
+          status?: 'published' | 'unpublished';
         };
         Update: {
           id?: string;
           title?: string;
           date?: string;
           content?: string;
+          status?: 'published' | 'unpublished';
         };
         Relationships: [];
       };

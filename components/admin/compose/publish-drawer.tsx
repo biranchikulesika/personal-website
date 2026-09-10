@@ -101,7 +101,6 @@ export function PublishDrawer({
     const reader = new FileReader();
     reader.onload = async () => {
       const dataUrl = reader.result as string;
-      onCoverImageChange(dataUrl);
       try {
         const mediaItem: MediaItem = {
           id: `media-${Date.now()}`,
@@ -112,9 +111,11 @@ export function PublishDrawer({
           uploadedAt: new Date().toISOString().split('T')[0],
           tag: 'atmosphere',
         };
-        await addMediaAction(mediaItem);
+        const res = await addMediaAction(mediaItem);
+        const imgUrl = res.success && res.media ? res.media.src : dataUrl;
+        onCoverImageChange(imgUrl);
       } catch {
-        // Media registration is non-blocking
+        onCoverImageChange(dataUrl);
       }
     };
     reader.readAsDataURL(file);
@@ -464,16 +465,14 @@ export function PublishDrawer({
                 Discard Edits
               </button>
             )}
-            {!isNow && (
-              <button
-                type="button"
-                disabled={isSaving}
-                onClick={() => onSave('unpublished')}
-                className="rounded-lg border border-tinted/20 bg-night-soft hover:bg-tinted/10 text-paper/80 px-4 py-2 text-[11px] font-medium transition-colors"
-              >
-                Save Draft
-              </button>
-            )}
+            <button
+              type="button"
+              disabled={isSaving}
+              onClick={() => onSave('unpublished')}
+              className="rounded-lg border border-tinted/20 bg-night-soft hover:bg-tinted/10 text-paper/80 px-4 py-2 text-[11px] font-medium transition-colors"
+            >
+              Save Draft
+            </button>
             <button
               type="button"
               disabled={isSaving}
@@ -483,7 +482,7 @@ export function PublishDrawer({
               {isSaving
                 ? 'Saving…'
                 : isNow
-                ? 'Save to Timeline'
+                ? 'Add to Timeline'
                 : status === 'published'
                 ? 'Update'
                 : 'Publish'}

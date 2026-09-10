@@ -101,6 +101,7 @@ export const NowEntrySchema = z.object({
   title: z.string().min(1, 'Title is required').max(500),
   date: z.string().min(1),
   content: z.string().min(1).max(5000),
+  status: StatusField.optional(),
 });
 
 // Media schema -----------------------------------------------------------------

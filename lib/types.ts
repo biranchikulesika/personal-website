@@ -206,6 +206,8 @@ export interface NowEntry {
   title: string;
   date: string;
   content: string;
+  status?: "published" | "unpublished";
+  updatedAt?: string;
 }
 
 // Media Resources -------------------------------------------------------------

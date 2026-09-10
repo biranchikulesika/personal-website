@@ -231,7 +231,7 @@ export function ComposeWorkspace({
     function handleKeyDown(e: KeyboardEvent) {
       if ((e.metaKey || e.ctrlKey) && e.key === "s") {
         e.preventDefault();
-        handleSaveRef.current("published");
+        handleSaveRef.current("unpublished");
       }
     }
     window.addEventListener("keydown", handleKeyDown);
@@ -479,23 +479,24 @@ export function ComposeWorkspace({
           showToast(res.error || "Failed to save essay");
         }
       } else if (activeTab.docType === "now") {
+        // Append-only timeline: always create a new row so previous entries are preserved.
         const nowPayload: NowEntry = {
-          id: activeTab.rawNow?.id || activeTab.slug || `now-${Date.now()}`,
+          id: `now-${Date.now()}`,
           title: effectiveNowTitle,
           date: activeTab.date || new Date().toISOString().slice(0, 7),
           content: activeTab.content.trim(),
+          status: statusToSet,
         };
 
         const res = await saveNowEntryAction(nowPayload);
         if (res.success && res.entry) {
           updateActiveTab({
-            title: effectiveNowTitle,
-            slug: res.entry.id,
+            rawNow: undefined,
             isDirty: false,
-            rawNow: res.entry,
+            content: "",
           });
           setIsPublishDrawerOpen(false);
-          showToast(`Now entry "${effectiveNowTitle}" saved to the timeline!`);
+          showToast(`Now entry added to the timeline.`);
         } else {
           showToast(res.error || "Failed to save now entry");
         }
@@ -953,7 +954,6 @@ export function ComposeWorkspace({
               const reader = new FileReader();
               reader.onload = async () => {
                 const dataUrl = reader.result as string;
-                insertBlock(`![${file.name}](${dataUrl})\n*${file.name}*`);
                 try {
                   const mediaItem: MediaItem = {
                     id: `media-${Date.now()}`,
@@ -964,9 +964,16 @@ export function ComposeWorkspace({
                     uploadedAt: new Date().toISOString().split("T")[0],
                     tag: "atmosphere",
                   };
-                  await addMediaAction(mediaItem);
+                  const res = await addMediaAction(mediaItem);
+                  const imgUrl =
+                    res.success && res.media ? res.media.src : dataUrl;
+                  insertBlock(
+                    `![${file.name}](${imgUrl})\n*${file.name}*`,
+                  );
                 } catch {
-                  // Media item registration is non-blocking
+                  insertBlock(
+                    `![${file.name}](${dataUrl})\n*${file.name}*`,
+                  );
                 }
               };
               reader.readAsDataURL(file);
@@ -1041,11 +1048,7 @@ export function ComposeWorkspace({
           {/* Publish Live Button */}
           <button
             type="button"
-            onClick={() =>
-              activeTab.docType === "now"
-                ? handleSaveDocument("published")
-                : setIsPublishDrawerOpen(true)
-            }
+            onClick={() => setIsPublishDrawerOpen(true)}
             className="flex items-center gap-1.5 rounded-md bg-accent hover:bg-accent-hover text-paper px-3.5 py-1 text-xs font-bold transition-all shadow-sm"
           >
             <span>Publish</span>

@@ -329,7 +329,14 @@ export function NowPageView({ entries }: NowPageViewProps) {
           </p>
           {entries.length > 0 && (
             <p className="mt-3 font-serif text-base italic text-ink-soft">
-              Odisha, India · Updated {entries[0].title}
+              Odisha, India · Updated{' '}
+              {entries[0].updatedAt
+                ? new Date(entries[0].updatedAt).toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric',
+                  })
+                : entries[0].title}
             </p>
           )}
         </footer>
