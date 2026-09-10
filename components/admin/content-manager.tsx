@@ -408,7 +408,7 @@ export function ContentManager({
     ...nowEntries.map((n) => ({
       kind: "now" as const,
       id: n.id,
-      slug: n.id,
+      slug: n.slug || n.id,
       title: n.title,
       date: n.date || "",
       persona: undefined,

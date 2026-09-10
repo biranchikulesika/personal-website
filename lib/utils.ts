@@ -4,12 +4,23 @@ import type { PostSection } from '@/lib/types';
 
 /** Converts arbitrary text into a clean kebab-case slug. */
 export function slugify(text: string): string {
+  if (typeof text !== "string") return "";
   return text
     .toLowerCase()
     .trim()
     .replace(/[^\w\s-]/g, '')
     .replace(/[\s_-]+/g, '-')
     .replace(/^-+|-+$/g, '');
+}
+
+/**
+ * Determines the slug for a now entry. Accepts a client-provided slug, but
+ * legacy "now-<digits>" ids (used before uuid ids) are treated as missing and
+ * a slug is derived from the title instead.
+ */
+export function nowSlug(entrySlug: string | undefined, title: string): string | undefined {
+  if (entrySlug && !/^now-\d+$/.test(entrySlug)) return entrySlug;
+  return slugify(title) || undefined;
 }
 
 /**

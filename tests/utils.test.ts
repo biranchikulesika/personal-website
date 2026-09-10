@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
   slugify,
+  nowSlug,
   formatDisplayDate,
   formatNoteSnippet,
   stripMarkdown,
@@ -34,6 +35,13 @@ test("slugify handles empty and single-word input", () => {
 test("slugify collapses consecutive separators", () => {
   assert.equal(slugify("hello___world"), "hello-world");
   assert.equal(slugify("a  b  c"), "a-b-c");
+});
+
+test("nowSlug derives a slug from the title and rejects legacy now-<digits> ids", () => {
+  assert.equal(nowSlug(undefined, "Building a project for SIH2026"), "building-a-project-for-sih2026");
+  assert.equal(nowSlug("now-1", "August 2026"), "august-2026");
+  assert.equal(nowSlug("a-provided-slug", "Some Title"), "a-provided-slug");
+  assert.equal(nowSlug("now-1787416826786", "A New Month"), "a-new-month");
 });
 
 // ── formatDisplayDate ───────────────────────────────────────────────────────

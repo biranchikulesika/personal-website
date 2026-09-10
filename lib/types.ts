@@ -205,6 +205,7 @@ export interface NowEntry {
   id: string;
   title: string;
   date?: string;
+  slug?: string;
   content: string;
   location?: string;
   status?: "published" | "unpublished";

@@ -100,6 +100,7 @@ export const NowEntrySchema = z.object({
   id: z.string().min(1),
   title: z.string().min(1, 'Title is required').max(500),
   date: z.string().min(1).optional(),
+  slug: z.string().min(1).max(500).optional(),
   content: z.string().min(1).max(5000),
   location: z.string().max(200).optional(),
   status: StatusField.optional(),

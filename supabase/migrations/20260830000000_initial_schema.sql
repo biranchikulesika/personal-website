@@ -271,6 +271,7 @@ ALTER TABLE "public"."notes" OWNER TO "postgres";
 
 CREATE TABLE IF NOT EXISTS "public"."now_entries" (
     "id" "text" NOT NULL,
+    "slug" "text" DEFAULT ''::"text" NOT NULL,
     "title" "text" NOT NULL,
     "date" "text" NOT NULL,
     "content" "text" DEFAULT ''::"text" NOT NULL,
@@ -283,6 +284,9 @@ CREATE TABLE IF NOT EXISTS "public"."now_entries" (
 
 
 ALTER TABLE "public"."now_entries" OWNER TO "postgres";
+
+-- Add slug column to existing now_entries tables (idempotent).
+ALTER TABLE IF EXISTS "public"."now_entries" ADD COLUMN IF NOT EXISTS "slug" "text" DEFAULT ''::"text" NOT NULL;
 
 -- Name: posts; Type: TABLE; Schema: public; Owner: postgres
 
@@ -501,6 +505,11 @@ CREATE INDEX IF NOT EXISTS "idx_notes_status" ON "public"."notes" USING "btree" 
 -- Name: idx_now_entries_date; Type: INDEX; Schema: public; Owner: postgres
 
 CREATE INDEX IF NOT EXISTS "idx_now_entries_date" ON "public"."now_entries" USING "btree" ("date" DESC);
+
+
+-- Name: idx_now_entries_slug; Type: INDEX; Schema: public; Owner: postgres
+
+CREATE UNIQUE INDEX IF NOT EXISTS "idx_now_entries_slug" ON "public"."now_entries" USING "btree" ("slug");
 
 
 -- Name: idx_posts_persona; Type: INDEX; Schema: public; Owner: postgres

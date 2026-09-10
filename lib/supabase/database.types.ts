@@ -148,6 +148,7 @@ export interface Database {
       now_entries: {
         Row: {
           id: string;
+          slug: string;
           title: string;
           date: string;
           content: string;
@@ -159,6 +160,7 @@ export interface Database {
         };
         Insert: {
           id: string;
+          slug: string;
           title: string;
           date: string;
           content?: string;
@@ -168,6 +170,7 @@ export interface Database {
         };
         Update: {
           id?: string;
+          slug?: string;
           title?: string;
           date?: string;
           content?: string;

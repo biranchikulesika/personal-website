@@ -125,7 +125,7 @@ export function ComposeWorkspace({
       return {
         id: `tab-now-${e.id}`,
         docType: "now",
-        slug: e.id,
+        slug: e.slug || e.id,
         title: e.title,
         subtitle: "",
         description: "",
@@ -446,8 +446,9 @@ export function ComposeWorkspace({
         }
       } else if (activeTab.docType === "now") {
         // Append-only timeline: always create a new row so previous entries are preserved.
+        // The repository derives the slug from the title and ensures it stays unique.
         const nowPayload: NowEntry = {
-          id: `now-${Date.now()}`,
+          id: `now-${crypto.randomUUID()}`,
           title: effectiveNowTitle,
           content: activeTab.content.trim(),
           location: activeTab.location?.trim() || undefined,

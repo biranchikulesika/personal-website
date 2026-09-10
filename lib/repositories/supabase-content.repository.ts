@@ -21,6 +21,7 @@ import type {
   WritingItem,
 } from "@/lib/types";
 import type { ContentRepository } from "./content.repository";
+import { nowSlug } from "@/lib/utils";
 
 // ── Row types (Supabase → TypeScript) ──────────────────────────────────────
 // These represent the raw database row format. The repository maps between
@@ -73,6 +74,7 @@ interface BookRow {
 
 interface NowRow {
   id: string;
+  slug: string;
   title: string;
   date: string;
   content: string;
@@ -152,6 +154,7 @@ function nowRowToDomain(row: NowRow): NowEntry {
     id: row.id,
     title: row.title,
     date: row.date || row.created_at.slice(0, 7),
+    slug: row.slug,
     content: row.content,
     location: row.location || undefined,
     status: row.status,
@@ -605,8 +608,19 @@ export class SupabaseContentRepository implements ContentRepository {
   }
 
   async saveNowEntry(entry: NowEntry): Promise<NowEntry> {
+    const id = entry.id || `now-${crypto.randomUUID()}`;
+    let baseSlug = nowSlug(entry.slug, entry.title);
+    let slug = baseSlug || `now-${crypto.randomUUID()}`;
+    let counter = 2;
+    // Now entries are append-only, so a repeat title must not collide on slug.
+    while (await this.isNowSlugTaken(slug, id)) {
+      slug = `${baseSlug}-${counter}`;
+      counter += 1;
+    }
+
     const row = {
-      id: entry.id,
+      id,
+      slug,
       title: entry.title,
       date: entry.date || new Date().toISOString().slice(0, 7),
       content: entry.content.trim(),
@@ -622,10 +636,24 @@ export class SupabaseContentRepository implements ContentRepository {
     if (error) throw new Error(`Failed to save now entry: ${error.message}`);
     return {
       ...entry,
+      id,
+      slug,
       content: entry.content.trim(),
       status: row.status,
       date: row.date,
     };
+  }
+
+  private async isNowSlugTaken(slug: string, excludeId: string): Promise<boolean> {
+    const { data, error } = await this.db
+      .from("now_entries")
+      .select("id")
+      .eq("slug", slug)
+      .neq("id", excludeId)
+      .maybeSingle();
+
+    if (error) throw new Error(`Failed to check now slug: ${error.message}`);
+    return !!data;
   }
 
   async deleteNowEntry(id: string): Promise<boolean> {
