@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import type { BlogPost, SectionGroup, WritingItem } from '@/lib/types';
 import { SectionHeading } from './section-heading';
-import { formatDisplayDate } from '@/lib/utils';
+import { formatDisplayDate, stripMarkdown } from '@/lib/utils';
 import { EssayCover } from './ui/essay-cover';
 
 interface WritingSectionProps {
@@ -23,7 +23,7 @@ function EssayCard({ item, priority = false }: { item: WritingItem; priority?: b
             {item.title}
           </h3>
           <p className="mt-2 text-sm leading-relaxed text-gray-mid line-clamp-2">
-            {item.description}
+            {stripMarkdown(item.description)}
           </p>
         </div>
         <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-tinted/15 pt-3 text-xs text-gray-mid">

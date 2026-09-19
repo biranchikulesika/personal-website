@@ -22,6 +22,8 @@ dist/
 .turbo/
 .vercel
 .vercel/output/
+.netlify/
+.open-next/
 
 # ── TypeScript & Compiler Caches ─────────────────────────────────────────────
 *.tsbuildinfo
@@ -36,6 +38,8 @@ next-env.d.ts
 # ── Environment & Secret Files (CRITICAL: Never commit credentials) ──────────
 .env
 .env.local
+.env.backup
+.env.old
 .env.development
 .env.development.local
 .env.production
@@ -73,12 +77,19 @@ next-env.d.ts
 supabase/.temp/
 supabase/.branches/
 
+# ── Cloudflare / Wrangler / OpenNext ────────────────────────────────────────
+.wrangler/
+.dev.vars
+.dev.vars.local
+.dev.vars.*
+
 # ── Testing & Coverage ───────────────────────────────────────────────────────
 coverage/
 .nyc_output/
 test-results/
 playwright-report/
 blob-report/
+*.snap
 
 # ── Logs & Debugging ─────────────────────────────────────────────────────────
 logs/
@@ -114,6 +125,8 @@ release-notes.md
 !.vscode/tasks.json
 !.vscode/launch.json
 !.vscode/extensions.json
+.history/
+*.code-workspace
 *.suo
 *.ntvs*
 *.njsproj

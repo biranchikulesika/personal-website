@@ -1,8 +1,7 @@
-import { PERSONA_LABELS } from "@/lib/constants";
-import type { BlogPost, PostFigure, PostSection } from "@/lib/types";
-import { formatDisplayDate } from "@/lib/utils";
+import type { BlogPost, PostSection } from "@/lib/types";
+import { formatDisplayDate, postToDocs } from "@/lib/utils";
+import { renderMdx } from "@/lib/mdx";
 import Link from "next/link";
-import { Fragment } from "react";
 import {
   ArrowLeftIcon,
   ArrowRightIcon,
@@ -14,32 +13,6 @@ import {
 import { ShareMenu } from "./share-menu";
 import { BookCover } from "./ui/book-cover";
 import { PersonaBadge } from "./persona-badge";
-import {
-  renderMarkdownBlock,
-  MarkdownFigure,
-} from "./markdown-renderer";
-
-function footnoteRefs(text: string): number[] {
-  const refs = new Set<number>();
-  const re = /(?:\^\[(\d+)\]|\[\^(\d+)\])/g;
-  let match: RegExpExecArray | null;
-  while ((match = re.exec(text)) !== null) {
-    refs.add(Number(match[1] || match[2]));
-  }
-  return [...refs];
-}
-
-function Figure({ src, alt, caption, priority }: PostFigure & { priority?: boolean }) {
-  return (
-    <MarkdownFigure
-      src={src}
-      alt={alt}
-      caption={caption}
-      className="lg:col-start-1"
-      priority={priority}
-    />
-  );
-}
 
 function TocList({ sections }: { sections: PostSection[] }) {
   return (
@@ -97,11 +70,22 @@ function BookCardView({
   );
 }
 
-export function BlogPostView({ post }: { post: BlogPost }) {
+export async function BlogPostView({ post }: { post: BlogPost }) {
   const showToc = post.sections.length > 2;
-  const personaLabel = post.persona
-    ? (PERSONA_LABELS[post.persona] ?? post.persona)
-    : null;
+
+  const docs = postToDocs(post.intro, post.sections);
+
+  const sectionNodes = [];
+  for (let i = 0; i < docs.sections.length; i++) {
+    const src = docs.sections[i];
+    sectionNodes.push(
+      <div key={post.sections[i]?.id || `section-${i}`} className="mt-12">
+        {await renderMdx(src)}
+      </div>
+    );
+  }
+
+  const introNode = await renderMdx(docs.intro, { intro: true });
 
   return (
     <article className="pb-16 pt-8 md:pb-24 md:pt-12">
@@ -193,119 +177,15 @@ export function BlogPostView({ post }: { post: BlogPost }) {
           </aside>
         )}
 
-        <div className="lg:col-start-2 lg:col-span-2 lg:grid lg:grid-cols-[minmax(0,72ch)_1fr] lg:items-start lg:gap-8">
-          {(() => {
-            let imageCount = 0;
-            return (
-              <>
-                {/* Intro — the first paragraph gets a drop cap */}
-                <div className="mt-8 space-y-5 lg:col-start-1 text-paper/85">
-                  {post.intro.map((paragraph, index) => {
-                    const isImg =
-                      paragraph.trim().startsWith('![') ||
-                      /^<(img|Image)\s/i.test(paragraph.trim());
-                    const isFirstImage = isImg && imageCount === 0;
-                    if (isImg) imageCount++;
+        <div className="lg:col-start-2 text-paper/85">
+          {introNode}
 
-                    return renderMarkdownBlock(paragraph, `intro-${index}`, {
-                      isFirstIntroParagraph: index === 0,
-                      isFirstImage,
-                      gridColClass: "lg:col-start-1",
-                    });
-                  })}
-                </div>
-
-                {/* Sections */}
-                {post.sections.map((section, sectionIndex) => {
-                  return (
-                    <section
-                      key={section.id}
-                      id={section.id}
-                      className="mt-12 lg:col-start-1 lg:col-span-2 lg:grid lg:grid-cols-[minmax(0,72ch)_1fr] lg:items-start lg:gap-8 text-paper/85"
-                    >
-                      <h2 className="font-serif text-2xl text-paper md:text-3xl lg:col-start-1">
-                        {section.heading}
-                      </h2>
-
-                      {section.paragraphs.map((paragraph, paragraphIndex) => {
-                        const refs = section.footnotes ? footnoteRefs(paragraph) : [];
-                        const isImg =
-                          paragraph.trim().startsWith('![') ||
-                          /^<(img|Image)\s/i.test(paragraph.trim());
-                        const isFirstImage = isImg && imageCount === 0;
-                        if (isImg) imageCount++;
-
-                        return (
-                          <Fragment key={paragraphIndex}>
-                            {renderMarkdownBlock(
-                              paragraph,
-                              `sec-${sectionIndex}-${paragraphIndex}`,
-                              {
-                                footnotes: section.footnotes,
-                                isFirstImage,
-                                gridColClass: "lg:col-start-1",
-                              },
-                            )}
-                            {refs.length > 0 && (
-                              <aside
-                                className="hidden lg:block col-start-2 space-y-3 pt-1 border-l-2 border-tinted/20 pl-3"
-                                aria-label="Footnotes"
-                              >
-                                {refs.map((n) => (
-                                  <p
-                                    key={n}
-                                    id={`fn-${n}`}
-                                    className="text-[13px] leading-relaxed text-ink-soft"
-                                  >
-                                    <sup className="mr-1 font-medium text-accent">
-                                      {n}
-                                    </sup>
-                                    {section.footnotes?.[n - 1]}
-                                    <a
-                                      href={`#fnref-${n}`}
-                                      className="ml-1 text-accent hover:text-paper transition-colors"
-                                      title="Back"
-                                    >
-                                      ↩
-                                    </a>
-                                  </p>
-                                ))}
-                              </aside>
-                            )}
-                          </Fragment>
-                        );
-                      })}
-
-                      {section.figure && (
-                        <Figure
-                          {...section.figure}
-                          priority={imageCount === 0}
-                        />
-                      )}
-
-                      {section.quote && (
-                        <blockquote className="mt-8 border-y border-tinted/20 py-6 text-center font-serif text-lg italic leading-relaxed text-paper lg:col-start-1 md:text-xl">
-                          <p>
-                            “{section.quote.text}”
-                          </p>
-                          {section.quote.attribution && (
-                            <cite className="mt-3 block text-[11px] not-italic uppercase tracking-widest text-ink-soft">
-                              — {section.quote.attribution}
-                            </cite>
-                          )}
-                        </blockquote>
-                      )}
-                    </section>
-                  );
-                })}
-              </>
-            );
-          })()}
+          {sectionNodes}
 
           {/* Book cards */}
           {post.books.length > 0 && (
             <section
-              className="mt-16 lg:col-start-1"
+              className="mt-16"
               aria-labelledby="post-books-heading"
             >
               <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2">

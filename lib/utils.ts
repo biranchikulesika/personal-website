@@ -112,7 +112,10 @@ export function sectionsToMarkdown(
         parts.push(sec.paragraphs.join('\n\n'));
       }
       if (sec.figure) {
-        parts.push(`![${sec.figure.alt}](${sec.figure.src})\n*${sec.figure.caption}*`);
+        const caption = sec.figure.caption?.trim() || '';
+        parts.push(
+          `![${sec.figure.alt}](${sec.figure.src}${caption ? ` '${caption.replace(/'/g, '')}'` : ''})`,
+        );
       }
       if (sec.quote) {
         parts.push(`> ${sec.quote.text}\n> — ${sec.quote.attribution || ''}`);
@@ -171,6 +174,22 @@ export function markdownToPostSections(
   }
 
   return { intro, sections };
+}
+
+/**
+ * Splits a post's stored intro / sections back into per-segment MDX documents
+ * (intro and one document per section) so each segment can be evaluated
+ * through the real MDX pipeline. Footnotes stay scoped per section, matching
+ * how they are stored in the `PostSection` model.
+ */
+export function postToDocs(
+  intro: string[],
+  sections: PostSection[],
+): { intro: string; sections: string[] } {
+  return {
+    intro: intro.join('\n\n'),
+    sections: sections.map((sec) => sectionsToMarkdown([], [sec])),
+  };
 }
 
 // Device & User Agent utilities ------------------------------------------------
@@ -240,8 +259,10 @@ export function formatNoteSnippet(
   maxLen = 160,
 ): string {
   if (!content) return '';
-  const fullText = (Array.isArray(content) ? content.join(' ') : content).trim();
-  if (!fullText) return '';
+  const rawText = (Array.isArray(content) ? content.join(' ') : content).trim();
+  if (!rawText) return '';
+  // Raw stored content may still carry Markdown/MDX syntax (images, code).
+  const fullText = stripMarkdown(rawText);
   if (fullText.length <= maxLen) return fullText;
 
   const truncated = fullText.slice(0, maxLen);

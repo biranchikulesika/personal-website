@@ -57,6 +57,18 @@ This file is the single source of truth for AI agents and developers working on 
      ```
      _(e.g., `feat/patron-tier-management`, `fix/slug-collision-handler`, `docs/update-agents-md`)_
 
+### Mandatory Production-Grade Build Check (Pre-Push / Pre-Merge / Pre-PR Gate)
+
+- **A production-grade build check (`npm run build`) is COMPULSORY before every push, every merge into `develop`, and every PR/promotion to `production`.**
+- The build check must be the agent's own last verification step on the active feature branch — do not rely solely on remote CI. The local check runs first; CI is a second net, not a substitute.
+- **If `npm run build` reports any error or warning-as-failure:**
+  1. **STOP** the push / merge / PR process immediately.
+  2. Do **not** commit, do **not** push, do **not** merge, do **not** open a PR.
+  3. Inform the repository owner of the exact build failure.
+  4. Ask the repository owner how they want to proceed (fix the issue, investigate, or otherwise) before taking any further action.
+- **If `npm run build` completes with zero errors:** proceed with the authorized flow as usual.
+- **Dev-server caveat:** running `npm run build` overwrites `.next` and will disrupt any running dev server on `:3000`. Killing the dev server for this build-check use case is explicitly allowed (§8 sole exception); restarting it remains the repository owner's job, so notify them when the build check has clobbered the running server.
+
 ### Commit & Merge Authorization Workflow
 
 - Keep working on the active feature branch.
@@ -205,6 +217,7 @@ All tests must pass with zero errors and zero warnings.
 - Do **not** run `npm run clean` or any command that removes build artifacts.
 - Next.js Fast Refresh automatically detects and reloads file changes. Let it do its job.
 - If a server restart is genuinely required, stop and ask — only the repository owner starts and stops the dev server.
+- **Sole exception:** the Mandatory Production-Grade Build Check gate in §1 runs `npm run build`, which necessarily overwrites `.next` and disrupts/takes down a running dev server on `:3000`. For this specific use case, killing the dev server process is explicitly allowed. The agent must still notify the repository owner afterward so they can restart it.
 
 ---
 

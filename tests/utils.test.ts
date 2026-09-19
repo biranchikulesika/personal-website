@@ -93,8 +93,7 @@ test("sectionsToMarkdown handles figures and quotes", () => {
   ];
 
   const md = sectionsToMarkdown(intro, sections);
-  assert.ok(md.includes("![An image](/image.jpg)"));
-  assert.ok(md.includes("*Image caption*"));
+  assert.ok(md.includes("![An image](/image.jpg 'Image caption')"));
   assert.ok(md.includes("> A quote"));
   assert.ok(md.includes("> — Author"));
 });
@@ -205,6 +204,15 @@ test("formatNoteSnippet handles empty input gracefully", () => {
   assert.equal(formatNoteSnippet(""), "");
   assert.equal(formatNoteSnippet([]), "");
   assert.equal(formatNoteSnippet(undefined), "");
+});
+
+test("formatNoteSnippet strips markdown syntax from raw stored content", () => {
+  const raw = ["![You can use these tips](supabase.local)", "Reading the `supabase` docs"];
+  const snippet = formatNoteSnippet(raw);
+  assert.ok(!snippet.includes("!["), snippet);
+  assert.ok(!snippet.includes("`"), snippet);
+  assert.ok(snippet.includes("You can use these tips"));
+  assert.ok(snippet.includes("supabase docs"));
 });
 
 // ── stripMarkdown / textSnippet ─────────────────────────────────────────────
