@@ -28,6 +28,15 @@ Next.js loads environment files in the following order of precedence (highest to
   ```
 - **Production Deployment**: Configure host environment variables using `.env.production.example` as your checklist.
 
+> **Local Google OAuth (dev only)** — the Supabase CLI (`supabase start`) reads OAuth provider secrets from the **shell env**, not from `.env.local`. If the Google login button locally returns `401: invalid_client` / "OAuth client was not found" (which works in prod), the CLI instance is being started with an empty `GOOGLE_CLIENT_ID`. Fix by exporting the two vars from `.env.local` into the same shell that runs `supabase start`:
+>
+> ```bash
+> export $(grep -E '^(GOOGLE_CLIENT_ID|GOOGLE_CLIENT_SECRET)=' .env.local | xargs)
+> supabase start
+> ```
+>
+> Secrets stay in the gitignored `.env.local` (never in the git-tracked `supabase/config.toml`). **Do not** hardcode the client id/secret into `config.toml` — this repo is public, and `config.toml` is version-tracked.
+
 ---
 
 ## 2. Master Variable Reference

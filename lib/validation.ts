@@ -92,6 +92,8 @@ export const BookItemSchema = z.object({
     })
     .optional()
     .or(z.literal('')),
+  isPublished: z.boolean().optional(),
+  status: StatusField.optional(),
 });
 
 // Now Entry schema -------------------------------------------------------------
@@ -130,7 +132,8 @@ export const MediaItemSchema = z.object({
   size: z.string(),
   dimensions: z.string().optional(),
   uploadedAt: z.string(),
-  tag: z.enum(['profile', 'atmosphere', 'post', 'book']),
+  tags: z.array(z.string()).default([]),
+  tag: z.string().optional(),
 });
 
 // Slug-only actions (delete, toggle) -------------------------------------------

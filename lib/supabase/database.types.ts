@@ -116,6 +116,7 @@ export interface Database {
           tags: string[];
           cover: string | null;
           link: string | null;
+          is_published: boolean;
           created_at: string;
           updated_at: string;
         };
@@ -130,6 +131,7 @@ export interface Database {
           tags?: string[];
           cover?: string | null;
           link?: string | null;
+          is_published?: boolean;
         };
         Update: {
           id?: string;
@@ -142,6 +144,7 @@ export interface Database {
           tags?: string[];
           cover?: string | null;
           link?: string | null;
+          is_published?: boolean;
         };
         Relationships: [];
       };
@@ -190,6 +193,7 @@ export interface Database {
           dimensions: string | null;
           uploaded_at: string | null;
           tag: string;
+          tags: string[];
           created_at: string;
           updated_at: string;
         };
@@ -202,6 +206,7 @@ export interface Database {
           dimensions?: string | null;
           uploaded_at?: string | null;
           tag?: string;
+          tags?: string[];
         };
         Update: {
           id?: string;
@@ -212,6 +217,7 @@ export interface Database {
           dimensions?: string | null;
           uploaded_at?: string | null;
           tag?: string;
+          tags?: string[];
         };
         Relationships: [];
       };

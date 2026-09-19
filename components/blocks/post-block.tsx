@@ -1,3 +1,5 @@
+import { formatDisplayDate } from '@/lib/utils';
+
 /**
  * PostBlock — rendered from a `<Post slug="..." title="..." ... />` tag inside
  * markdown content. Links out to the post page.
@@ -25,7 +27,7 @@ export function PostBlock({
           {date && (
             <>
               <span className="text-ink-soft/40">·</span>
-              <span>{date}</span>
+              <span>{formatDisplayDate(date)}</span>
             </>
           )}
         </div>

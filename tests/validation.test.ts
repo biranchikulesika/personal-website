@@ -141,10 +141,16 @@ test("BookItemSchema accepts valid book data", () => {
     date: "2026",
     persona: "thinker" as const,
     tags: ["reading"],
+    isPublished: false,
+    status: "unpublished" as const,
   };
 
   const result = BookItemSchema.safeParse(validBook);
   assert.ok(result.success, "valid book should pass validation");
+  if (result.success) {
+    assert.equal(result.data.isPublished, false);
+    assert.equal(result.data.status, "unpublished");
+  }
 });
 
 test("BookItemSchema rejects empty author", () => {
@@ -187,7 +193,7 @@ test("MediaItemSchema accepts valid media", () => {
     alt: "A photo",
     size: "200 KB",
     uploadedAt: "2026-08-20",
-    tag: "atmosphere" as const,
+    tags: ["architecture", "editorial"],
   };
 
   const result = MediaItemSchema.safeParse(valid);
@@ -202,14 +208,14 @@ test("MediaItemSchema accepts valid image data URL", () => {
     alt: "Uploaded PNG",
     size: "120 KB",
     uploadedAt: "2026-08-22",
-    tag: "post" as const,
+    tags: ["essay"],
   };
 
   const result = MediaItemSchema.safeParse(validDataUrl);
   assert.ok(result.success, "valid data URL media should pass");
 });
 
-test("MediaItemSchema rejects invalid tag", () => {
+test("MediaItemSchema rejects non-array tags", () => {
   const invalid = {
     id: "media-1",
     name: "photo.jpg",
@@ -217,11 +223,11 @@ test("MediaItemSchema rejects invalid tag", () => {
     alt: "A photo",
     size: "200 KB",
     uploadedAt: "2026-08-20",
-    tag: "invalid-tag",
+    tags: "not-an-array",
   };
 
   const result = MediaItemSchema.safeParse(invalid);
-  assert.ok(!result.success, "invalid tag should fail");
+  assert.ok(!result.success, "non-array tags should fail");
 });
 
 // ── SlugParamSchema ─────────────────────────────────────────────────────────

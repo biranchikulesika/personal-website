@@ -70,6 +70,8 @@ interface BookRow {
   tags: string[];
   cover: string | null;
   link: string | null;
+  is_published?: boolean | null;
+  status?: string | null;
 }
 
 interface NowRow {
@@ -93,7 +95,9 @@ interface MediaRow {
   size: string;
   dimensions: string | null;
   uploaded_at: string | null;
-  tag: "profile" | "atmosphere" | "post" | "book";
+  tag?: string | null;
+  tags?: string[] | null;
+  created_at?: string | null;
 }
 
 // ── Mappers ────────────────────────────────────────────────────────────────
@@ -135,6 +139,7 @@ function noteRowToDomain(row: NoteRow): NoteItem {
 }
 
 function bookRowToDomain(row: BookRow): BookItem {
+  const isPublished = row.is_published !== false && row.status !== 'unpublished';
   return {
     id: row.id,
     slug: row.slug,
@@ -146,6 +151,8 @@ function bookRowToDomain(row: BookRow): BookItem {
     tags: row.tags ?? [],
     cover: row.cover ?? undefined,
     link: row.link ?? undefined,
+    isPublished,
+    status: isPublished ? "published" : "unpublished",
   };
 }
 
@@ -165,6 +172,13 @@ function nowRowToDomain(row: NowRow): NowEntry {
 }
 
 function mediaRowToDomain(row: MediaRow): MediaItem {
+  const rawTags: string[] = Array.isArray(row.tags) && row.tags.length > 0
+    ? row.tags
+    : row.tag ? [row.tag] : [];
+  const tags = rawTags
+    .map((t) => t.trim().toLowerCase())
+    .filter((t) => t && t !== 'atmosphere' && t !== 'profile');
+
   return {
     id: row.id,
     name: row.name,
@@ -172,8 +186,9 @@ function mediaRowToDomain(row: MediaRow): MediaItem {
     alt: row.alt,
     size: row.size,
     dimensions: row.dimensions ?? undefined,
-    uploadedAt: row.uploaded_at ?? "",
-    tag: row.tag,
+    uploadedAt: row.created_at || row.uploaded_at || "",
+    tags,
+    tag: tags[0] || undefined,
   };
 }
 
@@ -245,6 +260,7 @@ export class SupabaseContentRepository implements ContentRepository {
     const { data, error } = await this.db
       .from("books")
       .select("*")
+      .eq("is_published", true)
       .order("created_at", { ascending: false });
 
     if (error) throw new Error(`Failed to load library: ${error.message}`);
@@ -524,6 +540,8 @@ export class SupabaseContentRepository implements ContentRepository {
       );
     }
 
+    const isPublished = book.isPublished !== false && book.status !== 'unpublished';
+
     const row = {
       id: book.id,
       slug: book.slug,
@@ -535,6 +553,7 @@ export class SupabaseContentRepository implements ContentRepository {
       tags: book.tags,
       cover: book.cover ?? null,
       link: book.link ?? null,
+      is_published: isPublished,
     };
 
     const { error } = await this.db
@@ -542,7 +561,11 @@ export class SupabaseContentRepository implements ContentRepository {
       .upsert(row, { onConflict: "id" });
 
     if (error) throw new Error(`Failed to save book: ${error.message}`);
-    return book;
+    return {
+      ...book,
+      isPublished,
+      status: isPublished ? "published" : "unpublished",
+    };
   }
 
   async deleteBook(slug: string): Promise<boolean> {
@@ -553,6 +576,32 @@ export class SupabaseContentRepository implements ContentRepository {
 
     if (error) throw new Error(`Failed to delete book: ${error.message}`);
     return (count ?? 0) > 0;
+  }
+
+  async toggleBookStatus(slug: string): Promise<BookItem | null> {
+    const { data, error: fetchError } = await this.db
+      .from("books")
+      .select("*")
+      .eq("slug", slug)
+      .limit(1);
+
+    if (fetchError || !data || data.length === 0) return null;
+
+    const currentBook = bookRowToDomain(data[0] as BookRow);
+    const nextPublished = !currentBook.isPublished;
+
+    const { error } = await this.db
+      .from("books")
+      .update({ is_published: nextPublished })
+      .eq("slug", slug);
+
+    if (error) throw new Error(`Failed to toggle book status: ${error.message}`);
+
+    return {
+      ...currentBook,
+      isPublished: nextPublished,
+      status: nextPublished ? "published" : "unpublished",
+    };
   }
 
   // ── Scribble ───────────────────────────────────────────────────────────
@@ -691,9 +740,11 @@ export class SupabaseContentRepository implements ContentRepository {
           const mimeType = matches[1];
           const ext = matches[2] === "jpeg" ? "jpg" : matches[2];
           const base64Data = matches[3];
-          const buffer = Buffer.from(base64Data, "base64");
-          const fileName = `${Date.now()}-${item.name.replace(/[^a-zA-Z0-9.-]/g, "_")}.${ext}`;
+          const cleanItemName = item.name.replace(/\.[^/.]+$/, "").replace(/[^a-zA-Z0-9_-]/g, "_");
+          const fileName = item.name.startsWith("res-") ? `${cleanItemName}.${ext}` : `${Date.now()}-${cleanItemName}.${ext}`;
           const storagePath = `uploads/${fileName}`;
+
+          const buffer = Buffer.from(base64Data, "base64");
 
           const { data: uploadData, error: uploadError } = await this.db.storage
             .from("media")
@@ -717,6 +768,10 @@ export class SupabaseContentRepository implements ContentRepository {
       }
     }
 
+    const tags = (Array.isArray(item.tags) ? item.tags : item.tag ? [item.tag] : [])
+      .map((t) => t.trim().toLowerCase())
+      .filter((t) => t && t !== 'atmosphere' && t !== 'profile');
+
     const row = {
       id: item.id,
       name: item.name,
@@ -724,8 +779,9 @@ export class SupabaseContentRepository implements ContentRepository {
       alt: item.alt,
       size: item.size,
       dimensions: item.dimensions ?? null,
-      uploaded_at: item.uploadedAt || null,
-      tag: item.tag,
+      uploaded_at: item.uploadedAt ? (item.uploadedAt.includes('T') ? item.uploadedAt.split('T')[0] : item.uploadedAt) : null,
+      tags,
+      tag: tags[0] || "",
     };
 
     const { error } = await this.db

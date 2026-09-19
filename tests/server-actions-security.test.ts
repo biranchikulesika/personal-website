@@ -9,6 +9,7 @@ import {
   deleteNoteAction,
   saveBookAction,
   deleteBookAction,
+  toggleBookStatusAction,
   saveNowEntryAction,
   deleteNowEntryAction,
   addMediaAction,
@@ -145,6 +146,12 @@ test('unauthenticated caller cannot delete book via deleteBookAction', async () 
   assert.ok(res.error?.includes('Unauthorized') || res.error?.includes('Authentication'));
 });
 
+test('unauthenticated caller cannot toggle book status via toggleBookStatusAction', async () => {
+  const res = await toggleBookStatusAction('test-book');
+  assert.equal(res.success, false);
+  assert.ok(res.error?.includes('Unauthorized') || res.error?.includes('Authentication'));
+});
+
 test('unauthenticated caller cannot save now entry via saveNowEntryAction', async () => {
   const res = await saveNowEntryAction({
     id: 'now-unauth',
@@ -171,6 +178,7 @@ test('unauthenticated caller cannot add media via addMediaAction', async () => {
     size: '10KB',
     uploadedAt: '2026-08-29',
     tag: 'atmosphere',
+    tags: [],
   });
   assert.equal(res.success, false);
   assert.ok(res.error?.includes('Unauthorized') || res.error?.includes('Authentication'));

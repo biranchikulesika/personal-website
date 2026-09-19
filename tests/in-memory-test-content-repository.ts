@@ -54,7 +54,7 @@ export class InMemoryTestContentRepository implements ContentRepository {
         size: "210 KB",
         dimensions: "900 × 1600",
         uploadedAt: "2026-08-19",
-        tag: "profile",
+        tags: ["portrait"],
       },
     ];
     this.storage = ["/biranchi.jpeg"];
@@ -128,7 +128,9 @@ export class InMemoryTestContentRepository implements ContentRepository {
       title: "Library",
       href: "/library",
       subheader: "Books I've read, loved, and recommend for others to read.",
-      items: [...this.books],
+      items: this.books.filter(
+        (b) => b.isPublished !== false && b.status !== "unpublished",
+      ),
     };
   }
 
@@ -225,13 +227,19 @@ export class InMemoryTestContentRepository implements ContentRepository {
   }
 
   async saveBook(book: BookItem): Promise<BookItem> {
+    const isPublished = book.isPublished !== false && book.status !== "unpublished";
+    const savedBook = {
+      ...book,
+      isPublished,
+      status: (isPublished ? "published" : "unpublished") as "published" | "unpublished",
+    };
     const index = this.books.findIndex((b) => b.slug === book.slug);
     if (index >= 0) {
-      this.books[index] = { ...book };
+      this.books[index] = savedBook;
     } else {
-      this.books.unshift({ ...book });
+      this.books.unshift(savedBook);
     }
-    return book;
+    return savedBook;
   }
 
   async deleteBook(slug: string): Promise<boolean> {
@@ -239,6 +247,15 @@ export class InMemoryTestContentRepository implements ContentRepository {
     if (index < 0) return false;
     this.books.splice(index, 1);
     return true;
+  }
+
+  async toggleBookStatus(slug: string): Promise<BookItem | null> {
+    const book = this.books.find((b) => b.slug === slug);
+    if (!book) return null;
+    const nextPublished = !(book.isPublished !== false && book.status !== "unpublished");
+    book.isPublished = nextPublished;
+    book.status = nextPublished ? "published" : "unpublished";
+    return { ...book };
   }
 
   async getScribbleEntries(): Promise<ScribbleEntry[]> {
@@ -302,7 +319,12 @@ export class InMemoryTestContentRepository implements ContentRepository {
   }
 
   async addMedia(item: MediaItem): Promise<MediaItem> {
-    this.media.unshift({ ...item });
+    const idx = this.media.findIndex((m) => m.id === item.id);
+    if (idx >= 0) {
+      this.media[idx] = { ...item };
+    } else {
+      this.media.unshift({ ...item });
+    }
     return item;
   }
 

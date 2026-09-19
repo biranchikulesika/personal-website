@@ -15,10 +15,10 @@ import { formatDisplayDate } from "@/lib/utils";
 import Image from "next/image";
 import Link from "next/link";
 import dynamic from "next/dynamic";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { logoutAction } from "@/app/admin/login/actions";
 import { LoadingState } from "@/components/ui/states";
-import { UserAvatar } from "@/components/ui/user-avatar";
 
 import { HomeOverview } from "./home-overview";
 
@@ -66,6 +66,7 @@ interface AdminDashboardProps {
   userEmail: string;
   userAvatarUrl: string | null;
   userRole: string;
+  initialTab?: SidepanelTab;
 }
 
 export function AdminDashboard({
@@ -79,17 +80,71 @@ export function AdminDashboard({
   initialPasskeys = [],
   initialConnectedProviders = ["google"],
   initialSessions = [],
+  initialTab = "home",
   userName,
   userEmail,
   userAvatarUrl,
   userRole,
 }: AdminDashboardProps) {
-  const [activeTab, setActiveTab] = useState<SidepanelTab>("home");
+  const [activeTab, setActiveTab] = useState<SidepanelTab>(initialTab);
   const [isComposeOpen, setIsComposeOpen] = useState(false);
   const [createBookTrigger, setCreateBookTrigger] = useState(0);
+  const router = useRouter();
 
-  const totalContentCount =
-    initialPosts.length + initialNotes.length + initialNowEntries.length;
+  // Sync state if initialTab prop changes (e.g. server-side navigation)
+  useEffect(() => {
+    setActiveTab(initialTab);
+  }, [initialTab]);
+
+  // Handle browser back/forward buttons and initial localStorage fallback
+  useEffect(() => {
+    const validTabs: SidepanelTab[] = [
+      "home",
+      "content",
+      "media",
+      "subscribers",
+      "account",
+    ];
+
+    const handlePopState = () => {
+      const params = new URLSearchParams(window.location.search);
+      const tabParam = params.get("tab") as SidepanelTab | null;
+      if (tabParam && validTabs.includes(tabParam)) {
+        setActiveTab(tabParam);
+      }
+    };
+
+    window.addEventListener("popstate", handlePopState);
+
+    // If loaded on /admin without ?tab= parameter, restore saved tab from localStorage
+    const params = new URLSearchParams(window.location.search);
+    const tabParam = params.get("tab") as SidepanelTab | null;
+    if (tabParam && validTabs.includes(tabParam)) {
+      try {
+        localStorage.setItem("admin_active_tab", tabParam);
+      } catch {}
+    } else if (!tabParam) {
+      try {
+        const savedTab = localStorage.getItem(
+          "admin_active_tab",
+        ) as SidepanelTab | null;
+        if (savedTab && validTabs.includes(savedTab) && savedTab !== "home") {
+          setActiveTab(savedTab);
+          router.replace(`/admin?tab=${savedTab}`, { scroll: false });
+        }
+      } catch {}
+    }
+
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, [router]);
+
+  const navigateTab = (tab: SidepanelTab) => {
+    setActiveTab(tab);
+    try {
+      localStorage.setItem("admin_active_tab", tab);
+    } catch {}
+    router.replace(`/admin?tab=${tab}`, { scroll: false });
+  };
 
   const navItems = [
     {
@@ -111,7 +166,6 @@ export function AdminDashboard({
           />
         </svg>
       ),
-      count: undefined,
     },
     {
       id: "content" as const,
@@ -132,11 +186,10 @@ export function AdminDashboard({
           />
         </svg>
       ),
-      count: totalContentCount,
     },
     {
       id: "media" as const,
-      label: "Media Resources",
+      label: "Resources",
       icon: (
         <svg
           className="h-4 w-4"
@@ -153,7 +206,6 @@ export function AdminDashboard({
           />
         </svg>
       ),
-      count: initialMedia.length,
     },
     {
       id: "subscribers" as const,
@@ -174,7 +226,6 @@ export function AdminDashboard({
           />
         </svg>
       ),
-      count: initialSubscribers.length,
     },
     {
       id: "account" as const,
@@ -195,7 +246,6 @@ export function AdminDashboard({
           />
         </svg>
       ),
-      count: undefined,
     },
   ];
 
@@ -204,23 +254,6 @@ export function AdminDashboard({
       {/* ── 1. Desktop Left Fixed Sidebar ── */}
       <aside className="sticky top-0 hidden h-screen w-64 md:w-72 shrink-0 border-r border-tinted/20 bg-night-soft md:flex flex-col justify-between p-5 overflow-y-auto">
         <div className="space-y-6">
-          {/* Workspace Branding / User Header */}
-          <div className="flex items-center gap-3 border-b border-tinted/20 pb-4">
-            <UserAvatar
-              src={userAvatarUrl}
-              name={userName}
-              size={40}
-            />
-            <div className="min-w-0">
-              <div className="truncate font-serif text-base font-medium text-paper">
-                {userName}
-              </div>
-              <div className="truncate text-[10px] text-gray-mid capitalize">
-                {userRole.replace('_', ' ')}
-              </div>
-            </div>
-          </div>
-
           {/* Navigation Links */}
           <nav aria-label="Admin Navigation" className="space-y-1.5">
             {navItems.map((item) => {
@@ -229,36 +262,23 @@ export function AdminDashboard({
                 <button
                   key={item.id}
                   type="button"
-                  onClick={() => setActiveTab(item.id)}
-                  className={`group flex w-full items-center justify-between rounded-xl px-3.5 py-2.5 text-sm font-medium transition-all ${
+                  onClick={() => navigateTab(item.id)}
+                  className={`group flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium transition-all ${
                     isActive
                       ? "bg-post-card text-paper shadow-xs border border-tinted/30"
                       : "text-gray-mid hover:bg-post-card/60 hover:text-paper"
                   }`}
                 >
-                  <div className="flex items-center gap-3">
-                    <span
-                      className={
-                        isActive
-                          ? "text-accent"
-                          : "text-gray-mid group-hover:text-paper"
-                      }
-                    >
-                      {item.icon}
-                    </span>
-                    <span>{item.label}</span>
-                  </div>
-                  {typeof item.count === "number" && (
-                    <span
-                      className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${
-                        isActive
-                          ? "bg-accent/20 text-accent"
-                          : "bg-night text-gray-mid ring-1 ring-tinted/20"
-                      }`}
-                    >
-                      {item.count}
-                    </span>
-                  )}
+                  <span
+                    className={
+                      isActive
+                        ? "text-accent"
+                        : "text-gray-mid group-hover:text-paper"
+                    }
+                  >
+                    {item.icon}
+                  </span>
+                  <span>{item.label}</span>
                 </button>
               );
             })}
@@ -304,7 +324,7 @@ export function AdminDashboard({
               userEmail={userEmail}
               userAvatarUrl={userAvatarUrl}
               userRole={userRole}
-              onNavigateTab={(tab) => setActiveTab(tab)}
+              onNavigateTab={(tab) => navigateTab(tab)}
               onTriggerCreateBook={() => setCreateBookTrigger((prev) => prev + 1)}
             />
           )}
@@ -396,7 +416,7 @@ export function AdminDashboard({
             <button
               type="button"
               onClick={() => {
-                setActiveTab("content");
+                navigateTab("content");
                 setCreateBookTrigger((prev) => prev + 1);
                 setIsComposeOpen(false);
               }}
@@ -414,7 +434,7 @@ export function AdminDashboard({
           type="button"
           aria-label="Home"
           onClick={() => {
-            setActiveTab("home");
+            navigateTab("home");
             setIsComposeOpen(false);
           }}
           className={`flex h-11 w-11 items-center justify-center rounded-full transition-all ${
@@ -433,10 +453,10 @@ export function AdminDashboard({
           type="button"
           aria-label="Content"
           onClick={() => {
-            setActiveTab("content");
+            navigateTab("content");
             setIsComposeOpen(false);
           }}
-          className={`relative flex h-11 w-11 items-center justify-center rounded-full transition-all ${
+          className={`flex h-11 w-11 items-center justify-center rounded-full transition-all ${
             activeTab === "content"
               ? "bg-post-card text-accent border border-tinted/30 shadow-xs"
               : "text-gray-mid hover:bg-post-card/50 hover:text-paper"
@@ -445,11 +465,6 @@ export function AdminDashboard({
           <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
           </svg>
-          {totalContentCount > 0 && (
-            <span className="absolute 1 top-0.5 right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-accent px-1 text-[9px] font-bold text-paper">
-              {totalContentCount}
-            </span>
-          )}
         </button>
 
         {/* Center Compose Action Button */}
@@ -471,12 +486,12 @@ export function AdminDashboard({
           </div>
         </button>
 
-        {/* Media Tab */}
+        {/* Resources Tab */}
         <button
           type="button"
-          aria-label="Media"
+          aria-label="Resources"
           onClick={() => {
-            setActiveTab("media");
+            navigateTab("media");
             setIsComposeOpen(false);
           }}
           className={`flex h-11 w-11 items-center justify-center rounded-full transition-all ${
@@ -495,7 +510,7 @@ export function AdminDashboard({
           type="button"
           aria-label="Account"
           onClick={() => {
-            setActiveTab("account");
+            navigateTab("account");
             setIsComposeOpen(false);
           }}
           className={`flex h-11 w-11 items-center justify-center rounded-full transition-all ${

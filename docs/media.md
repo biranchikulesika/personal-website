@@ -6,7 +6,7 @@ This document describes asset management, storage buckets, image optimization, a
 
 ## 1. Media Model (`lib/types.ts`)
 
-Uploaded assets are cataloged in the `public.media` table:
+Uploaded assets are cataloged in the `public.media` table with dynamic, flexible tags matching the post and note content model:
 
 ```typescript
 export interface MediaItem {
@@ -17,15 +17,15 @@ export interface MediaItem {
   size: string;
   dimensions?: string;
   uploadedAt: string;
-  tag: 'profile' | 'atmosphere' | 'post' | 'book';
+  tags: string[];
 }
 ```
 
 ### Media Tags:
-- **`profile`**: Author portraits, avatar photos.
-- **`atmosphere`**: Candid photographs, background ambiance.
-- **`post`**: Figures, diagram illustrations, and article headers.
-- **`book`**: Book cover scans and jacket artwork.
+- Free-form tags (`tags: string[]`) can be assigned to any resource just like posts and notes (e.g. `essay`, `cover`, `architecture`, `screenshot`, `portrait`, `reading`).
+- Multiple tags can be specified per asset.
+- Filter bars automatically discover and display dynamic tag pills based on assets present in the library.
+- Rigid legacy categories (`atmosphere`, `profile`) have been removed in favor of flexible tagging.
 
 ---
 
