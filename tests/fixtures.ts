@@ -110,7 +110,8 @@ export function createTestMedia(
     alt: `Test image ${slugCounter}`,
     size: "100 KB",
     uploadedAt: "2026-08-20",
-    tag: "atmosphere",
+    tag: "",
+    tags: [],
     ...overrides,
   };
 }

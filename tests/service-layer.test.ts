@@ -129,6 +129,7 @@ test("content service supports media and user roles", async () => {
     size: "100 KB",
     uploadedAt: "2026-08-20",
     tag: "atmosphere" as const,
+    tags: ["atmosphere"],
   };
 
   await service.addMedia(newMedia);

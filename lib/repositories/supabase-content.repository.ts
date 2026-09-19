@@ -744,6 +744,8 @@ export class SupabaseContentRepository implements ContentRepository {
           const fileName = item.name.startsWith("res-") ? `${cleanItemName}.${ext}` : `${Date.now()}-${cleanItemName}.${ext}`;
           const storagePath = `uploads/${fileName}`;
 
+          const buffer = Buffer.from(base64Data, "base64");
+
           const { data: uploadData, error: uploadError } = await this.db.storage
             .from("media")
             .upload(storagePath, buffer, {

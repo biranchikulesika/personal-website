@@ -178,6 +178,7 @@ test('unauthenticated caller cannot add media via addMediaAction', async () => {
     size: '10KB',
     uploadedAt: '2026-08-29',
     tag: 'atmosphere',
+    tags: [],
   });
   assert.equal(res.success, false);
   assert.ok(res.error?.includes('Unauthorized') || res.error?.includes('Authentication'));

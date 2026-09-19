@@ -359,25 +359,6 @@ export function MediaManager({
     };
   }, [menuOpenId]);
 
-  useEffect(() => {
-    if (!activePhoto) return;
-    function handleKeyDown(e: KeyboardEvent) {
-      if (e.key === 'Escape') {
-        setActivePhoto(null);
-      } else if (e.key === 'ArrowLeft') {
-        const idx = visibleMedia.findIndex((m) => m.id === activePhoto.id);
-        if (idx > 0) setActivePhoto(visibleMedia[idx - 1]);
-        else if (visibleMedia.length > 0) setActivePhoto(visibleMedia[visibleMedia.length - 1]);
-      } else if (e.key === 'ArrowRight') {
-        const idx = visibleMedia.findIndex((m) => m.id === activePhoto.id);
-        if (idx < visibleMedia.length - 1) setActivePhoto(visibleMedia[idx + 1]);
-        else if (visibleMedia.length > 0) setActivePhoto(visibleMedia[0]);
-      }
-    }
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [activePhoto, visibleMedia]);
-
   const confirmRequirement = 'DELETE';
 
   const filteredMedia = mediaList.filter((m) => {
@@ -407,6 +388,26 @@ export function MediaManager({
         );
       })
     : filteredMedia;
+
+  useEffect(() => {
+    if (!activePhoto) return;
+    const currentPhoto = activePhoto;
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') {
+        setActivePhoto(null);
+      } else if (e.key === 'ArrowLeft') {
+        const idx = visibleMedia.findIndex((m) => m.id === currentPhoto.id);
+        if (idx > 0) setActivePhoto(visibleMedia[idx - 1]);
+        else if (visibleMedia.length > 0) setActivePhoto(visibleMedia[visibleMedia.length - 1]);
+      } else if (e.key === 'ArrowRight') {
+        const idx = visibleMedia.findIndex((m) => m.id === currentPhoto.id);
+        if (idx < visibleMedia.length - 1) setActivePhoto(visibleMedia[idx + 1]);
+        else if (visibleMedia.length > 0) setActivePhoto(visibleMedia[0]);
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [activePhoto, visibleMedia]);
 
   return (
     <div className="space-y-6 font-sans">

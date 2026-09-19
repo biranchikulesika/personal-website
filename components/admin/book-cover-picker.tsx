@@ -116,6 +116,7 @@ export function BookCoverPicker({
         size: `${Math.max(1, Math.round(file.size / 1024))} KB`,
         uploadedAt: new Date().toISOString().split('T')[0],
         tag: 'book',
+        tags: ['book'],
       };
 
       const res = await addMediaAction(media);
