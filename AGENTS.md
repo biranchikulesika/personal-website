@@ -69,15 +69,29 @@ This file is the single source of truth for AI agents and developers working on 
 - **If `npm run build` completes with zero errors:** proceed with the authorized flow as usual.
 - **Dev-server caveat:** running `npm run build` overwrites `.next` and will disrupt any running dev server on `:3000`. Killing the dev server for this build-check use case is explicitly allowed (§8 sole exception); restarting it remains the repository owner's job, so notify them when the build check has clobbered the running server.
 
+### Mandatory Vercel Deployment Verification Gate (Pre-Merge Gate)
+
+- **Never merge a PR into `develop` or `production` until the Vercel deployment finishes successfully (`● Ready`).**
+- When opening a PR targeting `develop` (or `production`):
+  1. **Database Schema Pre-requisite**: If the changes include database schema or column modifications, apply them to the live Supabase database (`supabase db query --linked`) **BEFORE** the PR build/deployment runs. Next.js Static Site Generation (SSG) queries the live database at build time (e.g., `/library`, `/now`), so missing columns cause prerendering to fail immediately on Vercel.
+  2. **Monitor Deployment**: Track the PR preview deployment on Vercel (using `gh pr checks <pr-number>` or `vercel list`).
+  3. **Wait for Completion**: Do **NOT** merge while the deployment is queued or in progress. Wait for it to complete.
+  4. **Deployment Failure Protocol**: If Vercel reports `● Error` or the build fails:
+     - **STOP** immediately. Do not merge.
+     - Inspect the build logs (`vercel inspect <url> --logs`).
+     - Fix the issue on the active branch, push, and wait for a green preview deployment.
+  5. **Proceed Only on Success**: Only when the Vercel deployment is verified as `● Ready` AND the repository owner gives explicit instruction, proceed with the merge.
+
 ### Commit & Merge Authorization Workflow
 
 - Keep working on the active feature branch.
 - **Do NOT commit or push changes unless explicitly instructed by the repository owner.**
 - **Do NOT merge into `develop` until explicitly instructed by the repository owner.**
 - When and only when the repository owner gives explicit instruction to merge (e.g., via PR or squash merge):
-  1. Squash merge the active branch into `develop`.
-  2. Immediately prune (delete) the feature branch locally (and remotely if tracking) so that only `develop` (with new changes) and `production` (untouched) remain.
-  3. Verify that the repository is clean and ready for the next task.
+  1. Verify that the PR's Vercel deployment check has finished with status `● Ready` (success).
+  2. Squash merge the active branch into `develop`.
+  3. Immediately prune (delete) the feature branch locally (and remotely if tracking) so that only `develop` (with new changes) and `production` (untouched) remain.
+  4. Verify that the repository is clean and ready for the next task.
 
 ---
 
@@ -146,6 +160,7 @@ The platform strictly follows a **4-tier layered architecture**. Maintain clean,
 - **Schema Integrity & Migrations**:
   - **`supabase/migrations/20260830000000_initial_schema.sql` is the single source of truth** — the one authoritative, idempotent schema file that recreates the entire database (all tables, types, functions, triggers, indexes, RLS policies, and grants).
   - **No other migration files are tracked.** The three small `now_entries` column migrations (status, location, last_edited_at) are already merged into this initial schema. Schema changes are made directly in this file (idempotently: `CREATE TABLE IF NOT EXISTS`, `CREATE INDEX IF NOT EXISTS`, `DROP POLICY IF EXISTS`), then applied to local (`psql postgres://postgres:postgres@127.0.0.1:54322/postgres -f supabase/migrations/20260830000000_initial_schema.sql`) and live (via `supabase db query --linked`).
+  - **Live DB Schema Pre-requisite for Builds & Deployments**: Next.js pre-renders static pages (`/library`, `/now`, `/p/[slug]`) at build time using live database credentials. Therefore, all schema changes must be applied to the live Supabase database via `supabase db query --linked` **before** opening/merging PRs or triggering deployments that query the new columns.
   - Row Level Security (RLS) is compulsory on all public tables with explicit policies.
   - Direct data queries must always route through `SupabaseContentRepository`.
 
