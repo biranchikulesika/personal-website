@@ -42,6 +42,7 @@ export interface ContentRepository {
   getAllBooks(): Promise<BookItem[]>;
   saveBook(book: BookItem): Promise<BookItem>;
   deleteBook(slug: string): Promise<boolean>;
+  toggleBookStatus(slug: string): Promise<BookItem | null>;
 
   getScribbleEntries(): Promise<ScribbleEntry[]>;
 

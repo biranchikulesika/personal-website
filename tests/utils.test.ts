@@ -4,6 +4,7 @@ import {
   slugify,
   nowSlug,
   formatDisplayDate,
+  formatDisplayDateTime,
   formatNoteSnippet,
   stripMarkdown,
   textSnippet,
@@ -51,6 +52,15 @@ test("formatDisplayDate formats ISO dates", () => {
   assert.ok(result.includes("Mar"), "should contain month abbreviation");
   assert.ok(result.includes("12"), "should contain day");
   assert.ok(result.includes("2026"), "should contain year");
+
+  const isoTimestamp = formatDisplayDate("2026-03-12T14:30:00.000Z");
+  assert.ok(isoTimestamp.includes("Mar"), "should format ISO timestamp month");
+  assert.ok(isoTimestamp.includes("12"), "should format ISO timestamp day");
+  assert.ok(isoTimestamp.includes("2026"), "should format ISO timestamp year");
+
+  const monthYear = formatDisplayDate("2026-09");
+  assert.ok(monthYear.includes("Sep"), "should format YYYY-MM month");
+  assert.ok(monthYear.includes("2026"), "should format YYYY-MM year");
 });
 
 test("formatDisplayDate passes through pre-formatted strings", () => {
@@ -60,6 +70,31 @@ test("formatDisplayDate passes through pre-formatted strings", () => {
 
 test("formatDisplayDate handles empty input", () => {
   assert.equal(formatDisplayDate(""), "");
+});
+
+// ── formatDisplayDateTime ───────────────────────────────────────────────────
+
+test("formatDisplayDateTime formats ISO timestamp with date and time", () => {
+  const result = formatDisplayDateTime("2026-03-12T14:30:00.000Z");
+  assert.ok(result.includes("Mar"), "should contain month abbreviation");
+  assert.ok(result.includes("12"), "should contain day");
+  assert.ok(result.includes("2026"), "should contain year");
+  // Time component is localized, should include hour and minutes
+  assert.ok(result.includes(":") || result.includes("30"), "should contain time components");
+});
+
+test("formatDisplayDateTime formats date-only string cleanly", () => {
+  const result = formatDisplayDateTime("2026-03-12");
+  assert.ok(result.includes("Mar"), "should contain month abbreviation");
+  assert.ok(result.includes("12"), "should contain day");
+  assert.ok(result.includes("2026"), "should contain year");
+});
+
+test("formatDisplayDateTime handles empty and invalid input", () => {
+  assert.equal(formatDisplayDateTime(""), "");
+  assert.equal(formatDisplayDateTime(undefined), "");
+  assert.equal(formatDisplayDateTime(null), "");
+  assert.equal(formatDisplayDateTime("2025"), "2025");
 });
 
 // ── sectionsToMarkdown ──────────────────────────────────────────────────────

@@ -6,18 +6,30 @@ import { AdminDashboard } from '@/components/admin/admin-dashboard';
 import { getSupabaseServer } from '@/lib/supabase/server';
 import { isAdminRole } from '@/lib/auth/admin';
 import { parseUserAgent } from '@/lib/utils';
-import type { PasskeyItem, UserSession } from '@/lib/types';
+import type { PasskeyItem, UserSession, SidepanelTab } from "@/lib/types";
 
 export const metadata: Metadata = {
   title: { absolute: 'Admin Workspace' },
-  description: 'Manage writing, atomic notes, media resources, and admin settings.',
+  description: 'Manage writing, atomic notes, resources, and admin settings.',
   robots: {
     index: false,
     follow: false,
   },
 };
 
-export default async function AdminPage() {
+export default async function AdminPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ tab?: string }>;
+}) {
+  const { tab: initialTabParam } = await searchParams;
+  // Only accept a known tab id — an unknown/missing value falls back to home.
+  const initialTab: SidepanelTab = ["home", "content", "media", "subscribers", "account"].includes(
+    initialTabParam as SidepanelTab,
+  )
+    ? (initialTabParam as SidepanelTab)
+    : "home";
+
   const contentService = new ContentService();
 
   // Verify authentication session
@@ -136,6 +148,7 @@ export default async function AdminPage() {
       initialPasskeys={passkeys}
       initialConnectedProviders={connectedProviders}
       initialSessions={sessions}
+      initialTab={initialTab}
       userName={userName}
       userEmail={userEmail}
       userAvatarUrl={userAvatarUrl}

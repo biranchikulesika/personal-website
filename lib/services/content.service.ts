@@ -119,6 +119,10 @@ export class ContentService {
     return this.repo.deleteBook(slug);
   }
 
+  toggleBookStatus(slug: string): Promise<BookItem | null> {
+    return this.repo.toggleBookStatus(slug);
+  }
+
   getNowEntries(): Promise<NowEntry[]> {
     return getCachedNow(this.repo);
   }

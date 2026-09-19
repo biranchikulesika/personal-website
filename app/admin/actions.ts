@@ -262,6 +262,21 @@ export async function deleteBookAction(
   }
 }
 
+export async function toggleBookStatusAction(
+  slug: string,
+): Promise<{ success: boolean; book?: BookItem; error?: string }> {
+  try {
+    await assertAdminUser();
+    const { slug: validSlug } = validateInput(SlugParamSchema, { slug });
+    const book = await contentService.toggleBookStatus(validSlug);
+    if (!book) return { success: false, error: 'Book not found' };
+    revalidateContent(['/scribble', '/library']);
+    return { success: true, book };
+  } catch (err: unknown) {
+    return { success: false, error: (err as Error).message || 'Failed to toggle book status' };
+  }
+}
+
 // Now Page Timeline Actions --------------------------------------------------
 
 export async function getNowEntriesAction(): Promise<NowEntry[]> {

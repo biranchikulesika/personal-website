@@ -6,11 +6,12 @@ import {
   deleteNowEntryAction,
   deletePostAction,
   saveBookAction,
+  toggleBookStatusAction,
   toggleNoteStatusAction,
   togglePostStatusAction,
 } from "@/app/admin/actions";
 import {
-  ExternalLinkIcon,
+  EllipsisVerticalIcon,
   EyeIcon,
   EyeSlashIcon,
   PencilIcon,
@@ -71,6 +72,20 @@ export function ContentManager({
 
   const [isPending, startTransition] = useTransition();
   const { message: toastMessage, showToast } = useToast();
+
+  // Three-dot action menu state
+  const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
+
+  // Close action menu on Escape key
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") setMenuOpenId(null);
+    }
+    if (menuOpenId) {
+      window.addEventListener("keydown", handleKeyDown);
+      return () => window.removeEventListener("keydown", handleKeyDown);
+    }
+  }, [menuOpenId]);
 
   useEffect(() => {
     if (openCreateBookTrigger && openCreateBookTrigger > 0) {
@@ -225,9 +240,11 @@ export function ContentManager({
     setIsEditingBook(true);
   }
 
-  function handleSaveBook(e: React.FormEvent) {
-    e.preventDefault();
-    if (!bookTitle.trim() || !bookAuthor.trim()) return;
+  function handleSaveBookWithStatus(publish: boolean) {
+    if (!bookTitle.trim() || !bookAuthor.trim()) {
+      showToast("Book title and author are required.");
+      return;
+    }
 
     const cleanSlug = slugify(bookSlug || bookTitle || "untitled-book");
     const isTakenByBook = books.some(
@@ -258,6 +275,8 @@ export function ContentManager({
       tags: parsedTags.length > 0 ? parsedTags : ["book"],
       cover: bookCover.trim() || undefined,
       link: bookLink.trim() || undefined,
+      isPublished: publish,
+      status: publish ? "published" : "unpublished",
     };
 
     startTransition(async () => {
@@ -270,14 +289,25 @@ export function ContentManager({
           const filtered = prev.filter(
             (b) => b.slug !== editingBook?.slug && b.slug !== cleanSlug,
           );
-          return [bookPayload, ...filtered];
+          return [res.book!, ...filtered];
         });
         setIsEditingBook(false);
-        showToast(`Book "${bookTitle}" saved to library shelf!`);
+        showToast(
+          publish
+            ? `Book "${bookTitle}" published to library shelf!`
+            : `Book "${bookTitle}" saved as draft!`,
+        );
       } else {
         showToast(res.error || "Failed to save book");
       }
     });
+  }
+
+  function handleSaveBook(e: React.FormEvent) {
+    e.preventDefault();
+    const isCurrentlyPublished =
+      editingBook ? editingBook.isPublished !== false && editingBook.status !== "unpublished" : true;
+    handleSaveBookWithStatus(isCurrentlyPublished);
   }
 
   // Confirmation action handler (publish / unpublish / delete)
@@ -342,6 +372,29 @@ export function ContentManager({
           } else {
             showToast(res.error || "Failed to toggle status");
           }
+        } else if (kind === "book") {
+          const res = await toggleBookStatusAction(slug);
+          if (res.success && res.book) {
+            setBooks((prev) =>
+              prev.map((b) =>
+                b.slug === slug
+                  ? {
+                      ...b,
+                      isPublished: res.book!.isPublished,
+                      status: res.book!.status,
+                    }
+                  : b,
+              ),
+            );
+            setConfirmAction(null);
+            showToast(
+              `Book is now ${
+                res.book.isPublished ? "Published" : "Draft"
+              }.`,
+            );
+          } else {
+            showToast(res.error || "Failed to toggle status");
+          }
         } else {
           const res = await toggleNoteStatusAction(slug);
           if (res.success && res.note) {
@@ -399,7 +452,9 @@ export function ContentManager({
       title: b.title,
       date: b.date,
       persona: b.persona,
-      status: undefined,
+      status: (b.isPublished !== false && b.status !== "unpublished"
+        ? "published"
+        : "unpublished") as "published" | "unpublished",
       rawPost: undefined,
       rawNote: undefined,
       rawBook: b,
@@ -443,7 +498,7 @@ export function ContentManager({
         return false;
     }
 
-    if (item.kind === "book" || item.kind === "now")
+    if (item.kind === "now")
       return statusFilter === "all";
     if (statusFilter !== "all" && item.status !== statusFilter) return false;
 
@@ -580,50 +635,160 @@ export function ContentManager({
                     )}
                   </div>
 
-                  <div>
+                  <div className="flex items-center gap-1.5">
                     {isBook ? (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-night-soft px-2 py-0.5 text-[10px] font-semibold text-gray-mid border border-tinted/20">
-                        <span className="h-1.5 w-1.5 rounded-full bg-teal" />
+                      <span className="inline-flex items-center rounded-full bg-night-soft px-2 py-0.5 text-[10px] font-semibold text-gray-mid border border-tinted/20">
                         On Shelf
                       </span>
                     ) : isNow ? (
                       <span
-                        className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                        className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ${
                           rowIndex === 0
                             ? "bg-sea-blue/20 text-sea-blue border border-sea-blue/30"
                             : "bg-night-soft text-gray-mid border border-tinted/20"
                         }`}
                       >
-                        <span
-                          className={`h-1.5 w-1.5 rounded-full ${
-                            rowIndex === 0 ? "bg-sea-blue" : "bg-gray-mid"
-                          }`}
-                        />
                         {rowIndex === 0 ? "Current" : "Past"}
                       </span>
                     ) : (
                       <span
-                        className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                        className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ${
                           isPublished
                             ? "bg-emerald-950/60 text-emerald-400 border border-emerald-800/40"
                             : "bg-amber-950/60 text-amber-400 border border-amber-800/40"
                         }`}
                       >
-                        <span
-                          className={`h-1.5 w-1.5 rounded-full ${
-                            isPublished ? "bg-emerald-400" : "bg-amber-400"
-                          }`}
-                        />
                         {isPublished ? "Published" : "Draft"}
                       </span>
                     )}
+
+                    {/* Mobile Action Menu */}
+                    <div className="relative inline-block text-left">
+                      <button
+                        type="button"
+                        aria-label={`Actions for ${item.title}`}
+                        aria-haspopup="true"
+                        aria-expanded={menuOpenId === `mob-${item.id}`}
+                        onClick={() =>
+                          setMenuOpenId(
+                            menuOpenId === `mob-${item.id}` ? null : `mob-${item.id}`
+                          )
+                        }
+                        className="flex h-7 w-7 items-center justify-center rounded-lg text-gray-mid/70 hover:bg-night-soft hover:text-paper focus:outline-none focus:ring-1 focus:ring-tinted/30"
+                      >
+                        <EllipsisVerticalIcon className="h-4 w-4" />
+                      </button>
+
+                      {menuOpenId === `mob-${item.id}` && (
+                        <>
+                          <button
+                            type="button"
+                            className="fixed inset-0 z-30 cursor-default"
+                            aria-label="Close menu"
+                            onClick={() => setMenuOpenId(null)}
+                          />
+                          <div className="absolute right-0 top-full mt-1.5 z-40 w-36 rounded-xl border border-tinted/20 bg-night-soft p-1 shadow-xl animate-in fade-in zoom-in-95 text-left">
+                            {isBook ? (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setMenuOpenId(null);
+                                  if (item.rawBook) handleOpenEditBook(item.rawBook);
+                                }}
+                                className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-medium text-paper transition-colors hover:bg-night"
+                              >
+                                <PencilIcon className="h-3.5 w-3.5 text-gray-mid" />
+                                <span>Edit</span>
+                              </button>
+                            ) : isNow ? (
+                              <Link
+                                href={`/admin/compose?slug=${item.slug}&type=now`}
+                                onClick={() => setMenuOpenId(null)}
+                                className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-medium text-paper transition-colors hover:bg-night"
+                              >
+                                <PencilIcon className="h-3.5 w-3.5 text-gray-mid" />
+                                <span>Edit</span>
+                              </Link>
+                            ) : (
+                              <Link
+                                href={`/admin/compose?slug=${item.slug}&type=${item.kind}`}
+                                onClick={() => setMenuOpenId(null)}
+                                className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-medium text-paper transition-colors hover:bg-night"
+                              >
+                                <PencilIcon className="h-3.5 w-3.5 text-gray-mid" />
+                                <span>Edit</span>
+                              </Link>
+                            )}
+
+                            {!isNow && (
+                              <button
+                                type="button"
+                                disabled={isPending}
+                                onClick={() => {
+                                  setMenuOpenId(null);
+                                  openConfirmAction({
+                                    kind: item.kind,
+                                    action: isPublished ? "unpublish" : "publish",
+                                    slug: item.slug,
+                                    title: item.title,
+                                  });
+                                }}
+                                className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors ${
+                                  isPublished
+                                    ? "text-amber-400 hover:bg-amber-950/40"
+                                    : "text-emerald-400 hover:bg-emerald-950/40"
+                                }`}
+                              >
+                                {isPublished ? (
+                                  <>
+                                    <EyeSlashIcon className="h-3.5 w-3.5" />
+                                    <span>Unpublish</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <EyeIcon className="h-3.5 w-3.5" />
+                                    <span>Publish</span>
+                                  </>
+                                )}
+                              </button>
+                            )}
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setMenuOpenId(null);
+                                openConfirmAction({
+                                  kind: item.kind,
+                                  action: "delete",
+                                  slug: item.slug,
+                                  title: item.title,
+                                });
+                              }}
+                              className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-medium text-red-400 transition-colors hover:bg-red-950/40"
+                            >
+                              <TrashIcon className="h-3.5 w-3.5" />
+                              <span>Delete</span>
+                            </button>
+                          </div>
+                        </>
+                      )}
+                    </div>
                   </div>
                 </div>
 
                 {/* Title & Author */}
                 <div>
                   <h4 className="font-serif text-base font-medium text-paper leading-snug">
-                    {item.title}
+                    <Link
+                      href={linkHref}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      title={`Open ${item.title}`}
+                      aria-label={`Open ${item.title}`}
+                      className="transition-colors hover:text-accent"
+                    >
+                      {item.title}
+                    </Link>
                   </h4>
                   {isBook && item.rawBook && (
                     <p className="mt-0.5 text-xs text-gray-mid">
@@ -631,99 +796,8 @@ export function ContentManager({
                     </p>
                   )}
                   <p className="mt-1 text-[11px] text-gray-mid">
-                    {item.kind === "note" ? formatDisplayDate(item.date) : item.date}
+                    {formatDisplayDate(item.date)}
                   </p>
-                </div>
-
-                {/* Mobile Action Buttons */}
-                <div className="flex items-center justify-between border-t border-tinted/20 pt-2.5 gap-2">
-                  <Link
-                    href={linkHref}
-                    target="_blank"
-                    className="inline-flex items-center gap-1 rounded-lg bg-night-soft border border-tinted/20 px-2.5 py-1.5 text-xs font-medium text-gray-mid hover:text-paper"
-                  >
-                    <ExternalLinkIcon className="h-3.5 w-3.5" />
-                    <span>View</span>
-                  </Link>
-
-                  <div className="flex items-center gap-1.5">
-                    {!isBook && !isNow && (
-                      <button
-                        type="button"
-                        disabled={isPending}
-                        onClick={() =>
-                          openConfirmAction({
-                            kind: item.kind,
-                            action: isPublished ? "unpublish" : "publish",
-                            slug: item.slug,
-                            title: item.title,
-                          })
-                        }
-                        className={`inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium ${
-                          isPublished
-                            ? "bg-amber-950/40 text-amber-400 border border-amber-800/30"
-                            : "bg-emerald-950/40 text-emerald-400 border border-emerald-800/30"
-                        }`}
-                      >
-                        {isPublished ? <EyeSlashIcon className="h-3.5 w-3.5" /> : <EyeIcon className="h-3.5 w-3.5" />}
-                        <span>{isPublished ? "Draft" : "Publish"}</span>
-                      </button>
-                    )}
-
-                    {isBook && item.rawBook && (
-                      <button
-                        type="button"
-                        onClick={() => handleOpenEditBook(item.rawBook!)}
-                        className="inline-flex items-center gap-1 rounded-lg bg-night-soft border border-tinted/20 px-2.5 py-1.5 text-xs font-medium text-paper"
-                      >
-                        <PencilIcon className="h-3.5 w-3.5" />
-                        <span>Edit</span>
-                      </button>
-                    )}
-
-                    {isNow && (
-                      <Link
-                        href="/admin/compose?type=now"
-                        className="inline-flex items-center gap-1 rounded-lg bg-night-soft border border-tinted/20 px-2.5 py-1.5 text-xs font-medium text-paper"
-                      >
-                        <PencilIcon className="h-3.5 w-3.5" />
-                        <span>Edit</span>
-                      </Link>
-                    )}
-
-                    {!isBook && !isNow && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (item.kind === "post" && item.rawPost) {
-                            handleOpenEditPost(item.rawPost);
-                          } else if (item.kind === "note" && item.rawNote) {
-                            handleOpenEditNote(item.rawNote);
-                          }
-                        }}
-                        className="inline-flex items-center gap-1 rounded-lg bg-night-soft border border-tinted/20 px-2.5 py-1.5 text-xs font-medium text-paper"
-                      >
-                        <PencilIcon className="h-3.5 w-3.5" />
-                        <span>Edit</span>
-                      </button>
-                    )}
-
-                    <button
-                      type="button"
-                      onClick={() =>
-                        openConfirmAction({
-                          kind: item.kind,
-                          action: "delete",
-                          slug: item.slug,
-                          title: item.title,
-                        })
-                      }
-                      className="rounded-lg p-1.5 text-gray-mid hover:bg-red-950/40 hover:text-red-400"
-                      aria-label={`Delete ${item.title}`}
-                    >
-                      <TrashIcon className="h-4 w-4" />
-                    </button>
-                  </div>
                 </div>
               </div>
             );
@@ -863,7 +937,7 @@ export function ContentManager({
 
       {/* Desktop Unified Content Table */}
       <div className="hidden md:block overflow-hidden rounded-2xl border border-tinted/20 bg-post-card shadow-sm">
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto min-h-[260px]">
           <table className="w-full text-left text-sm">
             <caption className="sr-only">Content management table</caption>
             <thead className="border-b border-tinted/20 bg-night-soft text-xs font-semibold uppercase tracking-wider text-gray-mid">
@@ -872,8 +946,7 @@ export function ContentManager({
                 <th scope="col" className="px-4 py-3.5">Type</th>
                 <th scope="col" className="px-4 py-3.5">Persona</th>
                 <th scope="col" className="px-4 py-3.5">Date</th>
-                <th scope="col" className="px-4 py-3.5">Status</th>
-                <th scope="col" className="px-5 py-3.5 text-right">Actions</th>
+                <th scope="col" className="px-5 py-3.5 text-right">Status</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-tinted/20">
@@ -899,7 +972,16 @@ export function ContentManager({
                     {/* Title */}
                     <td className="px-5 py-4">
                       <div className="font-serif text-base font-medium text-paper">
-                        {item.title}
+                        <Link
+                          href={linkHref}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          title={`Open ${item.title}`}
+                          aria-label={`Open ${item.title}`}
+                          className="font-serif text-base font-medium text-paper transition-colors hover:text-accent"
+                        >
+                          {item.title}
+                        </Link>
                       </div>
                       {isBook && item.rawBook && (
                         <p className="mt-0.5 text-xs text-gray-mid">
@@ -943,236 +1025,156 @@ export function ContentManager({
 
                     {/* Date */}
                     <td className="px-4 py-4 text-xs text-gray-mid whitespace-nowrap">
-                      {item.kind === "note"
-                        ? formatDisplayDate(item.date)
-                        : item.date}
+                      {formatDisplayDate(item.date)}
                     </td>
 
-                    {/* Status */}
-                    <td className="px-4 py-4 text-xs whitespace-nowrap">
-                      {isBook ? (
-                        <span className="inline-flex items-center gap-1.5 rounded-full bg-night-soft px-2.5 py-0.5 text-xs font-semibold text-gray-mid border border-tinted/20">
-                          <span className="h-1.5 w-1.5 rounded-full bg-teal" />
-                          On Shelf
-                        </span>
-                      ) : isNow ? (
-                        <span
-                          className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                            rowIndex === 0
-                              ? "bg-sea-blue/20 text-sea-blue border border-sea-blue/30"
-                              : "bg-night-soft text-gray-mid border border-tinted/20"
-                          }`}
-                        >
-                          <span
-                            className={`h-1.5 w-1.5 rounded-full ${
-                              rowIndex === 0 ? "bg-sea-blue" : "bg-gray-mid"
-                            }`}
-                          />
-                          {rowIndex === 0 ? "Current" : "Past"}
-                        </span>
-                      ) : (
-                        <span
-                          className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                            isPublished
-                              ? "bg-emerald-950/60 text-emerald-400 border border-emerald-800/40"
-                              : "bg-amber-950/60 text-amber-400 border border-amber-800/40"
-                          }`}
-                        >
-                          <span
-                            className={`h-1.5 w-1.5 rounded-full ${
-                              isPublished ? "bg-emerald-400" : "bg-amber-400"
-                            }`}
-                          />
-                          {isPublished ? "Published" : "Draft"}
-                        </span>
-                      )}
-                    </td>
-
-                    {/* Actions */}
-                    <td className="px-5 py-4 text-right whitespace-nowrap">
-                      <div className="inline-flex items-center gap-1">
+                    {/* Status & Actions */}
+                    <td className="px-5 py-4 text-xs whitespace-nowrap text-right">
+                      <div className="inline-flex items-center justify-end gap-2.5">
                         {isBook ? (
-                          <>
-                            <Link
-                              href={linkHref}
-                              target="_blank"
-                              title="View on Shelf"
-                              aria-label={`View ${item.title} on shelf`}
-                              className="rounded-full p-2 text-gray-mid transition-colors hover:bg-night-soft hover:text-paper"
-                            >
-                              <ExternalLinkIcon className="h-4 w-4" />
-                            </Link>
-                            <button
-                              type="button"
-                              title="Edit"
-                              aria-label={`Edit ${item.title}`}
-                              onClick={() =>
-                                item.rawBook && handleOpenEditBook(item.rawBook)
-                              }
-                              className="rounded-full p-2 text-paper transition-colors hover:bg-night-soft"
-                            >
-                              <PencilIcon className="h-4 w-4" />
-                            </button>
-                            <button
-                              type="button"
-                              title="Remove"
-                              aria-label={`Remove ${item.title}`}
-                              onClick={() =>
-                                openConfirmAction({
-                                  kind: "book",
-                                  action: "delete",
-                                  slug: item.slug,
-                                  title: item.title,
-                                })
-                              }
-                              className="rounded-full p-2 text-red-400 transition-colors hover:bg-red-950/40"
-                            >
-                              <TrashIcon className="h-4 w-4" />
-                            </button>
-                          </>
+                          <span className="inline-flex items-center rounded-full bg-night-soft px-2.5 py-0.5 text-xs font-semibold text-gray-mid border border-tinted/20">
+                            On Shelf
+                          </span>
                         ) : isNow ? (
-                          <>
-                            <Link
-                              href="/now"
-                              target="_blank"
-                              title="View Now page"
-                              aria-label={`View ${item.title} on the Now page`}
-                              className="rounded-full p-2 text-gray-mid transition-colors hover:bg-night-soft hover:text-paper"
-                            >
-                              <ExternalLinkIcon className="h-4 w-4" />
-                            </Link>
-                            <Link
-                              href={`/admin/compose?slug=${item.slug}&type=now`}
-                              title="Edit"
-                              aria-label={`Edit ${item.title}`}
-                              className="rounded-full p-2 text-paper transition-colors hover:bg-night-soft"
-                            >
-                              <PencilIcon className="h-4 w-4" />
-                            </Link>
-                            <button
-                              type="button"
-                              title="Delete"
-                              aria-label={`Delete ${item.title}`}
-                              onClick={() =>
-                                openConfirmAction({
-                                  kind: "now",
-                                  action: "delete",
-                                  slug: item.slug,
-                                  title: item.title,
-                                })
-                              }
-                              className="rounded-full p-2 text-red-400 transition-colors hover:bg-red-950/40"
-                            >
-                              <TrashIcon className="h-4 w-4" />
-                            </button>
-                          </>
-                        ) : isPublished ? (
-                          <>
-                            <Link
-                              href={linkHref}
-                              target="_blank"
-                              title="View"
-                              aria-label={`View ${item.title}`}
-                              className="rounded-full p-2 text-gray-mid transition-colors hover:bg-night-soft hover:text-paper"
-                            >
-                              <ExternalLinkIcon className="h-4 w-4" />
-                            </Link>
-                            <Link
-                              href={`/admin/compose?slug=${item.slug}&type=${item.kind}`}
-                              title="Edit"
-                              aria-label={`Edit ${item.title}`}
-                              className="rounded-full p-2 text-paper transition-colors hover:bg-night-soft"
-                            >
-                              <PencilIcon className="h-4 w-4" />
-                            </Link>
-                            <button
-                              type="button"
-                              title="Unpublish"
-                              aria-label={`Unpublish ${item.title}`}
-                              disabled={isPending}
-                              onClick={() =>
-                                openConfirmAction({
-                                  kind: item.kind,
-                                  action: "unpublish",
-                                  slug: item.slug,
-                                  title: item.title,
-                                })
-                              }
-                              className="rounded-full p-2 text-amber-400 transition-colors hover:bg-amber-950/40"
-                            >
-                              <EyeSlashIcon className="h-4 w-4" />
-                            </button>
-                            <button
-                              type="button"
-                              title="Delete"
-                              aria-label={`Delete ${item.title}`}
-                              onClick={() =>
-                                openConfirmAction({
-                                  kind: item.kind,
-                                  action: "delete",
-                                  slug: item.slug,
-                                  title: item.title,
-                                })
-                              }
-                              className="rounded-full p-2 text-red-400 transition-colors hover:bg-red-950/40"
-                            >
-                              <TrashIcon className="h-4 w-4" />
-                            </button>
-                          </>
+                          <span
+                            className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                              rowIndex === 0
+                                ? "bg-sea-blue/20 text-sea-blue border border-sea-blue/30"
+                                : "bg-night-soft text-gray-mid border border-tinted/20"
+                            }`}
+                          >
+                            {rowIndex === 0 ? "Current" : "Past"}
+                          </span>
                         ) : (
-                          <>
-                            <Link
-                              href={linkHref}
-                              target="_blank"
-                              title="Preview"
-                              aria-label={`Preview ${item.title}`}
-                              className="rounded-full p-2 text-gray-mid transition-colors hover:bg-night-soft hover:text-paper"
-                            >
-                              <ExternalLinkIcon className="h-4 w-4" />
-                            </Link>
-                            <Link
-                              href={`/admin/compose?slug=${item.slug}&type=${item.kind}`}
-                              title="Edit"
-                              aria-label={`Edit ${item.title}`}
-                              className="rounded-full p-2 text-paper transition-colors hover:bg-night-soft"
-                            >
-                              <PencilIcon className="h-4 w-4" />
-                            </Link>
-                            <button
-                              type="button"
-                              title="Publish"
-                              aria-label={`Publish ${item.title}`}
-                              disabled={isPending}
-                              onClick={() =>
-                                openConfirmAction({
-                                  kind: item.kind,
-                                  action: "publish",
-                                  slug: item.slug,
-                                  title: item.title,
-                                })
-                              }
-                              className="rounded-full p-2 text-emerald-400 transition-colors hover:bg-emerald-950/40"
-                            >
-                              <EyeIcon className="h-4 w-4" />
-                            </button>
-                            <button
-                              type="button"
-                              title="Delete"
-                              aria-label={`Delete ${item.title}`}
-                              onClick={() =>
-                                openConfirmAction({
-                                  kind: item.kind,
-                                  action: "delete",
-                                  slug: item.slug,
-                                  title: item.title,
-                                })
-                              }
-                              className="rounded-full p-2 text-red-400 transition-colors hover:bg-red-950/40"
-                            >
-                              <TrashIcon className="h-4 w-4" />
-                            </button>
-                          </>
+                          <span
+                            className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                              isPublished
+                                ? "bg-emerald-950/60 text-emerald-400 border border-emerald-800/40"
+                                : "bg-amber-950/60 text-amber-400 border border-amber-800/40"
+                            }`}
+                          >
+                            {isPublished ? "Published" : "Draft"}
+                          </span>
                         )}
+
+                        {/* Actions Menu */}
+                        <div className="relative inline-block text-left">
+                          <button
+                            type="button"
+                            aria-label={`Actions for ${item.title}`}
+                            aria-haspopup="true"
+                            aria-expanded={menuOpenId === item.id}
+                            onClick={() =>
+                              setMenuOpenId(menuOpenId === item.id ? null : item.id)
+                            }
+                            className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-mid transition-colors hover:bg-night-soft hover:text-paper focus:outline-none focus:ring-1 focus:ring-tinted/30"
+                          >
+                            <EllipsisVerticalIcon className="h-4 w-4" />
+                          </button>
+
+                          {menuOpenId === item.id && (
+                            <>
+                              <button
+                                type="button"
+                                className="fixed inset-0 z-30 cursor-default"
+                                aria-label="Close menu"
+                                onClick={() => setMenuOpenId(null)}
+                              />
+                              <div
+                                className={`absolute right-0 z-40 w-36 rounded-xl border border-tinted/20 bg-night-soft p-1 shadow-xl animate-in fade-in zoom-in-95 text-left ${
+                                  rowIndex >= filteredItems.length - 2 && filteredItems.length >= 3
+                                    ? "bottom-full mb-1.5"
+                                    : "top-full mt-1.5"
+                                }`}
+                              >
+                                {/* Edit */}
+                                {isBook ? (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setMenuOpenId(null);
+                                      if (item.rawBook) handleOpenEditBook(item.rawBook);
+                                    }}
+                                    className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-medium text-paper transition-colors hover:bg-night"
+                                  >
+                                    <PencilIcon className="h-3.5 w-3.5 text-gray-mid" />
+                                    <span>Edit</span>
+                                  </button>
+                                ) : isNow ? (
+                                  <Link
+                                    href={`/admin/compose?slug=${item.slug}&type=now`}
+                                    onClick={() => setMenuOpenId(null)}
+                                    className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-medium text-paper transition-colors hover:bg-night"
+                                  >
+                                    <PencilIcon className="h-3.5 w-3.5 text-gray-mid" />
+                                    <span>Edit</span>
+                                  </Link>
+                                ) : (
+                                  <Link
+                                    href={`/admin/compose?slug=${item.slug}&type=${item.kind}`}
+                                    onClick={() => setMenuOpenId(null)}
+                                    className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-medium text-paper transition-colors hover:bg-night"
+                                  >
+                                    <PencilIcon className="h-3.5 w-3.5 text-gray-mid" />
+                                    <span>Edit</span>
+                                  </Link>
+                                )}
+
+                                {/* Publish / Unpublish (posts, notes & books) */}
+                                {!isNow && (
+                                  <button
+                                    type="button"
+                                    disabled={isPending}
+                                    onClick={() => {
+                                      setMenuOpenId(null);
+                                      openConfirmAction({
+                                        kind: item.kind,
+                                        action: isPublished ? "unpublish" : "publish",
+                                        slug: item.slug,
+                                        title: item.title,
+                                      });
+                                    }}
+                                    className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors ${
+                                      isPublished
+                                        ? "text-amber-400 hover:bg-amber-950/40"
+                                        : "text-emerald-400 hover:bg-emerald-950/40"
+                                    }`}
+                                  >
+                                    {isPublished ? (
+                                      <>
+                                        <EyeSlashIcon className="h-3.5 w-3.5" />
+                                        <span>Unpublish</span>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <EyeIcon className="h-3.5 w-3.5" />
+                                        <span>Publish</span>
+                                      </>
+                                    )}
+                                  </button>
+                                )}
+
+                                {/* Delete */}
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setMenuOpenId(null);
+                                    openConfirmAction({
+                                      kind: item.kind,
+                                      action: "delete",
+                                      slug: item.slug,
+                                      title: item.title,
+                                    });
+                                  }}
+                                  className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-medium text-red-400 transition-colors hover:bg-red-950/40"
+                                >
+                                  <TrashIcon className="h-3.5 w-3.5" />
+                                  <span>Delete</span>
+                                </button>
+                              </div>
+                            </>
+                          )}
+                        </div>
                       </div>
                     </td>
                   </tr>
@@ -1180,7 +1182,7 @@ export function ContentManager({
               })}
               {filteredItems.length === 0 && (
                 <EmptyTableState
-                  colSpan={6}
+                  colSpan={5}
                   title="No entries found"
                   description="No entries match your search and filter criteria."
                 />
@@ -1315,10 +1317,23 @@ export function ContentManager({
           <div className="relative my-8 max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-3xl border border-tinted/20 bg-night p-6 shadow-2xl sm:p-8">
             {/* Header */}
             <div className="flex items-start justify-between gap-4">
-              <div>
+              <div className="flex items-center gap-3">
                 <h3 className="font-serif text-2xl font-normal text-paper">
                   {editingBook ? "Edit Book" : "Add Book to Library"}
                 </h3>
+                {editingBook && (
+                  <span
+                    className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                      editingBook.isPublished !== false && editingBook.status !== "unpublished"
+                        ? "bg-emerald-950/60 text-emerald-400 border border-emerald-800/40"
+                        : "bg-amber-950/60 text-amber-400 border border-amber-800/40"
+                    }`}
+                  >
+                    {editingBook.isPublished !== false && editingBook.status !== "unpublished"
+                      ? "Published"
+                      : "Draft"}
+                  </span>
+                )}
               </div>
               <button
                 type="button"
@@ -1435,21 +1450,56 @@ export function ContentManager({
               </div>
 
               {/* Footer */}
-              <div className="mt-8 flex items-center justify-end gap-3 border-t border-tinted/20 pt-5">
-                <button
-                  type="button"
-                  onClick={() => setIsEditingBook(false)}
-                  className="rounded-full px-5 py-2 text-xs font-semibold text-gray-mid transition-colors hover:text-paper"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isPending}
-                  className="inline-flex items-center gap-2 rounded-full bg-accent px-6 py-2 text-xs font-semibold text-paper shadow-sm transition-colors hover:bg-accent-hover disabled:opacity-50"
-                >
-                  {isPending ? "Saving..." : "Save Book"}
-                </button>
+              <div className="mt-8 flex flex-wrap items-center justify-between gap-3 border-t border-tinted/20 pt-5">
+                <div>
+                  {/* Unpublish button for already published books */}
+                  {editingBook && editingBook.isPublished !== false && editingBook.status !== "unpublished" && (
+                    <button
+                      type="button"
+                      disabled={isPending}
+                      onClick={() => handleSaveBookWithStatus(false)}
+                      className="rounded-full border border-amber-800/40 bg-amber-950/30 px-5 py-2 text-xs font-semibold text-amber-400 transition-colors hover:bg-amber-900/50 disabled:opacity-50"
+                    >
+                      {isPending ? "Updating..." : "Unpublish"}
+                    </button>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setIsEditingBook(false)}
+                    className="rounded-full px-5 py-2 text-xs font-semibold text-gray-mid transition-colors hover:text-paper"
+                  >
+                    Cancel
+                  </button>
+
+                  {/* Save as Draft button when adding a new book or editing a draft book */}
+                  {(!editingBook || editingBook.isPublished === false || editingBook.status === "unpublished") && (
+                    <button
+                      type="button"
+                      disabled={isPending}
+                      onClick={() => handleSaveBookWithStatus(false)}
+                      className="rounded-full border border-tinted/20 bg-night-soft px-5 py-2 text-xs font-semibold text-paper transition-colors hover:bg-night hover:border-tinted/40 disabled:opacity-50"
+                    >
+                      {isPending ? "Saving..." : "Save as Draft"}
+                    </button>
+                  )}
+
+                  {/* Publish button */}
+                  <button
+                    type="button"
+                    disabled={isPending}
+                    onClick={() => handleSaveBookWithStatus(true)}
+                    className="inline-flex items-center gap-2 rounded-full bg-accent px-6 py-2 text-xs font-semibold text-paper shadow-sm transition-colors hover:bg-accent-hover disabled:opacity-50"
+                  >
+                    {isPending
+                      ? "Publishing..."
+                      : editingBook && editingBook.isPublished !== false && editingBook.status !== "unpublished"
+                        ? "Publish Changes"
+                        : "Publish"}
+                  </button>
+                </div>
               </div>
             </form>
           </div>

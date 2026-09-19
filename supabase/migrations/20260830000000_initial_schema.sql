@@ -206,9 +206,14 @@ CREATE TABLE IF NOT EXISTS "public"."books" (
     "tags" "text"[] DEFAULT '{}'::"text"[],
     "cover" "text",
     "link" "text",
+    "is_published" boolean DEFAULT true NOT NULL,
     "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
     "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL
 );
+
+-- Idempotent column addition for existing databases
+ALTER TABLE IF EXISTS "public"."books" ADD COLUMN IF NOT EXISTS "is_published" boolean DEFAULT true NOT NULL;
+CREATE INDEX IF NOT EXISTS "idx_books_is_published" ON "public"."books" USING "btree" ("is_published");
 
 
 ALTER TABLE "public"."books" OWNER TO "postgres";
@@ -238,10 +243,13 @@ CREATE TABLE IF NOT EXISTS "public"."media" (
     "size" "text" DEFAULT ''::"text" NOT NULL,
     "dimensions" "text",
     "uploaded_at" "date",
-    "tag" "text" DEFAULT 'atmosphere'::"text" NOT NULL,
+    "tag" "text" DEFAULT ''::"text",
+    "tags" "text"[] DEFAULT '{}'::"text"[],
     "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
     "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL
 );
+
+ALTER TABLE "public"."media" ADD COLUMN IF NOT EXISTS "tags" "text"[] DEFAULT '{}'::"text"[];
 
 
 ALTER TABLE "public"."media" OWNER TO "postgres";
@@ -480,6 +488,7 @@ CREATE INDEX IF NOT EXISTS "idx_featured_items_type" ON "public"."featured_items
 -- Name: idx_media_tag; Type: INDEX; Schema: public; Owner: postgres
 
 CREATE INDEX IF NOT EXISTS "idx_media_tag" ON "public"."media" USING "btree" ("tag");
+CREATE INDEX IF NOT EXISTS "idx_media_tags" ON "public"."media" USING "gin" ("tags");
 
 
 -- Name: idx_notes_date; Type: INDEX; Schema: public; Owner: postgres
@@ -645,7 +654,8 @@ CREATE POLICY "Authenticated full access" ON "public"."storage_files" TO "authen
 -- Name: books Public read all books; Type: POLICY; Schema: public; Owner: postgres
 
 DROP POLICY IF EXISTS "Public read all books" ON "public"."books";
-CREATE POLICY "Public read all books" ON "public"."books" FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Public read published books" ON "public"."books";
+CREATE POLICY "Public read published books" ON "public"."books" FOR SELECT USING ("is_published" = true);
 
 
 -- Name: media Public read all media; Type: POLICY; Schema: public; Owner: postgres

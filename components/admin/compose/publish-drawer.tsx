@@ -108,8 +108,8 @@ export function PublishDrawer({
           src: dataUrl,
           alt: file.name.replace(/\.[^.]+$/, ''),
           size: `${Math.max(1, Math.round(file.size / 1024))} KB`,
-          uploadedAt: new Date().toISOString().split('T')[0],
-          tag: 'atmosphere',
+          uploadedAt: new Date().toISOString(),
+          tags: isPost ? ['post', 'cover'] : ['note', 'cover'],
         };
         const res = await addMediaAction(mediaItem);
         const imgUrl = res.success && res.media ? res.media.src : dataUrl;

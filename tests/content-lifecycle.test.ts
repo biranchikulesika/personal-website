@@ -427,16 +427,19 @@ test("delete operation removes content permanently", async () => {
   assert.equal(post, null, "deleted post should not be retrievable");
 });
 
-test("media items have valid tag values", async () => {
+test("media items have valid tags array", async () => {
   const repo = new InMemoryTestContentRepository();
   const service = new ContentService(repo);
   const media = await service.getMedia();
 
-  const validTags = new Set(["profile", "atmosphere", "post", "book"]);
   for (const item of media) {
     assert.ok(
-      validTags.has(item.tag),
-      `media tag "${item.tag}" should be one of: ${[...validTags].join(", ")}`,
+      Array.isArray(item.tags),
+      `media tags should be an array, got ${typeof item.tags}`,
+    );
+    assert.ok(
+      !item.tags.includes("profile") && !item.tags.includes("atmosphere"),
+      `media tags should not contain profile or atmosphere`,
     );
   }
 });

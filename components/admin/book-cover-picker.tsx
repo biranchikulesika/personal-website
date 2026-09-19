@@ -260,7 +260,7 @@ export function BookCoverPicker({
               <div className="mt-2">
                 <input
                   type="text"
-                  placeholder="Search media resources..."
+                  placeholder="Search resources..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   className="w-full rounded-lg border border-tinted/20 bg-night-soft px-2.5 py-1.5 text-[11px] text-paper placeholder:text-gray-mid/50 focus:border-tinted/40 focus:outline-none"

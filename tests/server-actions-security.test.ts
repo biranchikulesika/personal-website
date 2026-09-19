@@ -9,6 +9,7 @@ import {
   deleteNoteAction,
   saveBookAction,
   deleteBookAction,
+  toggleBookStatusAction,
   saveNowEntryAction,
   deleteNowEntryAction,
   addMediaAction,
@@ -141,6 +142,12 @@ test('unauthenticated caller cannot save book via saveBookAction', async () => {
 
 test('unauthenticated caller cannot delete book via deleteBookAction', async () => {
   const res = await deleteBookAction('test-book');
+  assert.equal(res.success, false);
+  assert.ok(res.error?.includes('Unauthorized') || res.error?.includes('Authentication'));
+});
+
+test('unauthenticated caller cannot toggle book status via toggleBookStatusAction', async () => {
+  const res = await toggleBookStatusAction('test-book');
   assert.equal(res.success, false);
   assert.ok(res.error?.includes('Unauthorized') || res.error?.includes('Authentication'));
 });
