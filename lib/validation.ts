@@ -92,6 +92,8 @@ export const BookItemSchema = z.object({
     })
     .optional()
     .or(z.literal('')),
+  isPublished: z.boolean().optional(),
+  status: StatusField.optional(),
 });
 
 // Now Entry schema -------------------------------------------------------------
@@ -100,6 +102,7 @@ export const NowEntrySchema = z.object({
   id: z.string().min(1),
   title: z.string().min(1, 'Title is required').max(500),
   date: z.string().min(1).optional(),
+  slug: z.string().min(1).max(500).optional(),
   content: z.string().min(1).max(5000),
   location: z.string().max(200).optional(),
   status: StatusField.optional(),
@@ -129,7 +132,8 @@ export const MediaItemSchema = z.object({
   size: z.string(),
   dimensions: z.string().optional(),
   uploadedAt: z.string(),
-  tag: z.enum(['profile', 'atmosphere', 'post', 'book']),
+  tags: z.array(z.string()).default([]),
+  tag: z.string().optional(),
 });
 
 // Slug-only actions (delete, toggle) -------------------------------------------

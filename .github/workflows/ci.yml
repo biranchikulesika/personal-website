@@ -1,0 +1,76 @@
+name: CI
+
+on:
+  push:
+    branches: [develop, production]
+  pull_request:
+    branches: [develop, production]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Lint, typecheck & tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Run tests
+        run: npm test
+
+  build:
+    name: Production build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: check
+    # Fork PRs cannot read repo secrets, so skip the build for them —
+    # otherwise every fork PR would be a permanent red X. Runs for any push
+    # to develop/production and for same-repo PRs.
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
+    env:
+      NEXT_PUBLIC_SITE_URL: https://biranchikulesika.com
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Verify Supabase credentials
+        if: env.SUPABASE_URL == '' || env.SUPABASE_SECRET_KEY == ''
+        run: |
+          echo "::error::The build job needs SUPABASE_URL and SUPABASE_SECRET_KEY repository secrets (SSG pages hit the database at build time). Add them under Settings → Secrets and variables → Actions."
+          exit 1
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build

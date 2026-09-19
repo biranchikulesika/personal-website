@@ -394,6 +394,56 @@ export function supportMetadata(): Metadata {
 // ── Structured data (JSON-LD) ───────────────────────────────────────────────
 
 /**
+ * Canonical @id for Biranchi Kulesika's Person entity.
+ * Pointing at the About page (the identity page) lets crawlers merge the
+ * author of every post/note with this single knowledge-graph node.
+ */
+const PERSON_ID = `${SITE_URL}/about`;
+
+/**
+ * The Person entity for Biranchi Kulesika.
+ *
+ * Defined once and referenced by `@id` from every WebSite / Article / note
+ * block so the site never carries a second, divergent copy of its author's
+ * identity. Image uses the real portrait rather than a favicon square.
+ */
+export function personNode() {
+  return {
+    "@type": "Person",
+    "@id": PERSON_ID,
+    name: SITE_NAME,
+    url: `${SITE_URL}/about`,
+    image: `${SITE_URL}/biranchi.webp`,
+    jobTitle: "Software Developer & Writer",
+    sameAs: [
+      "https://github.com/biranchikulesika",
+      "https://x.com/BKulesika",
+      "https://linkedin.com/in/biranchikulesika",
+      "https://instagram.com/biranchikulesika",
+    ],
+    knowsAbout: [
+      "Software Engineering",
+      "Web Architecture",
+      "Cybersecurity",
+      "Computer Science",
+      "Philosophy",
+    ],
+  };
+}
+
+/**
+ * JSON-LD for the personal identity page (About).
+ * A standalone Person block so the web site's single author is exposed as an
+ * entity in its own right, with its social knowledge graph.
+ */
+export function personJsonLd() {
+  return {
+    "@context": "https://schema.org",
+    ...personNode(),
+  };
+}
+
+/**
  * JSON-LD for the website (Person + WebSite with social knowledge graph).
  * Place in the root layout.
  */
@@ -406,26 +456,7 @@ export function websiteJsonLd() {
     description: SITE_DESCRIPTION,
     inLanguage: "en-US",
     image: `${SITE_URL}/favicon/web-app-manifest-512x512.png`,
-    author: {
-      "@type": "Person",
-      name: SITE_NAME,
-      url: SITE_URL,
-      image: `${SITE_URL}/favicon/web-app-manifest-512x512.png`,
-      jobTitle: "Software Developer & Writer",
-      sameAs: [
-        "https://github.com/biranchikulesika",
-        "https://x.com/BKulesika",
-        "https://linkedin.com/in/biranchikulesika",
-        "https://instagram.com/biranchikulesika",
-      ],
-      knowsAbout: [
-        "Software Engineering",
-        "Web Architecture",
-        "Cybersecurity",
-        "Computer Science",
-        "Philosophy",
-      ],
-    },
+    author: personNode(),
   };
 }
 
@@ -466,16 +497,8 @@ export function articleJsonLd(post: BlogPost) {
     },
     headline: post.title,
     description: post.description || post.subtitle || "",
-    author: {
-      "@type": "Person",
-      name: SITE_NAME,
-      url: SITE_URL,
-    },
-    publisher: {
-      "@type": "Person",
-      name: SITE_NAME,
-      url: SITE_URL,
-    },
+    author: personNode(),
+    publisher: personNode(),
     datePublished: post.publishedAt,
     dateModified: post.lastEditedAt || post.publishedAt,
     url: `${SITE_URL}/p/${post.slug}`,
@@ -504,16 +527,8 @@ export function noteJsonLd(note: NoteItem) {
     },
     headline: note.title,
     description: note.subtitle || note.description || "",
-    author: {
-      "@type": "Person",
-      name: SITE_NAME,
-      url: SITE_URL,
-    },
-    publisher: {
-      "@type": "Person",
-      name: SITE_NAME,
-      url: SITE_URL,
-    },
+    author: personNode(),
+    publisher: personNode(),
     datePublished: note.date,
     dateModified: note.date,
     url: `${SITE_URL}/n/${note.slug}`,

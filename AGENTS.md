@@ -57,15 +57,41 @@ This file is the single source of truth for AI agents and developers working on 
      ```
      _(e.g., `feat/patron-tier-management`, `fix/slug-collision-handler`, `docs/update-agents-md`)_
 
+### Mandatory Production-Grade Build Check (Pre-Push / Pre-Merge / Pre-PR Gate)
+
+- **A production-grade build check (`npm run build`) is COMPULSORY before every push, every merge into `develop`, and every PR/promotion to `production`.**
+- The build check must be the agent's own last verification step on the active feature branch — do not rely solely on remote CI. The local check runs first; CI is a second net, not a substitute.
+- **If `npm run build` reports any error or warning-as-failure:**
+  1. **STOP** the push / merge / PR process immediately.
+  2. Do **not** commit, do **not** push, do **not** merge, do **not** open a PR.
+  3. Inform the repository owner of the exact build failure.
+  4. Ask the repository owner how they want to proceed (fix the issue, investigate, or otherwise) before taking any further action.
+- **If `npm run build` completes with zero errors:** proceed with the authorized flow as usual.
+- **Dev-server caveat:** running `npm run build` overwrites `.next` and will disrupt any running dev server on `:3000`. Killing the dev server for this build-check use case is explicitly allowed (§8 sole exception); restarting it remains the repository owner's job, so notify them when the build check has clobbered the running server.
+
+### Mandatory Vercel Deployment Verification Gate (Pre-Merge Gate)
+
+- **Never merge a PR into `develop` or `production` until the Vercel deployment finishes successfully (`● Ready`).**
+- When opening a PR targeting `develop` (or `production`):
+  1. **Database Schema Pre-requisite**: If the changes include database schema or column modifications, apply them to the live Supabase database (`supabase db query --linked`) **BEFORE** the PR build/deployment runs. Next.js Static Site Generation (SSG) queries the live database at build time (e.g., `/library`, `/now`), so missing columns cause prerendering to fail immediately on Vercel.
+  2. **Monitor Deployment**: Track the PR preview deployment on Vercel (using `gh pr checks <pr-number>` or `vercel list`).
+  3. **Wait for Completion**: Do **NOT** merge while the deployment is queued or in progress. Wait for it to complete.
+  4. **Deployment Failure Protocol**: If Vercel reports `● Error` or the build fails:
+     - **STOP** immediately. Do not merge.
+     - Inspect the build logs (`vercel inspect <url> --logs`).
+     - Fix the issue on the active branch, push, and wait for a green preview deployment.
+  5. **Proceed Only on Success**: Only when the Vercel deployment is verified as `● Ready` AND the repository owner gives explicit instruction, proceed with the merge.
+
 ### Commit & Merge Authorization Workflow
 
 - Keep working on the active feature branch.
 - **Do NOT commit or push changes unless explicitly instructed by the repository owner.**
 - **Do NOT merge into `develop` until explicitly instructed by the repository owner.**
 - When and only when the repository owner gives explicit instruction to merge (e.g., via PR or squash merge):
-  1. Squash merge the active branch into `develop`.
-  2. Immediately prune (delete) the feature branch locally (and remotely if tracking) so that only `develop` (with new changes) and `production` (untouched) remain.
-  3. Verify that the repository is clean and ready for the next task.
+  1. Verify that the PR's Vercel deployment check has finished with status `● Ready` (success).
+  2. Squash merge the active branch into `develop`.
+  3. Immediately prune (delete) the feature branch locally (and remotely if tracking) so that only `develop` (with new changes) and `production` (untouched) remain.
+  4. Verify that the repository is clean and ready for the next task.
 
 ---
 
@@ -134,6 +160,7 @@ The platform strictly follows a **4-tier layered architecture**. Maintain clean,
 - **Schema Integrity & Migrations**:
   - **`supabase/migrations/20260830000000_initial_schema.sql` is the single source of truth** — the one authoritative, idempotent schema file that recreates the entire database (all tables, types, functions, triggers, indexes, RLS policies, and grants).
   - **No other migration files are tracked.** The three small `now_entries` column migrations (status, location, last_edited_at) are already merged into this initial schema. Schema changes are made directly in this file (idempotently: `CREATE TABLE IF NOT EXISTS`, `CREATE INDEX IF NOT EXISTS`, `DROP POLICY IF EXISTS`), then applied to local (`psql postgres://postgres:postgres@127.0.0.1:54322/postgres -f supabase/migrations/20260830000000_initial_schema.sql`) and live (via `supabase db query --linked`).
+  - **Live DB Schema Pre-requisite for Builds & Deployments**: Next.js pre-renders static pages (`/library`, `/now`, `/p/[slug]`) at build time using live database credentials. Therefore, all schema changes must be applied to the live Supabase database via `supabase db query --linked` **before** opening/merging PRs or triggering deployments that query the new columns.
   - Row Level Security (RLS) is compulsory on all public tables with explicit policies.
   - Direct data queries must always route through `SupabaseContentRepository`.
 
@@ -205,6 +232,7 @@ All tests must pass with zero errors and zero warnings.
 - Do **not** run `npm run clean` or any command that removes build artifacts.
 - Next.js Fast Refresh automatically detects and reloads file changes. Let it do its job.
 - If a server restart is genuinely required, stop and ask — only the repository owner starts and stops the dev server.
+- **Sole exception:** the Mandatory Production-Grade Build Check gate in §1 runs `npm run build`, which necessarily overwrites `.next` and disrupts/takes down a running dev server on `:3000`. For this specific use case, killing the dev server process is explicitly allowed. The agent must still notify the repository owner afterward so they can restart it.
 
 ---
 

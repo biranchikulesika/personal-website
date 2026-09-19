@@ -4,12 +4,23 @@ import type { PostSection } from '@/lib/types';
 
 /** Converts arbitrary text into a clean kebab-case slug. */
 export function slugify(text: string): string {
+  if (typeof text !== "string") return "";
   return text
     .toLowerCase()
     .trim()
     .replace(/[^\w\s-]/g, '')
     .replace(/[\s_-]+/g, '-')
     .replace(/^-+|-+$/g, '');
+}
+
+/**
+ * Determines the slug for a now entry. Accepts a client-provided slug, but
+ * legacy "now-<digits>" ids (used before uuid ids) are treated as missing and
+ * a slug is derived from the title instead.
+ */
+export function nowSlug(entrySlug: string | undefined, title: string): string | undefined {
+  if (entrySlug && !/^now-\d+$/.test(entrySlug)) return entrySlug;
+  return slugify(title) || undefined;
 }
 
 /**
@@ -70,11 +81,63 @@ export function formatDisplayDate(value: string): string {
   if (!value) return '';
   const trimmed = value.trim();
 
-  // Already human-readable ("Mar 12, 2026", "2025").
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return trimmed;
+  // Year only ("2025")
+  if (/^\d{4}$/.test(trimmed)) return trimmed;
 
-  const date = new Date(`${trimmed}T00:00:00`);
-  if (Number.isNaN(date.getTime())) return trimmed;
+  // Year and month only ("2026-09")
+  if (/^\d{4}-\d{2}$/.test(trimmed)) {
+    const date = new Date(`${trimmed}-01T00:00:00`);
+    if (!Number.isNaN(date.getTime())) {
+      return date.toLocaleDateString('en-US', {
+        month: 'short',
+        year: 'numeric',
+      });
+    }
+  }
+
+  // Full date with optional time/timezone: "2026-03-12", "2026-03-12T14:30:00.000Z", etc.
+  if (/^\d{4}-\d{2}-\d{2}/.test(trimmed)) {
+    const datePart = trimmed.slice(0, 10);
+    const date = new Date(`${datePart}T00:00:00`);
+    if (!Number.isNaN(date.getTime())) {
+      return date.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+      });
+    }
+  }
+
+  return trimmed;
+}
+
+/**
+ * Formats a date or timestamp string with both date and time for display.
+ * E.g. "2026-09-20T02:35:00.000Z" -> "Sep 20, 2026, 2:35 AM"
+ * If only a date string is provided (e.g. "2026-09-20"), returns formatted date: "Sep 20, 2026".
+ */
+export function formatDisplayDateTime(value: string | undefined | null): string {
+  if (!value) return '';
+  const trimmed = value.trim();
+  if (!trimmed) return '';
+
+  if (/^\d{4}$/.test(trimmed)) return trimmed;
+
+  const date = new Date(trimmed.includes('T') ? trimmed : `${trimmed}T00:00:00`);
+  if (Number.isNaN(date.getTime())) {
+    return trimmed;
+  }
+
+  if (trimmed.includes('T') || trimmed.includes(':')) {
+    return date.toLocaleString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    });
+  }
 
   return date.toLocaleDateString('en-US', {
     month: 'short',
@@ -101,7 +164,10 @@ export function sectionsToMarkdown(
         parts.push(sec.paragraphs.join('\n\n'));
       }
       if (sec.figure) {
-        parts.push(`![${sec.figure.alt}](${sec.figure.src})\n*${sec.figure.caption}*`);
+        const caption = sec.figure.caption?.trim() || '';
+        parts.push(
+          `![${sec.figure.alt}](${sec.figure.src}${caption ? ` '${caption.replace(/'/g, '')}'` : ''})`,
+        );
       }
       if (sec.quote) {
         parts.push(`> ${sec.quote.text}\n> — ${sec.quote.attribution || ''}`);
@@ -160,6 +226,22 @@ export function markdownToPostSections(
   }
 
   return { intro, sections };
+}
+
+/**
+ * Splits a post's stored intro / sections back into per-segment MDX documents
+ * (intro and one document per section) so each segment can be evaluated
+ * through the real MDX pipeline. Footnotes stay scoped per section, matching
+ * how they are stored in the `PostSection` model.
+ */
+export function postToDocs(
+  intro: string[],
+  sections: PostSection[],
+): { intro: string; sections: string[] } {
+  return {
+    intro: intro.join('\n\n'),
+    sections: sections.map((sec) => sectionsToMarkdown([], [sec])),
+  };
 }
 
 // Device & User Agent utilities ------------------------------------------------
@@ -229,8 +311,10 @@ export function formatNoteSnippet(
   maxLen = 160,
 ): string {
   if (!content) return '';
-  const fullText = (Array.isArray(content) ? content.join(' ') : content).trim();
-  if (!fullText) return '';
+  const rawText = (Array.isArray(content) ? content.join(' ') : content).trim();
+  if (!rawText) return '';
+  // Raw stored content may still carry Markdown/MDX syntax (images, code).
+  const fullText = stripMarkdown(rawText);
   if (fullText.length <= maxLen) return fullText;
 
   const truncated = fullText.slice(0, maxLen);

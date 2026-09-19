@@ -1,13 +1,12 @@
 import Link from 'next/link';
 import type { NoteItem } from '@/lib/types';
 import { formatDisplayDate } from '@/lib/utils';
+import { renderMdx } from '@/lib/mdx';
 import { ArrowLeftIcon, CalendarIcon } from './icons';
 import { ShareMenu } from './share-menu';
 import { PersonaBadge } from './persona-badge';
 
-import { renderMarkdownBlock } from './markdown-renderer';
-
-export function NotePageView({ note }: { note: NoteItem }) {
+export async function NotePageView({ note }: { note: NoteItem }) {
   return (
     <article className="pb-16 pt-8 md:pb-24 md:pt-12">
       <div className="container-site">
@@ -74,21 +73,8 @@ export function NotePageView({ note }: { note: NoteItem }) {
       </div>
 
       <div className="container-site mt-10 md:mt-14 lg:grid lg:grid-cols-[1fr_minmax(0,72ch)_1fr] lg:gap-8">
-        <div className="lg:col-start-2 space-y-5 text-paper/85">
-          {(() => {
-            let imageCount = 0;
-            return note.content.map((paragraph, index) => {
-              const isImg =
-                paragraph.trim().startsWith('![') ||
-                /^<(img|Image)\s/i.test(paragraph.trim());
-              const isFirstImage = isImg && imageCount === 0;
-              if (isImg) imageCount++;
-
-              return renderMarkdownBlock(paragraph, `note-${index}`, {
-                isFirstImage,
-              });
-            });
-          })()}
+        <div className="lg:col-start-2 text-paper/85">
+          {await renderMdx(note.content.join('\n\n'))}
         </div>
       </div>
     </article>

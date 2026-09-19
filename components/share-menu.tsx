@@ -124,7 +124,7 @@ export function ShareMenu({ title, description }: ShareMenuProps) {
   return (
     <div ref={menuRef} className="relative inline-flex shrink-0 items-center">
       {/* Horizontal Bar: X, LinkedIn, WhatsApp, Divider, More Share */}
-      <div className="inline-flex shrink-0 items-center gap-1 sm:gap-0.5 rounded-full border border-tinted/30 bg-night-soft/80 p-1 sm:p-0.5 shadow-2xs backdrop-blur-xs">
+      <div className="inline-flex shrink-0 items-center gap-1 sm:gap-0.5">
         <a
           href={twitterHref}
           target="_blank"

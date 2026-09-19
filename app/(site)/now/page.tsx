@@ -5,8 +5,6 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = nowMetadata();
 
-export const dynamic = "force-dynamic";
-
 export default async function NowPage() {
   const contentService = new ContentService();
   const allEntries = await contentService.getNowEntries();

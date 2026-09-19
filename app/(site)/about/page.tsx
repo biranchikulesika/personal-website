@@ -1,5 +1,5 @@
 import { AboutPageView } from "@/components/about-page";
-import { aboutMetadata, breadcrumbJsonLd, safeJsonLd } from "@/lib/seo";
+import { aboutMetadata, breadcrumbJsonLd, personJsonLd, safeJsonLd } from "@/lib/seo";
 import { ContentService } from "@/lib/services/content.service";
 import { SITE_CONFIG } from "@/lib/config/site";
 import type { Metadata } from "next";
@@ -20,6 +20,10 @@ export default async function AboutPage() {
 
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(personJsonLd()) }}
+      />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: safeJsonLd(breadcrumbs) }}

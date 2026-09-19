@@ -106,6 +106,14 @@ test("toggleNoteStatus returns null for missing note", async () => {
   assert.equal(result, null);
 });
 
+test("toggleBookStatus returns null for missing book", async () => {
+  const repo = new InMemoryTestContentRepository();
+  const service = new ContentService(repo);
+
+  const result = await service.toggleBookStatus("nonexistent-slug");
+  assert.equal(result, null);
+});
+
 // ── Delete Non-Existent Records ─────────────────────────────────────────────
 
 test("deletePost returns false for non-existent post", async () => {

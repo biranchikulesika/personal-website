@@ -114,6 +114,8 @@ export interface BookItem {
   tags: string[];
   cover?: string;
   link?: string;
+  isPublished?: boolean;
+  status?: "published" | "unpublished";
 }
 
 export interface SectionGroup<T> {
@@ -205,6 +207,7 @@ export interface NowEntry {
   id: string;
   title: string;
   date?: string;
+  slug?: string;
   content: string;
   location?: string;
   status?: "published" | "unpublished";
@@ -223,7 +226,8 @@ export interface MediaItem {
   size: string;
   dimensions?: string;
   uploadedAt: string;
-  tag: "profile" | "atmosphere" | "post" | "book";
+  tags: string[];
+  tag?: string;
 }
 
 // Admin & Security ------------------------------------------------------------

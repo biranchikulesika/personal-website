@@ -12,7 +12,7 @@ import {
   ChevronRightIcon,
   SearchIcon,
 } from './icons';
-import { formatDisplayDate, formatNoteSnippet } from '@/lib/utils';
+import { formatDisplayDate, formatNoteSnippet, stripMarkdown } from '@/lib/utils';
 import { PERSONA_LABELS, ALL_PERSONAS } from '@/lib/constants';
 import { EssayCover } from './ui/essay-cover';
 import { NoSearchResults, NoContentState } from './ui/states';
@@ -87,7 +87,7 @@ function EssayCard({ entry, priority = false }: { entry: ScribbleEntry; priority
           <h2 className="font-serif text-lg font-normal leading-snug text-paper transition-colors duration-300 group-hover:text-accent">
             {entry.title}
           </h2>
-          <p className="mt-1.5 text-sm leading-relaxed text-gray-mid">{entry.description}</p>
+          <p className="mt-1.5 text-sm leading-relaxed text-gray-mid">{stripMarkdown(entry.description)}</p>
           <CardMeta
             type={entry.type}
             date={entry.date}

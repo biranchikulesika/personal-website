@@ -362,7 +362,7 @@ export function MDXEditor({
             type="button"
             onClick={() => setIsMediaModalOpen(true)}
             className="rounded-lg bg-post-card px-2.5 py-1 text-xs font-semibold text-accent border border-tinted/20 hover:bg-accent hover:text-paper transition-colors"
-            title="Insert from Media Resources"
+            title="Insert from Resources"
           >
             🖼 Media
           </button>
