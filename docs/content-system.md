@@ -1,15 +1,15 @@
-# Content System
+# Content and Publishing System
 
-The website features an editorial content engine supporting long-form essays, atomic notes, library books, and living timeline entries.
+The website features an editorial content engine supporting long-form essays, atomic notes, a curated reading catalog, living timeline entries, and an aggregated content feed.
 
 ---
 
-## 1. Content Types
+## 1. Content Models
 
 ### 1. Posts (`BlogPost`)
 - **Route**: `/p/[slug]`
-- **Characteristics**: Long-form essays with rich editorial typography, callout quotes, captioned figures, footnote citations, and related book cards.
-- **Data Structure**:
+- **Description**: Long-form essays with section headings, callouts, blockquotes, figure illustrations, and embedded book recommendations.
+- **Data Model**:
   ```typescript
   export interface BlogPost {
     slug: string;
@@ -31,13 +31,14 @@ The website features an editorial content engine supporting long-form essays, at
 
 ### 2. Notes (`NoteItem`)
 - **Route**: `/n/[slug]`
-- **Characteristics**: Short-form, atomic thoughts or micro-essays. Quick to read and tagged by topic and persona.
-- **Data Structure**:
+- **Description**: Short-form, atomic observations and thoughts.
+- **Data Model**:
   ```typescript
   export interface NoteItem {
     id: string;
     slug: string;
     title: string;
+    subtitle?: string;
     description: string;
     content: string[];
     date: string;
@@ -50,56 +51,76 @@ The website features an editorial content engine supporting long-form essays, at
 
 ### 3. Books (`BookItem`)
 - **Route**: `/library`
-- **Characteristics**: Curated reading log containing books that have shaped thinking. Includes cover artwork, author, key insights, and outbound links.
+- **Description**: Curated reading log containing books with cover artwork, author, description, tags, and outbound recommendation links.
 
 ### 4. Now Entries (`NowEntry`)
 - **Route**: `/now`
-- **Characteristics**: Living snapshots of current focus, active projects, reading lists, and daily rhythms formatted chronologically.
-- **Identity**: Each entry gets a `now-<uuid>` id and a `slug` derived from its title (e.g. `building-a-project-for-sih2026`), kept unique within the timeline.
+- **Description**: Living chronological snapshots of current focus, active projects, and daily rhythms.
+- **Identity**: Each entry has a unique `id` and a URL-friendly `slug` derived from the entry title.
 
 ### 5. Scribble (`ScribbleEntry`)
 - **Route**: `/scribble`
-- **Characteristics**: A unified, searchable, filterable stream aggregating essays, notes, and library additions in a single chronological feed.
+- **Description**: A unified, client-searchable feed aggregating published essays and notes in chronological order.
 
 ---
 
-## 2. Personas & Content Taxonomies
+## 2. Personas
 
-Content can be categorized under one of four core personas:
-1. **`builder`**: Software engineering, system architecture, tools, craft, technical builds.
-2. **`operator`**: Productivity, execution, workflows, habits, operational efficiency.
-3. **`thinker`**: Philosophy, epistemology, mental models, books, deep inquiry.
-4. **`wanderer`**: Observation, travel, photography, culture, personal reflections.
+Content can be classified under one of four personas:
 
----
+1. **`builder`**: Software engineering, architecture, code craft, technical projects.
+2. **`operator`**: Productivity, execution, workflows, cybersecurity, systems.
+3. **`thinker`**: Philosophy, epistemology, mental models, deep reflections.
+4. **`wanderer`**: Travel, observation, photography, culture, personal stories.
 
-## 3. Markdown / MDX Engine (`lib/mdx.ts`)
-
-To allow non-destructive round-tripping between the IDE MDX Composer and structured database rows, `lib/mdx.ts` provides bi-directional transformation:
-
-- **`markdownToPostSections(markdown: string)`**: Parses raw Markdown text into structured `intro`, `sections` (`PostSection[]`), quotes, figures, and footnotes.
-- **`sectionsToMarkdown({ intro, sections })`**: Serializes structured sections back into standard GitHub Flavored Markdown with clean headings and frontmatter.
+Personas are represented visually via persona badge pills (`components/persona-badge.tsx`) and used for filtering on `/scribble`.
 
 ---
 
-## 4. Content Lifecycle & Publishing
+## 3. MDX Processing and Evaluation
 
+MDX handling is divided between rendering and data persistence:
+
+### 1. Rendering (`lib/mdx.tsx`)
+Public reading views and composer live previews evaluate markdown using `@mdx-js/mdx` and `remark-gfm`:
+- Supports standard CommonMark and GitHub Flavored Markdown (tables, task lists, footnotes, strikethrough).
+- Custom JSX components can be embedded directly in content:
+  - `<Book slug="..." />`: Renders an interactive book recommendation card.
+  - `<Post slug="..." />`: Renders an embedded post link card.
+  - `<Note slug="..." />`: Renders an embedded note card.
+  - `<Figure src="..." alt="..." caption="..." />`: Renders an accessible figure image.
+  - `<YouTube id="..." />`: Embeds a privacy-enhanced YouTube video.
+- Includes code block syntax highlighting with a one-click copy button.
+
+### 2. Section Parsing and Serialization (`lib/utils.ts`)
+Posts can be stored as structured sections in PostgreSQL JSONB columns:
+- **`markdownToPostSections(markdown)`**: Parses raw markdown into structured sections, identifying headings, body paragraphs, quotes, and figures.
+- **`sectionsToMarkdown({ intro, sections })`**: Serializes structured database sections back into standard markdown text for editing inside the composer.
+
+---
+
+## 4. Publishing Flow and Cache Invalidation
+
+```text
+[ Composer: Draft / Edit ]
+           │
+           │ savePostAction()
+           ▼
+[ Database Update (PostgreSQL) ]
+           │
+           │ revalidatePath()
+           ▼
+[ Next.js Cache Revalidated ]
+           │
+           ▼
+[ Live on Website ]
 ```
-   [ Draft / Unpublished ]
-              │
-              │ savePostAction() / togglePostStatusAction()
-              ▼
-   [ Published to Database ]
-              │
-              │ revalidatePath('/p/[slug]')
-              ▼
-   [ Edge Cache Updated & Live on Site ]
-```
 
-1. **Unpublished / Draft Status**:
-   - Content with `status: 'unpublished'` is visible and editable inside `/admin` but hidden from public feeds (`/scribble`, `/library`, homepage).
-   - Direct slug access to unpublished drafts returns HTTP `robots: { index: false, follow: false }` or 404 to non-admin visitors.
-2. **Cross-Collection Slug Validation**:
-   - A slug cannot collide across posts, notes, or books (enforced by DB triggers and Zod validation).
-3. **Automatic Revalidation**:
-   - Saving or toggling status triggers Next.js On-Demand Revalidation (`revalidatePath`) for instant cache updates without full redeployments.
+1. **Unpublished Content**:
+   Items marked `status: 'unpublished'` remain visible only within the `/admin` area. Public feeds (`/scribble`, `/library`, homepage) exclude unpublished records. If an anonymous user attempts to visit an unpublished slug, the server returns 404 or `robots: { index: false }`.
+
+2. **Slug Uniqueness**:
+   Database triggers guarantee that a slug cannot be shared between posts, notes, and books.
+
+3. **On-Demand Revalidation**:
+   When content is saved or its status toggled, server actions call `revalidatePath()` for `/admin`, the content listing (`/scribble` or `/library`), and the item's individual URL. The next visitor receives the updated content immediately.

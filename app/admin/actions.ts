@@ -12,9 +12,7 @@ import type {
   PasskeyItem,
   UserSession,
 } from '@/lib/types';
-import { getSupabaseServer } from '@/lib/supabase/server';
-import { isAdminRole } from '@/lib/auth/admin';
-import { getSupabaseUrl, getSupabasePublishableKey } from '@/lib/config/env';
+import { getAuthService } from '@/lib/auth';
 import {
   BlogPostSchema,
   NoteItemSchema,
@@ -49,32 +47,8 @@ const contentService = new ContentService();
  * Throws an Error if unauthenticated or unauthorized.
  */
 async function assertAdminUser() {
-  let user = null;
-  try {
-    const supabase = await getSupabaseServer();
-    const {
-      data: { user: authUser },
-      error,
-    } = await supabase.auth.getUser();
-
-    if (!error && authUser) {
-      user = authUser;
-    }
-  } catch {
-    user = null;
-  }
-
-  if (!user) {
-    throw new Error('Unauthorized: Administrative authentication required');
-  }
-
-  const role = await contentService.getUserRole(user.id);
-
-  if (!isAdminRole(role)) {
-    throw new Error('Forbidden: Administrative privileges required');
-  }
-
-  return { user, role };
+  const authService = getAuthService();
+  return authService.requireAdmin();
 }
 
 /**
@@ -82,26 +56,8 @@ async function assertAdminUser() {
  * Throws an Error if unauthenticated.
  */
 async function assertAuthenticatedUser() {
-  let user = null;
-  try {
-    const supabase = await getSupabaseServer();
-    const {
-      data: { user: authUser },
-      error,
-    } = await supabase.auth.getUser();
-
-    if (!error && authUser) {
-      user = authUser;
-    }
-  } catch {
-    user = null;
-  }
-
-  if (!user) {
-    throw new Error('Unauthorized: Authentication required');
-  }
-
-  return user;
+  const authService = getAuthService();
+  return authService.requireUser();
 }
 
 /**
@@ -141,7 +97,7 @@ export async function savePostAction(
     await assertAdminUser();
     const validated = validateInput(BlogPostSchema, post);
     const saved = await contentService.savePost(validated, persona);
-    revalidateContent(['/scribble', `/p/${post.slug}`]);
+    revalidateContent(['/', '/scribble', '/sitemap.xml', `/p/${post.slug}`]);
     return { success: true, post: saved };
   } catch (err: unknown) {
     return { success: false, error: (err as Error).message || 'Failed to save post' };
@@ -156,7 +112,7 @@ export async function togglePostStatusAction(
     const { slug: validSlug } = validateInput(SlugParamSchema, { slug });
     const toggled = await contentService.togglePostStatus(validSlug);
     if (!toggled) return { success: false, error: 'Post not found' };
-    revalidateContent(['/scribble', `/p/${slug}`]);
+    revalidateContent(['/', '/scribble', '/sitemap.xml', `/p/${validSlug}`]);
     return { success: true, post: toggled };
   } catch (err: unknown) {
     return { success: false, error: (err as Error).message || 'Failed to toggle status' };
@@ -170,7 +126,7 @@ export async function deletePostAction(
     await assertAdminUser();
     const { slug: validSlug } = validateInput(SlugParamSchema, { slug });
     const deleted = await contentService.deletePost(validSlug);
-    revalidateContent(['/scribble']);
+    revalidateContent(['/', '/scribble', '/sitemap.xml', `/p/${validSlug}`]);
     return { success: deleted };
   } catch (err: unknown) {
     return { success: false, error: (err as Error).message || 'Failed to delete post' };
@@ -191,7 +147,7 @@ export async function saveNoteAction(
     await assertAdminUser();
     const validated = validateInput(NoteItemSchema, note);
     const saved = await contentService.saveNote(validated);
-    revalidateContent(['/scribble', `/n/${note.slug}`]);
+    revalidateContent(['/', '/scribble', '/sitemap.xml', `/n/${note.slug}`]);
     return { success: true, note: saved };
   } catch (err: unknown) {
     return { success: false, error: (err as Error).message || 'Failed to save note' };
@@ -206,7 +162,7 @@ export async function toggleNoteStatusAction(
     const { slug: validSlug } = validateInput(SlugParamSchema, { slug });
     const toggled = await contentService.toggleNoteStatus(validSlug);
     if (!toggled) return { success: false, error: 'Note not found' };
-    revalidateContent(['/scribble', `/n/${slug}`]);
+    revalidateContent(['/', '/scribble', '/sitemap.xml', `/n/${validSlug}`]);
     return { success: true, note: toggled };
   } catch (err: unknown) {
     return { success: false, error: (err as Error).message || 'Failed to toggle status' };
@@ -220,7 +176,7 @@ export async function deleteNoteAction(
     await assertAdminUser();
     const { slug: validSlug } = validateInput(SlugParamSchema, { slug });
     const deleted = await contentService.deleteNote(validSlug);
-    revalidateContent(['/scribble']);
+    revalidateContent(['/', '/scribble', '/sitemap.xml', `/n/${validSlug}`]);
     return { success: deleted };
   } catch (err: unknown) {
     return { success: false, error: (err as Error).message || 'Failed to delete note' };
@@ -241,7 +197,7 @@ export async function saveBookAction(
     await assertAdminUser();
     const validated = validateInput(BookItemSchema, book);
     const saved = await contentService.saveBook(validated);
-    revalidateContent(['/scribble', '/library']);
+    revalidateContent(['/', '/library', '/scribble']);
     return { success: true, book: saved };
   } catch (err: unknown) {
     return { success: false, error: (err as Error).message || 'Failed to save book' };
@@ -255,7 +211,7 @@ export async function deleteBookAction(
     await assertAdminUser();
     const { slug: validSlug } = validateInput(SlugParamSchema, { slug });
     const deleted = await contentService.deleteBook(validSlug);
-    revalidateContent(['/scribble', '/library']);
+    revalidateContent(['/', '/library', '/scribble']);
     return { success: deleted };
   } catch (err: unknown) {
     return { success: false, error: (err as Error).message || 'Failed to delete book' };
@@ -270,7 +226,7 @@ export async function toggleBookStatusAction(
     const { slug: validSlug } = validateInput(SlugParamSchema, { slug });
     const book = await contentService.toggleBookStatus(validSlug);
     if (!book) return { success: false, error: 'Book not found' };
-    revalidateContent(['/scribble', '/library']);
+    revalidateContent(['/', '/library', '/scribble']);
     return { success: true, book };
   } catch (err: unknown) {
     return { success: false, error: (err as Error).message || 'Failed to toggle book status' };
@@ -291,8 +247,7 @@ export async function saveNowEntryAction(
     await assertAdminUser();
     const validated = validateInput(NowEntrySchema, entry);
     const saved = await contentService.saveNowEntry(validated);
-    safeRevalidatePath('/admin');
-    safeRevalidatePath('/now');
+    revalidateContent(['/', '/now']);
     return { success: true, entry: saved };
   } catch (err: unknown) {
     return { success: false, error: (err as Error).message || 'Failed to save now entry' };
@@ -306,8 +261,7 @@ export async function deleteNowEntryAction(
     await assertAdminUser();
     const { id: validId } = validateInput(IdParamSchema, { id });
     const deleted = await contentService.deleteNowEntry(validId);
-    safeRevalidatePath('/admin');
-    safeRevalidatePath('/now');
+    revalidateContent(['/', '/now']);
     return { success: deleted };
   } catch (err: unknown) {
     return { success: false, error: (err as Error).message || 'Failed to delete now entry' };
@@ -416,7 +370,7 @@ export async function startPasskeyRegistrationAction(): Promise<{
       rpID,
       userID: Buffer.from(user.id, 'utf-8'),
       userName: user.email || `admin@${rpID}`,
-      userDisplayName: user.user_metadata?.name || 'Administrator',
+      userDisplayName: (user.user_metadata?.name as string) || 'Administrator',
       attestationType: 'none',
       excludeCredentials: existingPasskeys
         .filter((p) => Boolean(p.credentialId || p.id))
@@ -572,12 +526,8 @@ export async function signOutSessionAction(
       sessionId === 'session-primary' ||
       sessionId.startsWith('sess-curr')
     ) {
-      try {
-        const supabase = await getSupabaseServer();
-        await supabase.auth.signOut({ scope: 'local' });
-      } catch {
-        // Safe to ignore
-      }
+      const authService = getAuthService();
+      await authService.signOut('local');
       return { success: true, redirect: '/admin/login' };
     }
 
@@ -601,12 +551,8 @@ export async function signOutAllSessionsAction(): Promise<{
 
     await contentService.deleteAllSessions(user.id);
 
-    try {
-      const supabase = await getSupabaseServer();
-      await supabase.auth.signOut({ scope: 'global' });
-    } catch {
-      // Safe to ignore
-    }
+    const authService = getAuthService();
+    await authService.signOut('global');
 
     return { success: true, redirect: '/admin/login' };
   } catch (err: unknown) {
@@ -622,25 +568,15 @@ export async function connectProviderAction(
 ): Promise<{ success: boolean; url?: string; error?: string }> {
   try {
     const user = await assertAuthenticatedUser();
-    const supabaseUrl = getSupabaseUrl();
-    const supabaseKey = getSupabasePublishableKey();
+    const authService = getAuthService();
+    const result = await authService.linkIdentity(provider);
 
-    if (supabaseUrl && supabaseKey) {
-      const supabase = await getSupabaseServer();
-      const { data, error } = await supabase.auth.linkIdentity({
-        provider,
-        options: {
-          redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/admin/auth/callback?next=/admin`,
-        },
-      });
+    if (result.error && result.error !== 'Auth provider is not configured') {
+      return { success: false, error: result.error };
+    }
 
-      if (error) {
-        return { success: false, error: error.message };
-      }
-
-      if (data?.url) {
-        return { success: true, url: data.url };
-      }
+    if (result.url) {
+      return { success: true, url: result.url };
     }
 
     const current = await contentService.getConnectedProviders(user.id);
@@ -665,12 +601,10 @@ export async function disconnectProviderAction(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const user = await assertAuthenticatedUser();
-    const supabaseUrl = getSupabaseUrl();
-    const supabaseKey = getSupabasePublishableKey();
+    const identities = user.identities || [];
+    const providers = identities.map((i) => i.provider);
 
-    if (supabaseUrl && supabaseKey && user) {
-      const identities = user.identities || [];
-      const providers = identities.map((i) => i.provider);
+    if (identities.length > 0) {
       if (providers.length <= 1) {
         return {
           success: false,
@@ -684,21 +618,21 @@ export async function disconnectProviderAction(
         return { success: false, error: 'Identity not found' };
       }
 
-      const supabase = await getSupabaseServer();
-      const { error } = await supabase.auth.unlinkIdentity(targetIdentity);
-      if (error) {
-        return { success: false, error: error.message };
+      const authService = getAuthService();
+      const result = await authService.unlinkIdentity(targetIdentity);
+      if (result.error) {
+        return { success: false, error: result.error };
       }
     } else {
-      const providers = await contentService.getConnectedProviders(user.id);
-      if (providers.length <= 1) {
+      const currentProviders = await contentService.getConnectedProviders(user.id);
+      if (currentProviders.length <= 1) {
         return {
           success: false,
           error:
             'At least one authentication provider must remain connected to prevent account lockout.',
         };
       }
-      const updated = providers.filter((p) => p !== provider);
+      const updated = currentProviders.filter((p) => p !== provider);
       await contentService.setConnectedProviders(user.id, updated);
     }
 

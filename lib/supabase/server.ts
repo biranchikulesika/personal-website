@@ -28,7 +28,7 @@ export function getSupabaseAdmin() {
   if (!adminClient) {
     adminClient = createClient<Database>(supabaseUrl, supabaseSecretKey, {
       auth: {
-        // Service-role key bypasses RLS — no session management needed.
+        // Service-role key bypasses RLS: no session management needed.
         autoRefreshToken: false,
         persistSession: false,
       },
@@ -40,7 +40,7 @@ export function getSupabaseAdmin() {
 
 // ── Server Client (with cookie-based auth sessions) ────────────────────────
 // Used for operations that need the user's authentication context.
-// Reads the session from cookies — works in Server Components, Server Actions,
+// Reads the session from cookies, working in Server Components, Server Actions,
 // and Route Handlers.
 
 export async function getSupabaseServer() {

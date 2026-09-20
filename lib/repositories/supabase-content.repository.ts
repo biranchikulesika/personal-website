@@ -802,7 +802,7 @@ export class SupabaseContentRepository implements ContentRepository {
   async getOrphanedMedia(): Promise<MediaItem[]> {
     // In production, this would query the Supabase Storage bucket listing
     // and cross-reference against all content references.
-    // For now, return empty — orphaned media detection requires the Storage API.
+    // For now, return empty, as orphaned media detection requires the Storage API.
     return [];
   }
 

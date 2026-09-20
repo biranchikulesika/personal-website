@@ -13,7 +13,7 @@ export interface StateViewProps {
 /**
  * Base unboxed state component.
  *
- * Minimal, quiet, and unboxed — strictly avoids cards, borders, heavy shadows,
+ * Minimal, quiet, and unboxed: strictly avoids cards, borders, heavy shadows,
  * or decorative wrappers.
  */
 export function StateView({

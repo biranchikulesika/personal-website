@@ -82,7 +82,7 @@ export function MarkdownYouTube({ id }: { id: string }) {
   );
 }
 
-/** Legacy `<Video src|path ... />` block — native HTML5 video player. */
+/** Legacy `<Video src|path ... />` block: native HTML5 video player. */
 export function MdxVideo({ src, path }: { src?: string; path?: string }) {
   const v = src ?? path;
   if (!v) return null;
@@ -206,7 +206,7 @@ const mdxImg = ({
 );
 
 /**
- * remark plugin — lifts every image out of its paragraph. CommonMark parses
+ * remark plugin: lifts every image out of its paragraph. CommonMark parses
  * `![…]` as inline, but our `img` override renders a block `<figure>`, which
  * can't live inside `<p>` (hydration error). Each image becomes a top-level
  * sibling and the paragraph text is split around it:
@@ -322,7 +322,7 @@ export const mdxComponents = {
     return <CodeBlockShell lang={langMatch?.[1] ?? ''}>{children}</CodeBlockShell>;
   },
   img: mdxImg,
-  // Back-compat aliases — the old regex renderer accepted these tags, so posts
+  // Back-compat aliases: the old regex renderer accepted these tags, so posts
   // written before the MDX migration may still contain them.
   Image: mdxImg,
   Figure: mdxImg,

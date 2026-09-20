@@ -25,7 +25,7 @@ export function Footer({ footer }: FooterProps) {
             ))}
           </div>
 
-          {/* Link columns — always side by side */}
+          {/* Link columns: always side by side */}
           <div className="grid grid-cols-3 gap-8 md:col-span-6 md:col-start-7">
             {footer.columns.map((column) => (
               <nav key={column.title} aria-label={column.title}>

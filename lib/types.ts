@@ -1,7 +1,5 @@
-// Provisional domain types.
-// Deliberately minimal — the product is still being defined.
-// Do not treat these as final. They exist only to prove the
-// service-layer architecture works end to end.
+// Domain model definitions for the platform.
+// Central contract shared across services, repositories, and UI views.
 
 // Navigation -----------------------------------------------------------------
 

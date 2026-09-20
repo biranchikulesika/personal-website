@@ -255,7 +255,7 @@ test("slug change breaks URL (documented production concern)", async () => {
   const original = await service.getPost("original-slug-test");
   assert.ok(original);
 
-  // Save with a different slug — this creates a new post
+  // Save with a different slug: this creates a new post
   const updated = await service.savePost(
     { ...original, slug: "renamed-slug-test" },
     "builder",

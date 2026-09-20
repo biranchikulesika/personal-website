@@ -1,7 +1,7 @@
 import { formatDisplayDate } from '@/lib/utils';
 
 /**
- * NoteBlock — rendered from a `<Note slug="..." title="..." ... />` tag inside
+ * NoteBlock: rendered from a `<Note slug="..." title="..." ... />` tag inside
  * markdown content. Links out to the note page.
  */
 export function NoteBlock({

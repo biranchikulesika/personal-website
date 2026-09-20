@@ -1,12 +1,12 @@
 # Data Layer Architecture
 
-The data layer provides a clean abstraction between application operations and underlying storage engines. UI components and Server Actions interact solely with the **Service Layer**, which delegates to the **Supabase Repository**.
+The data layer separates application operations from storage engines. UI components and Server Actions interact solely with the Service Layer (`ContentService`), which delegates to domain repositories conforming to interface contracts composed under `ContentRepository`.
 
 ---
 
-## 1. Abstraction Boundaries & Contract
+## 1. Repository Abstraction
 
-```
+```text
 ┌────────────────────────────────────────────────────────┐
 │               ContentService (Application)             │
 │                 lib/services/content.service.ts        │
@@ -16,90 +16,33 @@ The data layer provides a clean abstraction between application operations and u
 ┌────────────────────────────────────────────────────────┐
 │          ContentRepository (Interface Contract)        │
 │          lib/repositories/content.repository.ts        │
+│   (Extends PostRepo, NoteRepo, BookRepo, NowRepo, etc) │
 └───────────────────────────┬────────────────────────────┘
-                            │ Implemented by
-                            ▼
-┌────────────────────────────────────────────────────────┐
-│               SupabaseContentRepository                │
-│       lib/repositories/supabase-content.repository.ts  │
-│                 (PostgreSQL / Supabase)                │
-└────────────────────────────────────────────────────────┘
+                            │
+              ┌─────────────┴─────────────┐
+              ▼                           ▼
+┌───────────────────────────┐   ┌───────────────────────────┐
+│  DrizzleContentRepository │   │InMemoryTestContentRepo... │
+│  (Drizzle ORM / Postgres) │   │(In-Memory / Unit Tests)   │
+└───────────────────────────┘   └───────────────────────────┘
 ```
 
-The repository contract (`lib/repositories/content.repository.ts`) defines all data access methods:
+The application provides three implementations of the `ContentRepository` interface:
+1. **`DrizzleContentRepository`**: The primary production repository connecting directly to PostgreSQL (such as Supabase PostgreSQL via the Transaction Pooler) using Drizzle ORM via `lib/db/client.ts`.
+2. **`SupabaseContentRepository`**: The secondary repository communicating via the Supabase PostgREST client. Serves as a graceful fallback in production if `DATABASE_URL` is not yet configured.
+3. **`InMemoryTestContentRepository`**: The test repository used during `npm test`. It holds records in in-memory arrays and sets, enabling fast tests with zero database setup.
 
-```typescript
-export interface ContentRepository {
-  // Posts
-  getPost(slug: string): Promise<BlogPost | null>;
-  getPostSlugs(): Promise<string[]>;
-  getAllPosts(): Promise<BlogPost[]>;
-  savePost(post: BlogPost, persona?: Persona): Promise<BlogPost>;
-  deletePost(slug: string): Promise<boolean>;
-  togglePostStatus(slug: string): Promise<BlogPost | null>;
-
-  // Notes
-  getNote(slug: string): Promise<NoteItem | null>;
-  getNoteSlugs(): Promise<string[]>;
-  getAllNotes(): Promise<NoteItem[]>;
-  saveNote(note: NoteItem): Promise<NoteItem>;
-  deleteNote(slug: string): Promise<boolean>;
-  toggleNoteStatus(slug: string): Promise<NoteItem | null>;
-
-  // Books
-  getAllBooks(): Promise<BookItem[]>;
-  saveBook(book: BookItem): Promise<BookItem>;
-  deleteBook(slug: string): Promise<boolean>;
-
-  // Scribble (Aggregated Index)
-  getScribbleEntries(): Promise<ScribbleEntry[]>;
-
-  // Now Timeline
-  getNowEntries(): Promise<NowEntry[]>;
-  saveNowEntry(entry: NowEntry): Promise<NowEntry>;
-  deleteNowEntry(id: string): Promise<boolean>;
-
-  // Media
-  getMedia(): Promise<MediaItem[]>;
-  addMedia(item: MediaItem): Promise<MediaItem>;
-  deleteMedia(id: string): Promise<boolean>;
-  getOrphanedMedia(): Promise<MediaItem[]>;
-  deleteStorageAssets(srcs: string[]): Promise<number>;
-
-  // User Roles & Permissions
-  getUserRole(userId: string): Promise<AppRole | null>;
-  setUserRole(userId: string, role: AppRole): Promise<void>;
-  getAllUserRoles(): Promise<UserRole[]>;
-
-  // Featured Highlights
-  getFeaturedPosts(): Promise<string[]>;
-  getFeaturedBooks(): Promise<string[]>;
-  setFeaturedPosts(slugs: string[]): Promise<void>;
-  setFeaturedBooks(slugs: string[]): Promise<void>;
-
-  // Contributions & Patronage
-  recordContribution(contribution: Contribution): Promise<Contribution>;
-  getContribution(id: string): Promise<Contribution | null>;
-  getContributions(): Promise<Contribution[]>;
-}
-```
-
----
-
-## 2. Supabase Implementation (`SupabaseContentRepository`)
-
-- **Location**: `lib/repositories/supabase-content.repository.ts`
-- **Data Source**: Live PostgreSQL instance via Supabase client.
-- **Client**: Uses `getSupabaseAdmin()` (service-role key) to execute operations with full consistency.
-- **Row Mapping**: Explicitly maps PostgreSQL snake_case columns (e.g. `published_at`, `cover_image`) to camelCase domain models (`publishedAt`, `coverImage`).
-
-### Repository Export
-`lib/repositories/index.ts` provides `getContentRepository()`:
+The repository factory in `lib/repositories/index.ts` returns the singleton instance:
 
 ```typescript
 export function getContentRepository(): ContentRepository {
   if (!repository) {
-    repository = new SupabaseContentRepository();
+    const databaseUrl = getDatabaseUrl();
+    if (databaseUrl) {
+      repository = new DrizzleContentRepository();
+    } else {
+      repository = new SupabaseContentRepository();
+    }
   }
   return repository;
 }
@@ -107,48 +50,42 @@ export function getContentRepository(): ContentRepository {
 
 ---
 
-## 3. Step-by-Step Developer Guides
+## 2. Row Mapping and Type Conversion
 
-### How to Add a New Method to the Data Layer
+Database columns in PostgreSQL follow `snake_case` conventions, while domain entities in `lib/types.ts` follow `camelCase` conventions.
 
-#### Step 1: Define Domain Types in `lib/types.ts`
+`DrizzleContentRepository` isolates this mapping inside private mapper functions:
+
+- **`postRowToDomain`**: Maps `published_at` to `publishedAt`, `last_edited_at` to `lastEditedAt`, `cover_image` to `coverImage`, and extracts JSONB `intro`, `sections`, and `books`.
+- **`noteRowToDomain`**: Maps note records, deserializing JSON array content.
+- **`bookRowToDomain`**: Converts reading records, normalizing `is_published` booleans.
+- **`nowRowToDomain`**: Maps timeline updates, resolving `location`, `status`, and `last_edited_at`.
+- **`mediaRowToDomain`**: Normalizes tags, filtering out legacy categories and mapping `created_at` or `uploaded_at` to `uploadedAt`.
+
+This design ensures database schema changes only require updates in the repository mappers, leaving the rest of the application unchanged.
+
+---
+
+## 3. Per-Request Query Deduplication
+
+During a single Next.js page request, multiple Server Components and `generateMetadata()` often request the same content item (for example, fetching the same post for page title generation and page body rendering).
+
+`ContentService` wraps repository read methods with `React.cache()`:
+
 ```typescript
-export interface NewsletterSubscriber {
-  email: string;
-  subscribedAt: string;
-}
+const getCachedPost = cache((repo: ContentRepository, slug: string) => repo.getPost(slug));
+const getCachedNote = cache((repo: ContentRepository, slug: string) => repo.getNote(slug));
+const getCachedHomeContent = cache((repo: ContentRepository) => repo.getHomeContent());
 ```
 
-#### Step 2: Add Method to the Repository Interface (`lib/repositories/content.repository.ts`)
-```typescript
-export interface ContentRepository {
-  // ...
-  addSubscriber(email: string): Promise<NewsletterSubscriber>;
-}
-```
+Because `React.cache()` memoizes values per request lifetime, the application makes only one database call per entity per request. Subsequent calls within the same render pass return the cached domain object without extra network roundtrips.
 
-#### Step 3: Implement in `SupabaseContentRepository`
-```typescript
-async addSubscriber(email: string): Promise<NewsletterSubscriber> {
-  const { data, error } = await this.db
-    .from('subscribers')
-    .insert({ email, subscribed_at: new Date().toISOString() })
-    .select()
-    .single();
+---
 
-  if (error) throw new Error(`Failed to add subscriber: ${error.message}`);
-  return { email: data.email, subscribedAt: data.subscribed_at };
-}
-```
+## 4. Cross-Collection Slug Invariants
 
-#### Step 4: Expose via `ContentService` (`lib/services/content.service.ts`)
-```typescript
-export class ContentService {
-  // ...
-  async subscribeToNewsletter(email: string): Promise<NewsletterSubscriber> {
-    // Validate business rules (e.g. email format)
-    if (!email.includes('@')) throw new Error('Invalid email format');
-    return this.repo.addSubscriber(email);
-  }
-}
-```
+Slugs for posts, notes, and books must be unique across all three collections to prevent routing collisions.
+
+The repository enforces this at two levels:
+1. **Application Level**: `saveNote` and `saveBook` check for conflicting slugs in the other collections before inserting.
+2. **Database Level**: The PostgreSQL trigger function `check_cross_collection_slug_uniqueness` runs before insert or update on `posts`, `notes`, and `books`, raising an exception if a collision is detected.

@@ -14,7 +14,6 @@ import {
   GoogleIcon,
 } from '@/components/icons';
 import { NoContentState } from '@/components/ui/states';
-import { getSupabaseBrowser } from '@/lib/supabase/client';
 import { SITE_DOMAIN } from '@/lib/constants';
 import { startRegistration, browserSupportsWebAuthn } from '@simplewebauthn/browser';
 import {

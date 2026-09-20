@@ -1,9 +1,7 @@
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
 import { redirect } from 'next/navigation';
-import { getSupabaseServer } from '@/lib/supabase/server';
-import { ContentService } from '@/lib/services/content.service';
-import { isAdminRole } from '@/lib/auth/admin';
+import { getAuthService } from '@/lib/auth';
 import { LoginForm } from './login-form';
 
 export const metadata: Metadata = {
@@ -17,25 +15,17 @@ export const metadata: Metadata = {
 
 export default async function LoginPage() {
   try {
-    const supabase = await getSupabaseServer();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    // Only users with an admin role may enter the admin panel; everyone else
-    // (even authenticated) stays on the login screen.
-    if (user) {
-      const role = await new ContentService().getUserRole(user.id);
-      if (isAdminRole(role)) {
-        redirect('/admin');
-      }
+    const authService = getAuthService();
+    const adminSession = await authService.requireAdmin();
+    if (adminSession) {
+      redirect('/admin');
     }
   } catch (err: unknown) {
     // Re-throw redirect exceptions so Next.js can execute the redirect
     if ((err as { digest?: string })?.digest?.startsWith('NEXT_REDIRECT')) {
       throw err;
     }
-    // Continue to login form if client unconfigured
+    // Continue to login form if not authenticated or not admin
   }
 
   return (

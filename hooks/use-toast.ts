@@ -21,7 +21,7 @@ interface UseToastReturn {
  * - content-manager.tsx
  * - media-manager.tsx
  *
- * Renders the toast inline where used — no global context needed.
+ * Renders the toast inline where used: no global context needed.
  */
 export function useToast(durationMs = 3500): UseToastReturn {
   const [message, setMessage] = useState<string | null>(null);

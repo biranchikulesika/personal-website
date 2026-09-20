@@ -1,48 +1,50 @@
-# Routing & Page Architecture
+# Routing and Page Architecture
 
-The platform uses the **Next.js 16 App Router** with route groups, dynamic segment parameters, server-side data fetching, and granular client/server component boundaries.
+The platform uses the Next.js App Router with route groups, dynamic parameters, static pre-rendering, and clear server/client boundaries.
 
 ---
 
-## 1. Route Groups & Organization
+## 1. Route Organization
 
-```
+```text
 app/
-├── (site)/               # Route Group: Public Facing Pages
+├── (site)/               # Route Group: Public Website
 │   ├── about/            # /about
-│   ├── fund/             # /fund (Redirects to /support)
-│   ├── library/          # /library
-│   ├── n/[slug]/         # /n/:slug (Atomic Notes)
-│   ├── now/              # /now (Living Timeline)
-│   ├── p/[slug]/         # /p/:slug (Essays)
-│   ├── scribble/         # /scribble (Aggregated Index)
-│   ├── support/          # /support (Patronage Ledger)
+│   ├── library/          # /library (Reading catalog)
+│   ├── n/[slug]/         # /n/:slug (Atomic notes)
+│   ├── now/              # /now (Living focus timeline)
+│   ├── p/[slug]/         # /p/:slug (Long-form essays)
+│   ├── scribble/         # /scribble (Aggregated essays and notes feed)
+│   ├── support/          # /support (Patronage ledger)
 │   ├── layout.tsx        # Public layout wrapper (Header, Nav, Main, Footer)
 │   └── page.tsx          # Homepage
 ├── admin/                # Route Group: Administrative CMS
-│   ├── compose/          # /admin/compose (Full-screen MDX workspace)
-│   ├── login/            # /admin/login (Admin authentication)
+│   ├── auth/callback/    # /admin/auth/callback (OAuth code exchange)
+│   ├── compose/          # /admin/compose (MDX composition workspace)
+│   ├── login/            # /admin/login (Admin login)
+│   ├── actions.ts        # Server Actions for admin operations
 │   ├── layout.tsx        # Admin layout wrapper (noindex)
 │   └── page.tsx          # /admin (Dashboard)
 ├── api/                  # Route Group: Backend Endpoints
-│   ├── contributions/    # POST/GET Payment confirmation
-│   ├── login-background/ # GET Dynamic wallpaper
-│   ├── og/               # GET Dynamic Open Graph social images
+│   ├── contributions/    # POST/GET contribution confirmation and history
+│   ├── login-background/ # GET dynamic wallpaper for admin login
+│   ├── newsletter/       # POST newsletter subscription
+│   ├── og/               # GET dynamic Open Graph social images
 │   └── webhooks/razorpay # POST Razorpay webhook receiver
-├── layout.tsx            # Global HTML shell & typography provider
-├── not-found.tsx         # Global 404 handler
-└── error.tsx             # Global runtime error boundary
+├── layout.tsx            # Root HTML layout and fonts
+├── not-found.tsx         # Root 404 handler
+└── error.tsx             # Root runtime error boundary
 ```
 
 ---
 
-## 2. Dynamic Routes & Static Site Generation (SSG)
+## 2. Static Pre-Rendering (SSG)
 
-Dynamic routes pre-generate static pages at build time using `generateStaticParams()` while supporting on-demand rendering for new content:
+Dynamic routes pre-generate static pages at build time using `generateStaticParams()`:
 
 ### Essay Route (`app/(site)/p/[slug]/page.tsx`)
 ```typescript
-// 1. Pre-generate all published essay slugs at build time
+// 1. Pre-generate all published essay slugs during build
 export async function generateStaticParams() {
   const service = new ContentService();
   const slugs = await service.getPostSlugs();
@@ -65,45 +67,32 @@ export default async function PostPage({ params }) {
 
   return (
     <>
-      <script type="application/ld+json" ... />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd(post)) }}
+      />
       <BlogPostView post={post} />
     </>
   );
 }
 ```
 
+The atomic note route (`app/(site)/n/[slug]/page.tsx`) follows the identical pattern for notes using `getNoteSlugs()`.
+
 ---
 
-## 3. Server vs Client Component Boundaries
+## 3. Server versus Client Components
 
-To achieve near-instant page loads and minimal JavaScript bundle sizes:
+To maintain fast initial page loads and small client JavaScript bundles:
 - **Server Components (Default)**:
-  - All `page.tsx` and `layout.tsx` files are async Server Components.
-  - They execute on the server, fetch data via `ContentService`, generate JSON-LD, and stream static HTML to the client.
+  All `page.tsx` and `layout.tsx` files are async Server Components. They load data on the server, prepare JSON-LD schemas, and stream pre-rendered HTML to the browser.
 - **Client Components (`'use client'`)**:
-  - Used exclusively where client-side interactivity, DOM listeners, or animations are required.
-  - Examples: `Navbar` (mobile menu toggle), `SupportPageView` (payment modal), `ScribblePage` (client-side search & filtering), `ComposeWorkspace` (editor & live preview).
+  Used only where interactive state, DOM event listeners, or client-side filtering are required. Examples include `Navbar` (mobile menu toggle), `ScribblePage` (client-side text and persona filtering), and `ComposeWorkspace` (live preview and editor state).
 
 ---
 
-## 4. Error & Not-Found Boundaries
+## 4. Redirects and Error Boundaries
 
-- **`app/not-found.tsx`**: Renders when `notFound()` is invoked. Sets HTTP `robots: { index: false, follow: false }` to prevent search engine indexing of invalid URLs.
-- **`app/error.tsx`**: Client-side error boundary with accessible retry action triggers (`ErrorView`).
-- **`next.config.ts` Redirects**: Permanent `308` redirect configured from `/fund` to `/support`.
-
----
-
-## 5. Dynamic Open Graph API (`/api/og`)
-
-Dynamic social preview image generation powered by `@vercel/og`:
-
-- **`/api/og?type=home`**: Homepage OG preview with portrait hero image, greeting, and headline.
-- **`/api/og?type=about`**: About page OG preview with angled 2-column image mosaic.
-- **`/api/og?type=library`**: Library OG preview with 3D stacked book artwork covers.
-- **`/api/og?type=scribble`**: Scribble index OG preview with layered ledger cards.
-- **`/api/og?type=now`**: Now page OG preview with latest timeline update.
-- **`/api/og?type=support`**: Support & Patronage OG preview with unboxed numbered ledger.
-- **`/api/og?slug=[slug]`**: Per-essay OG preview with persona tag and cover image.
-- **`/api/og?slug=[slug]&type=note`**: Per-note OG preview with persona tag and media.
-
+- **`/fund` Redirect**: `next.config.ts` configures a permanent HTTP 308 redirect from `/fund` to `/support`.
+- **404 Not Found (`app/not-found.tsx`)**: Invoked by Next.js `notFound()`. Injects `robots: { index: false, follow: false }` to prevent indexing of dead URLs.
+- **Runtime Errors (`app/error.tsx`, `app/(site)/error.tsx`)**: Catches unexpected runtime exceptions and provides a recovery button to retry without a full page reload.

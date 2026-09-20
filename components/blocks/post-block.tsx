@@ -1,7 +1,7 @@
 import { formatDisplayDate } from '@/lib/utils';
 
 /**
- * PostBlock — rendered from a `<Post slug="..." title="..." ... />` tag inside
+ * PostBlock: rendered from a `<Post slug="..." title="..." ... />` tag inside
  * markdown content. Links out to the post page.
  */
 export function PostBlock({

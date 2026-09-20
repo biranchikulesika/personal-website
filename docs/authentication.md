@@ -1,90 +1,135 @@
-# Authentication & Access Control
+# Authentication and Access Control
 
-This document details the authentication and authorization architecture of the platform.
+This document explains the authentication and authorization architecture of the application.
 
 ---
 
 ## 1. Authentication Architecture
 
-- **Mandatory Admin Protection**: All routes under `/admin` (dashboard, composer, settings) require an authenticated Supabase session.
-- **Middleware Guard (`proxy.ts`)**: Automatically checks the user session on incoming requests and redirects unauthenticated visitors to `/admin/login`.
-- **Server Component Defense-in-Depth**: Admin page server components (`app/admin/page.tsx`, `app/admin/compose/page.tsx`) perform server-side `getUser()` checks and redirect unauthenticated requests before rendering.
-
----
-
-## 2. Target Production Auth Architecture
-
-In a production environment connected to Supabase:
-
-```
+```text
 ┌─────────────────────────────────────────────────────────────┐
-│                 Client (Browser / Login UI)                 │
-│              app/admin/login/page.tsx (OAuth/Passkey)       │
+│                 Client Browser / Login Page                 │
+│              app/admin/login/page.tsx                       │
+│        (OAuth: Google/GitHub, Passkeys / WebAuthn, OTP)     │
 └──────────────────────────────┬──────────────────────────────┘
                                │ Authenticates
                                ▼
 ┌─────────────────────────────────────────────────────────────┐
 │                        Supabase Auth                        │
-│             (Google, GitHub, WebAuthn / Passkeys)           │
+│               - Issues JWTs and refresh tokens              │
+│               - Sets secure HTTP-only session cookies       │
 └──────────────────────────────┬──────────────────────────────┘
-                               │ Sets HTTP-only cookies
+                               │ Next.js request
                                ▼
 ┌─────────────────────────────────────────────────────────────┐
-│              Next.js Server Session (@supabase/ssr)         │
-│             lib/supabase/server.ts -> getSupabaseServer()   │
+│                 Proxy Guard (proxy.ts)                      │
+│             - Intercepts /admin and /admin/:path*           │
+│             - Checks supabase.auth.getUser()                │
+│             - Verifies role in public.user_roles            │
 └──────────────────────────────┬──────────────────────────────┘
-                               │ Resolves user ID
-                               ▼
-┌─────────────────────────────────────────────────────────────┐
-│                   Role-Based Authorization                  │
-│                     (public.user_roles)                     │
-│               - user: Read only                             │
-│               - content_admin: Create/Edit/Publish content  │
-│               - super_admin: Full system control            │
-└─────────────────────────────────────────────────────────────┘
+                               │
+               ┌───────────────┴───────────────┐
+               ▼                               ▼
+       [ Valid Admin Role ]            [ Unauthorized / User ]
+               │                               │
+               ▼                               ▼
+      Allow access to /admin            Sign out immediately and
+                                        redirect to /admin/login
 ```
 
 ---
 
-## 3. Key Components
+## 2. Route Guard (`proxy.ts`)
 
-### 1. Supabase Client Configurations (`lib/supabase/server.ts`)
+Next.js route proxy runs on all admin routes (`matcher: ["/admin", "/admin/:path*"]`):
 
-- **`getSupabaseAdmin()`**:
-  - Uses `SUPABASE_SECRET_KEY` (service-role key).
-  - Bypasses RLS.
-  - **SERVER-SIDE ONLY**. Never imported or bundled into client components.
-- **`getSupabasePublic()`**:
-  - Uses `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`.
-  - Respects RLS policies. Safe for browser usage.
-- **`getSupabaseServer()`**:
-  - Uses `@supabase/ssr` with Next.js `cookies()`.
-  - Reads and writes user session tokens securely in HTTP-only cookies.
+1. **Unauthenticated Visitors**:
+   If a visitor without an active session requests a protected admin route, the proxy redirects them to `/admin/login?next=<path>`.
 
-### 2. Role-Based Access Control (RBAC)
+2. **Non-Admin Authenticated Users**:
+   If a user authenticates but holds only the `user` role (not `content_admin` or `super_admin`):
+   - The proxy calls `supabase.auth.signOut()`.
+   - Clears session cookies on the redirect response.
+   - Redirects to `/admin/login?error=forbidden`.
+   This ensures non-admin users cannot maintain an active session against the admin portal.
 
-User permissions are managed in the `public.user_roles` database table:
+3. **Admins Visiting Login**:
+   If an authenticated admin visits `/admin/login`, the proxy redirects them directly to the `/admin` dashboard.
+
+---
+
+## 3. Defense-in-Depth Layering
+
+Security is not left to the proxy alone:
+
+1. **Server Components**:
+   Admin pages (`app/admin/page.tsx`, `app/admin/compose/page.tsx`) check session validity using `getSupabaseServer()` before rendering any administrative data.
+
+2. **Server Actions (`app/admin/actions.ts`)**:
+   Every administrative mutation calls `assertAdminUser()`:
+   ```typescript
+   async function assertAdminUser() {
+     const supabase = await getSupabaseServer();
+     const { data: { user }, error } = await supabase.auth.getUser();
+     if (error || !user) {
+       throw new Error('Unauthorized: Administrative authentication required');
+     }
+     const role = await contentService.getUserRole(user.id);
+     if (!isAdminRole(role)) {
+       throw new Error('Forbidden: Administrative privileges required');
+     }
+     return { user, role };
+   }
+   ```
+
+3. **OAuth Callback Guard (`app/admin/auth/callback/route.ts`)**:
+   When exchanging an OAuth code for a session, the callback handler checks the user's assigned role in `public.user_roles`. If the user is not an admin, the handler immediately revokes the session and redirects to `/admin/login?error=forbidden`.
+
+---
+
+## 4. Supported Authentication Methods
+
+### 1. OAuth Providers
+- **Google and GitHub**: Users authenticate using OAuth through Supabase Auth.
+- Account management in `/admin` allows linking and unlinking additional providers via `connectProviderAction` and `disconnectProviderAction`.
+
+### 2. WebAuthn Passkeys
+- Passkeys allow passwordless authentication using device biometrics (Touch ID, Face ID, Windows Hello, or hardware security keys).
+- **Library**: Implemented using `@simplewebauthn/server` and `@simplewebauthn/browser`.
+- **Challenge Security**:
+  - The server generates a random challenge and signs it using an HMAC-SHA256 signature (`lib/auth/webauthn.ts`).
+  - The signed challenge is set in a secure, HTTP-only cookie named `__passkey_challenge` with a 5-minute time-to-live.
+  - During verification, the challenge is consumed and immediately cleared to prevent replay attacks.
+  - Signatures are verified using `crypto.timingSafeEqual`.
+
+### 3. Email OTP
+- Supabase email one-time passcodes for direct login.
+
+---
+
+## 5. Role-Based Access Control (RBAC)
+
+User permissions are stored in `public.user_roles`:
 
 ```typescript
-export type AppRole = "user" | "content_admin" | "super_admin";
+export type AppRole = 'user' | 'content_admin' | 'super_admin';
 
-export interface UserRole {
-  userId: string;
-  role: AppRole;
+export function isAdminRole(role: string | null | undefined): role is 'super_admin' | 'content_admin' {
+  return role === 'super_admin' || role === 'content_admin';
 }
 ```
 
-- When an authenticated user accesses admin features, the system queries `getUserRole(userId)` from `ContentService`.
-- If the user role is not `content_admin` or `super_admin`, write actions and administrative views are rejected.
+- **`user`**: Default role for visitors. No access to `/admin` or administrative server actions.
+- **`content_admin`**: Can create, edit, publish, and delete posts, notes, books, now entries, and media.
+- **`super_admin`**: Full administrative access, including managing roles and sessions.
 
 ---
 
-## 4. Security Rules & Best Practices
+## 6. Security Boundaries and Rules
 
-1. **Never Hardcode Secrets**:
-   - `SUPABASE_SECRET_KEY`, `RAZORPAY_KEY_SECRET`, and `RAZORPAY_WEBHOOK_SECRET` must only exist in `.env.local` or host environment variables.
-2. **Never Expose Admin Routes in Public Metadata**:
-   - Admin paths (`/admin`, `/admin/login`, `/admin/compose`) must never appear in `sitemap.xml`, `robots.txt`, or public links.
-   - Admin layouts enforce `X-Robots-Tag: noindex, nofollow` and `robots: { index: false, follow: false }`.
+1. **No Admin Route Leakage**:
+   Admin routes must never be linked in public navigation, footer, `sitemap.xml`, or `robots.txt`.
+2. **Server-Side Key Isolation**:
+   `SUPABASE_SERVICE_ROLE_KEY` and `RAZORPAY_KEY_SECRET` must never use the `NEXT_PUBLIC_` prefix and must never be imported into client components.
 3. **Session Cookie Isolation**:
-   - Authentication tokens are handled exclusively via HTTP-only, SameSite, Secure cookies managed by `@supabase/ssr`.
+   Session cookies use `httpOnly: true`, `sameSite: 'lax'`, and `secure: true` in production.

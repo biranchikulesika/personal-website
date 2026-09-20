@@ -114,12 +114,12 @@ export function ContentManager({
     setConfirmAction(confirm);
   }
 
-  // Post Editor — only the open/close flag and which post is being edited.
+  // Post Editor: only the open/close flag and which post is being edited.
   // All editor state lives inside PostEditorModal.
   const [isEditingPost, setIsEditingPost] = useState(false);
   const [editingPost, setEditingPost] = useState<BlogPost | null>(null);
 
-  // Note Editor — same pattern as post.
+  // Note Editor: same pattern as post.
   const [isEditingNote, setIsEditingNote] = useState(false);
   const [editingNote, setEditingNote] = useState<NoteItem | null>(null);
 
@@ -147,7 +147,7 @@ export function ContentManager({
 
 
 
-  // Post open/create handlers — just set the flag and which post to edit.
+  // Post open/create handlers: just set the flag and which post to edit.
   function handleOpenCreatePost() {
     setEditingPost(null);
     setIsEditingPost(true);
@@ -158,7 +158,7 @@ export function ContentManager({
     setIsEditingPost(true);
   }
 
-  // Post save callback — called by PostEditorModal after successful save.
+  // Post save callback: called by PostEditorModal after successful save.
   function handlePostSaved(post: BlogPost, oldSlug?: string) {
     setPosts((prev) => {
       const filtered = prev.filter(
@@ -169,7 +169,7 @@ export function ContentManager({
     setIsEditingPost(false);
   }
 
-  // Note open/create handlers — just set the flag and which note to edit.
+  // Note open/create handlers: just set the flag and which note to edit.
   function handleOpenCreateNote() {
     setEditingNote(null);
     setIsEditingNote(true);
@@ -180,7 +180,7 @@ export function ContentManager({
     setIsEditingNote(true);
   }
 
-  // Note save callback — called by NoteEditorModal after successful save.
+  // Note save callback: called by NoteEditorModal after successful save.
   function handleNoteSaved(note: NoteItem, oldSlug?: string) {
     setNotes((prev) => {
       const filtered = prev.filter(
@@ -1015,7 +1015,7 @@ export function ContentManager({
                     {/* Persona */}
                     <td className="px-4 py-4 text-xs whitespace-nowrap">
                       {isNow ? (
-                        <span className="text-gray-mid/50">—</span>
+                        <span className="text-gray-mid/50">-</span>
                       ) : (
                         <span className="capitalize text-teal font-medium">
                           {item.persona}
@@ -1284,7 +1284,7 @@ export function ContentManager({
         </div>
       )}
 
-      {/* Post Editor Modal — self-contained, does not cause ContentManager re-renders */}
+      {/* Post Editor Modal: self-contained, does not cause ContentManager re-renders */}
       {isEditingPost && (
         <PostEditorModal
           editingPost={editingPost}
@@ -1298,7 +1298,7 @@ export function ContentManager({
         />
       )}
 
-      {/* Note Editor Modal — self-contained, does not cause ContentManager re-renders */}
+      {/* Note Editor Modal: self-contained, does not cause ContentManager re-renders */}
       {isEditingNote && (
         <NoteEditorModal
           editingNote={editingNote}

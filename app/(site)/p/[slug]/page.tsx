@@ -4,6 +4,8 @@ import { BlogPostView } from '@/components/blog-post';
 import { ContentService } from '@/lib/services/content.service';
 import { postMetadata, articleJsonLd, breadcrumbJsonLd, safeJsonLd } from '@/lib/seo';
 
+export const dynamicParams = true;
+
 export async function generateStaticParams() {
   const service = new ContentService();
   const slugs = await service.getPostSlugs();
