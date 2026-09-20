@@ -91,7 +91,7 @@ export async function BlogPostView({ post }: { post: BlogPost }) {
     <article className="pb-16 pt-8 md:pb-24 md:pt-12">
       <div className="container-site">
         <div className="lg:grid lg:grid-cols-[1fr_minmax(0,72ch)_1fr] lg:gap-8">
-          {/* Top-left Scribble button — aligned with title on desktop */}
+          {/* Top-left Scribble button: aligned with title on desktop */}
           <div className="hidden lg:block pt-3">
             <Link
               href="/scribble"
@@ -163,7 +163,7 @@ export async function BlogPostView({ post }: { post: BlogPost }) {
         </div>
       </div>
 
-      {/* Body — TOC in the left gutter, ~72ch centered prose */}
+      {/* Body: TOC in the left gutter, ~72ch centered prose */}
       <div className="container-site mt-10 md:mt-14 lg:grid lg:grid-cols-[1fr_minmax(0,72ch)_1fr] lg:gap-8">
         {showToc && (
           <aside className="hidden lg:block" aria-label="Table of contents">

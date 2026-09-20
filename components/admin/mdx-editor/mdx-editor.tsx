@@ -452,7 +452,7 @@ export function MDXEditor({
           </div>
         )}
 
-        {/* Live Preview Pane — receives debounced content */}
+        {/* Live Preview Pane: receives debounced content */}
         {(viewMode === 'preview' || viewMode === 'split') && (
           <div className={`h-full flex-1 min-w-0 bg-night ${viewMode === 'split' ? 'w-1/2' : 'w-full'}`}>
             <MDXPreview
@@ -469,7 +469,7 @@ export function MDXEditor({
         )}
       </div>
 
-      {/* 3. Footer Stats Bar — driven by debounced content */}
+      {/* 3. Footer Stats Bar: driven by debounced content */}
       <div className="flex flex-wrap items-center justify-between border-t border-tinted/20 bg-night-soft px-4 py-2 text-[11px] text-gray-mid">
         <div className="flex items-center gap-4">
           <span><b className="text-paper">{stats.words}</b> words</span>

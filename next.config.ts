@@ -30,6 +30,7 @@ const contentSecurityPolicy = cspDirectives.join('; ');
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  output: 'standalone',
   typescript: {
     ignoreBuildErrors: false,
   },
@@ -97,7 +98,7 @@ const nextConfig: NextConfig = {
       ],
     },
     {
-      // OpenGraph dynamic images & public API previews — allow cross-origin scrapers (Twitter, Facebook, LinkedIn, opengraph.xyz)
+      // OpenGraph dynamic images and public API previews: allow cross-origin scrapers (Twitter, Facebook, LinkedIn, opengraph.xyz)
       source: '/api/og(.*)',
       headers: [
         {

@@ -35,7 +35,7 @@ async function readClipboardImageUrl(): Promise<string | null> {
 }
 
 /**
- * Cover image editor for the book — the preview IS the editor. The source
+ * Cover image editor for the book: the preview IS the editor. The source
  * controls (paste link, upload from device, import from the media library)
  * live inside the preview itself, so the admin sets the cover exactly where
  * they see it:
@@ -246,7 +246,7 @@ export function BookCoverPicker({
               </button>
             </div>
 
-            {/* Inline clipboard error — never a popup */}
+            {/* Inline clipboard error: never a popup */}
             {pasteError && (
               <p
                 role="alert"
@@ -324,7 +324,7 @@ export function BookCoverPicker({
         </div>
       )}
 
-      {/* Hidden upload input — shared by the click / drag & drop target */}
+      {/* Hidden upload input: shared by the click / drag & drop target */}
       <input
         ref={fileInputRef}
         type="file"

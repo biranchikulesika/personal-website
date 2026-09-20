@@ -23,7 +23,7 @@ export default async function AdminPage({
   searchParams: Promise<{ tab?: string }>;
 }) {
   const { tab: initialTabParam } = await searchParams;
-  // Only accept a known tab id — an unknown/missing value falls back to home.
+  // Only accept a known tab id: an unknown/missing value falls back to home.
   const initialTab: SidepanelTab = ["home", "content", "media", "subscribers", "account"].includes(
     initialTabParam as SidepanelTab,
   )

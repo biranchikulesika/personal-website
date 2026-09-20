@@ -2,7 +2,7 @@
 
 /**
  * Renders a toast notification at the bottom-center of its container.
- * Use with the useToast hook — pass the message prop.
+ * Use with the useToast hook: pass the message prop.
  */
 export function ToastView({
   message,

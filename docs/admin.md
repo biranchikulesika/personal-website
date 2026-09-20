@@ -1,81 +1,95 @@
-# Admin Panel & MDX Composer
+# Admin Panel and Content Composer
 
-The administrative surface provides content management and composition tooling.
-
----
-
-## 1. Structure & Routes
-
-- **`/admin`** — Primary dashboard.
-  - **Overview**: Content counts (posts, notes, books, now entries, media assets).
-  - **Content Manager**: Filterable, searchable data tables for essays, notes, and timeline items with status toggles, deletion, and edit triggers.
-  - **Featured Manager**: Curates the 4 featured essays and 4 featured books displayed on the homepage.
-  - **Media Manager**: Uploads images, inspects asset dimensions, manages tags, and detects orphaned storage assets.
-- **`/admin/compose`** — Full-page IDE-grade MDX composition environment.
+The admin interface provides content publishing, media management, account controls, and site administration tools.
 
 ---
 
-## 2. The Compose Workspace (`components/admin/compose/`)
+## 1. Routes and Structure
 
-The Composer is designed for an uninterrupted writing and editing experience:
+### `/admin`: Primary Management Dashboard
+The admin dashboard (`app/admin/page.tsx`) organizes operations into dedicated tabs:
 
-```
+1. **Overview (`home-overview.tsx`)**:
+   Summary cards displaying counts for posts, notes, books, now entries, media assets, and subscribers.
+2. **Content Manager (`content-manager.tsx`)**:
+   Searchable and filterable data tables for essays, atomic notes, library books, and living timeline entries. Supports status toggles (published or unpublished), deletion, and links to edit items in the composer.
+3. **Featured Manager**:
+   Selects and reorders the featured essays and books displayed on the homepage.
+4. **Media Manager (`media-manager.tsx`)**:
+   Uploads image assets, manages flexible tags, inspects dimensions, and scans for orphaned storage files that are no longer referenced in content.
+5. **Account Manager (`account-manager.tsx`)**:
+   Manages WebAuthn passkeys, displays active authenticated sessions with device telemetry, and allows linking or unlinking OAuth providers (Google, GitHub).
+6. **Subscriber Manager (`subscriber-manager.tsx`)**:
+   Lists newsletter subscribers with status and registration source, including options to remove subscribers.
+
+---
+
+### `/admin/compose`: MDX Composer Workspace
+The composer (`app/admin/compose/page.tsx`) is a dedicated writing environment:
+
+```text
 ┌────────────────────────────────────────────────────────────────────────┐
 │ Top Bar: [Doc Type] [Slug Input] [Status Badge] [Diff] [Media] [Save]  │
 ├───────────────────────────────────┬────────────────────────────────────┤
 │                                   │                                    │
 │        Left: Raw MDX Editor       │      Right: Split Preview Pane     │
-│  (Monospace, line numbers, word   │  (Matches live typography styles,  │
-│   count, reading time indicator)  │   footnotes, callouts, figures)    │
+│  Monospace editor with line       │  Real-time rendered preview using  │
+│  numbers, word count, and reading │  Newsreader typography, figures,   │
+│  time indicator.                  │  footnotes, and embedded cards.    │
 │                                   │                                    │
 ├───────────────────────────────────┴────────────────────────────────────┤
-│ Drawers / Overlays:                                                    │
-│  - Metadata Settings: Persona, Tags, Subtitle, Publish Date, Cover Image│
-│  - Visual Diff Viewer: Color-coded before/after character comparison   │
-│  - Media Asset Drawer: One-click markdown insertion for images         │
+│ Drawers and Modals:                                                    │
+│  - Metadata Settings: Persona, tags, date, cover image, audience.      │
+│  - AI Metadata: Automatic persona and tag suggestion via Groq/OpenAI.  │
+│  - Visual Diff: Character and line-level changes before publishing.    │
+│  - Media Drawer: One-click insertion of uploaded image markdown.       │
+│  - Book Cover Picker: Pexels image search for book artwork.            │
 └────────────────────────────────────────────────────────────────────────┘
 ```
 
-### Key Capabilities:
-1. **Multi-Type Support**: Switch effortlessly between editing essays (`post`), atomic notes (`note`), and timeline updates (`now`).
-2. **Live Render Preview**: Real-time rendering reflecting exact serif fonts (`Newsreader`), sizing, blockquotes, and figures as they appear on the live site.
-3. **Visual Diff Engine (`diff-view.tsx`)**: Inspect additions, deletions, and modifications before publishing updates.
-4. **Media Drawer (`media-drawer.tsx`)**: Search uploaded assets and insert formatted `![alt](src)` tags with a single click.
-
 ---
 
-## 3. Server Actions & Validation (`app/admin/actions.ts`)
+## 2. Server Actions (`app/admin/actions.ts`)
 
-All administrative write operations are handled via Server Actions that validate inputs at the server boundary using Zod:
+All administrative operations execute through Server Actions. Every action enforces:
+1. **Authentication and Authorization**: Calls `assertAdminUser()` to verify active session and `content_admin` or `super_admin` role.
+2. **Schema Validation**: Validates client-supplied data against Zod schemas.
+3. **Cache Revalidation**: Calls `revalidatePath()` on affected routes.
 
-```typescript
-export async function savePostAction(
-  post: BlogPost,
-  persona?: Persona,
-): Promise<{ success: boolean; post?: BlogPost; error?: string }> {
-  try {
-    // 1. Strict Zod validation
-    const validated = BlogPostSchema.parse(post);
+### Complete Action Registry
 
-    // 2. Persist via Service layer
-    const saved = await contentService.savePost(validated, persona);
-
-    // 3. Trigger on-demand cache revalidation
-    revalidatePath('/admin');
-    revalidatePath('/scribble');
-    revalidatePath(`/p/${post.slug}`);
-
-    return { success: true, post: saved };
-  } catch (err: unknown) {
-    return { success: false, error: (err as Error).message || 'Failed to save post' };
-  }
-}
-```
-
-### Supported Server Actions:
-- **Posts**: `getAllPostsAction`, `savePostAction`, `togglePostStatusAction`, `deletePostAction`.
-- **Notes**: `getAllNotesAction`, `saveNoteAction`, `toggleNoteStatusAction`, `deleteNoteAction`.
-- **Books**: `getAllBooksAction`, `saveBookAction`, `deleteBookAction`.
-- **Now Entries**: `getNowEntriesAction`, `saveNowEntryAction`, `deleteNowEntryAction`.
-- **Media**: `getMediaAction`, `addMediaAction`, `deleteMediaAction`, `getOrphanedMediaAction`, `deleteStorageAssetsAction`.
-- **Featured**: `setFeaturedPostsAction`, `setFeaturedBooksAction`.
+| Category | Function | Purpose |
+| :--- | :--- | :--- |
+| **Posts** | `getAllPostsAction` | Fetch all posts, including unpublished drafts |
+| | `savePostAction` | Create or update an essay |
+| | `togglePostStatusAction` | Toggle between published and unpublished |
+| | `deletePostAction` | Delete an essay by slug |
+| **Notes** | `getAllNotesAction` | Fetch all atomic notes |
+| | `saveNoteAction` | Create or update a note |
+| | `toggleNoteStatusAction` | Toggle note publication status |
+| | `deleteNoteAction` | Delete a note by slug |
+| **Books** | `getAllBooksAction` | Fetch all library books |
+| | `saveBookAction` | Create or update a book record |
+| | `toggleBookStatusAction` | Toggle book recommendation status |
+| | `deleteBookAction` | Delete a book by slug |
+| **Now** | `getNowEntriesAction` | Fetch timeline entries |
+| | `saveNowEntryAction` | Create or update a now entry |
+| | `deleteNowEntryAction` | Delete a timeline entry |
+| **Media** | `getMediaAction` | Fetch uploaded media catalog |
+| | `addMediaAction` | Upload asset to Supabase Storage and record in database |
+| | `deleteMediaAction` | Delete media record from database |
+| | `deleteOrphanedMediaAction` | Batch clean unreferenced storage files |
+| **Featured** | `setFeaturedPostsAction` | Update homepage featured essay slugs |
+| | `setFeaturedBooksAction` | Update homepage featured book slugs |
+| **AI Assist** | `generateAiMetadataAction` | Suggest persona, tags, and summary for content |
+| **Passkeys** | `getPasskeysAction` | List registered passkeys for current admin |
+| | `startPasskeyRegistrationAction`| Generate signed WebAuthn challenge |
+| | `verifyPasskeyRegistrationAction`| Verify WebAuthn response and save credential |
+| | `deletePasskeyAction` | Remove a passkey credential |
+| **Sessions** | `getSessionsAction` | List active sessions |
+| | `signOutSessionAction` | Invalidate a specific session |
+| | `signOutAllSessionsAction` | Invalidate all sessions except current |
+| **Providers** | `connectProviderAction` | Link an OAuth provider |
+| | `disconnectProviderAction` | Unlink an OAuth provider |
+| **Subscribers**| `subscribeToNewsletterAction` | Register a new subscriber |
+| | `deleteSubscriberAction` | Remove a subscriber |

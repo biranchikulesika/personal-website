@@ -25,7 +25,7 @@ interface NoteEditorModalProps {
   allPosts: BlogPost[];
   /** All books (for slug collision checks and embeds). */
   allBooks: BookItem[];
-  /** Callback after save succeeds — parent should update its list. */
+  /** Callback after save succeeds: parent should update its list. */
   onSaved: (note: NoteItem, oldSlug?: string) => void;
   /** Callback when the modal is closed (cancel or after save). */
   onClose: () => void;

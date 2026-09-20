@@ -49,7 +49,7 @@ export function NewsletterForm({
 
   return (
     <div className="max-w-xl">
-      {/* Mobile layout — stacked pill input and button */}
+      {/* Mobile layout: stacked pill input and button */}
       <form
         onSubmit={handleSubmit}
         className="flex flex-col gap-3 sm:hidden"
@@ -78,7 +78,7 @@ export function NewsletterForm({
         </button>
       </form>
 
-      {/* Desktop layout — compact combined pill */}
+      {/* Desktop layout: compact combined pill */}
       <form
         onSubmit={handleSubmit}
         className="hidden flex-col gap-2 rounded-2xl border border-tinted/20 bg-night-soft p-1.5 shadow-lg transition-colors focus-within:border-tinted/40 sm:flex sm:flex-row sm:items-center sm:rounded-full"

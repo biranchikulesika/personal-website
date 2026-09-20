@@ -91,7 +91,7 @@ async function createAuthClient() {
               cookieStore.set(name, value, options),
             );
           } catch {
-            // Server Action — safe to ignore outside request context.
+            // Server Action: safe to ignore outside request context.
           }
         },
       },

@@ -1,27 +1,27 @@
-# Deployment & Production Guidelines
+# Deployment and Production Guidelines
 
-This guide details how to build, configure, and deploy the application to a production environment.
+This guide details how to build, configure, and deploy the application to production.
 
 ---
 
 ## 1. Production Architecture Overview
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────┐
-│                    Cloudflare / Vercel Edge                 │
-│              (SSL Termination, CDN Cache, DDoS)             │
+│                    Edge CDN / DNS Layer                     │
+│              (SSL Termination, Edge Caching)                │
 └──────────────────────────────┬──────────────────────────────┘
                                │
                                ▼
 ┌─────────────────────────────────────────────────────────────┐
 │                 Next.js Production Runtime                  │
-│       (Node.js 24+ standalone output / Vercel Serverless)   │
+│       (Node.js 24+ standalone output or Vercel Serverless)  │
 └──────────────────────────────┬──────────────────────────────┘
                                │
                                ▼
 ┌─────────────────────────────────────────────────────────────┐
 │                    Supabase Managed Cloud                   │
-│         - PostgreSQL 16 Database                            │
+│         - PostgreSQL Database (10 tables)                   │
 │         - Supabase Storage ('media' bucket)                 │
 │         - Supabase Auth                                     │
 └─────────────────────────────────────────────────────────────┘
@@ -34,31 +34,35 @@ This guide details how to build, configure, and deploy the application to a prod
 `next.config.ts` specifies `output: 'standalone'`.
 
 When `npm run build` executes:
-- Next.js automatically bundles only the production dependencies into `.next/standalone`.
-- Static assets are placed in `.next/static` and `public/`.
-- Enables running the entire application as a minimal containerized Node process (`node server.js`).
+- Next.js traces runtime dependencies and creates a self-contained bundle in `.next/standalone`.
+- Only production packages are included. Test files, scripts, documentation, and `devDependencies` are omitted.
+- The standalone build can run on any host with Node.js installed using `node server.js`.
 
 ---
 
 ## 3. Database Deployment Checklist
 
-Before deploying the application code:
-1. Create a Supabase project.
-2. Open the Supabase SQL Editor.
-3. Paste `supabase/migrations/20260830000000_initial_schema.sql` into the SQL Editor (or run `supabase db query --linked -f supabase/migrations/20260830000000_initial_schema.sql`). This single idempotent file recreates the entire database.
-4. Verify that:
-   - All 9 tables exist in the `public` schema.
-   - Triggers for `updated_at` and cross-collection slug uniqueness are active.
-   - The `media` storage bucket is created with public read access.
-   - RLS is enabled on all tables.
+Before deploying code that depends on database updates:
+1. All schema modifications must be added to `supabase/migrations/20260830000000_initial_schema.sql`.
+2. Apply the schema to the live Supabase database before triggering builds:
+   ```bash
+   supabase db query --linked -f supabase/migrations/20260830000000_initial_schema.sql
+   ```
+3. Verify that:
+   - All 10 tables exist in the `public` schema (`posts`, `notes`, `books`, `now_entries`, `media`, `featured_items`, `user_roles`, `storage_files`, `subscribers`, `contributions`).
+   - Triggers for `update_updatedAt_column` and `check_cross_collection_slug_uniqueness` are active.
+   - The `media` storage bucket exists with public read access.
+   - Row Level Security (RLS) is enabled on all tables.
 
 ---
 
 ## 4. Security Headers (`next.config.ts`)
 
-Next.js automatically attaches HTTP security headers to all production responses:
-- **`X-Content-Type-Options`**: `nosniff` (prevents MIME sniffing).
-- **`X-Frame-Options`**: `DENY` (prevents clickjacking).
+Next.js automatically attaches HTTP security headers to all responses:
+- **`Content-Security-Policy`**: Restricts scripts, styles, frames, images, and connections to approved origins.
+- **`Cross-Origin-Opener-Policy`**: `same-origin-allow-popups` (allows OAuth popups to communicate cleanly).
+- **`X-Content-Type-Options`**: `nosniff` (prevents MIME type sniffing).
+- **`X-Frame-Options`**: `SAMEORIGIN` (prevents clickjacking while allowing same-origin frames).
 - **`X-XSS-Protection`**: `1; mode=block`.
 - **`Referrer-Policy`**: `strict-origin-when-cross-origin`.
 - **`Permissions-Policy`**: `camera=(), microphone=(), geolocation=(), browsing-topics=()`.
@@ -67,17 +71,22 @@ Next.js automatically attaches HTTP security headers to all production responses
 
 ---
 
-## 5. Pre-Deployment Verification Checklist
+## 5. Deployment Verification Checklist
 
-Always run these three commands locally or in CI before promoting a deployment:
+Always run these verification commands before promoting a deployment:
 
 ```bash
-# 1. Verify code formatting and linting
+# 1. Run static code analysis and linting
 npm run lint
 
-# 2. Run all unit and integration tests
+# 2. Run TypeScript compiler typechecks
+npm run typecheck
+
+# 3. Run all unit and integration tests
 npm test
 
-# 3. Ensure TypeScript compiles and static pages generate successfully
+# 4. Verify production build and static pre-rendering
 npm run build
 ```
+
+If any step reports an error, stop and resolve the issue before deploying.

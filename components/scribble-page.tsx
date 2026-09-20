@@ -107,7 +107,7 @@ const CARD_BY_TYPE: Record<
 };
 
 /**
- * Filter bar — persona chips on the left, a sea-blue rule, then a scrollable
+ * Filter bar: persona chips on the left, a sea-blue rule, then a scrollable
  * topic chip list. The topics shown depend on the selected persona: All shows
  * topics from every persona; a specific persona narrows the topics to that
  * persona's entries.

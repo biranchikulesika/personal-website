@@ -124,7 +124,7 @@ export function MediaManager({
             return;
           }
 
-          // Draw image to 2D canvas — extracts pure pixel buffer and discards all EXIF, GPS, camera and device metadata
+          // Draw image to 2D canvas: extracts pure pixel buffer and discards all EXIF, GPS, camera and device metadata
           ctx.drawImage(img, 0, 0);
 
           let exportMime = 'image/jpeg';

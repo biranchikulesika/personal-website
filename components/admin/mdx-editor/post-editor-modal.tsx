@@ -30,7 +30,7 @@ interface PostEditorModalProps {
   allBooks: BookItem[];
   /** Media items for the media picker. */
   mediaItems: MediaItem[];
-  /** Callback after save succeeds — parent should update its list. */
+  /** Callback after save succeeds: parent should update its list. */
   onSaved: (post: BlogPost, oldSlug?: string) => void;
   /** Callback when the modal is closed (cancel or after save). */
   onClose: () => void;

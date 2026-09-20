@@ -147,7 +147,7 @@ test("content service enforces at least one connected auth provider", async () =
   const afterDisconnectGithub = await service.getConnectedProviders("default");
   assert.deepEqual(afterDisconnectGithub, ["google"]);
 
-  // Attempt to disconnect the last remaining provider (Google) — MUST FAIL
+  // Attempt to disconnect the last remaining provider (Google): MUST FAIL
   await assert.rejects(
     async () => {
       await service.disconnectProvider("default", "google");

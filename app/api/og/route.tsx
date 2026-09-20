@@ -552,7 +552,7 @@ function generateHomeOG({
         </div>
       </div>
 
-      {/* Right column — homepage hero photo presentation */}
+      {/* Right column: homepage hero photo presentation */}
       <div
         style={{
           display: "flex",
@@ -751,7 +751,7 @@ function generateSupportOG({
         </div>
       </div>
 
-      {/* Right column — unboxed, clean editorial ledger lines */}
+      {/* Right column: unboxed, clean editorial ledger lines */}
       <div
         style={{
           display: "flex",
@@ -1128,7 +1128,7 @@ function generateAboutOG({
         </div>
       </div>
 
-      {/* Right column — angled 2-column image mosaic */}
+      {/* Right column: angled 2-column image mosaic */}
       {validImages.length > 0 && (
         <div
           style={{
@@ -1463,7 +1463,7 @@ function generateLibraryOG({
         </div>
       </div>
 
-      {/* Right column — 3D layered book covers */}
+      {/* Right column: 3D layered book covers */}
       <div
         style={{
           display: "flex",
@@ -1748,7 +1748,7 @@ function generateScribbleOG({
         </div>
       </div>
 
-      {/* Right column — dynamic editorial ledger card composition */}
+      {/* Right column: dynamic editorial ledger card composition */}
       <div
         style={{
           display: "flex",
@@ -2029,7 +2029,7 @@ function generateNowOG({
         </div>
       </div>
 
-      {/* Right column — dynamic timeline & telemetry card */}
+      {/* Right column: dynamic timeline & telemetry card */}
       <div
         style={{
           display: "flex",
@@ -2487,7 +2487,7 @@ function generatePostOG({
         </div>
       </div>
 
-      {/* Right artwork column — only when cover is provided */}
+      {/* Right artwork column: only when cover is provided */}
       {hasCover && coverImageB64 && (
         <div
           style={{

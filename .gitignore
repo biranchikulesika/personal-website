@@ -120,11 +120,7 @@ release-notes.md
 
 # ── IDEs & Code Editors ──────────────────────────────────────────────────────
 .idea/
-.vscode/*
-!.vscode/settings.json
-!.vscode/tasks.json
-!.vscode/launch.json
-!.vscode/extensions.json
+.vscode/
 .history/
 *.code-workspace
 *.suo
@@ -135,8 +131,13 @@ release-notes.md
 *.sublime-workspace
 
 # ── AI Agents & Local Assistants ─────────────────────────────────────────────
+.agents/
+skills-lock.json
 .cursor/
 .claude/
+.windsurf/
+.gemini/
+.copilot/
 .aider*
 *.prompt.md
 

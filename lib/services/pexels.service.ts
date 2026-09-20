@@ -36,7 +36,7 @@ interface PexelsSearchResponse {
 let cachedDate: string | null = null;
 let cachedResult: DailyBackground | null = null;
 
-// ── Queries — varied daily to provide visual diversity ──────────────────────
+// ── Queries: varied daily to provide visual diversity ──────────────────────
 // Each day picks a query by index (dayOfYear % queries.length).
 
 const QUERIES = [
@@ -180,7 +180,7 @@ export async function getDailyBackground(): Promise<DailyBackground | null> {
 
     return result;
   } catch {
-    // Pexels unavailable — return null so the caller can use a fallback
+    // Pexels unavailable: return null so the caller can use a fallback
     return null;
   }
 }

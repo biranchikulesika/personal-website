@@ -1,116 +1,161 @@
-# Database & Schema Architecture
+# Database and Schema Architecture
 
-The database architecture is built on PostgreSQL / Supabase. The entire schema is declaratively defined in a single, idempotent file: **[`supabase/migrations/20260830000000_initial_schema.sql`](supabase/migrations/20260830000000_initial_schema.sql)** — the only migration file tracked; it recreates all tables, types, functions, triggers, indexes, RLS policies, and grants.
+The database architecture is built on PostgreSQL through Supabase. The entire schema is declaratively defined in a single, idempotent file: [`supabase/migrations/20260830000000_initial_schema.sql`](../supabase/migrations/20260830000000_initial_schema.sql). This is the only migration file tracked in Git. It recreates all tables, types, functions, triggers, indexes, Row Level Security (RLS) policies, and role grants.
 
 ---
 
 ## 1. Tables Overview
 
-| Table | Purpose | Primary Key | Key Indexes & Constraints |
+The database contains 10 tables in the `public` schema:
+
+| Table | Purpose | Primary Key | Key Indexes and Constraints |
 | :--- | :--- | :--- | :--- |
-| `posts` | Long-form essays | `id` (UUID) | `slug` (UNIQUE), `published_at DESC`, `status` |
-| `notes` | Atomic short-form notes | `id` (TEXT) | `slug` (UNIQUE), `date DESC`, `status` |
-| `books` | Library reading catalog | `id` (TEXT) | `slug` (UNIQUE), `persona` |
-| `now_entries` | Living focus timeline | `id` (TEXT) | `date DESC` |
-| `media` | Uploaded images & asset catalog | `id` (TEXT) | `tag` |
-| `featured_items` | Homepage featured essays & books | `id` (UUID) | UNIQUE(`item_type`, `item_id`), UNIQUE(`item_type`, `position`) |
-| `user_roles` | Auth user RBAC role mappings | `user_id` (UUID FK) | `role` (`user`, `content_admin`, `super_admin`) |
-| `storage_files` | Storage asset orphan tracker | `id` (UUID) | `path` (UNIQUE) |
-| `contributions` | Razorpay & support payments | `id` (TEXT) | `payment_id`, `order_id`, `created_at DESC` |
+| `posts` | Long-form essays and writing | `id` (UUID) | UNIQUE(`slug`), `published_at DESC`, `status` |
+| `notes` | Atomic short-form notes | `id` (TEXT) | UNIQUE(`slug`), `date DESC`, `status` |
+| `books` | Reading catalog and book recommendations | `id` (TEXT) | UNIQUE(`slug`), `is_published` |
+| `now_entries` | Living timeline entries | `id` (TEXT) | `created_at DESC`, `slug` |
+| `media` | Uploaded images and asset metadata | `id` (TEXT) | `created_at DESC`, `tag` |
+| `featured_items` | Curated homepage featured essays and books | `id` (UUID) | UNIQUE(`item_type`, `item_id`), UNIQUE(`item_type`, `position`) |
+| `user_roles` | Role-based authorization mappings | `user_id` (UUID FK) | `role` (`user`, `content_admin`, `super_admin`) |
+| `storage_files` | Tracked storage assets for orphan detection | `id` (UUID) | UNIQUE(`path`) |
+| `subscribers` | Newsletter subscriber registry | `id` (TEXT) | `email`, CHECK `status` IN ('active', 'unsubscribed') |
+| `contributions` | Patronage and Razorpay payment records | `id` (TEXT) | `payment_id`, `order_id`, `created_at DESC` |
 
 ---
 
-## 2. Table Specifications
+## 2. Custom Types and Enums
+
+```sql
+-- Role levels for authenticated users
+CREATE TYPE public.app_role AS ENUM ('user', 'content_admin', 'super_admin');
+
+-- Publication status for content items
+CREATE TYPE public.content_status AS ENUM ('published', 'unpublished');
+
+-- Editorial state for posts
+CREATE TYPE public.post_status AS ENUM ('draft', 'published', 'archived');
+```
+
+---
+
+## 3. Key Table Specifications
 
 ### `posts`
 ```sql
-CREATE TABLE public.posts (
-  id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  slug             TEXT NOT NULL UNIQUE,
-  title            TEXT NOT NULL,
-  subtitle         TEXT,
-  description      TEXT NOT NULL DEFAULT '',
-  persona          TEXT,
-  tags             TEXT[] DEFAULT '{}',
-  published_at     DATE,
-  last_edited_at   DATE,
-  assumed_audience TEXT DEFAULT '',
-  intro            JSONB DEFAULT '[]'::jsonb,
-  sections         JSONB DEFAULT '[]'::jsonb,
-  books            JSONB DEFAULT '[]'::jsonb,
-  cover_image      TEXT,
-  status           content_status NOT NULL DEFAULT 'published',
-  created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
+CREATE TABLE IF NOT EXISTS public.posts (
+    id               UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    slug             TEXT NOT NULL UNIQUE,
+    title            TEXT NOT NULL,
+    subtitle         TEXT,
+    description      TEXT DEFAULT '' NOT NULL,
+    persona          TEXT,
+    tags             TEXT[] DEFAULT '{}',
+    published_at     DATE,
+    last_edited_at   DATE,
+    assumed_audience TEXT DEFAULT '',
+    intro            JSONB DEFAULT '[]'::jsonb,
+    sections         JSONB DEFAULT '[]'::jsonb,
+    books            JSONB DEFAULT '[]'::jsonb,
+    cover_image      TEXT,
+    status           content_status DEFAULT 'published' NOT NULL,
+    created_at       TIMESTAMPTZ DEFAULT now() NOT NULL,
+    updated_at       TIMESTAMPTZ DEFAULT now() NOT NULL
 );
 ```
 
 ### `notes`
 ```sql
-CREATE TABLE public.notes (
-  id             TEXT PRIMARY KEY,
-  slug           TEXT NOT NULL UNIQUE,
-  title          TEXT NOT NULL,
-  description    TEXT NOT NULL DEFAULT '',
-  content        JSONB DEFAULT '[]'::jsonb,
-  date           DATE,
-  persona        TEXT,
-  tags           TEXT[] DEFAULT '{}',
-  cover_image    TEXT,
-  status         content_status NOT NULL DEFAULT 'published',
-  created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at     TIMESTAMPTZ NOT NULL DEFAULT NOW()
+CREATE TABLE IF NOT EXISTS public.notes (
+    id             TEXT PRIMARY KEY,
+    slug           TEXT NOT NULL UNIQUE,
+    title          TEXT NOT NULL,
+    subtitle       TEXT,
+    description    TEXT DEFAULT '' NOT NULL,
+    content        JSONB DEFAULT '[]'::jsonb,
+    date           TEXT DEFAULT '' NOT NULL,
+    persona        TEXT,
+    tags           TEXT[] DEFAULT '{}',
+    cover_image    TEXT,
+    status         content_status DEFAULT 'published' NOT NULL,
+    created_at     TIMESTAMPTZ DEFAULT now() NOT NULL,
+    updated_at     TIMESTAMPTZ DEFAULT now() NOT NULL
 );
 ```
 
 ### `books`
 ```sql
-CREATE TABLE public.books (
-  id             TEXT PRIMARY KEY,
-  slug           TEXT NOT NULL UNIQUE,
-  title          TEXT NOT NULL,
-  author         TEXT NOT NULL,
-  description    TEXT NOT NULL DEFAULT '',
-  date           TEXT,
-  persona        TEXT,
-  tags           TEXT[] DEFAULT '{}',
-  cover          TEXT,
-  link           TEXT,
-  created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at     TIMESTAMPTZ NOT NULL DEFAULT NOW()
+CREATE TABLE IF NOT EXISTS public.books (
+    id             TEXT PRIMARY KEY,
+    slug           TEXT NOT NULL UNIQUE,
+    title          TEXT NOT NULL,
+    author         TEXT NOT NULL,
+    description    TEXT DEFAULT '' NOT NULL,
+    date           TEXT,
+    persona        TEXT,
+    tags           TEXT[] DEFAULT '{}',
+    cover          TEXT,
+    link           TEXT,
+    is_published   BOOLEAN DEFAULT true NOT NULL,
+    status         TEXT DEFAULT 'published' NOT NULL,
+    created_at     TIMESTAMPTZ DEFAULT now() NOT NULL,
+    updated_at     TIMESTAMPTZ DEFAULT now() NOT NULL
+);
+```
+
+### `now_entries`
+```sql
+CREATE TABLE IF NOT EXISTS public.now_entries (
+    id             TEXT PRIMARY KEY,
+    slug           TEXT DEFAULT '' NOT NULL,
+    title          TEXT NOT NULL,
+    date           TEXT NOT NULL,
+    content        TEXT DEFAULT '' NOT NULL,
+    location       TEXT DEFAULT '' NOT NULL,
+    status         content_status DEFAULT 'published' NOT NULL,
+    created_at     TIMESTAMPTZ DEFAULT now() NOT NULL,
+    updated_at     TIMESTAMPTZ DEFAULT now() NOT NULL,
+    last_edited_at TIMESTAMPTZ
+);
+```
+
+### `subscribers`
+```sql
+CREATE TABLE IF NOT EXISTS public.subscribers (
+    id         TEXT PRIMARY KEY,
+    email      TEXT NOT NULL,
+    status     TEXT DEFAULT 'active' NOT NULL CHECK (status IN ('active', 'unsubscribed')),
+    source     TEXT DEFAULT 'website' NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT now() NOT NULL
 );
 ```
 
 ### `contributions`
 ```sql
-CREATE TABLE public.contributions (
-  id             TEXT PRIMARY KEY,
-  order_id       TEXT,
-  payment_id     TEXT,
-  amount         NUMERIC NOT NULL,
-  currency       TEXT NOT NULL DEFAULT 'INR',
-  status         TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'captured', 'failed')),
-  name           TEXT NOT NULL DEFAULT 'Anonymous Patron',
-  email          TEXT,
-  note           TEXT,
-  created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  source         TEXT NOT NULL DEFAULT 'razorpay' CHECK (source IN ('razorpay', 'manual'))
+CREATE TABLE IF NOT EXISTS public.contributions (
+    id         TEXT PRIMARY KEY,
+    order_id   TEXT,
+    payment_id TEXT,
+    amount     NUMERIC NOT NULL,
+    currency   TEXT DEFAULT 'INR' NOT NULL,
+    status     TEXT DEFAULT 'pending' NOT NULL CHECK (status IN ('pending', 'captured', 'failed')),
+    name       TEXT DEFAULT 'Anonymous Patron' NOT NULL,
+    email      TEXT,
+    note       TEXT,
+    created_at TIMESTAMPTZ DEFAULT now() NOT NULL,
+    source     TEXT DEFAULT 'razorpay' NOT NULL CHECK (source IN ('razorpay', 'manual'))
 );
 ```
 
 ---
 
-## 3. Database Functions & Triggers
+## 4. Functions and Triggers
 
-### 1. Automatic Timestamp Updates (`update_updated_at_column`)
-All core tables attach a trigger that automatically updates the `updated_at` column whenever a record is modified.
-
-### 2. Cross-Collection Slug Uniqueness (`check_cross_collection_slug_uniqueness`)
-To ensure URL routing remains collision-free, a PL/pgSQL trigger verifies that a slug in `posts`, `notes`, or `books` does not already exist in any other collection:
+### Cross-Collection Slug Uniqueness
+To guarantee URL routes `/p/[slug]`, `/n/[slug]`, and `/library` do not collide, the function `check_cross_collection_slug_uniqueness` runs before insert or update on `posts`, `notes`, and `books`:
 
 ```sql
-CREATE OR REPLACE FUNCTION public.check_cross_collection_slug_uniqueness()
-RETURNS TRIGGER AS $$
+CREATE OR REPLACE FUNCTION public.check_cross_collection_slug_uniqueness() RETURNS trigger
+LANGUAGE plpgsql AS $$
 DECLARE
   existing_count INTEGER;
 BEGIN
@@ -129,49 +174,39 @@ BEGIN
 
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$;
 ```
 
----
+### Security Helper Functions
+1. **`is_admin()`**: Returns `true` if `auth.uid()` has role `content_admin` or `super_admin` in `public.user_roles`.
+2. **`is_super_admin()`**: Returns `true` if `auth.uid()` has role `super_admin`.
 
-## 4. Row Level Security (RLS) Policies
-
-RLS is enabled on all tables:
-
-1. **Public Read Policies**:
-   - `posts` / `notes`: Public can read records where `status = 'published'`.
-   - `books` / `now_entries` / `media` / `featured_items`: Public can read all records.
-   - `user_roles`: Authenticated users can only read their own role (`auth.uid() = user_id`).
-   - `contributions`: Not readable by public (protects patron PII).
-2. **Authenticated / Service Role Full Access**:
-   - Service-role key (`getSupabaseAdmin()`) automatically bypasses RLS for admin actions, background jobs, and API routes.
-   - Authenticated admin users are granted full CRUD access via `"Authenticated full access"` policies.
+Both functions are marked `SECURITY DEFINER` and set their `search_path` to `public` to prevent search path hijacking.
 
 ---
 
-## 5. Storage Buckets
+## 5. Row Level Security (RLS)
 
-The `media` bucket is configured in Supabase Storage:
-- **Bucket ID**: `media`
-- **Public URL**: `true`
-- **File Size Limit**: `50 MB` (`52428800 bytes`)
-- **Allowed MIME Types**: `image/jpeg`, `image/png`, `image/webp`, `image/gif`, `image/svg+xml`, `application/pdf`
-- **RLS**:
-  - `SELECT`: Public access.
-  - `INSERT`, `UPDATE`, `DELETE`: Authenticated users / service role only.
+RLS is enabled on every public table:
+
+- **Public Read Access**: Anonymous and authenticated users can view records where `status = 'published'` for `posts` and `notes`, and all records for `books`, `now_entries`, `featured_items`, and `media`.
+- **User Self-Inspection**: Users can read their own role from `user_roles` (`auth.uid() = user_id`).
+- **Private Data**: The `contributions` table and `subscribers` table cannot be read by public anonymous users, protecting patron and subscriber privacy.
+- **Admin Access**: Authenticated users matching `is_admin()` receive full read, insert, update, and delete privileges.
+- **Service Role**: `service_role` has full access to all tables, used by server actions and API route handlers via `getSupabaseAdmin()`.
 
 ---
 
 ## 6. How to Apply Schema Changes
 
-1. Edit `supabase/migrations/20260830000000_initial_schema.sql` directly — it is the single source of truth. The three small `now_entries` column migrations (status, location, last_edited_at) are already merged into it; do not add new migration files.
-2. Ensure every statement remains **idempotent**:
-   - `CREATE TABLE IF NOT EXISTS`
-   - `CREATE INDEX IF NOT EXISTS`
-   - `DROP TRIGGER IF EXISTS ... CREATE TRIGGER`
-   - `DROP POLICY IF EXISTS ... CREATE POLICY`
-   - `INSERT ... ON CONFLICT DO UPDATE`
-3. Execute against Supabase:
-   - Local: `psql postgres://postgres:postgres@127.0.0.1:54322/postgres -f supabase/migrations/20260830000000_initial_schema.sql`
-   - Live: `supabase db query --linked -f supabase/migrations/20260830000000_initial_schema.sql` (or paste into the Supabase SQL Editor)
-4. Update [`lib/supabase/database.types.ts`](../lib/supabase/database.types.ts) to keep TypeScript types strictly in sync.
+All schema changes must be applied directly to `supabase/migrations/20260830000000_initial_schema.sql`.
+
+1. Write idempotent SQL statements (`CREATE TABLE IF NOT EXISTS`, `ADD COLUMN IF NOT EXISTS`, `CREATE INDEX IF NOT EXISTS`, `DROP POLICY IF EXISTS`).
+2. Apply changes to your local Supabase database:
+   ```bash
+   psql postgres://postgres:postgres@127.0.0.1:54322/postgres -f supabase/migrations/20260830000000_initial_schema.sql
+   ```
+3. Apply changes to the live linked Supabase database before merging or building:
+   ```bash
+   supabase db query --linked -f supabase/migrations/20260830000000_initial_schema.sql
+   ```
