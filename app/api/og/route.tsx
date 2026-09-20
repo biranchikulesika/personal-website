@@ -302,40 +302,7 @@ async function generateOG(request: NextRequest): Promise<ImageResponse> {
         totalCount = liveEntries.length;
       }
     } catch {
-      // Database unavailable, use curated defaults
-    }
-
-    if (entries.length === 0) {
-      entries = [
-        {
-          id: "s1",
-          title: "On Simplicity and Systems",
-          description:
-            "Reflections on reducing cognitive friction and crafting software that lasts.",
-          type: "essay",
-          date: "",
-          persona: "Builder",
-        },
-        {
-          id: "s2",
-          title: "Why we write things down",
-          description:
-            "Writing is not the artifact of thinking — writing is thinking itself.",
-          type: "note",
-          date: "",
-          persona: "Thinker",
-        },
-        {
-          id: "s3",
-          title: "The craft of small tools",
-          description:
-            "Software built with care and restraint rather than runaway complexity.",
-          type: "essay",
-          date: "",
-          persona: "Craftsman",
-        },
-      ];
-      totalCount = entries.length;
+      // Database unavailable, fallback to minimalist layout
     }
 
     return generateScribbleOG({
@@ -1605,6 +1572,7 @@ function generateScribbleOG({
 }) {
   const desc = description || "Writing and thinking, shared openly.";
   const featured = entries.slice(0, 3);
+  const hasEntries = featured.length > 0;
 
   const cardAccents = [
     { borderLeft: "5px solid #D97757", color: "#D97757", rot: -2.5 },
@@ -1640,14 +1608,36 @@ function generateScribbleOG({
         }}
       />
 
-      {/* Left text column */}
+      {/* Background watermark for empty state */}
+      {!hasEntries && (
+        <div
+          style={{
+            display: "flex",
+            position: "absolute",
+            right: "50px",
+            bottom: "15px",
+            fontSize: "200px",
+            fontFamily: "serif",
+            fontStyle: "italic",
+            color: "rgba(250, 249, 245, 0.03)",
+            letterSpacing: "-0.04em",
+            userSelect: "none",
+          }}
+        >
+          scribble
+        </div>
+      )}
+
+      {/* Main text column */}
       <div
         style={{
           display: "flex",
           flexDirection: "column",
           justifyContent: "space-between",
-          flex: "0 0 48%",
-          padding: "48px 56px 44px 60px",
+          flex: hasEntries ? "0 0 48%" : "1 1 100%",
+          padding: hasEntries
+            ? "48px 56px 44px 60px"
+            : "60px 80px 52px 80px",
           position: "relative",
         }}
       >
@@ -1697,13 +1687,13 @@ function generateScribbleOG({
           style={{
             display: "flex",
             flexDirection: "column",
-            gap: "18px",
+            gap: "20px",
           }}
         >
           <div
             style={{
               display: "flex",
-              fontSize: "76px",
+              fontSize: hasEntries ? "76px" : "84px",
               fontWeight: 400,
               lineHeight: 1.05,
               letterSpacing: "-0.025em",
@@ -1716,11 +1706,11 @@ function generateScribbleOG({
           <div
             style={{
               display: "flex",
-              fontSize: "24px",
+              fontSize: hasEntries ? "24px" : "28px",
               fontFamily: "sans-serif",
               color: "#B0AEA5",
-              lineHeight: 1.42,
-              maxWidth: "480px",
+              lineHeight: 1.45,
+              maxWidth: hasEntries ? "480px" : "760px",
             }}
           >
             {desc}
@@ -1749,114 +1739,116 @@ function generateScribbleOG({
       </div>
 
       {/* Right column: dynamic editorial ledger card composition */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          flex: "0 0 52%",
-          position: "relative",
-          paddingRight: "44px",
-        }}
-      >
-        {/* Staggered layered ledger cards */}
+      {hasEntries && (
         <div
           style={{
             display: "flex",
-            flexDirection: "column",
-            gap: "16px",
-            width: "100%",
-            maxWidth: "520px",
+            alignItems: "center",
+            justifyContent: "center",
+            flex: "0 0 52%",
             position: "relative",
+            paddingRight: "44px",
           }}
         >
-          {featured.map((entry, i) => {
-            const accent = cardAccents[i] || cardAccents[0];
-            const snippet = entry.description
-              ? textSnippet(entry.description, 90)
-              : "";
+          {/* Staggered layered ledger cards */}
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: "16px",
+              width: "100%",
+              maxWidth: "520px",
+              position: "relative",
+            }}
+          >
+            {featured.map((entry, i) => {
+              const accent = cardAccents[i] || cardAccents[0];
+              const snippet = entry.description
+                ? textSnippet(entry.description, 90)
+                : "";
 
-            return (
-              <div
-                key={entry.id || i}
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  justifyContent: "space-between",
-                  background: "#191917",
-                  border: "1px solid rgba(250,249,245,0.13)",
-                  borderLeft: accent.borderLeft,
-                  borderRadius: "14px",
-                  padding: "18px 22px",
-                  boxShadow: "0 16px 36px rgba(0,0,0,0.55)",
-                  transform: `rotate(${accent.rot}deg)`,
-                }}
-              >
+              return (
                 <div
+                  key={entry.id || i}
                   style={{
                     display: "flex",
-                    alignItems: "center",
-                    gap: "8px",
-                    marginBottom: "6px",
+                    flexDirection: "column",
+                    justifyContent: "space-between",
+                    background: "#191917",
+                    border: "1px solid rgba(250,249,245,0.13)",
+                    borderLeft: accent.borderLeft,
+                    borderRadius: "14px",
+                    padding: "18px 22px",
+                    boxShadow: "0 16px 36px rgba(0,0,0,0.55)",
+                    transform: `rotate(${accent.rot}deg)`,
                   }}
                 >
-                  <span
+                  <div
                     style={{
-                      fontSize: "14px",
-                      fontFamily: "sans-serif",
-                      color: accent.color,
-                      textTransform: "uppercase",
-                      letterSpacing: "0.12em",
-                      fontWeight: 600,
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                      marginBottom: "6px",
                     }}
                   >
-                    {entry.type === "essay" ? "Essay" : "Atomic Note"}
-                  </span>
-                  {entry.persona && (
                     <span
                       style={{
                         fontSize: "14px",
                         fontFamily: "sans-serif",
-                        color: "#8A8780",
-                        textTransform: "capitalize",
+                        color: accent.color,
+                        textTransform: "uppercase",
+                        letterSpacing: "0.12em",
+                        fontWeight: 600,
                       }}
                     >
-                      · {entry.persona}
+                      {entry.type === "essay" ? "Essay" : "Atomic Note"}
                     </span>
-                  )}
-                </div>
+                    {entry.persona && (
+                      <span
+                        style={{
+                          fontSize: "14px",
+                          fontFamily: "sans-serif",
+                          color: "#8A8780",
+                          textTransform: "capitalize",
+                        }}
+                      >
+                        · {entry.persona}
+                      </span>
+                    )}
+                  </div>
 
-                <div
-                  style={{
-                    display: "flex",
-                    fontSize: "22px",
-                    fontFamily: "serif",
-                    lineHeight: 1.25,
-                    color: "#FAF9F5",
-                    marginBottom: snippet ? "6px" : "0",
-                  }}
-                >
-                  {entry.title}
-                </div>
-
-                {snippet && (
                   <div
                     style={{
                       display: "flex",
-                      fontSize: "16px",
-                      fontFamily: "sans-serif",
-                      color: "#9E9C94",
-                      lineHeight: 1.35,
+                      fontSize: "22px",
+                      fontFamily: "serif",
+                      lineHeight: 1.25,
+                      color: "#FAF9F5",
+                      marginBottom: snippet ? "6px" : "0",
                     }}
                   >
-                    {snippet}…
+                    {entry.title}
                   </div>
-                )}
-              </div>
-            );
-          })}
+
+                  {snippet && (
+                    <div
+                      style={{
+                        display: "flex",
+                        fontSize: "16px",
+                        fontFamily: "sans-serif",
+                        color: "#9E9C94",
+                        lineHeight: 1.35,
+                      }}
+                    >
+                      {snippet}…
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         </div>
-      </div>
+      )}
     </div>,
     { width: 1200, height: 630, headers: OG_HEADERS },
   );

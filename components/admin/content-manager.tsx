@@ -1015,7 +1015,7 @@ export function ContentManager({
                     {/* Persona */}
                     <td className="px-4 py-4 text-xs whitespace-nowrap">
                       {isNow ? (
-                        <span className="text-gray-mid/50">—</span>
+                        <span className="text-gray-mid/50">-</span>
                       ) : (
                         <span className="capitalize text-teal font-medium">
                           {item.persona}

@@ -1204,7 +1204,7 @@ export function MediaManager({
                     {editingMedia.name}
                   </p>
                   <p className="mt-0.5 text-[11px] text-gray-mid">
-                    {editingMedia.dimensions || '—'} · {editingMedia.size || '—'}
+                    {editingMedia.dimensions || '-'} · {editingMedia.size || '-'}
                     {editingMedia.uploadedAt && ` · Uploaded ${formatDisplayDateTime(editingMedia.uploadedAt)}`}
                   </p>
                 </div>

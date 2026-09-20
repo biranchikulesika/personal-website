@@ -1,4 +1,4 @@
-# AGENTS.md — Agent & Developer Operating Manual
+# AGENTS.md: Agent and Developer Operating Manual
 
 This file is the single source of truth for AI agents and developers working on this repository. Every rule outlined below must be strictly adhered to without exception.
 
@@ -60,7 +60,7 @@ This file is the single source of truth for AI agents and developers working on 
 ### Mandatory Production-Grade Build Check (Pre-Push / Pre-Merge / Pre-PR Gate)
 
 - **A production-grade build check (`npm run build`) is COMPULSORY before every push, every merge into `develop`, and every PR/promotion to `production`.**
-- The build check must be the agent's own last verification step on the active feature branch — do not rely solely on remote CI. The local check runs first; CI is a second net, not a substitute.
+- The build check must be the agent's own last verification step on the active feature branch; do not rely solely on remote CI. The local check runs first; CI is a second net, not a substitute.
 - **If `npm run build` reports any error or warning-as-failure:**
   1. **STOP** the push / merge / PR process immediately.
   2. Do **not** commit, do **not** push, do **not** merge, do **not** open a PR.
@@ -158,7 +158,7 @@ The platform strictly follows a **4-tier layered architecture**. Maintain clean,
   - **Contributions / Patronage** (`public.contributions`)
   - **Newsletter Subscribers** (`public.newsletter_subscribers`)
 - **Schema Integrity & Migrations**:
-  - **`supabase/migrations/20260830000000_initial_schema.sql` is the single source of truth** — the one authoritative, idempotent schema file that recreates the entire database (all tables, types, functions, triggers, indexes, RLS policies, and grants).
+  - **`supabase/migrations/20260830000000_initial_schema.sql` is the single source of truth**: the one authoritative, idempotent schema file that recreates the entire database (all tables, types, functions, triggers, indexes, RLS policies, and grants).
   - **No other migration files are tracked.** The three small `now_entries` column migrations (status, location, last_edited_at) are already merged into this initial schema. Schema changes are made directly in this file (idempotently: `CREATE TABLE IF NOT EXISTS`, `CREATE INDEX IF NOT EXISTS`, `DROP POLICY IF EXISTS`), then applied to local (`psql postgres://postgres:postgres@127.0.0.1:54322/postgres -f supabase/migrations/20260830000000_initial_schema.sql`) and live (via `supabase db query --linked`).
   - **Live DB Schema Pre-requisite for Builds & Deployments**: Next.js pre-renders static pages (`/library`, `/now`, `/p/[slug]`) at build time using live database credentials. Therefore, all schema changes must be applied to the live Supabase database via `supabase db query --linked` **before** opening/merging PRs or triggering deployments that query the new columns.
   - Row Level Security (RLS) is compulsory on all public tables with explicit policies.
@@ -228,10 +228,10 @@ All tests must pass with zero errors and zero warnings.
 **Never kill or restart the dev server.** The dev server is running in the background.
 
 - Do **not** kill any `next dev`, `next-server`, or related Node.js process.
-- Do **not** delete or clear the `.next` directory — doing so breaks the running server.
+- Do **not** delete or clear the `.next` directory; doing so breaks the running server.
 - Do **not** run `npm run clean` or any command that removes build artifacts.
 - Next.js Fast Refresh automatically detects and reloads file changes. Let it do its job.
-- If a server restart is genuinely required, stop and ask — only the repository owner starts and stops the dev server.
+- If a server restart is genuinely required, stop and ask; only the repository owner starts and stops the dev server.
 - **Sole exception:** the Mandatory Production-Grade Build Check gate in §1 runs `npm run build`, which necessarily overwrites `.next` and disrupts/takes down a running dev server on `:3000`. For this specific use case, killing the dev server process is explicitly allowed. The agent must still notify the repository owner afterward so they can restart it.
 
 ---

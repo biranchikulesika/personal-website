@@ -218,4 +218,22 @@ npm run typecheck
 npm run build
 ```
 
+---
+
+## Security
+
+If you discover a security vulnerability, please review [SECURITY.md](./SECURITY.md) and report it privately to [security@kulesika.in](mailto:security@kulesika.in). Please do not open public issues or pull requests for security vulnerabilities.
+
+---
+
+## License
+
+Copyright (c) 2026 Biranchi Kulesika. All Rights Reserved.
+
+This repository is made publicly accessible for transparency and educational reference only. It is **not** open source software. You may not copy, reproduce, modify, redistribute, or use the code, layout, design, editorial aesthetic, typography, photography, or written content for public or commercial purposes.
+
+See the full terms in [LICENSE](./LICENSE).
+
+---
+
 [Visit the website →](https://biranchikulesika.com)

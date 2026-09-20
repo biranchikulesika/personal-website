@@ -45,7 +45,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     needs: check
-    # Fork PRs cannot read repo secrets, so skip the build for them —
+    # Fork PRs cannot read repo secrets, so skip the build for them;
     # otherwise every fork PR would be a permanent red X. Runs for any push
     # to develop/production and for same-repo PRs.
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
