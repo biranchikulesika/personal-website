@@ -188,15 +188,15 @@ cp -r public .next/standalone/
 ```
 
 #### 2. Copy Only the Standalone Directory to Production:
-Copy `.next/standalone` to your production server (e.g., `/var/www/biranchi`):
+Copy `.next/standalone` to your production server (e.g., `/var/www/personal-website`):
 ```bash
-rsync -avz --delete .next/standalone/ user@your-vps:/var/www/biranchi/
+rsync -avz --delete .next/standalone/ user@your-vps:/var/www/personal-website/
 ```
 
 #### 3. Run the Application in Production:
 On the production server, only Node.js is required. No `npm install`, no `git`, no development tools:
 ```bash
-cd /var/www/biranchi
+cd /var/www/personal-website
 PORT=3000 HOSTNAME=0.0.0.0 node server.js
 ```
 
