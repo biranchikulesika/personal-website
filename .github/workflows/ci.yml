@@ -51,6 +51,7 @@ jobs:
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
     env:
       NEXT_PUBLIC_SITE_URL: https://biranchikulesika.com
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
       SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
       SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
     steps:
@@ -63,10 +64,10 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
 
-      - name: Verify Supabase credentials
-        if: env.SUPABASE_URL == '' || env.SUPABASE_SECRET_KEY == ''
+      - name: Verify database credentials
+        if: env.DATABASE_URL == '' && (env.SUPABASE_URL == '' || env.SUPABASE_SECRET_KEY == '')
         run: |
-          echo "::error::The build job needs SUPABASE_URL and SUPABASE_SECRET_KEY repository secrets (SSG pages hit the database at build time). Add them under Settings → Secrets and variables → Actions."
+          echo "::error::The build job needs either DATABASE_URL or (SUPABASE_URL and SUPABASE_SECRET_KEY) repository secrets (SSG pages hit the database at build time). Add them under Settings → Secrets and variables → Actions."
           exit 1
 
       - name: Install dependencies

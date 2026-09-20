@@ -97,7 +97,7 @@ export async function savePostAction(
     await assertAdminUser();
     const validated = validateInput(BlogPostSchema, post);
     const saved = await contentService.savePost(validated, persona);
-    revalidateContent(['/scribble', `/p/${post.slug}`]);
+    revalidateContent(['/', '/scribble', '/sitemap.xml', `/p/${post.slug}`]);
     return { success: true, post: saved };
   } catch (err: unknown) {
     return { success: false, error: (err as Error).message || 'Failed to save post' };
@@ -112,7 +112,7 @@ export async function togglePostStatusAction(
     const { slug: validSlug } = validateInput(SlugParamSchema, { slug });
     const toggled = await contentService.togglePostStatus(validSlug);
     if (!toggled) return { success: false, error: 'Post not found' };
-    revalidateContent(['/scribble', `/p/${slug}`]);
+    revalidateContent(['/', '/scribble', '/sitemap.xml', `/p/${validSlug}`]);
     return { success: true, post: toggled };
   } catch (err: unknown) {
     return { success: false, error: (err as Error).message || 'Failed to toggle status' };
@@ -126,7 +126,7 @@ export async function deletePostAction(
     await assertAdminUser();
     const { slug: validSlug } = validateInput(SlugParamSchema, { slug });
     const deleted = await contentService.deletePost(validSlug);
-    revalidateContent(['/scribble']);
+    revalidateContent(['/', '/scribble', '/sitemap.xml', `/p/${validSlug}`]);
     return { success: deleted };
   } catch (err: unknown) {
     return { success: false, error: (err as Error).message || 'Failed to delete post' };
@@ -147,7 +147,7 @@ export async function saveNoteAction(
     await assertAdminUser();
     const validated = validateInput(NoteItemSchema, note);
     const saved = await contentService.saveNote(validated);
-    revalidateContent(['/scribble', `/n/${note.slug}`]);
+    revalidateContent(['/', '/scribble', '/sitemap.xml', `/n/${note.slug}`]);
     return { success: true, note: saved };
   } catch (err: unknown) {
     return { success: false, error: (err as Error).message || 'Failed to save note' };
@@ -162,7 +162,7 @@ export async function toggleNoteStatusAction(
     const { slug: validSlug } = validateInput(SlugParamSchema, { slug });
     const toggled = await contentService.toggleNoteStatus(validSlug);
     if (!toggled) return { success: false, error: 'Note not found' };
-    revalidateContent(['/scribble', `/n/${slug}`]);
+    revalidateContent(['/', '/scribble', '/sitemap.xml', `/n/${validSlug}`]);
     return { success: true, note: toggled };
   } catch (err: unknown) {
     return { success: false, error: (err as Error).message || 'Failed to toggle status' };
@@ -176,7 +176,7 @@ export async function deleteNoteAction(
     await assertAdminUser();
     const { slug: validSlug } = validateInput(SlugParamSchema, { slug });
     const deleted = await contentService.deleteNote(validSlug);
-    revalidateContent(['/scribble']);
+    revalidateContent(['/', '/scribble', '/sitemap.xml', `/n/${validSlug}`]);
     return { success: deleted };
   } catch (err: unknown) {
     return { success: false, error: (err as Error).message || 'Failed to delete note' };
@@ -197,7 +197,7 @@ export async function saveBookAction(
     await assertAdminUser();
     const validated = validateInput(BookItemSchema, book);
     const saved = await contentService.saveBook(validated);
-    revalidateContent(['/scribble', '/library']);
+    revalidateContent(['/', '/library', '/scribble']);
     return { success: true, book: saved };
   } catch (err: unknown) {
     return { success: false, error: (err as Error).message || 'Failed to save book' };
@@ -211,7 +211,7 @@ export async function deleteBookAction(
     await assertAdminUser();
     const { slug: validSlug } = validateInput(SlugParamSchema, { slug });
     const deleted = await contentService.deleteBook(validSlug);
-    revalidateContent(['/scribble', '/library']);
+    revalidateContent(['/', '/library', '/scribble']);
     return { success: deleted };
   } catch (err: unknown) {
     return { success: false, error: (err as Error).message || 'Failed to delete book' };
@@ -226,7 +226,7 @@ export async function toggleBookStatusAction(
     const { slug: validSlug } = validateInput(SlugParamSchema, { slug });
     const book = await contentService.toggleBookStatus(validSlug);
     if (!book) return { success: false, error: 'Book not found' };
-    revalidateContent(['/scribble', '/library']);
+    revalidateContent(['/', '/library', '/scribble']);
     return { success: true, book };
   } catch (err: unknown) {
     return { success: false, error: (err as Error).message || 'Failed to toggle book status' };
@@ -247,8 +247,7 @@ export async function saveNowEntryAction(
     await assertAdminUser();
     const validated = validateInput(NowEntrySchema, entry);
     const saved = await contentService.saveNowEntry(validated);
-    safeRevalidatePath('/admin');
-    safeRevalidatePath('/now');
+    revalidateContent(['/', '/now']);
     return { success: true, entry: saved };
   } catch (err: unknown) {
     return { success: false, error: (err as Error).message || 'Failed to save now entry' };
@@ -262,8 +261,7 @@ export async function deleteNowEntryAction(
     await assertAdminUser();
     const { id: validId } = validateInput(IdParamSchema, { id });
     const deleted = await contentService.deleteNowEntry(validId);
-    safeRevalidatePath('/admin');
-    safeRevalidatePath('/now');
+    revalidateContent(['/', '/now']);
     return { success: deleted };
   } catch (err: unknown) {
     return { success: false, error: (err as Error).message || 'Failed to delete now entry' };

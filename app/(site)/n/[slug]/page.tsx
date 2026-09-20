@@ -4,6 +4,8 @@ import { NotePageView } from '@/components/note-page';
 import { ContentService } from '@/lib/services/content.service';
 import { noteMetadata, noteJsonLd, breadcrumbJsonLd, safeJsonLd } from '@/lib/seo';
 
+export const dynamicParams = true;
+
 export async function generateStaticParams() {
   const service = new ContentService();
   const slugs = await service.getNoteSlugs();
