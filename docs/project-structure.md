@@ -3,7 +3,7 @@
 This document outlines the directory structure of the repository, explaining the purpose of each folder and where code belongs.
 
 ```text
-biranchi/
+personal-website/
 ├── app/                  # Next.js App Router (pages, layouts, route handlers, server actions)
 ├── components/           # React presentation components and UI primitives
 ├── docs/                 # Technical documentation

@@ -115,7 +115,7 @@ Detailed architectural specifications and data flow guides are in [docs/architec
 ## Project Structure
 
 ```text
-biranchi/
+personal-website/
 ├── app/                  # Next.js App Router
 │   ├── (site)/           # Public pages: home, about, library, notes, now, scribble, support
 │   ├── admin/            # Private CMS: dashboard, compose, login, auth callback, server actions
@@ -203,8 +203,8 @@ Full technical guides are available in the [`docs/`](./docs/) directory:
 ### Installation
 
 ```bash
-git clone https://github.com/biranchikulesika/biranchi.git
-cd biranchi
+git clone https://github.com/biranchikulesika/personal-website.git
+cd personal-website
 npm install
 ```
 
