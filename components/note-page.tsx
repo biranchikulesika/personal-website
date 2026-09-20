@@ -11,7 +11,7 @@ export async function NotePageView({ note }: { note: NoteItem }) {
     <article className="pb-16 pt-8 md:pb-24 md:pt-12">
       <div className="container-site">
         <div className="lg:grid lg:grid-cols-[1fr_minmax(0,72ch)_1fr] lg:gap-8">
-          {/* Top-left Scribble button — aligned with title on desktop */}
+          {/* Top-left Scribble button, aligned with title on desktop */}
           <div className="hidden lg:block pt-3">
             <Link
               href="/scribble"

@@ -1,5 +1,5 @@
 /**
- * Proxy — route-level proxy & authentication guard (Next.js 16 convention).
+ * Proxy: route-level proxy & authentication guard (Next.js 16 convention).
  *
  * Mandatory authentication + authorization guard:
  * - All admin routes (/admin, /admin/compose, etc.) require an active Supabase auth session.
@@ -79,8 +79,8 @@ export default async function proxy(request: NextRequest) {
       return NextResponse.redirect(adminUrl);
     }
 
-    // Any authenticated user who is not an admin is signed out immediately —
-    // on protected routes AND on the login page — so no unauthorized session
+    // Any authenticated user who is not an admin is signed out immediately
+    // (both on protected routes and on the login page) so no unauthorized session
     // survives. The auth callback (code exchange) is the one exception.
     if (!isAdmin && !pathname.startsWith("/admin/auth")) {
       try {

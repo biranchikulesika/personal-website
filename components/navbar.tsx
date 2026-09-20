@@ -108,7 +108,7 @@ export function Navbar({ identity, links }: NavbarProps) {
           </button>
         </nav>
 
-        {/* Mobile menu panel — floats above page content */}
+        {/* Mobile menu panel: floats above page content */}
         {menuOpen && (
           <div
             id="mobile-nav"
@@ -139,7 +139,7 @@ export function Navbar({ identity, links }: NavbarProps) {
         )}
       </header>
 
-      {/* Backdrop overlay — keyboard accessible via Escape (handled in useClickOutside) */}
+      {/* Backdrop overlay: keyboard accessible via Escape (handled in useClickOutside) */}
       {menuOpen && (
         <div
           onClick={closeMenu}

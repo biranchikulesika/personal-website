@@ -2,7 +2,7 @@ import Image from 'next/image';
 import type { NowBook } from '@/lib/types';
 
 /**
- * BookBlock — a reusable MDX block component rendered from a `<Book ... />`
+ * BookBlock: a reusable MDX block component rendered from a `<Book ... />`
  * tag inside markdown content. Used in the editor preview and the public
  * Now page.
  */

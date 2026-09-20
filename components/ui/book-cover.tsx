@@ -1,5 +1,5 @@
 /**
- * Book cover display — shows the real cover image when available,
+ * Book cover display: shows the real cover image when available,
  * otherwise renders a styled placeholder with the title text.
  *
  * Used in library-section, blog-post recommended reading, and the

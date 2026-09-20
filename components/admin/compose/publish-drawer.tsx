@@ -444,7 +444,7 @@ export function PublishDrawer({
                     </div>
                   </div>
                   <h3 className="px-4 pt-0.5 pb-1 text-[20px] leading-[1.3] text-accent line-clamp-1">
-                    {title || `Page Title — ${SITE_DOMAIN}`}
+                    {title || `Page Title · ${SITE_DOMAIN}`}
                   </h3>
                   <p className="px-4 pb-3 text-[14px] leading-[1.58] text-gray-mid line-clamp-2">
                     {description || 'No description set for this page. Google will auto-generate a snippet from your page content.'}

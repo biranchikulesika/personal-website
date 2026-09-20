@@ -1,83 +1,68 @@
-# Biranchi Kulesika — Technical Documentation
+# Technical Documentation
 
-Welcome to the engineering documentation for the Biranchi Kulesika website and content publishing system.
+This directory contains technical documentation for the Biranchi Kulesika website and publishing system.
 
-This codebase is a modern, high-performance web platform built with **Next.js 16 (App Router)**, **React 19**, **TypeScript**, and **Tailwind CSS v4**. It features an editorial design system, an IDE-grade admin content composer, a decoupled 4-tier data architecture, dynamic structured data for search engine and AI crawlability, and payment/patronage processing.
+The application is built with Next.js (App Router), React, TypeScript, Tailwind CSS, Drizzle ORM, and PostgreSQL (hosted on Supabase). It includes a public editorial website, an administrative content composer, role-based authentication, structured metadata for search engines, and payment support via Razorpay.
 
 ---
 
-## Quick Navigation
+## Documentation Index
 
-| Document | Description |
+| Document | Purpose |
 | :--- | :--- |
-| [**Architecture**](./architecture.md) | The 4-tier layer model (`UI → Service → Repository → Database`), data flow, and design boundaries. |
-| [**Project Structure**](./project-structure.md) | Walkthrough of the directory tree, naming conventions, and file placement rules. |
-| [**Data Layer**](./data-layer.md) | Repository pattern, Supabase PostgreSQL data access, and `ContentService`. |
-| [**Database & Schema**](./database.md) | PostgreSQL / Supabase schema, `supabase/migrations/20260830000000_initial_schema.sql`, tables, indexes, triggers, and RLS policies. |
-| [**Authentication & Security**](./authentication.md) | Role-based authorization (`user_roles`), proxy guards, and environment safety locks. |
-| [**Content System**](./content-system.md) | Essays (posts), atomic notes, library books, now timeline, and scribble feed. |
-| [**Admin & Composer**](./admin.md) | Admin dashboard, IDE-grade MDX composer workspace, split live preview, and diff viewer. |
-| [**Media & Storage**](./media.md) | Asset catalog, Supabase Storage bucket `media`, orphan detection, and dynamic OG engine. |
-| [**SEO & AI Crawlability**](./seo.md) | Metadata builders, JSON-LD structured schemas, dynamic sitemap, robots.txt, and canonicals. |
-| [**Routing**](./routing.md) | Next.js App router groups, dynamic slug routes, API handlers, and route redirects. |
-| [**Components & Design System**](./components.md) | UI primitives, shared state views, typographic ledgers, modal dialogs, and styling rules. |
-| [**Styling & Theming**](./styling.md) | Tailwind CSS v4 setup, night/paper dark palette, Newsreader serif and Space Grotesk typography. |
-| [**Environment Configuration**](./environment.md) | Environment variables reference, safety guards, and runtime configuration. |
-| [**Testing**](./testing.md) | Node.js native test runner via `tsx`, suite structure, and writing automated tests. |
-| [**Deployment**](./deployment.md) | Production builds (`output: 'standalone'`), Supabase deployment, and security hardening. |
-| [**Contributing & How-To Guides**](./contributing.md) | Step-by-step developer guides: adding content types, pages, tables, components, and APIs. |
+| [**Architecture**](./architecture.md) | The 4-tier layer model (UI, Service, Repository, Database), data flow, and system boundaries. |
+| [**Project Structure**](./project-structure.md) | Directory organisation, naming conventions, and file placement rules. |
+| [**Data Layer**](./data-layer.md) | Repository pattern, Drizzle ORM implementation, Supabase fallback, row mappers, and per-request caching. |
+| [**Database**](./database.md) | PostgreSQL schema, tables, indexes, triggers, and Row Level Security policies. |
+| [**Authentication**](./authentication.md) | Admin route guards, proxy middleware, role-based access control, and passkey authentication. |
+| [**Content System**](./content-system.md) | Content models (posts, notes, books, now entries, scribble entries), personas, and MDX compilation. |
+| [**Admin**](./admin.md) | Dashboard, MDX composer, server actions, and management tools. |
+| [**Media**](./media.md) | Storage bucket, media tagging, orphan asset cleanup, and dynamic social preview images. |
+| [**SEO and Metadata**](./seo.md) | Metadata builders, JSON-LD structured data, dynamic sitemap, and robots configuration. |
+| [**Routing**](./routing.md) | App Router groups, dynamic slug routes, server action boundaries, and error handlers. |
+| [**Components**](./components.md) | UI component organisation, standardized state views, and editorial styling conventions. |
+| [**Styling**](./styling.md) | Tailwind CSS setup, theme tokens, color palette, and typography stacks. |
+| [**Environment Variables**](./environment.md) | Complete environment variable reference, client versus server isolation, and credential rotation. |
+| [**Environment Separation**](./environments.md) | Development, CI validation, and production runtime isolation using standalone output. |
+| [**Testing**](./testing.md) | Native Node.js test runner using tsx, test suite layout, and in-memory repository testing. |
+| [**Deployment**](./deployment.md) | Production builds, standalone artifacts, database deployment, and security headers. |
 
 ---
 
-## Core Architectural Principles
+## Core Principles
 
-1. **Strict Service & Repository Separation**
-   - UI components (`components/`, `app/`) never query databases or Supabase clients directly.
-   - All operations flow: `UI Component → Server Action / Service → Repository → Supabase`.
-2. **Authoritative PostgreSQL Database**
-   - The application connects to Supabase PostgreSQL (`lib/repositories/supabase-content.repository.ts`) via the unified `ContentRepository` contract.
-3. **No Buzzwords & Editorial Typography**
-   - UI avoids heavy card borders and generic marketing components in favor of open, typographic horizontal ledgers and high-contrast dark tones.
-4. **Absolute Admin Isolation**
-   - The `/admin` surface is never referenced in public sitemaps, robots.txt, navigation menus, or search metadata.
-5. **Idempotency Everywhere**
-   - Database schemas (`supabase/migrations/20260830000000_initial_schema.sql` — the single source of truth), payment processing (Razorpay webhooks & client confirmations), and content mutations are fully idempotent.
+1. **Strict Layer Separation**
+   UI components in `components/` and `app/` never query the database directly. All operations flow through the Service Layer and Repository Layer.
+
+2. **Authoritative Database**
+   Supabase PostgreSQL is the single source of truth for all dynamic content and user roles.
+
+3. **Admin Isolation**
+   Admin routes (`/admin`) are protected by proxy middleware and server checks. They are never exposed in public navigation, sitemaps, or robots.txt.
+
+4. **Idempotent Operations**
+   Database schemas, payment confirmations, and content saves are designed to be safe when repeated.
+
+5. **Self-Contained Testing**
+   Automated tests run against an in-memory repository mock. Running tests does not require an active database connection and cannot affect live data.
 
 ---
 
-## Getting Started
+## Key Commands
 
-### 1. Prerequisites
-- **Node.js**: `>= 24.16.0` (Recommended: `nvm use 24.18.0`)
-- **Package Manager**: `npm`
-
-### 2. Installation
 ```bash
-git clone <repository-url>
-cd biranchi
-npm install
-```
-
-### 3. Environment Setup
-Create a local `.env.local` file from `.env.example`:
-```bash
-NEXT_PUBLIC_SITE_URL=http://localhost:3000
-NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOi...
-SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOi...
-```
-
-### 4. Running the Project
-```bash
-# Start the development server
+# Start the local development server
 npm run dev
 
-# Run the test suite (120+ tests)
+# Run the automated test suite (221 tests)
 npm test
 
-# Run ESLint validation
+# Run code quality linting
 npm run lint
 
-# Compile production build
+# Run compile-time TypeScript checks
+npm run typecheck
+
+# Build the production artifact
 npm run build
 ```

@@ -46,7 +46,7 @@ export function MDXView({
   if (failed) {
     return (
       <p className="text-sm italic text-ink-soft">
-        MDX could not be parsed — check your syntax and try again.
+        MDX could not be parsed: check your syntax and try again.
       </p>
     );
   }

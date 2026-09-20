@@ -7,7 +7,7 @@ import {
 import type { BlogPost, NoteItem } from "@/lib/types";
 import type { Metadata } from "next";
 
-// Build commit SHA (available on Vercel) — bumps static-page OG URLs on every
+// Build commit SHA (available on Vercel), bumping static-page OG URLs on every
 // deploy so crawlers/CDNs can't serve a stale cached banner after a release.
 const DEPLOY_VERSION = process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7);
 

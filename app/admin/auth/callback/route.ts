@@ -50,7 +50,7 @@ export async function GET(request: Request) {
               cookieStore.set(name, value, options),
             );
           } catch {
-            // Route Handler — safe to ignore.
+            // Route Handler: safe to ignore.
           }
         },
       },
@@ -92,7 +92,7 @@ export async function GET(request: Request) {
     }
   }
 
-  // Fallback — something went wrong.
+  // Fallback: something went wrong.
   return NextResponse.redirect(
     `${origin}/admin/login?error=auth_callback_failed`,
   );

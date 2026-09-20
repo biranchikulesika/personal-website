@@ -1,4 +1,4 @@
-// Site configuration — hardcoded, not stored in the database.
+// Site configuration: hardcoded, not stored in the database.
 // All site-level identity, navigation, hero, and footer content lives here.
 
 import type { SiteContent } from "@/lib/types";

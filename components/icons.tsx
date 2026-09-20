@@ -3,7 +3,7 @@ interface IconProps {
 }
 
 /**
- * Arrow right — used in section headers and "learn more" links.
+ * Arrow right: used in section headers and "learn more" links.
  */
 export function ArrowRightIcon({ className }: IconProps) {
   return (
@@ -25,7 +25,7 @@ export function ArrowRightIcon({ className }: IconProps) {
 
 
 /**
- * Arrow left — used for back links to section index pages.
+ * Arrow left: used for back links to section index pages.
  */
 export function ArrowLeftIcon({ className }: IconProps) {
   return (
@@ -45,7 +45,7 @@ export function ArrowLeftIcon({ className }: IconProps) {
 }
 
 /**
- * External link — shown on hover over book cards.
+ * External link: shown on hover over book cards.
  */
 export function ExternalLinkIcon({ className }: IconProps) {
   return (
@@ -65,7 +65,7 @@ export function ExternalLinkIcon({ className }: IconProps) {
 }
 
 /**
- * Link — used for external URL inputs.
+ * Link: used for external URL inputs.
  */
 export function LinkIcon({ className }: IconProps) {
   return (
@@ -85,7 +85,7 @@ export function LinkIcon({ className }: IconProps) {
 }
 
 /**
- * Upload — used for desktop image uploads.
+ * Upload: used for desktop image uploads.
  */
 export function UploadIcon({ className }: IconProps) {
   return (
@@ -105,7 +105,7 @@ export function UploadIcon({ className }: IconProps) {
 }
 
 /**
- * Image — used for the media library source.
+ * Image: used for the media library source.
  */
 export function ImageIcon({ className }: IconProps) {
   return (
@@ -153,7 +153,7 @@ export function GoogleIcon({ className }: IconProps) {
 // Scribble filter icons ------------------------------------------------------
 
 /**
- * Magnifier — the Scribble search input.
+ * Magnifier: the Scribble search input.
  */
 export function SearchIcon({ className }: IconProps) {
   return (
@@ -174,7 +174,7 @@ export function SearchIcon({ className }: IconProps) {
 }
 
 /**
- * Chevron down — used in the Scribble filter popover triggers.
+ * Chevron down: used in the Scribble filter popover triggers.
  */
 export function ChevronDownIcon({ className }: IconProps) {
   return (
@@ -194,7 +194,7 @@ export function ChevronDownIcon({ className }: IconProps) {
 }
 
 /**
- * Chevron left — topics bar scroll button.
+ * Chevron left: topics bar scroll button.
  */
 export function ChevronLeftIcon({ className }: IconProps) {
   return (
@@ -214,7 +214,7 @@ export function ChevronLeftIcon({ className }: IconProps) {
 }
 
 /**
- * Chevron right — topics bar scroll button.
+ * Chevron right: topics bar scroll button.
  */
 export function ChevronRightIcon({ className }: IconProps) {
   return (
@@ -234,7 +234,7 @@ export function ChevronRightIcon({ className }: IconProps) {
 }
 
 /**
- * Check — selected filter option indicator.
+ * Check: selected filter option indicator.
  */
 export function CheckIcon({ className }: IconProps) {
   return (
@@ -315,7 +315,7 @@ export function RefreshIcon({ className }: IconProps) {
 }
 
 /**
- * Pencil — edit action.
+ * Pencil: edit action.
  */
 export function PencilIcon({ className }: IconProps) {
   return (
@@ -335,7 +335,7 @@ export function PencilIcon({ className }: IconProps) {
 }
 
 /**
- * Fingerprint — passkey authentication.
+ * Fingerprint: passkey authentication.
  */
 export function FingerprintIcon({ className }: IconProps) {
   return (
@@ -355,7 +355,7 @@ export function FingerprintIcon({ className }: IconProps) {
 }
 
 /**
- * Laptop — active session device.
+ * Laptop: active session device.
  */
 export function LaptopIcon({ className }: IconProps) {
   return (
@@ -375,7 +375,7 @@ export function LaptopIcon({ className }: IconProps) {
 }
 
 /**
- * Trash — delete action.
+ * Trash: delete action.
  */
 export function TrashIcon({ className }: IconProps) {
   return (
@@ -395,7 +395,7 @@ export function TrashIcon({ className }: IconProps) {
 }
 
 /**
- * Eye — publish / make visible.
+ * Eye: publish / make visible.
  */
 export function EyeIcon({ className }: IconProps) {
   return (
@@ -416,7 +416,7 @@ export function EyeIcon({ className }: IconProps) {
 }
 
 /**
- * Eye slash — unpublish / hide.
+ * Eye slash: unpublish / hide.
  */
 export function EyeSlashIcon({ className }: IconProps) {
   return (
@@ -538,7 +538,7 @@ export function MailIcon({ className }: IconProps) {
 }
 
 /**
- * Download icon — used for receipt exports.
+ * Download icon: used for receipt exports.
  */
 export function DownloadIcon({ className }: IconProps) {
   return (
@@ -558,7 +558,7 @@ export function DownloadIcon({ className }: IconProps) {
 }
 
 /**
- * CheckCircle icon — used in payment receipt badge.
+ * CheckCircle icon: used in payment receipt badge.
  */
 export function CheckCircleIcon({ className }: IconProps) {
   return (
@@ -578,7 +578,7 @@ export function CheckCircleIcon({ className }: IconProps) {
 }
 
 /**
- * Lock icon — used in payment buttons and security indicators.
+ * Lock icon: used in payment buttons and security indicators.
  */
 export function LockIcon({ className }: IconProps) {
   return (
@@ -619,7 +619,7 @@ export function CloseIcon({ className }: IconProps) {
 }
 
 /**
- * Calendar — used for publication date.
+ * Calendar: used for publication date.
  */
 export function CalendarIcon({ className }: IconProps) {
   return (
@@ -642,7 +642,7 @@ export function CalendarIcon({ className }: IconProps) {
 }
 
 /**
- * Clock / History — used for last edited / updated date.
+ * Clock / History: used for last edited / updated date.
  */
 export function EditHistoryIcon({ className }: IconProps) {
   return (
@@ -663,7 +663,7 @@ export function EditHistoryIcon({ className }: IconProps) {
 }
 
 /**
- * Code / Programming — Builder persona icon (software, coding).
+ * Code / Programming: Builder persona icon (software, coding).
  */
 export function CodeIcon({ className }: IconProps) {
   return (
@@ -685,7 +685,7 @@ export function CodeIcon({ className }: IconProps) {
 }
 
 /**
- * Cyber Security / Terminal Shield — Operator persona icon (ethical hacking, security).
+ * Cyber Security / Terminal Shield: Operator persona icon (ethical hacking, security).
  */
 export function CyberSecurityIcon({ className }: IconProps) {
   return (
@@ -707,7 +707,7 @@ export function CyberSecurityIcon({ className }: IconProps) {
 }
 
 /**
- * Philosophy / Idea Spark — Thinker persona icon (thinking, philosophy, deep thoughts).
+ * Philosophy / Idea Spark: Thinker persona icon (thinking, philosophy, deep thoughts).
  */
 export function PhilosophyIcon({ className }: IconProps) {
   return (
@@ -731,7 +731,7 @@ export function PhilosophyIcon({ className }: IconProps) {
 }
 
 /**
- * Travel Vlog / Story Lens — Wanderer persona icon (vlogs, travel, personal stories).
+ * Travel Vlog / Story Lens: Wanderer persona icon (vlogs, travel, personal stories).
  */
 export function TravelVlogIcon({ className }: IconProps) {
   return (
@@ -753,7 +753,7 @@ export function TravelVlogIcon({ className }: IconProps) {
 }
 
 /**
- * PersonaIcon — renders the corresponding iconic depiction for a persona.
+ * PersonaIcon: renders the corresponding iconic depiction for a persona.
  */
 export function PersonaIcon({
   persona,
@@ -777,7 +777,7 @@ export function PersonaIcon({
 }
 
 /**
- * Ellipsis vertical (three dots) — used for action menus.
+ * Ellipsis vertical (three dots): used for action menus.
  */
 export function EllipsisVerticalIcon({ className }: IconProps) {
   return (

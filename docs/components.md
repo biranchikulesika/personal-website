@@ -1,74 +1,88 @@
-# Components & Design System
+# Components and Design System
 
-This document explains the component architecture, reusable UI primitives, and visual design conventions.
+This document explains component organization, reusable primitives, and visual design conventions.
 
 ---
 
-## 1. Component Hierarchy & Organization
+## 1. Component Hierarchy
 
-```
+```text
 components/
-├── ui/                     # Reusable design primitives (Atomic UI)
-│   ├── actions-menu.tsx    # Dropdown action menus with click-outside
-│   ├── badge.tsx           # Persona badges & publication status pills
-│   ├── dialog.tsx          # Accessible modal dialog with focus traps
-│   ├── essay-cover.tsx     # Typographic SVG/Canvas cover artwork
-│   ├── media-picker-modal.tsx # Media gallery selection modal
-│   ├── segmented-control.tsx # Sliding pill switchers
-│   ├── states.tsx          # Standardized empty, error, loading, 404 views
-│   └── use-click-outside.ts# Click outside & Escape key hook
-├── admin/                  # Administrative management views
-│   ├── compose/            # Composer, live preview, diff viewer, media drawer
-│   ├── admin-dashboard.tsx
-│   ├── content-manager.tsx
-│   └── media-manager.tsx
-├── blog-post.tsx           # Essay reader view
-├── footer.tsx              # Global footer with bio & categorized links
-├── homepage-hero.tsx       # Homepage header with portrait & intro
-├── homepage-sections.tsx   # Homepage sections for writing, notes, books
-├── icons.tsx               # Scalable SVG icons
-├── navbar.tsx              # Sticky header with accessible mobile drawer
-├── note-page.tsx           # Atomic note reader view
-├── now-page.tsx            # Living timeline reader view
-├── scribble-page.tsx       # Unified search/filter content stream
-└── support-page.tsx        # Typographic patronage ledger & checkout modal
+├── admin/                    # Administrative management views and tools
+│   ├── compose/              # MDX composer workspace, preview, diff, media drawer
+│   ├── account-manager.tsx   # Passkeys, sessions, OAuth provider connections
+│   ├── admin-dashboard.tsx   # Tab routing and admin navigation shell
+│   ├── book-cover-picker.tsx # Book artwork search via Pexels
+│   ├── content-manager.tsx   # Data tables for posts, notes, books, now entries
+│   ├── home-overview.tsx     # Overview metrics and recent activity
+│   ├── media-manager.tsx     # Media upload, tags, and orphan cleanup
+│   └── subscriber-manager.tsx# Newsletter subscriber list
+├── blocks/                   # Custom components embedded in MDX content
+│   ├── book-block.tsx        # <Book slug="..." /> embedded card
+│   ├── library.tsx           # Embedded library section
+│   ├── note-block.tsx        # <Note slug="..." /> embedded card
+│   └── post-block.tsx        # <Post slug="..." /> embedded card
+├── ui/                       # Shared UI primitives
+│   ├── book-cover.tsx        # Book cover image with fallback artwork
+│   ├── essay-cover.tsx       # Typographic SVG cover for essays
+│   ├── states.tsx            # Standardized empty, loading, error, 404 views
+│   ├── toast-view.tsx        # Accessible toast notification component
+│   ├── use-click-outside.ts  # Custom hook for outside clicks and Escape key
+│   └── user-avatar.tsx       # User profile avatar with fallback initials
+├── about-page.tsx            # About page presentation
+├── blog-post.tsx             # Long-form essay reader view
+├── footer.tsx                # Global footer with links and copyright
+├── hero.tsx                  # Homepage introductory hero
+├── home-content.tsx          # Homepage content sections container
+├── icons.tsx                 # Inline SVG icons
+├── landscape-gallery.tsx     # About page photographic mosaic
+├── library-page.tsx          # Library catalog grid and search
+├── library-section.tsx       # Homepage library recommendation section
+├── mdx-view.tsx              # MDX evaluation renderer
+├── navbar.tsx                # Header navigation with mobile drawer
+├── newsletter-form.tsx       # Newsletter signup form
+├── note-page.tsx             # Atomic note reader view
+├── notes-section.tsx         # Homepage notes section
+├── not-found-view.tsx        # 404 state display
+├── now-page.tsx              # Living timeline entries list
+├── persona-badge.tsx         # Persona indicator pill component
+├── scribble-page.tsx         # Searchable feed of essays and notes
+├── section-heading.tsx       # Standard section title with link
+├── share-menu.tsx            # Social sharing dropdown menu
+├── support-page.tsx          # Patronage ledger and Razorpay payment modal
+├── svg-element-guard.tsx     # Browser compatibility wrapper for SVGs
+└── writing-section.tsx       # Homepage latest essays list
 ```
 
 ---
 
-## 2. Reusable UI Primitives (`components/ui/`)
+## 2. Shared State Views (`components/ui/states.tsx`)
 
-### 1. Standardized State Views (`components/ui/states.tsx`)
-Always reuse these standardized views instead of creating custom empty/loading markup:
+To keep empty states and loading indicators consistent, use these shared components instead of inline placeholders:
 
-- **`LoadingState({ title })`**: Accessible `role="status"` live region for async data fetching.
-- **`NoSearchResults({ query, onReset })`**: Displayed when search filters yield zero matches.
-- **`NoContentState({ title, description })`**: Empty collection view with friendly editorial copy.
-- **`EmptyTableState({ colSpan, title, description })`**: Clean table row empty placeholder.
-
-### 2. Accessible Modal Dialog (`components/ui/dialog.tsx`)
-- Provides keyboard accessible dialog overlays (`role="dialog"`), Escape key listeners, body scroll locks, and backdrop blur.
-
-### 3. Persona Badges (`components/ui/badge.tsx`)
-- Color-coded badges mapping to the 4 persona themes:
-  - `builder`: Rust amber (`#d97706`)
-  - `operator`: Slate blue
-  - `thinker`: Sage olive
-  - `wanderer`: Sand ochre
+- **`LoadingState({ title })`**: Accessible `role="status"` region for asynchronous data loading.
+- **`NoSearchResults({ query, onReset })`**: Displayed when search or filter combinations yield no results.
+- **`NoContentState({ title, description })`**: Friendly placeholder for empty collections.
+- **`EmptyTableState({ colSpan, title, description })`**: Table row placeholder for admin tables when no matching records exist.
 
 ---
 
-## 3. Visual Design Philosophy & Conventions
+## 3. Visual Design Conventions
 
 1. **Card-Free Editorial Layouts**:
-   - The platform strictly rejects heavy rectangular card boxes with arbitrary drop shadows.
-   - Replaces card grids with **open typographic horizontal ledgers** separated by subtle dividers (`border-tinted/10`).
-2. **Typography First**:
-   - **Body Text**: Space Grotesk (`font-sans`) for crisp legibility and metadata.
-   - **Editorial Headings & Prose**: Newsreader (`font-serif`) in regular and italic weights for a timeless literary feel.
+   The website avoids heavy boxed cards with drop shadows. Instead, it uses open typographic horizontal ledgers separated by subtle translucent borders (`border-tinted/10`).
+
+2. **Typography**:
+   - **Prose and Headlines**: Newsreader serif font (`font-serif`) for essays, section titles, and quotes.
+   - **UI Controls and Metadata**: Space Grotesk sans-serif font (`font-sans`) for navigation links, buttons, dates, tags, and metrics.
+
 3. **Palette**:
-   - **Night Background**: Deep charcoal `#141413`.
-   - **Paper Foreground**: Warm off-white `#FAF9F5`.
-   - **Tinted Borders**: Muted subtle borders (`rgba(250, 249, 245, 0.1)`).
-4. **Interactive States**:
-   - Buttons and links use soft transitions (`transition-colors duration-200`) and subtle hover lifts.
+   - **Night Background**: `#141413`.
+   - **Paper Text**: `#FAF9F5`.
+   - **Muted Ink**: `#B0AEA5`.
+   - **Terracotta Accent**: `#D97757`.
+   - **Sea Blue Accent**: `#04A4BA`.
+   - **Sage Green Accent**: `#788C5D`.
+
+4. **Accessibility**:
+   All interactive elements include visible keyboard focus rings, semantic HTML structure, and proper ARIA roles (`role="status"`, `aria-expanded`).

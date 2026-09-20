@@ -124,7 +124,7 @@ export function MediaManager({
             return;
           }
 
-          // Draw image to 2D canvas — extracts pure pixel buffer and discards all EXIF, GPS, camera and device metadata
+          // Draw image to 2D canvas: extracts pure pixel buffer and discards all EXIF, GPS, camera and device metadata
           ctx.drawImage(img, 0, 0);
 
           let exportMime = 'image/jpeg';
@@ -1204,7 +1204,7 @@ export function MediaManager({
                     {editingMedia.name}
                   </p>
                   <p className="mt-0.5 text-[11px] text-gray-mid">
-                    {editingMedia.dimensions || '—'} · {editingMedia.size || '—'}
+                    {editingMedia.dimensions || '-'} · {editingMedia.size || '-'}
                     {editingMedia.uploadedAt && ` · Uploaded ${formatDisplayDateTime(editingMedia.uploadedAt)}`}
                   </p>
                 </div>

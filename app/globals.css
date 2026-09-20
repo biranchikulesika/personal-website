@@ -67,7 +67,7 @@ svg[role="button"] {
   pointer-events: auto;
 }
 
-/* Reduced motion — respect user preference */
+/* Reduced motion: respect user preference */
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
@@ -83,7 +83,7 @@ svg[role="button"] {
   }
 }
 
-/* Skip navigation link — visible only on keyboard focus */
+/* Skip navigation link: visible only on keyboard focus */
 .skip-link {
   position: absolute;
   top: -100%;
@@ -106,7 +106,7 @@ svg[role="button"] {
   outline-offset: 2px;
 }
 
-/* Global focus-visible — consistent focus ring for keyboard users */
+/* Global focus-visible: consistent focus ring for keyboard users */
 :focus-visible {
   outline: 2px solid var(--color-accent);
   outline-offset: 2px;
@@ -227,7 +227,7 @@ body {
 
 /* Markdown / MDX body --------------------------------------------------------
    Shared styles for content rendered through lib/mdx.tsx (real MDX + remark-gfm).
-   Only styling lives here — parsing is handled by @mdx-js/mdx. */
+   Only styling lives here: parsing is handled by @mdx-js/mdx. */
 
 /* Editorial drop cap on the first paragraph of an intro document. */
 .mdx-intro > p:first-of-type::first-letter {

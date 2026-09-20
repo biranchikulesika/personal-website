@@ -749,7 +749,7 @@ export function SupportPageView() {
             </div>
           </section>
 
-          {/* 2. Where does the support go? — Editorial Open Ledger (No Cards) */}
+          {/* 2. Where does the support go?: Editorial Open Ledger (No Cards) */}
           <section className="mx-auto mt-16 max-w-4xl border-t border-tinted/20 pt-12 sm:mt-24 sm:pt-16 lg:mt-32">
             {/* Section Header */}
             <div>
