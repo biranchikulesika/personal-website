@@ -123,30 +123,53 @@ Contains application business logic, data models, repository adapters, and third
 ```text
 lib/
 ├── auth/
-│   ├── admin.ts          # Admin role checks (isAdminRole)
-│   └── webauthn.ts       # Passkey challenge generation, signing, and verification
+│   ├── admin.ts                   # Admin role checks (isAdminRole)
+│   ├── auth-service.ts            # Vendor-neutral AuthService interface
+│   ├── index.ts                   # Auth service factory
+│   ├── supabase-auth-service.ts   # Supabase Auth provider implementation
+│   └── webauthn.ts                # Passkey challenge generation, signing, and verification
 ├── config/
-│   ├── env.ts            # Environment variable resolution helpers
-│   └── site.ts           # Hardcoded site navigation, identity, and footer links
+│   ├── env.ts                     # Environment variable resolution helpers
+│   └── site.ts                    # Hardcoded site navigation, identity, and footer links
+├── db/
+│   ├── client.ts                  # Drizzle ORM client with connection pooling
+│   ├── index.ts                   # DB client and schema exports
+│   └── schema/                    # Typed Drizzle PostgreSQL table schemas
+│       ├── books.ts, contributions.ts, featured.ts, media.ts
+│       ├── notes.ts, now-entries.ts, posts.ts, storage-files.ts
+│       └── subscribers.ts, user-roles.ts, index.ts
 ├── repositories/
-│   ├── content.repository.ts          # ContentRepository interface contract
-│   ├── index.ts                       # Repository factory export
-│   └── supabase-content.repository.ts # Supabase PostgreSQL repository implementation
+│   ├── post.repository.ts         # Domain repository interfaces
+│   ├── note.repository.ts, book.repository.ts, now.repository.ts
+│   ├── media.repository.ts, subscriber.repository.ts, etc.
+│   ├── content.repository.ts      # Composed ContentRepository interface contract
+│   ├── drizzle-content.repository.ts # Drizzle ORM PostgreSQL implementation
+│   ├── supabase-content.repository.ts# Supabase client repository implementation
+│   └── index.ts                   # Provider-independent repository factory
 ├── services/
-│   ├── ai-metadata.service.ts         # LLM metadata generator (Groq / OpenAI)
-│   ├── content.service.ts             # Domain service with React.cache deduplication
-│   └── pexels.service.ts              # Pexels API client for book covers and wallpapers
+│   ├── admin.service.ts           # Admin domain operations
+│   ├── ai-metadata.service.ts     # LLM metadata generator (Groq / OpenAI)
+│   ├── content.service.ts         # Domain service with React.cache deduplication
+│   ├── media.service.ts           # Media asset domain service
+│   ├── now.service.ts             # Now timeline domain service
+│   ├── pexels.service.ts          # Pexels API client for book covers and wallpapers
+│   ├── post.service.ts            # Post domain operations
+│   └── index.ts                   # Unified service exports
+├── storage/
+│   ├── media-storage.ts           # Vendor-neutral MediaStorage interface
+│   ├── supabase-media-storage.ts  # Supabase Storage implementation
+│   └── index.ts                   # Storage factory
 ├── supabase/
-│   ├── client.ts         # Browser Supabase client
-│   ├── database.types.ts # TypeScript database definitions
-│   └── server.ts         # Server-side Supabase clients (admin, server, public)
-├── constants.ts          # Global site constants and persona definitions
-├── mdx.tsx               # MDX compiler using @mdx-js/mdx, remark-gfm, and custom blocks
-├── razorpay.ts           # HMAC verification and webhook parser
-├── seo.ts                # Metadata builders, JSON-LD schemas, breadcrumbs
-├── types.ts              # TypeScript domain types
-├── utils.ts              # String helpers, slugification, markdownToPostSections
-└── validation.ts         # Zod schemas for input validation
+│   ├── client.ts                  # Browser Supabase client
+│   ├── database.types.ts          # TypeScript database definitions
+│   └── server.ts                  # Server-side Supabase clients (admin, server, public)
+├── constants.ts                   # Global site constants and persona definitions
+├── mdx.tsx                        # MDX compiler using @mdx-js/mdx, remark-gfm, and custom blocks
+├── razorpay.ts                    # HMAC verification and webhook parser
+├── seo.ts                         # Metadata builders, JSON-LD schemas, breadcrumbs
+├── types.ts                       # TypeScript domain types
+├── utils.ts                       # String helpers, slugification, markdownToPostSections
+└── validation.ts                  # Zod schemas for input validation
 ```
 
 - **Belongs here**: Business logic, data models, repository implementations, helper functions.

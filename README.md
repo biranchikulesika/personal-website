@@ -14,10 +14,10 @@ The structure and implementation reflect how I currently build web software. Som
 * Next.js App Router and React application
 * TypeScript and Tailwind CSS v4
 * MDX-based publishing system with embedded custom components
-* Supabase PostgreSQL database with Row Level Security
+* Drizzle ORM and portable PostgreSQL data layer with connection pooling
 * Custom admin panel and live split-preview MDX composer
 * SEO, JSON-LD structured data, and dynamic Open Graph image generation
-* WebAuthn passkey and OAuth authentication with proxy route guards
+* WebAuthn passkey and OAuth authentication isolated behind AuthService
 * Razorpay payment integration for patronage
 * Automated test suite with an in-memory repository architecture
 
@@ -30,8 +30,8 @@ The structure and implementation reflect how I currently build web software. Som
 | **Framework & Runtime** | Next.js 16 (App Router), React 19, Node.js 24+ | Server Components, Server Actions, and standalone build artifact. |
 | **Language & Type Safety** | TypeScript, Zod | Static typing and runtime input schema validation at server boundaries. |
 | **Styling & Typography** | Tailwind CSS v4, Newsreader, Space Grotesk | Dark editorial ledger aesthetic, custom theme tokens, zero-layout-shift web fonts. |
-| **Database & Persistence** | Supabase PostgreSQL, Supabase Storage | 10 public schema tables, RLS policies, slug uniqueness triggers, media bucket. |
-| **Authentication & Access** | Supabase Auth, WebAuthn Passkeys, SimpleWebAuthn | OAuth (Google, GitHub), device biometrics with HMAC-signed challenges, proxy guard. |
+| **Database & Persistence** | PostgreSQL, Drizzle ORM, Supabase Storage | Portable relational queries via Drizzle ORM (driver: postgres), 10 schema tables, connection pooling. |
+| **Authentication & Access** | Supabase Auth, WebAuthn Passkeys, SimpleWebAuthn | OAuth (Google, GitHub), device biometrics, isolated behind AuthService interface, proxy guard. |
 | **Content Engine** | MDX (@mdx-js/mdx, remark-gfm) | Dynamic evaluation with custom blocks (`<Book/>`, `<Post/>`, `<Note/>`, `<Figure/>`, `<YouTube/>`). |
 | **Payments & Patronage** | Razorpay Node SDK | Cryptographic HMAC-SHA256 signature verification and webhook processing. |
 | **SEO & Social Previews** | @vercel/og, Schema.org JSON-LD | Dynamic edge 1200x630 card generation, sitemap, robots, article and person schemas. |
@@ -70,36 +70,40 @@ The application strictly follows a 4-tier layered architecture with clear bounda
 │   - Razorpay HMAC-SHA256 signature verification                         │
 │   - On-demand path revalidation coordination                            │
 │                                                                         │
-│   Auxiliary Services:                                                   │
-│   - AiMetadataService (Groq / OpenAI metadata assist)                   │
-│   - PexelsService (Book cover image search & daily login wallpapers)    │
+│   Infrastructure Abstractions:                                          │
+│   - AuthService (lib/auth/auth-service.ts): provider-agnostic auth     │
+│   - MediaStorage (lib/storage/media-storage.ts): vendor-neutral storage │
+│   - Domain Services: PostService, NowService, MediaService, AdminService│
+│   - AiMetadataService (Groq / OpenAI assist), PexelsService             │
 └────────────────────────────────────┬────────────────────────────────────┘
-                                     │ Calls interface contract
+                                     │ Calls interface contracts
                                      ▼
 ┌─────────────────────────────────────────────────────────────────────────┐
 │                     3. Data Access & Repository Layer                   │
 │                                                                         │
-│   ContentRepository Interface (lib/repositories/content.repository.ts)  │
+│   Domain Repositories (lib/repositories/*.repository.ts)                │
+│   - PostRepository, NoteRepository, BookRepository, NowRepository, etc. │
+│   - Composed into ContentRepository interface                           │
 │                                                                         │
 │          ┌─────────────────────────┴─────────────────────────┐          │
 │          ▼                                                   ▼          │
-│   SupabaseContentRepository                       InMemoryTestContent...│
-│   (lib/repositories/supabase-...)                 (tests/in-memory-...) │
-│   - PostgreSQL query execution                    - Fast in-memory array│
+│   DrizzleContentRepository                        InMemoryTestContent...│
+│   (lib/repositories/drizzle-...)                  (tests/in-memory-...) │
+│   - Drizzle ORM query execution                   - Fast in-memory array│
 │   - Row mappers (snake_case -> camelCase)           storage for tests   │
-│   - Slug collision prevention                     - Zero database setup │
-│   - Supabase Storage asset handling               - 221 tests in < 3s   │
+│   - Cross-collection slug uniqueness              - Zero database setup │
+│   - Portable across any PostgreSQL host           - 221 tests in < 3s   │
 └────────────────────────────────────┬────────────────────────────────────┘
-                                     │ Queries over HTTPS / WebSocket
+                                     │ Queries via PostgreSQL connection
                                      ▼
 ┌─────────────────────────────────────────────────────────────────────────┐
 │                    4. Database & Persistence Layer                      │
 │                                                                         │
-│   Supabase PostgreSQL (supabase/migrations/20260830000000_initial_schema│
+│   PostgreSQL (Supabase Postgres, Neon, Local Docker, or VPS)            │
 │   - 10 Tables: posts, notes, books, now_entries, media, featured_items, │
 │     user_roles, storage_files, subscribers, contributions               │
-│   - Triggers: cross_collection_slug_uniqueness, update_updatedAt_column │
-│   - Row Level Security (RLS) on all public schema tables                │
+│   - Drizzle Schema (lib/db/schema/) & Migrations (drizzle/)             │
+│   - Connection pooling with hot-reload cache (lib/db/client.ts)         │
 │   - Media Storage Bucket: public read, authenticated write              │
 └─────────────────────────────────────────────────────────────────────────┘
 ```
@@ -133,12 +137,15 @@ biranchi/
 │   ├── environments.md   # Development, testing, CI, and production environment separation
 │   ├── testing.md        # Test suite structure and in-memory testing guide
 │   └── *.md              # Dedicated guides for auth, admin, media, SEO, routing, styling, env vars
+├── drizzle/              # Drizzle ORM SQL migrations
 ├── hooks/                # Custom React hooks (use-toast, use-click-outside)
 ├── lib/                  # Business logic and domain modules
-│   ├── auth/             # Admin checks and WebAuthn passkey challenge helpers
+│   ├── auth/             # AuthService interface, SupabaseAuthService, and WebAuthn helpers
 │   ├── config/           # Environment variable resolvers and site configuration
-│   ├── repositories/     # ContentRepository interface and Supabase implementation
-│   ├── services/         # ContentService, AiMetadataService, PexelsService
+│   ├── db/               # Drizzle client, connection pooler, and schema definitions
+│   ├── repositories/     # Domain repository interfaces and DrizzleContentRepository
+│   ├── services/         # ContentService, domain services, AI metadata, Pexels
+│   ├── storage/          # MediaStorage interface and SupabaseMediaStorage implementation
 │   ├── supabase/         # Supabase client instances (admin, server, public, database types)
 │   ├── constants.ts      # Global site constants and personas
 │   ├── mdx.tsx           # MDX compilation engine and custom block registry
@@ -150,9 +157,11 @@ biranchi/
 ├── public/               # Static images, avatars, favicons, and web manifest
 ├── scripts/              # Developer scripts (sync-live-data.sh)
 ├── supabase/             # Database migrations and Supabase CLI configuration
-│   ├── migrations/       # 20260830000000_initial_schema.sql (single source of truth)
+│   ├── migrations/       # 20260830000000_initial_schema.sql (authoritative reference schema)
 │   └── config.toml       # Local Supabase CLI configuration
 ├── tests/                # Automated test suite (15 test files, 221 tests)
+├── docker-compose.yml    # Optional local PostgreSQL container definition
+├── drizzle.config.ts     # Drizzle Kit configuration
 ├── next.config.ts        # Next.js configuration, security headers, standalone output
 ├── package.json          # Dependencies and scripts
 ├── proxy.ts              # Route-level authentication guard for admin routes

@@ -1,84 +1,62 @@
 import type {
-  AppRole,
-  UserRole,
-  BlogPost,
-  BookItem,
-  MediaItem,
-  NoteItem,
-  NowEntry,
-  Persona,
-  ScribbleEntry,
   HomeContent,
   SectionGroup,
   WritingItem,
-  Contribution,
+  ScribbleEntry,
   PasskeyItem,
   PasskeyCredentialRecord,
   UserSession,
-  NewsletterSubscriber,
-} from '@/lib/types';
+} from "@/lib/types";
+import type { PostRepository } from "./post.repository";
+import type { NoteRepository } from "./note.repository";
+import type { BookRepository } from "./book.repository";
+import type { NowRepository } from "./now.repository";
+import type { MediaRepository } from "./media.repository";
+import type { SubscriberRepository } from "./subscriber.repository";
+import type { ContributionRepository } from "./contribution.repository";
+import type { UserRoleRepository } from "./user-role.repository";
 
-// Repository contract for data access. UI components call the service layer,
-// which interacts with Supabase through this interface.
+export * from "./post.repository";
+export * from "./note.repository";
+export * from "./book.repository";
+export * from "./now.repository";
+export * from "./media.repository";
+export * from "./subscriber.repository";
+export * from "./contribution.repository";
+export * from "./user-role.repository";
 
-export interface ContentRepository {
+/**
+ * Composite repository contract combining domain-specific repository interfaces.
+ * Application services and server actions interact through these boundaries.
+ */
+export interface ContentRepository
+  extends PostRepository,
+    NoteRepository,
+    BookRepository,
+    NowRepository,
+    MediaRepository,
+    SubscriberRepository,
+    ContributionRepository,
+    UserRoleRepository {
+  // Cross-collection aggregation & views
   getHomeContent(): Promise<HomeContent>;
   getWriting(): Promise<SectionGroup<WritingItem>>;
-  getLibrary(): Promise<SectionGroup<BookItem>>;
-  getPost(slug: string): Promise<BlogPost | null>;
-  getPostSlugs(): Promise<string[]>;
-  getAllPosts(): Promise<BlogPost[]>;
-  savePost(post: BlogPost, persona?: Persona): Promise<BlogPost>;
-  deletePost(slug: string): Promise<boolean>;
-  togglePostStatus(slug: string): Promise<BlogPost | null>;
-
-  getNote(slug: string): Promise<NoteItem | null>;
-  getNoteSlugs(): Promise<string[]>;
-  getAllNotes(): Promise<NoteItem[]>;
-  saveNote(note: NoteItem): Promise<NoteItem>;
-  deleteNote(slug: string): Promise<boolean>;
-  toggleNoteStatus(slug: string): Promise<NoteItem | null>;
-
-  getAllBooks(): Promise<BookItem[]>;
-  saveBook(book: BookItem): Promise<BookItem>;
-  deleteBook(slug: string): Promise<boolean>;
-  toggleBookStatus(slug: string): Promise<BookItem | null>;
-
   getScribbleEntries(): Promise<ScribbleEntry[]>;
 
-  getNowEntries(): Promise<NowEntry[]>;
-  saveNowEntry(entry: NowEntry): Promise<NowEntry>;
-  deleteNowEntry(id: string): Promise<boolean>;
-
-  getMedia(): Promise<MediaItem[]>;
-  addMedia(item: MediaItem): Promise<MediaItem>;
-  deleteMedia(id: string): Promise<boolean>;
-  getOrphanedMedia(): Promise<MediaItem[]>;
-  deleteStorageAssets(srcs: string[]): Promise<number>;
-
-  getUserRole(userId: string): Promise<AppRole | null>;
-  setUserRole(userId: string, role: AppRole): Promise<void>;
-  getAllUserRoles(): Promise<UserRole[]>;
-
-  getFeaturedPosts(): Promise<string[]>;
-  getFeaturedBooks(): Promise<string[]>;
-  setFeaturedPosts(slugs: string[]): Promise<void>;
-  setFeaturedBooks(slugs: string[]): Promise<void>;
-
-  // Contributions & Patronage
-  recordContribution(contribution: Contribution): Promise<Contribution>;
-  getContribution(id: string): Promise<Contribution | null>;
-  getContributions(): Promise<Contribution[]>;
-
-  // Passkeys & Auth
+  // Passkeys & Identity (isolated behind repository boundary)
   getPasskeys(userId: string): Promise<PasskeyItem[]>;
   savePasskey(userId: string, passkey: PasskeyItem): Promise<PasskeyItem>;
   deletePasskey(userId: string, passkeyId: string): Promise<boolean>;
-  findPasskeyCredential(credentialId: string): Promise<PasskeyCredentialRecord | null>;
+  findPasskeyCredential(
+    credentialId: string,
+  ): Promise<PasskeyCredentialRecord | null>;
   getAllAdminPasskeys(): Promise<PasskeyItem[]>;
 
   // Active Sessions
-  getSessions(userId: string, currentSessionId?: string): Promise<UserSession[]>;
+  getSessions(
+    userId: string,
+    currentSessionId?: string,
+  ): Promise<UserSession[]>;
   recordSession(session: UserSession): Promise<UserSession>;
   deleteSession(userId: string, sessionId: string): Promise<boolean>;
   deleteAllSessions(userId: string): Promise<boolean>;
@@ -86,9 +64,4 @@ export interface ContentRepository {
   // Connected Accounts
   getConnectedProviders(userId: string): Promise<string[]>;
   setConnectedProviders(userId: string, providers: string[]): Promise<void>;
-
-  // Newsletter Subscribers
-  addSubscriber(email: string, source?: string): Promise<NewsletterSubscriber>;
-  getSubscribers(): Promise<NewsletterSubscriber[]>;
-  deleteSubscriber(id: string): Promise<boolean>;
 }

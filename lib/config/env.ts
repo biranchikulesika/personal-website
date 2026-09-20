@@ -1,4 +1,12 @@
-// Environment configuration & Supabase variable resolution.
+// Environment configuration & database variable resolution.
+
+/**
+ * Resolves the PostgreSQL database connection string.
+ * Automatically checks DATABASE_URL and POSTGRES_URL.
+ */
+export function getDatabaseUrl(): string | undefined {
+  return process.env.DATABASE_URL || process.env.POSTGRES_URL;
+}
 
 /**
  * Resolves the Supabase URL.

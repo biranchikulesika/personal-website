@@ -1,6 +1,6 @@
 # System Architecture
 
-The application follows a 4-tier layered architecture. This separates the user interface, business rules, data abstraction, and database persistence.
+The application follows a 4-tier layered architecture. This separates the user interface, business rules, data abstraction, and database persistence, ensuring complete provider independence from any specific cloud or database vendor.
 
 ---
 
@@ -15,21 +15,25 @@ The application follows a 4-tier layered architecture. This separates the user i
                                ▼
 ┌─────────────────────────────────────────────────────────────┐
 │               2. Application / Service Layer                │
-│             (lib/services/content.service.ts)               │
-│    - Business operations, validations, aggregation, auth    │
+│    - Business services (lib/services/content.service.ts)    │
+│    - Auth abstraction (lib/auth/auth-service.ts)            │
+│    - Storage abstraction (lib/storage/media-storage.ts)     │
 └──────────────────────────────┬──────────────────────────────┘
-                               │ Calls interface contract
+                               │ Calls interface contracts
                                ▼
 ┌─────────────────────────────────────────────────────────────┐
 │             3. Data Access / Repository Layer               │
-│      (lib/repositories/supabase-content.repository.ts)      │
-│    - Typed database queries, row mappers, Supabase client   │
+│    - ContentRepository interface (lib/repositories/)        │
+│    - Drizzle ORM implementation (drizzle-content.repo.ts)   │
+│    - In-memory test implementation (tests/in-memory-...)    │
 └──────────────────────────────┬──────────────────────────────┘
-                               │ Interacts with
+                               │ Queries via PostgreSQL connection
                                ▼
 ┌─────────────────────────────────────────────────────────────┐
 │               4. Database / Persistence Layer               │
-│                    (Supabase PostgreSQL)                    │
+│    - PostgreSQL (Local Docker / Supabase / Neon / VPS)      │
+│    - Drizzle Schema & Migrations (lib/db/, drizzle/)        │
+│    - Cloud Storage (Supabase Storage bucket)                │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -44,13 +48,18 @@ The application follows a 4-tier layered architecture. This separates the user i
   - Handle user events, client state, and form interactions.
   - Call Server Actions (`app/admin/actions.ts`) or query the Service Layer directly inside async Server Components.
   - Return HTTP responses and render error or not-found boundaries.
-- **Rule**: UI components must never import database drivers, execute SQL, or access Supabase clients directly.
+- **Rule**: UI components must never import database drivers, execute SQL, access Drizzle directly, or access Supabase clients directly.
 
 ### Tier 2: Application and Service Layer
-- **Locations**: `lib/services/` (`ContentService`, `AiMetadataService`, `PexelsService`)
+- **Locations**:
+  - `lib/services/` (`ContentService`, `AiMetadataService`, `PexelsService`, `AdminService`, `MediaService`, `NowService`, `PostService`)
+  - `lib/auth/` (`AuthService` interface, `SupabaseAuthService` implementation)
+  - `lib/storage/` (`MediaStorage` interface, `SupabaseMediaStorage` implementation)
 - **Responsibilities**:
   - Encapsulate business logic, transformations, and workflows.
   - Coordinate per-request query deduplication using `React.cache()`.
+  - Provide vendor-neutral authentication checks (`requireUser()`, `requireAdmin()`).
+  - Provide vendor-neutral media file operations (`upload()`, `delete()`, `getUrl()`).
   - Verify cryptographic signatures for Razorpay payments and webhooks.
   - Aggregate cross-collection data, such as merging published posts and notes in `getScribbleEntries()`.
   - Coordinate Next.js path revalidation via Server Actions.
@@ -59,18 +68,20 @@ The application follows a 4-tier layered architecture. This separates the user i
 ### Tier 3: Repository and Data Access Layer
 - **Location**: `lib/repositories/`
 - **Files**:
-  - `content.repository.ts`: TypeScript interface defining all data operations.
-  - `supabase-content.repository.ts`: PostgreSQL implementation using Supabase client.
-  - `index.ts`: Factory returning the active repository instance.
+  - Domain repository interfaces: `post.repository.ts`, `note.repository.ts`, `book.repository.ts`, `now.repository.ts`, `media.repository.ts`, `subscriber.repository.ts`, `contribution.repository.ts`, `user-role.repository.ts`.
+  - `content.repository.ts`: Composed interface defining all data operations.
+  - `drizzle-content.repository.ts`: PostgreSQL implementation using Drizzle ORM.
+  - `index.ts`: Provider-independent factory returning the active repository instance based on environment.
 - **Responsibilities**:
-  - Execute database queries, inserts, updates, and deletes.
+  - Execute typed database queries, inserts, updates, and deletes via Drizzle ORM.
   - Map PostgreSQL rows in snake_case to domain types in camelCase.
   - Enforce cross-collection slug uniqueness and avoid duplicate records.
 - **Rule**: Repositories do not perform business operations such as verifying signatures. They only store and fetch data.
 
 ### Tier 4: Database and Persistence Layer
-- **Database**: Supabase PostgreSQL.
-- **Schema**: Single idempotent schema file located at `supabase/migrations/20260830000000_initial_schema.sql`.
+- **Database**: PostgreSQL (accessible locally via Docker or Supabase CLI, or in the cloud via Supabase Postgres, Neon, AWS RDS, or VPS).
+- **ORM & Client**: Drizzle ORM with `postgres` connection pooler in `lib/db/client.ts`.
+- **Schema**: Typed Drizzle schemas in `lib/db/schema/` and idempotent SQL migrations in `supabase/migrations/` and `drizzle/`.
 
 ---
 
@@ -81,17 +92,17 @@ The application follows a 4-tier layered architecture. This separates the user i
 2. Next.js runs the Server Component at `app/(site)/p/[slug]/page.tsx`.
 3. The page calls `contentService.getPost('some-essay-slug')`.
 4. `ContentService` checks its `React.cache()` memoized function and calls `repository.getPost('some-essay-slug')`.
-5. `SupabaseContentRepository` queries the `posts` table in PostgreSQL.
+5. `DrizzleContentRepository` queries the `posts` table in PostgreSQL using Drizzle ORM.
 6. The repository maps the database row to a `BlogPost` domain object.
 7. The page renders metadata, injects JSON-LD structured data, and returns HTML with `<BlogPostView post={post} />`.
 
 ### Write Request (Saving a Post from Admin)
 1. An administrator edits content in the composer at `/admin/compose`.
 2. Clicking save triggers `savePostAction(postData)` in `app/admin/actions.ts`.
-3. `assertAdminUser()` verifies the user is authenticated and holds the `content_admin` or `super_admin` role in `user_roles`.
+3. `assertAdminUser()` verifies the user is authenticated and holds the `content_admin` or `super_admin` role in `user_roles` via `AuthService`.
 4. `validateInput(BlogPostSchema, postData)` validates the payload using Zod.
 5. The action calls `contentService.savePost(validatedPost)`.
-6. `SupabaseContentRepository` upserts the record into the `posts` table.
+6. `DrizzleContentRepository` upserts the record into the `posts` table.
 7. The action calls `revalidatePath()` for `/admin`, `/scribble`, and `/p/[slug]`.
 8. The response returns success to the browser.
 

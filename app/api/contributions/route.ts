@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { ContentService } from '@/lib/services/content.service';
-import { getSupabaseServer } from '@/lib/supabase/server';
+import { getAuthService } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -29,18 +29,9 @@ export async function POST(request: Request) {
     if (source === 'manual') {
       let isAuthorized = false;
       try {
-        const supabase = await getSupabaseServer();
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
-
-        if (user) {
-          const service = new ContentService();
-          const role = await service.getUserRole(user.id);
-          if (role === 'super_admin' || role === 'content_admin') {
-            isAuthorized = true;
-          }
-        }
+        const authService = getAuthService();
+        await authService.requireAdmin();
+        isAuthorized = true;
       } catch {
         isAuthorized = false;
       }

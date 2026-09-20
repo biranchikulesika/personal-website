@@ -2,7 +2,7 @@
 
 This directory contains technical documentation for the Biranchi Kulesika website and publishing system.
 
-The application is built with Next.js (App Router), React, TypeScript, Tailwind CSS, and Supabase PostgreSQL. It includes a public editorial website, an administrative content composer, role-based authentication, structured metadata for search engines, and payment support via Razorpay.
+The application is built with Next.js (App Router), React, TypeScript, Tailwind CSS, Drizzle ORM, and PostgreSQL (hosted on Supabase). It includes a public editorial website, an administrative content composer, role-based authentication, structured metadata for search engines, and payment support via Razorpay.
 
 ---
 
@@ -12,7 +12,7 @@ The application is built with Next.js (App Router), React, TypeScript, Tailwind 
 | :--- | :--- |
 | [**Architecture**](./architecture.md) | The 4-tier layer model (UI, Service, Repository, Database), data flow, and system boundaries. |
 | [**Project Structure**](./project-structure.md) | Directory organisation, naming conventions, and file placement rules. |
-| [**Data Layer**](./data-layer.md) | Repository pattern, Supabase repository implementation, row mappers, and per-request caching. |
+| [**Data Layer**](./data-layer.md) | Repository pattern, Drizzle ORM implementation, Supabase fallback, row mappers, and per-request caching. |
 | [**Database**](./database.md) | PostgreSQL schema, tables, indexes, triggers, and Row Level Security policies. |
 | [**Authentication**](./authentication.md) | Admin route guards, proxy middleware, role-based access control, and passkey authentication. |
 | [**Content System**](./content-system.md) | Content models (posts, notes, books, now entries, scribble entries), personas, and MDX compilation. |

@@ -3,8 +3,7 @@ import { redirect } from 'next/navigation';
 import { headers } from 'next/headers';
 import { ContentService } from '@/lib/services/content.service';
 import { AdminDashboard } from '@/components/admin/admin-dashboard';
-import { getSupabaseServer } from '@/lib/supabase/server';
-import { isAdminRole } from '@/lib/auth/admin';
+import { getAuthService } from '@/lib/auth';
 import { parseUserAgent } from '@/lib/utils';
 import type { PasskeyItem, UserSession, SidepanelTab } from "@/lib/types";
 
@@ -30,53 +29,31 @@ export default async function AdminPage({
     ? (initialTabParam as SidepanelTab)
     : "home";
 
-  const contentService = new ContentService();
-
-  // Verify authentication session
-  let user = null;
-  let userName = 'Admin';
-  let userEmail = '';
-  let userAvatarUrl: string | null = null;
+  const authService = getAuthService();
+  let user;
   let userRole: string = 'user';
 
   try {
-    const supabase = await getSupabaseServer();
-    const {
-      data: { user: authUser },
-    } = await supabase.auth.getUser();
-    user = authUser;
-
-    if (user) {
-      userName =
-        user.user_metadata?.full_name ||
-        user.user_metadata?.name ||
-        user.email?.split('@')[0] ||
-        'Admin';
-      userEmail = user.email || '';
-      userAvatarUrl =
-        user.user_metadata?.avatar_url ||
-        user.user_metadata?.picture ||
-        user.user_metadata?.avatar ||
-        user.identities?.[0]?.identity_data?.avatar_url ||
-        user.identities?.[0]?.identity_data?.picture ||
-        '/biranchi.webp';
-
-      const role = await contentService.getUserRole(user.id);
-      userRole = role || 'user';
-    }
+    const adminSession = await authService.requireAdmin();
+    user = adminSession.user;
+    userRole = adminSession.role;
   } catch {
-    // Auth client unavailable
-    user = null;
-  }
-
-  if (!user) {
     redirect('/admin/login?next=/admin');
   }
 
-  // Defense in depth: even with a session, only admin roles may access the panel.
-  if (!isAdminRole(userRole)) {
-    redirect('/admin/login?error=forbidden');
-  }
+  const contentService = new ContentService();
+
+  const userName =
+    (user.user_metadata?.full_name as string) ||
+    (user.user_metadata?.name as string) ||
+    user.email?.split('@')[0] ||
+    'Admin';
+  const userEmail = user.email || '';
+  const userAvatarUrl =
+    (user.user_metadata?.avatar_url as string) ||
+    (user.user_metadata?.picture as string) ||
+    (user.user_metadata?.avatar as string) ||
+    '/biranchi.webp';
 
   // Parse current request headers for session tracking
   const headersList = await headers();

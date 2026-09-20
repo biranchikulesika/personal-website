@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { ContentService } from '@/lib/services/content.service';
 import { NewsletterSubscriberSchema } from '@/lib/validation';
-import { getSupabaseServer } from '@/lib/supabase/server';
+import { getAuthService } from '@/lib/auth';
 
 export async function POST(request: Request) {
   try {
@@ -44,18 +44,10 @@ export async function POST(request: Request) {
 
 export async function GET() {
   try {
-    let user = null;
     try {
-      const supabase = await getSupabaseServer();
-      const {
-        data: { user: authUser },
-      } = await supabase.auth.getUser();
-      user = authUser;
+      const authService = getAuthService();
+      await authService.requireAdmin();
     } catch {
-      user = null;
-    }
-
-    if (!user) {
       return NextResponse.json(
         { error: 'Unauthorized. Admin access required.' },
         { status: 403 }
@@ -63,14 +55,6 @@ export async function GET() {
     }
 
     const service = new ContentService();
-    const role = await service.getUserRole(user.id);
-    if (role !== 'super_admin' && role !== 'content_admin') {
-      return NextResponse.json(
-        { error: 'Forbidden. Admin privileges required.' },
-        { status: 403 }
-      );
-    }
-
     const subscribers = await service.getSubscribers();
     return NextResponse.json({
       success: true,

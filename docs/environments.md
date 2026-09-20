@@ -52,7 +52,7 @@ The core principle:
 | Dimension | Local Development | Testing / CI | Production Host |
 | :--- | :--- | :--- | :--- |
 | **Dependencies** | Full (`dependencies` + `devDependencies`) | Full (`npm ci`) | Minimal runtime only (`.next/standalone/node_modules`) |
-| **Database** | Local Supabase container (`localhost:54322`) | In-memory mock (`InMemoryTestContentRepository`) | Live remote Supabase (`ojzxdgzkrjmfeqyxvfud`) |
+| **Database** | PostgreSQL via Drizzle (local Docker or Supabase at `localhost:54322`) | In-memory mock (`InMemoryTestContentRepository`) | Live PostgreSQL database via `DATABASE_URL` |
 | **Environment File** | `.env.local` (gitignored, local secrets) | CI secret vault / environment variables | Host dashboard secrets (e.g. Vercel, systemd env) |
 | **Test Files Present** | Yes (`tests/`) | Yes (`tests/`) | **No** (never copied or bundled) |
 | **Dev Scripts Present** | Yes (`scripts/sync-live-data.sh`) | Yes | **No** (never copied or bundled) |
@@ -69,6 +69,8 @@ These files exist solely to help developers write, verify, and document code:
 - **`scripts/`**: Developer automation scripts like `sync-live-data.sh` (used to pull live content into the local database).
 - **`docs/`**: Engineering documentation, architecture notes, and guides.
 - **`supabase/`**: Local Supabase CLI configuration (`config.toml`), local migrations, and CLI cache (`.temp`, `.branches`).
+- **`drizzle.config.ts`**: Drizzle schema generator configuration.
+- **`docker-compose.yml`**: Optional local PostgreSQL container setup.
 - **`.github/`**: Workflow files and CI definitions.
 - **Tooling Configuration**: `eslint.config.mjs`, `tsconfig.json`, `postcss.config.mjs`, `.nvmrc`.
 - **Local Secret Overrides**: `.env.local`, `.env.*.local`.
@@ -89,20 +91,22 @@ When building for production (`next build` with `output: 'standalone'`), Next.js
 Every dependency listed under `dependencies` is imported and used directly during production request execution:
 
 1. **`next`**, **`react`**, **`react-dom`**: Application runtime and React Server Components.
-2. **`@supabase/supabase-js`**, **`@supabase/ssr`**: Authoritative database queries, media management, and cookie-based authentication.
-3. **`@simplewebauthn/browser`**, **`@simplewebauthn/server`**: Passkey authentication flows.
-4. **`@mdx-js/mdx`**, **`remark-gfm`**, **`js-yaml`**: Dynamic compilation of Markdown and MDX posts.
-5. **`sharp`**: High-performance image processing and optimization.
-6. **`zod`**: Runtime input and schema validation.
-7. **`@vercel/speed-insights`**: Real-user performance telemetry in production.
+2. **`drizzle-orm`**, **`postgres`**: High-performance typed database queries and connection pooling.
+3. **`@supabase/supabase-js`**, **`@supabase/ssr`**: Supabase Auth and Storage management.
+4. **`@simplewebauthn/browser`**, **`@simplewebauthn/server`**: Passkey authentication flows.
+5. **`@mdx-js/mdx`**, **`remark-gfm`**, **`js-yaml`**: Dynamic compilation of Markdown and MDX posts.
+6. **`sharp`**: High-performance image processing and optimization.
+7. **`zod`**: Runtime input and schema validation.
+8. **`@vercel/speed-insights`**: Real-user performance telemetry in production.
 
 ### Development & Build Tools (`devDependencies` in `package.json`)
 These packages are required only to build, lint, and test the project:
 
 1. **`typescript`**, **`@types/*`**: Type annotations and compile-time typechecking.
-2. **`tailwindcss`**, **`@tailwindcss/postcss`**, **`@tailwindcss/typography`**: Build-time CSS compilation.
-3. **`eslint`**, **`eslint-config-next`**: Static code quality analysis.
-4. **`tsx`**: Native TypeScript execution for the local test runner.
+2. **`drizzle-kit`**: Drizzle schema migration generation and inspection.
+3. **`tailwindcss`**, **`@tailwindcss/postcss`**, **`@tailwindcss/typography`**: Build-time CSS compilation.
+4. **`eslint`**, **`eslint-config-next`**: Static code quality analysis.
+5. **`tsx`**: Native TypeScript execution for the local test runner.
 
 ---
 

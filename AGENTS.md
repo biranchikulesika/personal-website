@@ -112,11 +112,12 @@ The platform strictly follows a **4-tier layered architecture**. Maintain clean,
 │    - Business operations, validations, aggregation, auth    │
 └──────────────────────────────┬──────────────────────────────┘
                                │ Calls interface contract
-                               ▼
+                                ▼
 ┌─────────────────────────────────────────────────────────────┐
 │             3. Data Access / Repository Layer               │
-│      (lib/repositories/supabase-content.repository.ts)      │
-│    - Typed database queries, row mappers, Supabase access   │
+│      (lib/repositories/drizzle-content.repository.ts)       │
+│    - Typed database queries, row mappers, Drizzle ORM       │
+│    - Fallback: supabase-content.repository.ts               │
 └──────────────────────────────┬──────────────────────────────┘
                                │ Interacts with
                                ▼
@@ -135,7 +136,7 @@ The platform strictly follows a **4-tier layered architecture**. Maintain clean,
   - Encapsulates domain logic, validation coordination, cross-collection aggregation (e.g. scribble feed), cryptographic operations (Razorpay HMAC-SHA256 signature verification), and cache revalidation (`revalidatePath`).
   - Never contains JSX markup or direct database drivers; operates exclusively on domain models (`lib/types.ts`).
 - **Repository Layer (`lib/repositories/`)**:
-  - Declared in `content.repository.ts` interface and implemented in `supabase-content.repository.ts`.
+  - Declared in `content.repository.ts` interface and implemented in `drizzle-content.repository.ts` (primary) and `supabase-content.repository.ts` (fallback).
   - Handles database queries, row mapping to domain types, slug uniqueness, and CRUD operations.
   - Does not contain business rules (e.g., does not calculate taxes or verify payment signatures).
 - **Domain Types & Validations**:
@@ -156,13 +157,13 @@ The platform strictly follows a **4-tier layered architecture**. Maintain clean,
   - **Media & Asset Tracking** (`public.media`)
   - **User Roles & Access** (`public.user_roles`)
   - **Contributions / Patronage** (`public.contributions`)
-  - **Newsletter Subscribers** (`public.newsletter_subscribers`)
+  - **Newsletter Subscribers** (`public.subscribers`)
 - **Schema Integrity & Migrations**:
   - **`supabase/migrations/20260830000000_initial_schema.sql` is the single source of truth**: the one authoritative, idempotent schema file that recreates the entire database (all tables, types, functions, triggers, indexes, RLS policies, and grants).
   - **No other migration files are tracked.** The three small `now_entries` column migrations (status, location, last_edited_at) are already merged into this initial schema. Schema changes are made directly in this file (idempotently: `CREATE TABLE IF NOT EXISTS`, `CREATE INDEX IF NOT EXISTS`, `DROP POLICY IF EXISTS`), then applied to local (`psql postgres://postgres:postgres@127.0.0.1:54322/postgres -f supabase/migrations/20260830000000_initial_schema.sql`) and live (via `supabase db query --linked`).
   - **Live DB Schema Pre-requisite for Builds & Deployments**: Next.js pre-renders static pages (`/library`, `/now`, `/p/[slug]`) at build time using live database credentials. Therefore, all schema changes must be applied to the live Supabase database via `supabase db query --linked` **before** opening/merging PRs or triggering deployments that query the new columns.
   - Row Level Security (RLS) is compulsory on all public tables with explicit policies.
-  - Direct data queries must always route through `SupabaseContentRepository`.
+  - Direct data queries must always route through `ContentRepository` (`DrizzleContentRepository` when `DATABASE_URL` is set, or `SupabaseContentRepository` as fallback).
 
 ---
 

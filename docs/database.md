@@ -1,6 +1,8 @@
 # Database and Schema Architecture
 
-The database architecture is built on PostgreSQL through Supabase. The entire schema is declaratively defined in a single, idempotent file: [`supabase/migrations/20260830000000_initial_schema.sql`](../supabase/migrations/20260830000000_initial_schema.sql). This is the only migration file tracked in Git. It recreates all tables, types, functions, triggers, indexes, Row Level Security (RLS) policies, and role grants.
+The database architecture is built on PostgreSQL, designed to run portably across any PostgreSQL host (local Docker, Supabase Postgres, Neon, AWS RDS, or VPS). Data access is driven by Drizzle ORM with TypeScript schemas defined in `lib/db/schema/`.
+
+The database schema is also declaratively maintained in [`supabase/migrations/20260830000000_initial_schema.sql`](../supabase/migrations/20260830000000_initial_schema.sql) and tracked via Drizzle migrations in `drizzle/`.
 
 ---
 
@@ -197,7 +199,34 @@ RLS is enabled on every public table:
 
 ---
 
-## 6. How to Apply Schema Changes
+## 6. Drizzle ORM Schemas & Database Independence
+
+Drizzle ORM serves as the database query engine, providing static TypeScript type safety without locking the application into a single vendor.
+
+### Schema Files (`lib/db/schema/`)
+- `posts.ts`: Schema for `public.posts` table and `content_status` enum.
+- `notes.ts`: Schema for `public.notes` table.
+- `books.ts`: Schema for `public.books` table.
+- `now-entries.ts`: Schema for `public.now_entries` table.
+- `media.ts`: Schema for `public.media` table.
+- `featured.ts`: Schema for `public.featured_items` table.
+- `subscribers.ts`: Schema for `public.subscribers` table.
+- `user-roles.ts`: Schema for `public.user_roles` table and `app_role` enum.
+- `contributions.ts`: Schema for `public.contributions` table.
+- `storage-files.ts`: Schema for `public.storage_files` table.
+- `index.ts`: Unified export of all schemas.
+
+### Connection Management (`lib/db/client.ts`)
+The Drizzle client connects via the `postgres` driver using `DATABASE_URL`. In development mode, the client connection is cached globally to survive Next.js Fast Refresh cycles without exhausting database connection pools.
+
+### Local PostgreSQL Options
+Developers can run PostgreSQL locally through either:
+1. **Supabase Local CLI**: `supabase start` (PostgreSQL available at `127.0.0.1:54322`).
+2. **Docker Compose**: `docker compose up -d` using `docker-compose.yml` (PostgreSQL 17 Alpine on port `5432`).
+
+---
+
+## 7. How to Apply Schema Changes
 
 All schema changes must be applied directly to `supabase/migrations/20260830000000_initial_schema.sql`.
 
@@ -210,3 +239,76 @@ All schema changes must be applied directly to `supabase/migrations/202608300000
    ```bash
    supabase db query --linked -f supabase/migrations/20260830000000_initial_schema.sql
    ```
+4. If schema definitions changed, update `lib/db/schema/*.ts` and generate fresh Drizzle migrations:
+   ```bash
+   npx drizzle-kit generate
+   ```
+
+---
+
+## 8. Production Drizzle Setup with Supabase
+
+The production deployment uses Supabase as the managed infrastructure provider for PostgreSQL, authentication, and media storage, with Drizzle ORM driving all content queries and mutations.
+
+### Why the Transaction Pooler (Port 6543) Is Required
+
+In serverless hosting environments such as Vercel, every incoming request or Server Action can spin up an ephemeral container. Connecting directly to PostgreSQL via the session port (`5432`) would create a separate TCP connection per container, quickly exhausting PostgreSQL connection limits (`max_connections`).
+
+Supabase provides a built-in connection pooler (Supavisor) configured for transaction pooling:
+- **Port 6543 (Transaction Mode)**: Connections are pooled per transaction and released immediately upon query completion. This mode supports thousands of concurrent serverless requests and is required for production.
+- **Port 5432 (Session Mode)**: Retains connection state until the client disconnects. Do not use session mode in serverless environments.
+
+### Step-by-Step Production Configuration
+
+#### Step 1: Obtain the Transaction Pooler Connection String
+1. Log in to the [Supabase Dashboard](https://supabase.com/dashboard) and open your production project.
+2. Go to **Project Settings** (gear icon) -> **Database**.
+3. Scroll down to the **Connection string** section and select the **URI** tab.
+4. Set the **Mode** selector to **Transaction** (notice the port changes to `6543`).
+5. Copy the connection string. It will look like:
+   ```text
+   postgresql://postgres.[YOUR-PROJECT-REF]:[YOUR-PASSWORD]@aws-0-[YOUR-REGION].pooler.supabase.com:6543/postgres
+   ```
+6. Replace `[YOUR-PASSWORD]` with your real database password.
+7. Append `?sslmode=require` to enforce TLS:
+   ```text
+   postgresql://postgres.[YOUR-PROJECT-REF]:[YOUR-PASSWORD]@aws-0-[YOUR-REGION].pooler.supabase.com:6543/postgres?sslmode=require
+   ```
+
+#### Step 2: Configure Environment Variables in Production (Vercel)
+In your hosting provider dashboard (e.g. Vercel Project Settings -> Environment Variables), configure the following keys:
+
+| Environment Variable | Value / Description | Exposure |
+| :--- | :--- | :--- |
+| `DATABASE_URL` | Transaction Pooler URI from Step 1 (`...:6543/postgres?sslmode=require`) | Server-only (Secret) |
+| `NEXT_PUBLIC_SITE_URL` | Canonical domain (e.g. `https://biranchikulesika.com`) | Client-safe |
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase API gateway (e.g. `https://[ref].supabase.co`) | Client-safe |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Supabase anonymous public API key (`eyJ...`) | Client-safe |
+| `SUPABASE_SECRET_KEY` | Supabase service-role secret key (required for media uploads and admin access) | Server-only (Secret) |
+
+Optional patronage keys if accepting support:
+- `RAZORPAY_KEY_ID` (public key)
+- `RAZORPAY_KEY_SECRET` (server secret)
+
+#### Step 3: Automatic Drizzle Activation and Fallback
+The repository factory in `lib/repositories/index.ts` automatically detects the environment:
+- When `DATABASE_URL` is present, the app instantiates `DrizzleContentRepository`, routing all reading catalog, essay, note, and timeline queries directly through Drizzle ORM.
+- If `DATABASE_URL` is unset or omitted, the factory falls back to `SupabaseContentRepository` using the PostgREST client.
+- This ensures zero-downtime safety: if `DATABASE_URL` is missing during a quick redeploy, public pages continue functioning.
+
+#### Step 4: Verification
+After deploying to production:
+1. Check the build logs to ensure static pre-rendering completes cleanly without database connection timeouts.
+2. Verify that public pages (`/`, `/library`, `/now`, `/p/[slug]`) load accurately with live content.
+3. Test an administrative update in `/admin` (e.g. editing a note or now entry) to confirm write mutations succeed through Drizzle.
+
+---
+
+## 9. Future Provider Portability
+
+While Supabase is currently the active infrastructure provider, the codebase uses strict layered abstraction:
+
+- **Database**: Drizzle ORM queries PostgreSQL using standard SQL. If migrating to AWS RDS, Neon, or a self-hosted PostgreSQL VPS in the future, only the `DATABASE_URL` connection string needs to change. No application code or queries need updating.
+- **Media Storage**: Abstracted behind the `MediaStorage` interface (`lib/storage/media-storage.ts`). Currently implemented by `SupabaseMediaStorage`. Can be swapped to S3, Cloudflare R2, or local disk by adding an implementation to `lib/storage/`.
+- **Authentication**: Abstracted behind the `AuthService` interface (`lib/auth/auth-service.ts`). Currently implemented by `SupabaseAuthService`. Can be swapped to Auth.js or custom sessions by providing an implementation to `lib/auth/`.
+

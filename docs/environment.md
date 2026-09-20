@@ -42,6 +42,17 @@ Next.js loads environment files in the following order of precedence, from highe
 
 ---
 
+### `DATABASE_URL`
+- **Purpose**: PostgreSQL connection string for Drizzle ORM database operations.
+- **Used by**: `lib/config/env.ts` (`getDatabaseUrl`), `lib/db/client.ts`, and `lib/repositories/drizzle-content.repository.ts`.
+- **Expected format**:
+  - **Local Development**: `postgresql://postgres:postgres@127.0.0.1:54322/postgres` (Supabase CLI) or `postgresql://postgres:postgres@localhost:5432/biranchi_dev` (Docker).
+  - **Production (Supabase)**: `postgresql://postgres.[project-ref]:[password]@aws-0-[region].pooler.supabase.com:6543/postgres?sslmode=require`. Always use **Transaction Mode (port 6543)** in serverless hosting (e.g. Vercel) to avoid connection pool exhaustion.
+- **Exposure**: **Server-only (Secret)**. Contains database credentials.
+- **Required**: Yes (to activate Drizzle ORM). If omitted in production, the application gracefully falls back to `SupabaseContentRepository` using the PostgREST client.
+
+---
+
 ### `NEXT_PUBLIC_SUPABASE_URL` / `SUPABASE_URL`
 - **Purpose**: Supabase project API gateway URL.
 - **Used by**: `lib/config/env.ts` (`getSupabaseUrl`), `@supabase/ssr`, and `@supabase/supabase-js`.

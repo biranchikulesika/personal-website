@@ -54,6 +54,28 @@ Before deploying code that depends on database updates:
    - The `media` storage bucket exists with public read access.
    - Row Level Security (RLS) is enabled on all tables.
 
+### Production Drizzle & Supabase Setup
+
+To enable Drizzle ORM in production with Supabase:
+
+1. **Get Transaction Pooler URI (Port 6543)**:
+   - In Supabase Dashboard, go to **Project Settings** -> **Database**.
+   - Under **Connection string**, select **URI**.
+   - Set **Mode** to **Transaction** (port `6543`).
+   - **Crucial**: Always use port `6543` (Transaction mode) for serverless deployments on Vercel. Do not use session mode (port `5432`), which quickly exhausts connections.
+   - Format: `postgresql://postgres.[REF]:[PASSWORD]@aws-0-[REGION].pooler.supabase.com:6543/postgres?sslmode=require`
+
+2. **Configure Host Environment Variables (Vercel)**:
+   Ensure these 5 core variables are set in your Vercel Project Settings:
+   - `DATABASE_URL`: Transaction Pooler URI (starts with `postgresql://` on port `6543`).
+   - `NEXT_PUBLIC_SITE_URL`: Canonical URL without trailing slash (e.g. `https://biranchikulesika.com`).
+   - `NEXT_PUBLIC_SUPABASE_URL`: Supabase project URL (`https://[REF].supabase.co`).
+   - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`: Public anonymous key for client interactions.
+   - `SUPABASE_SECRET_KEY`: Service-role key for admin mutations, user roles, and storage.
+
+3. **Fallback Safety**:
+   If `DATABASE_URL` is omitted in production, the application automatically falls back to `SupabaseContentRepository` without crashing. Adding `DATABASE_URL` switches the database driver to Drizzle ORM immediately.
+
 ---
 
 ## 4. Security Headers (`next.config.ts`)

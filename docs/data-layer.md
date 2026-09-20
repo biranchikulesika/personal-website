@@ -1,6 +1,6 @@
 # Data Layer Architecture
 
-The data layer separates application operations from storage engines. UI components and Server Actions interact solely with the Service Layer (`ContentService`), which delegates to a repository conforming to the `ContentRepository` interface.
+The data layer separates application operations from storage engines. UI components and Server Actions interact solely with the Service Layer (`ContentService`), which delegates to domain repositories conforming to interface contracts composed under `ContentRepository`.
 
 ---
 
@@ -16,26 +16,33 @@ The data layer separates application operations from storage engines. UI compone
 ┌────────────────────────────────────────────────────────┐
 │          ContentRepository (Interface Contract)        │
 │          lib/repositories/content.repository.ts        │
+│   (Extends PostRepo, NoteRepo, BookRepo, NowRepo, etc) │
 └───────────────────────────┬────────────────────────────┘
                             │
               ┌─────────────┴─────────────┐
               ▼                           ▼
 ┌───────────────────────────┐   ┌───────────────────────────┐
-│ SupabaseContentRepository │   │InMemoryTestContentRepo... │
-│ (PostgreSQL / Production) │   │(In-Memory / Unit Tests)   │
+│  DrizzleContentRepository │   │InMemoryTestContentRepo... │
+│  (Drizzle ORM / Postgres) │   │(In-Memory / Unit Tests)   │
 └───────────────────────────┘   └───────────────────────────┘
 ```
 
-The application provides two implementations of the `ContentRepository` interface:
-1. **`SupabaseContentRepository`**: The production repository connecting to Supabase PostgreSQL using `getSupabaseAdmin()`.
-2. **`InMemoryTestContentRepository`**: The test repository used during `npm test`. It holds records in in-memory arrays and sets, enabling fast tests with zero database setup.
+The application provides three implementations of the `ContentRepository` interface:
+1. **`DrizzleContentRepository`**: The primary production repository connecting directly to PostgreSQL (such as Supabase PostgreSQL via the Transaction Pooler) using Drizzle ORM via `lib/db/client.ts`.
+2. **`SupabaseContentRepository`**: The secondary repository communicating via the Supabase PostgREST client. Serves as a graceful fallback in production if `DATABASE_URL` is not yet configured.
+3. **`InMemoryTestContentRepository`**: The test repository used during `npm test`. It holds records in in-memory arrays and sets, enabling fast tests with zero database setup.
 
 The repository factory in `lib/repositories/index.ts` returns the singleton instance:
 
 ```typescript
 export function getContentRepository(): ContentRepository {
   if (!repository) {
-    repository = new SupabaseContentRepository();
+    const databaseUrl = getDatabaseUrl();
+    if (databaseUrl) {
+      repository = new DrizzleContentRepository();
+    } else {
+      repository = new SupabaseContentRepository();
+    }
   }
   return repository;
 }
@@ -47,7 +54,7 @@ export function getContentRepository(): ContentRepository {
 
 Database columns in PostgreSQL follow `snake_case` conventions, while domain entities in `lib/types.ts` follow `camelCase` conventions.
 
-`SupabaseContentRepository` isolates this mapping inside private mapper functions:
+`DrizzleContentRepository` isolates this mapping inside private mapper functions:
 
 - **`postRowToDomain`**: Maps `published_at` to `publishedAt`, `last_edited_at` to `lastEditedAt`, `cover_image` to `coverImage`, and extracts JSONB `intro`, `sections`, and `books`.
 - **`noteRowToDomain`**: Maps note records, deserializing JSON array content.
