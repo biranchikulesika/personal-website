@@ -4,7 +4,7 @@ import { useState, useRef } from 'react';
 import Image from 'next/image';
 import type { MediaItem, Persona } from '@/lib/types';
 import { SITE_DOMAIN } from '@/lib/constants';
-import { addMediaAction } from '@/app/admin/actions';
+import { uploadMediaFile } from '@/lib/storage/upload-client';
 import { MediaInsertModal } from '../mdx-editor/media-insert-modal';
 
 interface PublishDrawerProps {
@@ -65,6 +65,7 @@ export function PublishDrawer({
   const [tagInput, setTagInput] = useState('');
   const [isMediaModalOpen, setIsMediaModalOpen] = useState(false);
   const [previewTab, setPreviewTab] = useState<'card' | 'og' | 'google'>('card');
+  const [coverError, setCoverError] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Sync input from parent tags on open
@@ -95,31 +96,20 @@ export function PublishDrawer({
     setTagInput(remaining.join(', '));
   }
 
-  function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = async () => {
-      const dataUrl = reader.result as string;
-      try {
-        const mediaItem: MediaItem = {
-          id: `media-${Date.now()}`,
-          name: file.name,
-          src: dataUrl,
-          alt: file.name.replace(/\.[^.]+$/, ''),
-          size: `${Math.max(1, Math.round(file.size / 1024))} KB`,
-          uploadedAt: new Date().toISOString(),
-          tags: isPost ? ['post', 'cover'] : ['note', 'cover'],
-        };
-        const res = await addMediaAction(mediaItem);
-        const imgUrl = res.success && res.media ? res.media.src : dataUrl;
-        onCoverImageChange(imgUrl);
-      } catch {
-        onCoverImageChange(dataUrl);
-      }
-    };
-    reader.readAsDataURL(file);
     if (fileInputRef.current) fileInputRef.current.value = '';
+    if (!file) return;
+    try {
+      const media = await uploadMediaFile(file, {
+        alt: file.name.replace(/\.[^.]+$/, ''),
+        tags: isPost ? ['post', 'cover'] : ['note', 'cover'],
+      });
+      setCoverError('');
+      onCoverImageChange(media.src);
+    } catch (err: unknown) {
+      setCoverError((err as Error).message || 'Cover upload failed');
+    }
   }
 
   const liveUrlPrefix = isPost ? '/p/' : '/n/';
@@ -237,6 +227,12 @@ export function PublishDrawer({
                     <span className="text-[11px] text-accent">Media Library</span>
                   </button>
                 </div>
+              )}
+
+              {coverError && !hasCoverImage && (
+                <p role="alert" className="text-[11px] text-red-400">
+                  {coverError}
+                </p>
               )}
             </div>
           )}

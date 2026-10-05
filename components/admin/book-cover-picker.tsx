@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import type { MediaItem } from '@/lib/types';
-import { addMediaAction } from '@/app/admin/actions';
+import { uploadMediaFile } from '@/lib/storage/upload-client';
 import { UploadIcon, LinkIcon, ImageIcon, CheckIcon } from '@/components/icons';
 import { NoMediaState, NoSearchResults } from '@/components/ui/states';
 
@@ -101,32 +101,13 @@ export function BookCoverPicker({
     if (!file) return;
 
     try {
-      const dataUrl = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result as string);
-        reader.onerror = () => reject(new Error('Failed to read file'));
-        reader.readAsDataURL(file);
-      });
-
-      const media: MediaItem = {
-        id: `media-${Date.now()}`,
-        name: file.name,
-        src: dataUrl,
+      const media = await uploadMediaFile(file, {
         alt: file.name.replace(/\.[^.]+$/, ''),
-        size: `${Math.max(1, Math.round(file.size / 1024))} KB`,
-        uploadedAt: new Date().toISOString().split('T')[0],
-        tag: 'book',
         tags: ['book'],
-      };
-
-      const res = await addMediaAction(media);
-      commitCover(dataUrl);
-      if (res.success && res.media) {
-        onMediaAdded?.(res.media);
-        showToast(`"${file.name}" uploaded and set as cover`);
-      } else {
-        showToast('Cover set locally (media registration failed)');
-      }
+      });
+      commitCover(media.src);
+      onMediaAdded?.(media);
+      showToast(`"${media.name}" uploaded and set as cover`);
     } catch (err: unknown) {
       showToast((err as Error).message || 'Upload failed');
     } finally {

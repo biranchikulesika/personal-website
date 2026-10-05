@@ -1,13 +1,13 @@
 "use client";
 
 import {
-  addMediaAction,
   deleteNoteAction,
   deletePostAction,
   saveNoteAction,
   saveNowEntryAction,
   savePostAction,
 } from "@/app/admin/actions";
+import { uploadMediaFile } from "@/lib/storage/upload-client";
 import type {
   BlogPost,
   BookItem,
@@ -862,37 +862,19 @@ export function ComposeWorkspace({
           ref={fileInputRef}
           accept="image/*"
           className="hidden"
-          onChange={(e) => {
+          onChange={async (e) => {
             const file = e.target.files?.[0];
-            if (file) {
-              const reader = new FileReader();
-              reader.onload = async () => {
-                const dataUrl = reader.result as string;
-                try {
-                  const mediaItem: MediaItem = {
-                    id: `media-${Date.now()}`,
-                    name: file.name,
-                    src: dataUrl,
-                    alt: file.name.replace(/\.[^.]+$/, ""),
-                    size: `${Math.max(1, Math.round(file.size / 1024))} KB`,
-                    uploadedAt: new Date().toISOString(),
-                    tags: [activeTab.docType],
-                  };
-                  const res = await addMediaAction(mediaItem);
-                  const imgUrl =
-                    res.success && res.media ? res.media.src : dataUrl;
-                  insertBlock(
-                    `![${file.name}](${imgUrl} "${file.name}")`,
-                  );
-                } catch {
-                  insertBlock(
-                    `![${file.name}](${dataUrl} "${file.name}")`,
-                  );
-                }
-              };
-              reader.readAsDataURL(file);
-            }
             if (fileInputRef.current) fileInputRef.current.value = "";
+            if (!file) return;
+            try {
+              const media = await uploadMediaFile(file, {
+                alt: file.name.replace(/\.[^.]+$/, ""),
+                tags: [activeTab.docType],
+              });
+              insertBlock(`![${media.name}](${media.src} "${media.name}")`);
+            } catch (err: unknown) {
+              showToast((err as Error).message || "Image upload failed");
+            }
           }}
         />
 
