@@ -6,6 +6,7 @@ import {
   deleteNowEntryAction,
   deletePostAction,
   saveBookAction,
+  saveNowEntryAction,
   toggleBookStatusAction,
   toggleNoteStatusAction,
   togglePostStatusAction,
@@ -98,6 +99,7 @@ export function ContentManager({
     kind: "post" | "note" | "book" | "now";
     action: "publish" | "unpublish" | "delete";
     slug: string;
+    id: string;
     title: string;
   } | null>(null);
 
@@ -108,6 +110,7 @@ export function ContentManager({
     kind: "post" | "note" | "book" | "now";
     action: "publish" | "unpublish" | "delete";
     slug: string;
+    id: string;
     title: string;
   }) {
     setConfirmTypedTitle("");
@@ -313,7 +316,7 @@ export function ContentManager({
   // Confirmation action handler (publish / unpublish / delete)
   function handleConfirmAction() {
     if (!confirmAction) return;
-    const { kind, slug, action } = confirmAction;
+    const { kind, slug, id, action } = confirmAction;
 
     startTransition(async () => {
       if (action === "delete") {
@@ -336,9 +339,10 @@ export function ContentManager({
             showToast(res.error || "Failed to delete note");
           }
         } else if (kind === "now") {
-          const res = await deleteNowEntryAction(slug);
+          // Now entries are keyed by id, not slug.
+          const res = await deleteNowEntryAction(id);
           if (res.success) {
-            setNowEntries((prev) => prev.filter((e) => e.id !== slug));
+            setNowEntries((prev) => prev.filter((e) => e.id !== id));
             setConfirmAction(null);
             showToast("Now entry removed from the timeline");
           } else {
@@ -390,6 +394,31 @@ export function ContentManager({
             showToast(
               `Book is now ${
                 res.book.isPublished ? "Published" : "Draft"
+              }.`,
+            );
+          } else {
+            showToast(res.error || "Failed to toggle status");
+          }
+        } else if (kind === "now") {
+          // Now entries have no dedicated status toggle; the save action
+          // upserts by id, so re-saving with a flipped status is the toggle.
+          const entry = nowEntries.find((e) => e.id === id);
+          if (!entry) {
+            setConfirmAction(null);
+            showToast("Now entry not found");
+            return;
+          }
+          const nextStatus =
+            action === "publish" ? "published" : "unpublished";
+          const res = await saveNowEntryAction({ ...entry, status: nextStatus });
+          if (res.success) {
+            setNowEntries((prev) =>
+              prev.map((e) => (e.id === id ? { ...e, status: nextStatus } : e)),
+            );
+            setConfirmAction(null);
+            showToast(
+              `Now entry is now ${
+                nextStatus === "published" ? "Published" : "Draft"
               }.`,
             );
           } else {
@@ -730,6 +759,7 @@ export function ContentManager({
                                     kind: item.kind,
                                     action: isPublished ? "unpublish" : "publish",
                                     slug: item.slug,
+                                    id: item.id,
                                     title: item.title,
                                   });
                                 }}
@@ -761,6 +791,7 @@ export function ContentManager({
                                   kind: item.kind,
                                   action: "delete",
                                   slug: item.slug,
+                                  id: item.id,
                                   title: item.title,
                                 });
                               }}
@@ -1131,6 +1162,7 @@ export function ContentManager({
                                         kind: item.kind,
                                         action: isPublished ? "unpublish" : "publish",
                                         slug: item.slug,
+                                        id: item.id,
                                         title: item.title,
                                       });
                                     }}
@@ -1163,6 +1195,7 @@ export function ContentManager({
                                       kind: item.kind,
                                       action: "delete",
                                       slug: item.slug,
+                                      id: item.id,
                                       title: item.title,
                                     });
                                   }}

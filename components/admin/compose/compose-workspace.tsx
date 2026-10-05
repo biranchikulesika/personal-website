@@ -129,7 +129,7 @@ export function ComposeWorkspace({
         title: e.title,
         subtitle: "",
         description: "",
-        status: "published",
+        status: e.status || "published",
         tags: [],
         content: e.content,
         isDirty: false,
@@ -444,11 +444,11 @@ export function ComposeWorkspace({
         } else {
           showToast(res.error || "Failed to save essay");
         }
-      } else if (activeTab.docType === "now") {
-        // Append-only timeline: always create a new row so previous entries are preserved.
-        // The repository derives the slug from the title and ensures it stays unique.
+} else if (activeTab.docType === "now") {
+        // A published entry is final, so each one is a new row. A draft reuses
+        // its row (the repository upserts by id) and stays in the editor.
         const nowPayload: NowEntry = {
-          id: `now-${crypto.randomUUID()}`,
+          id: activeTab.rawNow?.id || `now-${crypto.randomUUID()}`,
           title: effectiveNowTitle,
           content: activeTab.content.trim(),
           location: activeTab.location?.trim() || undefined,
@@ -458,12 +458,19 @@ export function ComposeWorkspace({
         const res = await saveNowEntryAction(nowPayload);
         if (res.success && res.entry) {
           updateActiveTab({
-            rawNow: undefined,
+            rawNow: statusToSet === "unpublished" ? res.entry : undefined,
+            slug: res.entry.slug,
+            status: statusToSet,
             isDirty: false,
-            content: "",
+            content:
+              statusToSet === "unpublished" ? activeTab.content : "",
           });
           setIsPublishDrawerOpen(false);
-          showToast(`Now entry added to the timeline.`);
+          showToast(
+            statusToSet === "unpublished"
+              ? "Now entry saved as draft."
+              : "Now entry added to the timeline.",
+          );
         } else {
           showToast(res.error || "Failed to save now entry");
         }
