@@ -6,6 +6,7 @@ import { rootMetadata, websiteJsonLd, safeJsonLd } from '@/lib/seo';
 import GoogleAnalytics from '@/components/google-analytics';
 import GoogleTagManager from '@/components/google-tag-manager';
 import { SvgElementGuard } from '@/components/svg-element-guard';
+import { getSupabaseUrl } from '@/lib/config/env';
 
 export const metadata: Metadata = rootMetadata;
 
@@ -32,16 +33,16 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const supabaseUrl = getSupabaseUrl();
   return (
     <html
       lang="en"
       className={`${spaceGrotesk.variable} ${newsreader.variable}`}
     >
       <head>
-        <link
-          rel="dns-prefetch"
-          href="https://ojzxdgzkrjmfeqyxvfud.supabase.co"
-        />
+        {supabaseUrl && (
+          <link rel="dns-prefetch" href={supabaseUrl} />
+        )}
       </head>
       <body className="min-h-screen bg-night text-paper antialiased">
         <GoogleTagManager />

@@ -1,13 +1,12 @@
 "use client";
 
 import {
-  addMediaAction,
-  deleteNoteAction,
   deletePostAction,
   saveNoteAction,
   saveNowEntryAction,
   savePostAction,
 } from "@/app/admin/actions";
+import { uploadMediaFile } from "@/lib/storage/upload-client";
 import type {
   BlogPost,
   BookItem,
@@ -129,7 +128,7 @@ export function ComposeWorkspace({
         title: e.title,
         subtitle: "",
         description: "",
-        status: "published",
+        status: e.status || "published",
         tags: [],
         content: e.content,
         isDirty: false,
@@ -363,6 +362,10 @@ export function ComposeWorkspace({
   async function handleSaveDocument(
     statusToSet: "published" | "unpublished" = "published",
   ) {
+    // Guard keyboard (Ctrl/Cmd+S) and double-click paths: overlapping saves can
+    // interleave the old-slug delete with the new save.
+    if (isPending) return;
+
     const isNowDoc = activeTab.docType === "now";
     const effectiveNowTitle =
       activeTab.title.trim() || "Timeline Update";
@@ -389,10 +392,9 @@ export function ComposeWorkspace({
           return;
         }
 
-        // If existing post had a different slug, delete old slug
-        if (activeTab.rawPost?.slug && activeTab.rawPost.slug !== cleanSlug) {
-          await deletePostAction(activeTab.rawPost.slug);
-        }
+        // Delete the old slug only after the new row is safely written: a failed
+        // save must never take the published row with it.
+        const previousSlug = activeTab.rawPost?.slug;
 
         const { intro, sections } = markdownToPostSections(activeTab.content);
         const postPayload: BlogPost = {
@@ -433,6 +435,14 @@ export function ComposeWorkspace({
 
         const res = await savePostAction(postPayload, activeTab.persona);
         if (res.success && res.post) {
+          if (previousSlug && previousSlug !== cleanSlug) {
+            const removed = await deletePostAction(previousSlug);
+            if (!removed.success) {
+              showToast(
+                `Saved, but the old "/p/${previousSlug}" entry could not be removed.`,
+              );
+            }
+          }
           updateActiveTab({
             slug: cleanSlug,
             status: statusToSet,
@@ -441,14 +451,15 @@ export function ComposeWorkspace({
           });
           setIsPublishDrawerOpen(false);
           showToast(`Essay "${activeTab.title}" saved successfully!`);
+          router.refresh();
         } else {
           showToast(res.error || "Failed to save essay");
         }
-      } else if (activeTab.docType === "now") {
-        // Append-only timeline: always create a new row so previous entries are preserved.
-        // The repository derives the slug from the title and ensures it stays unique.
+} else if (activeTab.docType === "now") {
+        // A published entry is final, so each one is a new row. A draft reuses
+        // its row (the repository upserts by id) and stays in the editor.
         const nowPayload: NowEntry = {
-          id: `now-${crypto.randomUUID()}`,
+          id: activeTab.rawNow?.id || `now-${crypto.randomUUID()}`,
           title: effectiveNowTitle,
           content: activeTab.content.trim(),
           location: activeTab.location?.trim() || undefined,
@@ -458,12 +469,19 @@ export function ComposeWorkspace({
         const res = await saveNowEntryAction(nowPayload);
         if (res.success && res.entry) {
           updateActiveTab({
-            rawNow: undefined,
+            rawNow: statusToSet === "unpublished" ? res.entry : undefined,
+            slug: res.entry.slug,
+            status: statusToSet,
             isDirty: false,
-            content: "",
+            content:
+              statusToSet === "unpublished" ? activeTab.content : "",
           });
           setIsPublishDrawerOpen(false);
-          showToast(`Now entry added to the timeline.`);
+          showToast(
+            statusToSet === "unpublished"
+              ? "Now entry saved as draft."
+              : "Now entry added to the timeline.",
+          );
         } else {
           showToast(res.error || "Failed to save now entry");
         }
@@ -481,11 +499,8 @@ export function ComposeWorkspace({
           return;
         }
 
-        // If existing note had a different slug, delete old slug
-        if (activeTab.rawNote?.slug && activeTab.rawNote.slug !== cleanSlug) {
-          await deleteNoteAction(activeTab.rawNote.slug);
-        }
-
+        // Notes are upserted by id, so a slug rename updates the existing row;
+        // no delete of the old slug is needed (and a failed save must not remove it).
         const paragraphs = activeTab.content
           .split("\n\n")
           .map((p) => p.trim())
@@ -520,6 +535,7 @@ export function ComposeWorkspace({
           });
           setIsPublishDrawerOpen(false);
           showToast(`Note "${activeTab.title}" saved successfully!`);
+          router.refresh();
         } else {
           showToast(res.error || "Failed to save note");
         }
@@ -862,37 +878,19 @@ export function ComposeWorkspace({
           ref={fileInputRef}
           accept="image/*"
           className="hidden"
-          onChange={(e) => {
+          onChange={async (e) => {
             const file = e.target.files?.[0];
-            if (file) {
-              const reader = new FileReader();
-              reader.onload = async () => {
-                const dataUrl = reader.result as string;
-                try {
-                  const mediaItem: MediaItem = {
-                    id: `media-${Date.now()}`,
-                    name: file.name,
-                    src: dataUrl,
-                    alt: file.name.replace(/\.[^.]+$/, ""),
-                    size: `${Math.max(1, Math.round(file.size / 1024))} KB`,
-                    uploadedAt: new Date().toISOString(),
-                    tags: [activeTab.docType],
-                  };
-                  const res = await addMediaAction(mediaItem);
-                  const imgUrl =
-                    res.success && res.media ? res.media.src : dataUrl;
-                  insertBlock(
-                    `![${file.name}](${imgUrl} "${file.name}")`,
-                  );
-                } catch {
-                  insertBlock(
-                    `![${file.name}](${dataUrl} "${file.name}")`,
-                  );
-                }
-              };
-              reader.readAsDataURL(file);
-            }
             if (fileInputRef.current) fileInputRef.current.value = "";
+            if (!file) return;
+            try {
+              const media = await uploadMediaFile(file, {
+                alt: file.name.replace(/\.[^.]+$/, ""),
+                tags: [activeTab.docType],
+              });
+              insertBlock(`![${media.name}](${media.src} "${media.name}")`);
+            } catch (err: unknown) {
+              showToast((err as Error).message || "Image upload failed");
+            }
           }}
         />
 

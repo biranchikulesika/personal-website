@@ -95,10 +95,11 @@ const QUERIES = [
 // ── Helpers ────────────────────────────────────────────────────────────────
 
 function getDayOfYear(): number {
+  // UTC on purpose: getTodayString() (the cache key) is also UTC, so the day
+  // index and the cache day must not come from two different clocks.
   const now = new Date();
-  const start = new Date(now.getFullYear(), 0, 0);
-  const diff = now.getTime() - start.getTime();
-  return Math.floor(diff / (1000 * 60 * 60 * 24));
+  const start = Date.UTC(now.getUTCFullYear(), 0, 0);
+  return Math.floor((now.getTime() - start) / (1000 * 60 * 60 * 24));
 }
 
 function getTodayString(): string {
@@ -130,6 +131,8 @@ async function fetchFromPexels(query: string): Promise<DailyBackground> {
   const res = await fetch(`${PEXELS_BASE}?${params}`, {
     headers: { Authorization: apiKey },
     next: { revalidate: 86400 }, // cache for 24 hours
+    // A hung upstream must not hang /api/login-background.
+    signal: AbortSignal.timeout(5000),
   });
 
   if (!res.ok) {

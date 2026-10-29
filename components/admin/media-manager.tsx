@@ -10,6 +10,7 @@ import {
   deleteMediaAction,
   deleteOrphanedMediaAction,
 } from '@/app/admin/actions';
+import { uploadMediaFile } from '@/lib/storage/upload-client';
 import {
   TrashIcon,
   LinkIcon,
@@ -63,6 +64,7 @@ export function MediaManager({
   const [tagsInput, setTagsInput] = useState('');
   const [fileSize, setFileSize] = useState('250 KB');
   const [dimensions, setDimensions] = useState('1200 × 800');
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
 
   const allTags = useMemo(() => {
     const set = new Set<string>();
@@ -182,6 +184,7 @@ export function MediaManager({
       // 2. Completely rename the file using standard resource convention (res-YYYYMMDD-[hash].[ext])
       const cleanResourceName = generateResourceName(file);
 
+      setPendingFile(file);
       setFileSrc(cleanDataUrl);
       setFileName(cleanResourceName);
       // 3. Keep alt text empty by default; user may add it if desired
@@ -214,29 +217,47 @@ export function MediaManager({
       .map((t) => t.trim().toLowerCase())
       .filter((t) => t && t !== 'atmosphere' && t !== 'profile');
 
-    const newMedia: MediaItem = {
-      id: `media-${Date.now()}`,
-      name: fileName.trim(),
-      src: fileSrc,
-      alt: altText.trim(),
-      size: fileSize,
-      dimensions,
-      uploadedAt: new Date().toISOString(),
-      tags: parsedTags,
-    };
-
     startTransition(async () => {
-      const res = await addMediaAction(newMedia);
-      if (res.success && res.media) {
-        setMediaList((prev) => [res.media!, ...prev]);
-        setIsUploading(false);
-        setFileName('');
-        setFileSrc('');
-        setAltText('');
-        setTagsInput('');
-        showToast(`Resource "${fileName}" added to library!`);
-      } else {
-        showToast(res.error || 'Failed to add media');
+      try {
+        // New asset: bytes go to the upload route, which stores the file and
+        // registers the row in one request. The preview data URL never leaves
+        // the browser (it would blow the 1 MB server action body limit).
+        const media = pendingFile
+          ? await uploadMediaFile(pendingFile, {
+              name: fileName.trim(),
+              alt: altText.trim(),
+              tags: parsedTags,
+              dimensions,
+            })
+          : null;
+
+        const res = media
+          ? { success: true as const, media }
+          : await addMediaAction({
+              id: `media-${Date.now()}`,
+              name: fileName.trim(),
+              src: fileSrc,
+              alt: altText.trim(),
+              size: fileSize,
+              dimensions,
+              uploadedAt: new Date().toISOString(),
+              tags: parsedTags,
+            });
+
+        if (res.success && res.media) {
+          setMediaList((prev) => [res.media!, ...prev]);
+          setIsUploading(false);
+          setFileName('');
+          setFileSrc('');
+          setAltText('');
+          setTagsInput('');
+          setPendingFile(null);
+          showToast(`Resource "${fileName}" added to library!`);
+        } else {
+          showToast(res.error || 'Failed to add media');
+        }
+      } catch (err: unknown) {
+        showToast((err as Error).message || 'Failed to add media');
       }
     });
   }
@@ -1306,6 +1327,7 @@ export function MediaManager({
                 onClick={() => {
                   setIsUploading(false);
                   setFileSrc('');
+                  setPendingFile(null);
                 }}
                 className="rounded-full p-2 text-gray-mid hover:bg-night-soft hover:text-paper"
               >
@@ -1398,6 +1420,7 @@ export function MediaManager({
                   onClick={() => {
                     setIsUploading(false);
                     setFileSrc('');
+                    setPendingFile(null);
                   }}
                   className="rounded-full px-5 py-2 text-xs font-semibold text-gray-mid hover:text-paper"
                 >

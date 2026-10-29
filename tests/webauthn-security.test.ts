@@ -64,6 +64,41 @@ test('signChallengePayload and verifyChallengeToken handle valid challenge paylo
   assert.equal(verified?.action, payload.action);
 });
 
+test('challenge signing fails closed in production when no secret is configured', () => {
+  const env = process.env as unknown as Record<string, string | undefined>;
+  const keys = [
+    'NODE_ENV',
+    'SUPABASE_JWT_SECRET',
+    'SUPABASE_SERVICE_ROLE_KEY',
+    'SUPABASE_SECRET_KEY',
+    'ADMIN_PASSWORD_HASH',
+  ] as const;
+  const savedEnv = Object.fromEntries(keys.map((key) => [key, env[key]]));
+
+  try {
+    for (const key of keys) {
+      if (key !== 'NODE_ENV') delete env[key];
+    }
+    env.NODE_ENV = 'production';
+
+    assert.throws(
+      () =>
+        signChallengePayload({
+          challenge: 'c',
+          action: 'authentication',
+          expiresAt: Date.now() + 60000,
+        }),
+      /not configured/,
+      'a published fallback secret would let anyone forge the challenge cookie',
+    );
+  } finally {
+    for (const key of keys) {
+      if (savedEnv[key] === undefined) delete env[key];
+      else env[key] = savedEnv[key];
+    }
+  }
+});
+
 test('verifyChallengeToken rejects expired challenge tokens', () => {
   const payload = {
     challenge: 'expired_challenge_123',

@@ -61,12 +61,20 @@ export function getWebAuthnRpName(): string {
 }
 
 function getChallengeSigningSecret(): string {
-  return (
+  const secret =
     getSupabaseJwtSecret() ||
     getSupabaseSecretKey() ||
-    process.env.ADMIN_PASSWORD_HASH ||
-    'webauthn-server-challenge-secret-key-32b'
-  );
+    process.env.ADMIN_PASSWORD_HASH;
+
+  if (secret) return secret;
+
+  // A published fallback secret would let anyone forge the challenge cookie,
+  // so production fails closed instead of falling back to a known constant.
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('Passkey challenge signing secret is not configured');
+  }
+
+  return 'webauthn-server-challenge-secret-key-32b';
 }
 
 export function signChallengePayload(payload: PasskeyChallengePayload): string {
