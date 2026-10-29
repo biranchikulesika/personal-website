@@ -73,7 +73,7 @@ export async function POST(request: Request) {
 
     const media = await contentService.addMedia(
       MediaItemSchema.parse({
-        id: `media-${Date.now()}`,
+        id: `media-${crypto.randomUUID()}`,
         name: name || file.name || fileName,
         src: url,
         alt: textField(form, "alt").trim(),

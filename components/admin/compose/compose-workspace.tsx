@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  deleteNoteAction,
   deletePostAction,
   saveNoteAction,
   saveNowEntryAction,
@@ -363,6 +362,10 @@ export function ComposeWorkspace({
   async function handleSaveDocument(
     statusToSet: "published" | "unpublished" = "published",
   ) {
+    // Guard keyboard (Ctrl/Cmd+S) and double-click paths: overlapping saves can
+    // interleave the old-slug delete with the new save.
+    if (isPending) return;
+
     const isNowDoc = activeTab.docType === "now";
     const effectiveNowTitle =
       activeTab.title.trim() || "Timeline Update";
@@ -389,10 +392,9 @@ export function ComposeWorkspace({
           return;
         }
 
-        // If existing post had a different slug, delete old slug
-        if (activeTab.rawPost?.slug && activeTab.rawPost.slug !== cleanSlug) {
-          await deletePostAction(activeTab.rawPost.slug);
-        }
+        // Delete the old slug only after the new row is safely written: a failed
+        // save must never take the published row with it.
+        const previousSlug = activeTab.rawPost?.slug;
 
         const { intro, sections } = markdownToPostSections(activeTab.content);
         const postPayload: BlogPost = {
@@ -433,6 +435,14 @@ export function ComposeWorkspace({
 
         const res = await savePostAction(postPayload, activeTab.persona);
         if (res.success && res.post) {
+          if (previousSlug && previousSlug !== cleanSlug) {
+            const removed = await deletePostAction(previousSlug);
+            if (!removed.success) {
+              showToast(
+                `Saved, but the old "/p/${previousSlug}" entry could not be removed.`,
+              );
+            }
+          }
           updateActiveTab({
             slug: cleanSlug,
             status: statusToSet,
@@ -441,6 +451,7 @@ export function ComposeWorkspace({
           });
           setIsPublishDrawerOpen(false);
           showToast(`Essay "${activeTab.title}" saved successfully!`);
+          router.refresh();
         } else {
           showToast(res.error || "Failed to save essay");
         }
@@ -488,11 +499,8 @@ export function ComposeWorkspace({
           return;
         }
 
-        // If existing note had a different slug, delete old slug
-        if (activeTab.rawNote?.slug && activeTab.rawNote.slug !== cleanSlug) {
-          await deleteNoteAction(activeTab.rawNote.slug);
-        }
-
+        // Notes are upserted by id, so a slug rename updates the existing row;
+        // no delete of the old slug is needed (and a failed save must not remove it).
         const paragraphs = activeTab.content
           .split("\n\n")
           .map((p) => p.trim())
@@ -527,6 +535,7 @@ export function ComposeWorkspace({
           });
           setIsPublishDrawerOpen(false);
           showToast(`Note "${activeTab.title}" saved successfully!`);
+          router.refresh();
         } else {
           showToast(res.error || "Failed to save note");
         }

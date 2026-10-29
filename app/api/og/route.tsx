@@ -20,7 +20,17 @@ interface CachedOGResponse {
 const OG_RESPONSE_CACHE = new Map<string, CachedOGResponse>();
 const COVER_IMAGE_CACHE = new Map<string, string>();
 const MAX_OG_CACHE_ENTRIES = 60;
+const MAX_COVER_CACHE_ENTRIES = 20;
 const OG_CACHE_TTL_MS = 1000 * 60 * 60 * 24; // 24 hours
+
+// Covers are arbitrary crawl-supplied URLs; without a cap this map grows forever.
+function cacheCover(key: string, value: string): void {
+  if (COVER_IMAGE_CACHE.size >= MAX_COVER_CACHE_ENTRIES) {
+    const oldest = COVER_IMAGE_CACHE.keys().next().value;
+    if (oldest) COVER_IMAGE_CACHE.delete(oldest);
+  }
+  COVER_IMAGE_CACHE.set(key, value);
+}
 
 export const OG_HEADERS = {
   "Content-Type": "image/png",
@@ -2243,7 +2253,7 @@ async function resolveCoverImage(
         const buffer = await fs.promises.readFile(localFilePath);
         if (buffer.byteLength <= 5 * 1024 * 1024) {
           const b64 = `data:${mime};base64,${buffer.toString("base64")}`;
-          COVER_IMAGE_CACHE.set(trimmed, b64);
+          cacheCover(trimmed, b64);
           return b64;
         }
       }
@@ -2291,7 +2301,7 @@ async function resolveCoverImage(
         return null;
       }
       const b64 = `data:${contentType};base64,${Buffer.from(buf).toString("base64")}`;
-      COVER_IMAGE_CACHE.set(trimmed, b64);
+      cacheCover(trimmed, b64);
       return b64;
     }
   } catch {

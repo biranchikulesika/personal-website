@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 interface UseToastReturn {
   /** The current toast message, or null if no toast is visible. */
@@ -26,6 +26,14 @@ interface UseToastReturn {
 export function useToast(durationMs = 3500): UseToastReturn {
   const [message, setMessage] = useState<string | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // A toast timer must not keep firing after the component unmounts.
+  useEffect(
+    () => () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    },
+    [],
+  );
 
   const showToast = useCallback(
     (msg: string) => {

@@ -283,9 +283,8 @@ export function ContentManager({
     };
 
     startTransition(async () => {
-      if (editingBook && editingBook.slug !== cleanSlug) {
-        await deleteBookAction(editingBook.slug);
-      }
+      // Books are upserted by id, so a slug rename updates the existing row;
+      // no delete of the old slug is needed (and a failed save must not remove it).
       const res = await saveBookAction(bookPayload);
       if (res.success && res.book) {
         setBooks((prev) => {

@@ -469,7 +469,9 @@ export class SupabaseContentRepository implements ContentRepository {
 
     const { error } = await this.db
       .from("notes")
-      .upsert(row, { onConflict: "slug" });
+      // Keyed by id: a slug rename updates this row instead of inserting a
+      // second row with the same primary key.
+      .upsert(row, { onConflict: "id" });
 
     if (error) throw new Error(`Failed to save note: ${error.message}`);
     return { ...note, status };

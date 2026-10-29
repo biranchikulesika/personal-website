@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { NotePageView } from '@/components/note-page';
 import { ContentService } from '@/lib/services/content.service';
 import { noteMetadata, noteJsonLd, breadcrumbJsonLd, safeJsonLd } from '@/lib/seo';
+import { getSupabaseUrl } from '@/lib/config/env';
 
 export const dynamicParams = true;
 
@@ -37,6 +38,7 @@ export default async function NotePage({
   const note = await new ContentService().getNote(slug);
   if (!note || note.status === 'unpublished') notFound();
 
+  const supabaseUrl = getSupabaseUrl();
   const breadcrumbs = breadcrumbJsonLd([
     { name: 'Home', url: '/' },
     { name: 'Scribble', url: '/scribble' },
@@ -49,16 +51,10 @@ export default async function NotePage({
 
   return (
     <>
-      {hasSupabaseMedia && (
+      {hasSupabaseMedia && supabaseUrl && (
         <>
-          <link
-            rel="preconnect"
-            href="https://ojzxdgzkrjmfeqyxvfud.supabase.co"
-          />
-          <link
-            rel="dns-prefetch"
-            href="https://ojzxdgzkrjmfeqyxvfud.supabase.co"
-          />
+          <link rel="preconnect" href={supabaseUrl} />
+          <link rel="dns-prefetch" href={supabaseUrl} />
         </>
       )}
       <script

@@ -16,8 +16,16 @@ test("resolveUploadTarget derives a safe object key from client input", () => {
   });
 
   assert.equal(contentType, "image/jpeg");
-  assert.equal(fileName, "My_Holiday_Photo__2_.jpg");
+  assert.match(fileName, /^My_Holiday_Photo__2_-\d{8}-[0-9a-f]{8}\.jpg$/);
   assert.match(fileName, /^[A-Za-z0-9_-]+\.jpg$/);
+});
+
+test("resolveUploadTarget gives two uploads of the same name distinct keys", () => {
+  const input = { name: "cover.png", contentType: "image/png", size: 1024 };
+  const first = resolveUploadTarget(input);
+  const second = resolveUploadTarget(input);
+
+  assert.notEqual(first.fileName, second.fileName);
 });
 
 test("resolveUploadTarget falls back to a dated name when none is given", () => {
@@ -26,7 +34,7 @@ test("resolveUploadTarget falls back to a dated name when none is given", () => 
     size: 1024,
   });
 
-  assert.match(fileName, /^res-\d{8}-[a-z0-9]+\.png$/);
+  assert.match(fileName, /^res-\d{8}-[0-9a-f]{8}\.png$/);
 });
 
 test("resolveUploadTarget strips MIME parameters before matching", () => {
@@ -37,7 +45,7 @@ test("resolveUploadTarget strips MIME parameters before matching", () => {
   });
 
   assert.equal(contentType, "image/webp");
-  assert.equal(fileName, "shot.webp");
+  assert.match(fileName, /^shot-\d{8}-[0-9a-f]{8}\.webp$/);
 });
 
 test("resolveUploadTarget rejects non-images, empty files, and oversized files", () => {

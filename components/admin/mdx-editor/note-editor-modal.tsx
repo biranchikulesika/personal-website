@@ -2,7 +2,6 @@
 
 import { useState, useTransition } from 'react';
 import {
-  deleteNoteAction,
   saveNoteAction,
 } from '@/app/admin/actions';
 import type {
@@ -145,11 +144,9 @@ export function NoteEditorModal({
     const oldSlug = editingNote?.slug;
 
     startTransition(async () => {
-      if (editingNote && editingNote.slug !== cleanSlug) {
-        await deleteNoteAction(editingNote.slug);
-      }
       const res = await saveNoteAction(notePayload);
       if (res.success && res.note) {
+        // Notes are upserted by id, so a rename updated this row in place.
         onSaved(notePayload, oldSlug);
         showToast(`Note "${title}" saved successfully!`);
       } else {

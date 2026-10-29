@@ -53,7 +53,12 @@ export function resolveUploadTarget(input: {
 
   const now = new Date();
   const date = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}${String(now.getDate()).padStart(2, "0")}`;
-  const fallback = `${date}-${Math.random().toString(36).slice(2, 10)}`;
+  // Every upload gets its own key: two files both named "cover.png" must never
+  // share (and silently overwrite) one storage object.
+  const unique = crypto.randomUUID().slice(0, 8);
 
-  return { fileName: `${stem || `res-${fallback}`}.${ext}`, contentType };
+  return {
+    fileName: `${stem ? `${stem}-` : "res-"}${date}-${unique}.${ext}`,
+    contentType,
+  };
 }

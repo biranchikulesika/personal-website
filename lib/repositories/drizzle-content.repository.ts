@@ -39,6 +39,7 @@ import type {
   WritingItem,
 } from "@/lib/types";
 import type { ContentRepository } from "./content.repository";
+import { SupabaseContentRepository } from "./supabase-content.repository";
 import { getMediaStorage } from "@/lib/storage";
 import { nowSlug } from "@/lib/utils";
 
@@ -395,7 +396,9 @@ export class DrizzleContentRepository implements ContentRepository {
       .insert(notes)
       .values(values)
       .onConflictDoUpdate({
-        target: notes.slug,
+        // Keyed by id, not slug: a slug rename must update the existing row
+        // instead of inserting a second one (which the primary key forbids).
+        target: notes.id,
         set: values,
       });
 
@@ -927,70 +930,57 @@ export class DrizzleContentRepository implements ContentRepository {
     }));
   }
 
-  // ── Passkeys & Auth ───────────────────────────────────────────────────────
+  // ── Passkeys, Sessions & Connected Accounts ───────────────────────────────
+  // Supabase Auth owns this state (it lives in auth.users metadata, not in a
+  // Postgres table this repository can query), so delegate rather than stub.
 
-  async getPasskeys(_userId: string): Promise<PasskeyItem[]> {
-    return [];
+  private identity = new SupabaseContentRepository();
+
+  getPasskeys(userId: string): Promise<PasskeyItem[]> {
+    return this.identity.getPasskeys(userId);
   }
 
-  async savePasskey(_userId: string, passkey: PasskeyItem): Promise<PasskeyItem> {
-    return passkey;
+  savePasskey(userId: string, passkey: PasskeyItem): Promise<PasskeyItem> {
+    return this.identity.savePasskey(userId, passkey);
   }
 
-  async deletePasskey(_userId: string, _passkeyId: string): Promise<boolean> {
-    return true;
+  deletePasskey(userId: string, passkeyId: string): Promise<boolean> {
+    return this.identity.deletePasskey(userId, passkeyId);
   }
 
-  async findPasskeyCredential(_credentialId: string): Promise<PasskeyCredentialRecord | null> {
-    return null;
+  findPasskeyCredential(
+    credentialId: string,
+  ): Promise<PasskeyCredentialRecord | null> {
+    return this.identity.findPasskeyCredential(credentialId);
   }
 
-  async getAllAdminPasskeys(): Promise<PasskeyItem[]> {
-    return [];
+  getAllAdminPasskeys(): Promise<PasskeyItem[]> {
+    return this.identity.getAllAdminPasskeys();
   }
 
-  // ── Active Sessions ───────────────────────────────────────────────────────
-
-  async getSessions(
-    userId: string,
-    currentSessionId?: string,
-  ): Promise<UserSession[]> {
-    return [
-      {
-        id: currentSessionId || "session-primary",
-        userId,
-        device: "Current Device",
-        location: "Active Connection",
-        startedAt: new Date().toLocaleDateString("en-US", {
-          month: "short",
-          day: "numeric",
-          year: "numeric",
-        }),
-        lastActiveAt: new Date().toISOString(),
-        isCurrent: true,
-      },
-    ];
+  getSessions(userId: string, currentSessionId?: string): Promise<UserSession[]> {
+    return this.identity.getSessions(userId, currentSessionId);
   }
 
-  async recordSession(session: UserSession): Promise<UserSession> {
-    return session;
+  recordSession(session: UserSession): Promise<UserSession> {
+    return this.identity.recordSession(session);
   }
 
-  async deleteSession(_userId: string, _sessionId: string): Promise<boolean> {
-    return true;
+  deleteSession(userId: string, sessionId: string): Promise<boolean> {
+    return this.identity.deleteSession(userId, sessionId);
   }
 
-  async deleteAllSessions(_userId: string): Promise<boolean> {
-    return true;
+  deleteAllSessions(userId: string): Promise<boolean> {
+    return this.identity.deleteAllSessions(userId);
   }
 
-  // ── Connected Accounts ────────────────────────────────────────────────────
-
-  async getConnectedProviders(_userId: string): Promise<string[]> {
-    return ["google"];
+  getConnectedProviders(userId: string): Promise<string[]> {
+    return this.identity.getConnectedProviders(userId);
   }
 
-  async setConnectedProviders(_userId: string, _providers: string[]): Promise<void> {}
+  setConnectedProviders(userId: string, providers: string[]): Promise<void> {
+    return this.identity.setConnectedProviders(userId, providers);
+  }
 
   // ── Newsletter Subscribers ────────────────────────────────────────────────
 
