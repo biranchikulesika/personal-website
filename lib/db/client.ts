@@ -16,27 +16,17 @@ export function getDbClient() {
     );
   }
 
-  // Reuse existing connection pool across hot reloads in development
-  let client: postgres.Sql;
-
-  if (process.env.NODE_ENV === "production") {
-    client = postgres(connectionString, {
-      max: 10,
+  // One pool per process. The repository creates the client on every query, so
+  // a fresh pool per call would exhaust Postgres connections in production.
+  if (!globalThis.__drizzleSqlInstance) {
+    globalThis.__drizzleSqlInstance = postgres(connectionString, {
+      max: process.env.NODE_ENV === "production" ? 10 : 5,
       idle_timeout: 20,
       connect_timeout: 10,
     });
-  } else {
-    if (!globalThis.__drizzleSqlInstance) {
-      globalThis.__drizzleSqlInstance = postgres(connectionString, {
-        max: 5,
-        idle_timeout: 20,
-        connect_timeout: 10,
-      });
-    }
-    client = globalThis.__drizzleSqlInstance;
   }
 
-  return drizzle(client, { schema });
+  return drizzle(globalThis.__drizzleSqlInstance, { schema });
 }
 
 export type DbClient = ReturnType<typeof getDbClient>;

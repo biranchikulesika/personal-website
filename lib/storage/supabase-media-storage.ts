@@ -16,7 +16,9 @@ export class SupabaseMediaStorage implements MediaStorage {
       .from(this.bucketName)
       .upload(storagePath, params.buffer, {
         contentType: params.contentType,
-        upsert: true,
+        // Never overwrite: two uploads named "cover.png" must not silently
+        // replace one another's bytes.
+        upsert: false,
       });
 
     if (uploadError) {

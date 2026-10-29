@@ -45,7 +45,9 @@ export default async function ComposePage({ searchParams }: ComposePageProps) {
     if (type === 'note') {
       note = await contentService.getNote(slug);
     } else if (type === 'now') {
-      now = allNow.find((e) => e.id === slug) || null;
+      // Content manager links by slug, but Now entries are also addressable by
+      // id -- match either so reopening an entry loads its body.
+      now = allNow.find((e) => e.id === slug || e.slug === slug) || null;
     } else {
       post = await contentService.getPost(slug);
     }

@@ -24,7 +24,9 @@ export default async function Home() {
     (p): p is NonNullable<typeof p> => p !== null && p.status !== 'unpublished',
   );
   const featuredBookSet = new Set(featuredBookSlugs);
-  const featuredBooks = allBooks.filter((b) => featuredBookSet.has(b.slug));
+  const featuredBooks = allBooks.filter(
+    (b) => b.isPublished !== false && featuredBookSet.has(b.slug),
+  );
 
   return (
     <HomeContent

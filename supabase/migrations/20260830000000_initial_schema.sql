@@ -946,3 +946,10 @@ CREATE POLICY "Admin access contributions" ON "public"."contributions" FOR ALL T
     USING ("public"."is_admin"()) WITH CHECK ("public"."is_admin"());
 
 GRANT ALL ON TABLE "public"."contributions" TO "service_role";
+-- ── Storage bucket ────────────────────────────────────────────────────────────
+-- MediaStorage (lib/storage/supabase-media-storage.ts) hardcodes this bucket name.
+-- Created here so a freshly provisioned database can accept uploads.
+
+INSERT INTO storage.buckets (id, name, public)
+    VALUES ('media', 'media', true)
+    ON CONFLICT (id) DO NOTHING;

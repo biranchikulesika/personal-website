@@ -159,11 +159,15 @@ export function PostEditorModal({
     const oldSlug = editingPost?.slug;
 
     startTransition(async () => {
-      if (editingPost && editingPost.slug !== cleanSlug) {
-        await deletePostAction(editingPost.slug);
-      }
       const res = await savePostAction(postPayload, persona);
       if (res.success && res.post) {
+        // Remove the previous slug only after the save succeeded.
+        if (oldSlug && oldSlug !== cleanSlug) {
+          const removed = await deletePostAction(oldSlug);
+          if (!removed.success) {
+            showToast(`Saved, but the old "/p/${oldSlug}" entry could not be removed.`);
+          }
+        }
         onSaved(postPayload, oldSlug);
         showToast(`Essay "${title}" saved successfully with MDX!`);
       } else {

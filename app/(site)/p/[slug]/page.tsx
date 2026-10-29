@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { BlogPostView } from '@/components/blog-post';
 import { ContentService } from '@/lib/services/content.service';
 import { postMetadata, articleJsonLd, breadcrumbJsonLd, safeJsonLd } from '@/lib/seo';
+import { getSupabaseUrl } from '@/lib/config/env';
 
 export const dynamicParams = true;
 
@@ -37,6 +38,7 @@ export default async function BlogPostPage({
   const post = await new ContentService().getPost(slug);
   if (!post || post.status === 'unpublished') notFound();
 
+  const supabaseUrl = getSupabaseUrl();
   const breadcrumbs = breadcrumbJsonLd([
     { name: 'Home', url: '/' },
     { name: 'Scribble', url: '/scribble' },
@@ -54,16 +56,10 @@ export default async function BlogPostPage({
 
   return (
     <>
-      {hasSupabaseMedia && (
+      {hasSupabaseMedia && supabaseUrl && (
         <>
-          <link
-            rel="preconnect"
-            href="https://ojzxdgzkrjmfeqyxvfud.supabase.co"
-          />
-          <link
-            rel="dns-prefetch"
-            href="https://ojzxdgzkrjmfeqyxvfud.supabase.co"
-          />
+          <link rel="preconnect" href={supabaseUrl} />
+          <link rel="dns-prefetch" href={supabaseUrl} />
         </>
       )}
       <script
