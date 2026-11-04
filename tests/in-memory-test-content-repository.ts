@@ -118,6 +118,7 @@ export class InMemoryTestContentRepository implements ContentRepository {
         date: p.publishedAt,
         persona: p.persona ?? "builder",
         tags: p.tags,
+        coverImage: p.coverImage,
         status: p.status,
       })),
     };

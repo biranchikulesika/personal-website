@@ -6,11 +6,12 @@ import {
 } from "@/lib/constants";
 import { SITE_CONFIG } from "@/lib/config/site";
 import { ContentService } from "@/lib/services/content.service";
-import { stripMarkdown, textSnippet } from "@/lib/utils";
+import { cleanCoverImageUrl, stripMarkdown, textSnippet } from "@/lib/utils";
 import { ImageResponse } from "next/og";
 import { NextRequest } from "next/server";
 import fs from "node:fs";
 import path from "node:path";
+import sharp from "sharp";
 
 interface CachedOGResponse {
   buffer: ArrayBuffer;
@@ -101,6 +102,8 @@ async function generateOG(request: NextRequest): Promise<ImageResponse> {
     const service = new ContentService();
     const typeParam = searchParams.get("type");
 
+    const coverParam = searchParams.get("cover");
+
     if (typeParam === "note") {
       try {
         const note = await service.getNote(slug);
@@ -108,7 +111,7 @@ async function generateOG(request: NextRequest): Promise<ImageResponse> {
           const personaLabel = note.persona
             ? (PERSONA_LABELS[note.persona] ?? note.persona)
             : "";
-          const coverImageB64 = await resolveCoverImage(note.coverImage);
+          const coverImageB64 = await resolveCoverImage(note.coverImage || coverParam || undefined);
           return generatePostOG({
             title: note.title,
             description: note.subtitle || note.description || "",
@@ -128,7 +131,7 @@ async function generateOG(request: NextRequest): Promise<ImageResponse> {
       const post = await service.getPost(slug);
       if (post && post.status !== "unpublished") {
         const personaLabel = post.persona ? PERSONA_LABELS[post.persona] : "";
-        const coverImageB64 = await resolveCoverImage(post.coverImage);
+        const coverImageB64 = await resolveCoverImage(post.coverImage || coverParam || undefined);
 
         return generatePostOG({
           title: post.title,
@@ -145,7 +148,7 @@ async function generateOG(request: NextRequest): Promise<ImageResponse> {
         const personaLabel = note.persona
           ? (PERSONA_LABELS[note.persona] ?? note.persona)
           : "";
-        const coverImageB64 = await resolveCoverImage(note.coverImage);
+        const coverImageB64 = await resolveCoverImage(note.coverImage || coverParam || undefined);
         return generatePostOG({
           title: note.title,
           description: note.subtitle || note.description || "",
@@ -2206,6 +2209,11 @@ function generateNowOG({
 // ── Cover image resolution (SSRF-protected + local file fallback) ───────────
 
 function isAllowedCoverHost(hostname: string): boolean {
+  if (process.env.NODE_ENV === "development") {
+    if (hostname === "localhost" || hostname === "127.0.0.1") {
+      return true;
+    }
+  }
   if (
     hostname === "localhost" ||
     hostname === "127.0.0.1" ||
@@ -2226,8 +2234,9 @@ function isAllowedCoverHost(hostname: string): boolean {
 async function resolveCoverImage(
   coverImage: string | undefined,
 ): Promise<string | null> {
-  if (!coverImage || typeof coverImage !== "string") return null;
-  const trimmed = coverImage.trim();
+  const cleaned = cleanCoverImageUrl(coverImage);
+  if (!cleaned) return null;
+  const trimmed = cleaned;
   if (!trimmed || trimmed.startsWith("//") || trimmed.startsWith("/\\"))
     return null;
 
@@ -2250,11 +2259,18 @@ async function resolveCoverImage(
               : ext === ".svg"
                 ? "image/svg+xml"
                 : "image/jpeg";
-        const buffer = await fs.promises.readFile(localFilePath);
+        let buffer = await fs.promises.readFile(localFilePath);
         if (buffer.byteLength <= 5 * 1024 * 1024) {
-          const b64 = `data:${mime};base64,${buffer.toString("base64")}`;
-          cacheCover(trimmed, b64);
-          return b64;
+          try {
+            buffer = await sharp(buffer).toFormat("png").toBuffer();
+            const b64 = `data:image/png;base64,${buffer.toString("base64")}`;
+            cacheCover(trimmed, b64);
+            return b64;
+          } catch {
+            const b64 = `data:${mime};base64,${buffer.toString("base64")}`;
+            cacheCover(trimmed, b64);
+            return b64;
+          }
         }
       }
     } catch {
@@ -2293,16 +2309,34 @@ async function resolveCoverImage(
 
     if (res.ok) {
       const contentType = res.headers.get("content-type") || "";
-      if (!contentType.startsWith("image/")) {
-        return null;
+      let mime = contentType.split(";")[0].trim().toLowerCase();
+      if (!mime.startsWith("image/")) {
+        try {
+          const pathname = new URL(targetUrl).pathname;
+          const ext = path.extname(pathname).toLowerCase();
+          if (ext === ".png") mime = "image/png";
+          else if (ext === ".webp") mime = "image/webp";
+          else if (ext === ".jpg" || ext === ".jpeg") mime = "image/jpeg";
+          else if (ext === ".svg") mime = "image/svg+xml";
+          else return null;
+        } catch {
+          return null;
+        }
       }
       const buf = await res.arrayBuffer();
       if (buf.byteLength > 5 * 1024 * 1024) {
         return null;
       }
-      const b64 = `data:${contentType};base64,${Buffer.from(buf).toString("base64")}`;
-      cacheCover(trimmed, b64);
-      return b64;
+      try {
+        const pngBuf = await sharp(Buffer.from(buf)).toFormat("png").toBuffer();
+        const b64 = `data:image/png;base64,${pngBuf.toString("base64")}`;
+        cacheCover(trimmed, b64);
+        return b64;
+      } catch {
+        const b64 = `data:${mime};base64,${Buffer.from(buf).toString("base64")}`;
+        cacheCover(trimmed, b64);
+        return b64;
+      }
     }
   } catch {
     // If cover fetch fails or is aborted, proceed without artwork
@@ -2497,6 +2531,8 @@ function generatePostOG({
             alignItems: "center",
             justifyContent: "center",
             flex: "0 0 40%",
+            width: "480px",
+            height: "100%",
             padding: "44px 56px 44px 0",
             position: "relative",
           }}
@@ -2505,11 +2541,14 @@ function generatePostOG({
           <img
             src={coverImageB64}
             alt=""
+            width="420"
+            height="520"
             style={{
-              maxWidth: "92%",
-              maxHeight: "88%",
+              width: "100%",
+              height: "100%",
+              maxWidth: "420px",
+              maxHeight: "520px",
               objectFit: "contain",
-              position: "relative",
             }}
           />
         </div>

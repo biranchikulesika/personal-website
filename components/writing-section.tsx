@@ -26,20 +26,8 @@ function EssayCard({ item, priority = false }: { item: WritingItem; priority?: b
             {stripMarkdown(item.description)}
           </p>
         </div>
-        <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-tinted/15 pt-3 text-xs text-gray-mid">
+        <div className="mt-4 flex items-center border-t border-tinted/15 pt-3 text-xs text-gray-mid">
           <span>{formatDisplayDate(item.date)}</span>
-          {item.tags && item.tags.length > 0 && (
-            <div className="flex flex-wrap items-center gap-1.5">
-              {item.tags.map((tag) => (
-                <span
-                  key={tag}
-                  className="rounded-full border border-tinted/20 px-2 py-0.5 text-[11px] text-gray-mid"
-                >
-                  {tag}
-                </span>
-              ))}
-            </div>
-          )}
         </div>
       </Link>
     </article>

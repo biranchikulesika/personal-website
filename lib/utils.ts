@@ -14,6 +14,22 @@ export function slugify(text: string): string {
 }
 
 /**
+ * Strips markdown title quotes, angle brackets, or spaces from image URLs,
+ * e.g. `https://domain.com/pic.png "Alt title"` -> `https://domain.com/pic.png`.
+ */
+export function cleanCoverImageUrl(url?: string | null): string | undefined {
+  if (!url || typeof url !== 'string') return undefined;
+  const trimmed = url.trim();
+  if (!trimmed) return undefined;
+  const match = trimmed.match(/^<?(https?:\/\/[^\s">]+|\/[^\s">]+)/);
+  if (match && match[1]) {
+    return match[1];
+  }
+  const fallback = trimmed.split(/\s+["']/)[0].trim().replace(/^<|>$/g, '');
+  return fallback || undefined;
+}
+
+/**
  * Determines the slug for a now entry. Accepts a client-provided slug, but
  * legacy "now-<digits>" ids (used before uuid ids) are treated as missing and
  * a slug is derived from the title instead.

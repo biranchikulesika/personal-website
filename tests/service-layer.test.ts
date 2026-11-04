@@ -181,3 +181,27 @@ test("featured items can be set and retrieved", async () => {
   assert.equal(updatedPosts.length, 1);
   assert.deepEqual(updatedPosts, ["post-3"]);
 });
+
+test("getWriting preserves coverImage in WritingItem", async () => {
+  const repo = new InMemoryTestContentRepository();
+  const service = new ContentService(repo);
+
+  await service.savePost({
+    slug: "post-with-cover",
+    title: "Post With Cover",
+    description: "Has a cover image",
+    tags: ["art"],
+    publishedAt: "2026-08-20",
+    lastEditedAt: "2026-08-20",
+    targetAudience: "General",
+    intro: ["Intro"],
+    sections: [],
+    books: [],
+    coverImage: "https://example.com/cover.webp",
+  });
+
+  const writing = await service.getWriting();
+  const item = writing.items.find((i) => i.slug === "post-with-cover");
+  assert.ok(item, "saved post should be in writing items");
+  assert.equal(item.coverImage, "https://example.com/cover.webp");
+});

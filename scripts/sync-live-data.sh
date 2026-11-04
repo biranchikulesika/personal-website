@@ -24,7 +24,11 @@ echo "→ Resetting local database (applies migrations)..."
 supabase db reset --local
 
 echo "→ Loading live data into local database..."
-psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres" \
-  -v ON_ERROR_STOP=1 -f "$DUMP_FILE"
+if command -v psql >/dev/null 2>&1; then
+  psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres" \
+    -v ON_ERROR_STOP=1 -f "$DUMP_FILE"
+else
+  docker exec -i supabase_db_biranchi psql -U postgres postgres < "$DUMP_FILE"
+fi
 
 echo "→ Done. Local Supabase now mirrors live content data."

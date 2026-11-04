@@ -21,7 +21,7 @@ import type {
   WritingItem,
 } from "@/lib/types";
 import type { ContentRepository } from "./content.repository";
-import { nowSlug } from "@/lib/utils";
+import { cleanCoverImageUrl, nowSlug } from "@/lib/utils";
 
 // ── Row types (Supabase → TypeScript) ──────────────────────────────────────
 // These represent the raw database row format. The repository maps between
@@ -117,7 +117,7 @@ function postRowToDomain(row: PostRow): BlogPost {
     intro: (row.intro as string[]) ?? [],
     sections: (row.sections as unknown as PostSection[]) ?? [],
     books: (row.books as unknown as BookCard[]) ?? [],
-    coverImage: row.cover_image ?? undefined,
+    coverImage: cleanCoverImageUrl(row.cover_image),
     status: row.status,
   };
 }
@@ -133,7 +133,7 @@ function noteRowToDomain(row: NoteRow): NoteItem {
     date: row.date ?? "",
     persona: (row.persona as Persona) ?? "thinker",
     tags: row.tags ?? [],
-    coverImage: row.cover_image ?? undefined,
+    coverImage: cleanCoverImageUrl(row.cover_image),
     status: row.status,
   };
 }
@@ -245,6 +245,7 @@ export class SupabaseContentRepository implements ContentRepository {
       date: row.published_at ?? "",
       persona: (row.persona as Persona) ?? "builder",
       tags: row.tags ?? [],
+      coverImage: cleanCoverImageUrl(row.cover_image),
       status: row.status,
     }));
 
