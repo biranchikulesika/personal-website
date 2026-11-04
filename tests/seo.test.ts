@@ -356,4 +356,99 @@ test("OPTIONS /api/og returns 204 with CORS and cache headers", async () => {
   assert.equal(res.headers.get("cross-origin-resource-policy"), "cross-origin");
 });
 
+// ── Dynamic OG Title Font Sizing tests ─────────────────────────────────────
+
+test("countWrappedLines correctly calculates line counts based on container maxWidth", async () => {
+  const { countWrappedLines } = await import("../app/api/og/route");
+
+  // Empty string
+  assert.equal(countWrappedLines("", 68, 620), 0);
+
+  // Short single word
+  assert.equal(countWrappedLines("Thinking", 68, 620), 1);
+
+  // Short sentence fitting on 2 lines
+  const shortTitle = "Crafting Interpreters";
+  assert.equal(countWrappedLines(shortTitle, 68, 620), 2);
+
+  // Longer title wrapping across multiple lines
+  const mediumTitle =
+    "When a Simple Account Deletion Brought the Entire Production Backend to Its Knees";
+  const linesAt68 = countWrappedLines(mediumTitle, 68, 620);
+  assert.ok(linesAt68 > 3, `Expected > 3 lines at 68px, got ${linesAt68}`);
+
+  const linesAt44 = countWrappedLines(mediumTitle, 44, 620);
+  assert.ok(
+    linesAt44 <= 3,
+    `Expected <= 3 lines at 44px, got ${linesAt44}`,
+  );
+});
+
+test("getAdaptiveTitleStyle keeps initial font size for short titles", async () => {
+  const { getAdaptiveTitleStyle } = await import("../app/api/og/route");
+
+  // With cover (initialSize: 68px, maxWidth: 620px)
+  const resultWithCover = getAdaptiveTitleStyle("A Simple Idea", true);
+  assert.equal(resultWithCover.fontSize, "68px");
+  assert.equal(resultWithCover.displayTitle, "A Simple Idea");
+
+  // Without cover (initialSize: 76px, maxWidth: 1000px)
+  const resultWithoutCover = getAdaptiveTitleStyle("A Simple Idea", false);
+  assert.equal(resultWithoutCover.fontSize, "76px");
+  assert.equal(resultWithoutCover.displayTitle, "A Simple Idea");
+});
+
+test("getAdaptiveTitleStyle dynamically decreases font size so title fits within 3 lines", async () => {
+  const { getAdaptiveTitleStyle, countWrappedLines } = await import(
+    "../app/api/og/route"
+  );
+
+  const longTitle =
+    "When a Simple Account Deletion Brought the Entire Production Backend to Its Knees";
+
+  // With cover (maxWidth 620px)
+  const result = getAdaptiveTitleStyle(longTitle, true);
+  const sizeNum = parseInt(result.fontSize, 10);
+
+  // Must have decreased from initial 68px
+  assert.ok(
+    sizeNum < 68,
+    `Expected font size < 68px, got ${result.fontSize}`,
+  );
+  assert.ok(
+    sizeNum >= 40,
+    `Expected font size >= 40px (minSize), got ${result.fontSize}`,
+  );
+
+  // The wrapped lines at the resulting font size must be <= 3
+  const lines = countWrappedLines(result.displayTitle, sizeNum, 620);
+  assert.ok(
+    lines <= 3,
+    `Expected wrapped lines <= 3, got ${lines} lines at ${result.fontSize}`,
+  );
+});
+
+test("getAdaptiveTitleStyle scales to minimum font size and truncates gracefully for massive titles", async () => {
+  const { getAdaptiveTitleStyle, countWrappedLines } = await import(
+    "../app/api/og/route"
+  );
+
+  const massiveTitle =
+    "This is an extraordinarily long and verbose blog post title designed to test the absolute outer limits of the dynamic typography layout algorithm in the social open graph image generator component to ensure nothing ever overflows the three line constraint";
+
+  const result = getAdaptiveTitleStyle(massiveTitle, true);
+  assert.equal(result.fontSize, "40px", "Should scale down to minSize 40px");
+  assert.ok(
+    result.displayTitle.endsWith("…"),
+    "Should truncate with ellipsis when exceeding 3 lines at min size",
+  );
+
+  const lines = countWrappedLines(result.displayTitle, 40, 620);
+  assert.ok(
+    lines <= 3,
+    `Even truncated massive title must stay <= 3 lines, got ${lines}`,
+  );
+});
+
+
 

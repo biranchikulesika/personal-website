@@ -1,12 +1,11 @@
 'use client';
 
 import { useMemo, useRef, useState } from 'react';
-import Image from 'next/image';
 import type { BookItem, Persona } from '@/lib/types';
 import { ChevronLeftIcon, ChevronRightIcon, ExternalLinkIcon, SearchIcon } from './icons';
 import { PERSONA_LABELS, ALL_PERSONAS } from '@/lib/constants';
 import { NoSearchResults, NoContentState } from './ui/states';
-
+import { Book } from '@/components/ui/book';
 import { isSafeUrl } from '@/lib/utils';
 
 interface LibraryPageProps {
@@ -16,74 +15,30 @@ interface LibraryPageProps {
 }
 
 /**
- * Aesthetic book cover card representing physical print texture, or the real
+ * Aesthetic physical 3D book cover representing physical print texture, or the real
  * cover image when one is set.
  */
 function BookCover({
   title,
   author,
   cover,
-  link,
   priority = false,
 }: {
   title: string;
   author: string;
   cover?: string;
-  link?: string;
   priority?: boolean;
 }) {
-  const inner = cover ? (
-    <Image
-      src={cover}
-      alt={`${title} cover`}
-      fill
-      sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 20vw"
-      className="object-cover"
-      loading={priority ? undefined : 'lazy'}
-      priority={priority}
-    />
-  ) : (
-    <>
-      {/* Subtle book spine accent */}
-      <span
-        aria-hidden
-        className="absolute bottom-0 left-0 top-0 w-2.5 border-r border-tinted/20 bg-night-soft"
-      />
-
-      <div className="pl-2">
-        <span className="font-serif text-sm font-normal italic leading-snug text-paper sm:text-base">
-          {title}
-        </span>
-      </div>
-
-      <div className="flex items-baseline justify-between border-t border-tinted/20 pl-2 pt-2 text-[11px] text-ink-soft">
-        <span className="truncate pr-1">{author}</span>
-      </div>
-    </>
-  );
-
-  const safeLink = link && isSafeUrl(link) ? link : undefined;
-
   return (
-    <div className="relative flex aspect-[2/3] w-full flex-col justify-between overflow-hidden rounded-lg border border-tinted/20 bg-post-card p-4 shadow-sm transition-all duration-300 group-hover:-translate-y-1 group-hover:shadow-md">
-      {safeLink ? (
-        <a
-          href={safeLink}
-          target={safeLink.startsWith('http') ? '_blank' : undefined}
-          rel={safeLink.startsWith('http') ? 'noopener noreferrer' : undefined}
-          className="absolute inset-0 block"
-          aria-label={`Open ${title}`}
-        >
-          {inner}
-        </a>
-      ) : (
-        inner
-      )}
-      {/* Hover View button */}
-      <span className="absolute left-1/2 top-[34%] z-10 -translate-x-1/2 -translate-y-1/2 rounded-full bg-accent/90 px-4 py-1.5 text-sm font-semibold text-paper shadow-lg opacity-0 transition-opacity duration-300 group-hover:opacity-100 backdrop-blur-sm">
-        View
-        <ExternalLinkIcon className="ml-1 inline h-3.5 w-3.5" />
-      </span>
+    <div className="relative w-full">
+      <Book
+        title={title}
+        author={author}
+        cover={cover}
+        priority={priority}
+        fluid
+        textured
+      />
     </div>
   );
 }
@@ -250,18 +205,19 @@ export function LibraryPageView({ books, title, subheader }: LibraryPageProps) {
               title={item.title}
               author={item.author}
               cover={item.cover}
-              link={item.link}
               priority={index < 4}
             />
             <div className="mt-3">
               <h2 className="font-serif text-base font-normal leading-snug text-paper transition-colors duration-300 group-hover:text-accent">
-                {item.link ? (
+                {item.link && isSafeUrl(item.link) ? (
                   <a
                     href={item.link}
                     target={item.link.startsWith('http') ? '_blank' : undefined}
                     rel={item.link.startsWith('http') ? 'noopener noreferrer' : undefined}
+                    className="inline-flex items-center gap-1.5 focus:outline-none focus-visible:ring-1 focus-visible:ring-accent"
                   >
-                    {item.title}
+                    <span>{item.title}</span>
+                    <ExternalLinkIcon className="inline-block h-3.5 w-3.5 shrink-0 opacity-0 transition-opacity duration-200 group-hover:opacity-100 text-ink-soft group-hover:text-accent" />
                   </a>
                 ) : (
                   item.title

@@ -2346,6 +2346,81 @@ async function resolveCoverImage(
 
 // ── OG image generation (post/note/default) ──────────────────────────────────
 
+function estimateCharWidth(char: string, fontSize: number): number {
+  if (/[ijl\.,'!\s:;\|f\(\)\[\]-]/.test(char)) return fontSize * 0.28;
+  if (/[mwMW@#%&]/.test(char)) return fontSize * 0.82;
+  if (/[A-Z]/.test(char)) return fontSize * 0.65;
+  return fontSize * 0.48;
+}
+
+function estimateWordWidth(word: string, fontSize: number): number {
+  let w = 0;
+  for (let i = 0; i < word.length; i++) {
+    w += estimateCharWidth(word[i], fontSize);
+  }
+  return w;
+}
+
+export function countWrappedLines(text: string, fontSize: number, maxWidth: number): number {
+  const words = text.trim().split(/\s+/);
+  if (words.length === 0 || !words[0]) return 0;
+
+  let lines = 1;
+  let currentLineWidth = 0;
+  const spaceWidth = estimateCharWidth(" ", fontSize);
+
+  for (let i = 0; i < words.length; i++) {
+    const word = words[i];
+    const wordWidth = estimateWordWidth(word, fontSize);
+
+    if (currentLineWidth === 0) {
+      currentLineWidth = wordWidth;
+    } else if (currentLineWidth + spaceWidth + wordWidth <= maxWidth) {
+      currentLineWidth += spaceWidth + wordWidth;
+    } else {
+      lines++;
+      currentLineWidth = wordWidth;
+    }
+  }
+
+  return lines;
+}
+
+export function getAdaptiveTitleStyle(
+  title: string,
+  hasCover: boolean,
+  isHome: boolean = false,
+): { fontSize: string; displayTitle: string } {
+  const initialSize = isHome ? 86 : hasCover ? 68 : 76;
+  const maxWidth = hasCover ? 620 : 1000;
+  const minSize = 40;
+
+  let currentTitle = title.trim();
+  let size = initialSize;
+
+  // Dynamically decrease font size until the title fits within 3 lines
+  while (size > minSize) {
+    const lines = countWrappedLines(currentTitle, size, maxWidth);
+    if (lines <= 3) {
+      return { fontSize: `${size}px`, displayTitle: currentTitle };
+    }
+    size -= 2;
+  }
+
+  // If even at minimum font size it wraps to more than 3 lines, truncate with ellipsis
+  let lines = countWrappedLines(currentTitle, minSize, maxWidth);
+  if (lines > 3) {
+    while (lines > 3 && currentTitle.length > 20) {
+      const words = currentTitle.split(/\s+/);
+      words.pop();
+      currentTitle = words.join(" ") + "…";
+      lines = countWrappedLines(currentTitle, minSize, maxWidth);
+    }
+  }
+
+  return { fontSize: `${minSize}px`, displayTitle: currentTitle };
+}
+
 interface PostOGParams {
   title: string;
   description: string;
@@ -2365,7 +2440,11 @@ function generatePostOG({
   hasCover,
   isHome = false,
 }: PostOGParams) {
-  const displayTitle = title.length > 80 ? title.slice(0, 77) + "…" : title;
+  const { fontSize: titleFontSize, displayTitle } = getAdaptiveTitleStyle(
+    title,
+    hasCover,
+    isHome,
+  );
   const cleanedDescription = stripMarkdown(description);
   const displayDescription =
     cleanedDescription.length > 120
@@ -2473,7 +2552,7 @@ function generatePostOG({
           <div
             style={{
               display: "flex",
-              fontSize: isHome ? "86px" : (hasCover ? "68px" : "76px"),
+              fontSize: titleFontSize,
               fontWeight: 400,
               lineHeight: 1.08,
               letterSpacing: "-0.025em",

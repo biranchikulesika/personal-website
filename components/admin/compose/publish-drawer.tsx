@@ -394,7 +394,7 @@ export function PublishDrawer({
                         </div>
                       )}
                       <div className="flex flex-1 flex-col justify-center px-5">
-                        <h3 className="font-serif text-[28px] font-normal leading-[1.05] tracking-tight text-[#FAF9F5] line-clamp-3">
+                        <h3 className={`font-serif ${(title || '').length > 70 ? 'text-[20px]' : (title || '').length > 50 ? 'text-[23px]' : 'text-[28px]'} font-normal leading-[1.05] tracking-tight text-[#FAF9F5] line-clamp-3`}>
                           {title || 'Page Title'}
                         </h3>
                         {description && (
