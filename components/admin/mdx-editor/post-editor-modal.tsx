@@ -142,16 +142,7 @@ export function PostEditorModal({
       lastEditedAt: lastEditedAt || new Date().toISOString().split('T')[0],
       targetAudience,
       intro: intro.length > 0 ? intro : [description],
-      sections:
-        sections.length > 0
-          ? sections
-          : [
-              {
-                id: 'section-1',
-                heading: 'Overview',
-                paragraphs: [mdxContent || ''],
-              },
-            ],
+      sections: sections.length > 0 ? sections : [],
       books: editingPost?.books || [],
       status,
     };

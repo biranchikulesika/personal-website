@@ -41,7 +41,7 @@ import type {
 import type { ContentRepository } from "./content.repository";
 import { SupabaseContentRepository } from "./supabase-content.repository";
 import { getMediaStorage } from "@/lib/storage";
-import { nowSlug } from "@/lib/utils";
+import { cleanCoverImageUrl, nowSlug } from "@/lib/utils";
 
 // ── Row Mappers ────────────────────────────────────────────────────────────
 
@@ -59,7 +59,7 @@ function postRowToDomain(row: PostSelect): BlogPost {
     intro: (row.intro as string[]) ?? [],
     sections: (row.sections as unknown as PostSection[]) ?? [],
     books: (row.books as unknown as BookCard[]) ?? [],
-    coverImage: row.coverImage ?? undefined,
+    coverImage: cleanCoverImageUrl(row.coverImage),
     status: row.status,
   };
 }
@@ -75,7 +75,7 @@ function noteRowToDomain(row: NoteSelect): NoteItem {
     date: row.date ?? "",
     persona: (row.persona as Persona) ?? "thinker",
     tags: row.tags ?? [],
-    coverImage: row.coverImage ?? undefined,
+    coverImage: cleanCoverImageUrl(row.coverImage),
     status: row.status,
   };
 }
@@ -186,6 +186,7 @@ export class DrizzleContentRepository implements ContentRepository {
       date: row.publishedAt ?? "",
       persona: (row.persona as Persona) ?? "builder",
       tags: row.tags ?? [],
+      coverImage: cleanCoverImageUrl(row.coverImage),
       status: row.status,
     }));
 

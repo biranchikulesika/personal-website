@@ -71,15 +71,23 @@ function BookCardView({
 }
 
 export async function BlogPostView({ post }: { post: BlogPost }) {
-  const showToc = post.sections.length > 2;
+  // Guard against legacy posts where an artificial "Overview" section duplicated the intro
+  const isDuplicateOverview =
+    post.sections.length === 1 &&
+    post.sections[0].heading.toLowerCase() === "overview" &&
+    (post.sections[0].paragraphs.join("\n\n").trim() === post.intro.join("\n\n").trim() ||
+      post.sections[0].paragraphs.join(" ").trim() === post.intro.join(" ").trim());
 
-  const docs = postToDocs(post.intro, post.sections);
+  const effectiveSections = isDuplicateOverview ? [] : post.sections;
+  const showToc = effectiveSections.length > 2;
+
+  const docs = postToDocs(post.intro, effectiveSections);
 
   const sectionNodes = [];
   for (let i = 0; i < docs.sections.length; i++) {
     const src = docs.sections[i];
     sectionNodes.push(
-      <div key={post.sections[i]?.id || `section-${i}`} className="mt-12">
+      <div key={effectiveSections[i]?.id || `section-${i}`} className="mt-12">
         {await renderMdx(src)}
       </div>
     );
@@ -172,7 +180,7 @@ export async function BlogPostView({ post }: { post: BlogPost }) {
                 <span>Contents</span>
                 <ChevronDownIcon className="h-3.5 w-3.5 text-ink-soft transition-transform duration-200 group-open:rotate-180" />
               </summary>
-              <TocList sections={post.sections} />
+              <TocList sections={effectiveSections} />
             </details>
           </aside>
         )}

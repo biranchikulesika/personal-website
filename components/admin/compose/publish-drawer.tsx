@@ -4,6 +4,7 @@ import { useState, useRef } from 'react';
 import Image from 'next/image';
 import type { MediaItem, Persona } from '@/lib/types';
 import { SITE_DOMAIN } from '@/lib/constants';
+import { cleanCoverImageUrl } from '@/lib/utils';
 import { uploadMediaFile } from '@/lib/storage/upload-client';
 import { MediaInsertModal } from '../mdx-editor/media-insert-modal';
 
@@ -175,11 +176,11 @@ export function PublishDrawer({
               {hasCoverImage ? (
                 <div className="group relative h-44 w-full overflow-hidden rounded-lg border border-tinted/20 bg-night-soft">
                   <Image
-                    src={coverImage!}
+                    src={cleanCoverImageUrl(coverImage) || coverImage!}
                     alt="Cover preview"
                     fill
                     className="object-cover"
-                    unoptimized={coverImage!.startsWith('blob:') || coverImage!.startsWith('http')}
+                    unoptimized={(cleanCoverImageUrl(coverImage) || coverImage!).startsWith('blob:') || (cleanCoverImageUrl(coverImage) || coverImage!).startsWith('http')}
                   />
                   <div className="absolute inset-0 bg-ink/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                     <button
@@ -346,7 +347,7 @@ export function PublishDrawer({
                   {hasCoverImage ? (
                     <div className="relative min-h-35 overflow-hidden">
                       <Image
-                        src={coverImage || ''}
+                        src={cleanCoverImageUrl(coverImage) || coverImage || ''}
                         alt="Card cover preview"
                         fill
                         className="object-contain"
@@ -393,7 +394,7 @@ export function PublishDrawer({
                         </div>
                       )}
                       <div className="flex flex-1 flex-col justify-center px-5">
-                        <h3 className="font-serif text-[28px] font-normal leading-[1.05] tracking-tight text-[#FAF9F5] line-clamp-3">
+                        <h3 className={`font-serif ${(title || '').length > 70 ? 'text-[20px]' : (title || '').length > 50 ? 'text-[23px]' : 'text-[28px]'} font-normal leading-[1.05] tracking-tight text-[#FAF9F5] line-clamp-3`}>
                           {title || 'Page Title'}
                         </h3>
                         {description && (
@@ -411,7 +412,7 @@ export function PublishDrawer({
                     {hasCoverImage && (
                       <div className="relative flex flex-1 items-center justify-center p-2">
                         <Image
-                          src={coverImage || ''}
+                          src={cleanCoverImageUrl(coverImage) || coverImage || ''}
                           alt="OG artwork preview"
                           fill
                           className="object-contain"
@@ -497,7 +498,7 @@ export function PublishDrawer({
         onSelect={(imgMd) => {
           const match = imgMd.match(/!\[.*?\]\((.*?)\)/);
           if (match && match[1]) {
-            onCoverImageChange(match[1]);
+            onCoverImageChange(cleanCoverImageUrl(match[1]) || match[1]);
           }
           setIsMediaModalOpen(false);
         }}
