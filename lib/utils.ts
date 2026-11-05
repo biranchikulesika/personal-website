@@ -14,6 +14,22 @@ export function slugify(text: string): string {
 }
 
 /**
+ * Strips markdown title quotes, angle brackets, or spaces from image URLs,
+ * e.g. `https://domain.com/pic.png "Alt title"` -> `https://domain.com/pic.png`.
+ */
+export function cleanCoverImageUrl(url?: string | null): string | undefined {
+  if (!url || typeof url !== 'string') return undefined;
+  const trimmed = url.trim();
+  if (!trimmed) return undefined;
+  const match = trimmed.match(/^<?(https?:\/\/[^\s">]+|\/[^\s">]+)/);
+  if (match && match[1]) {
+    return match[1];
+  }
+  const fallback = trimmed.split(/\s+["']/)[0].trim().replace(/^<|>$/g, '');
+  return fallback || undefined;
+}
+
+/**
  * Determines the slug for a now entry. Accepts a client-provided slug, but
  * legacy "now-<digits>" ids (used before uuid ids) are treated as missing and
  * a slug is derived from the title instead.
@@ -321,6 +337,49 @@ export function formatNoteSnippet(
   const lastSpace = truncated.lastIndexOf(' ');
   const cleanSnippet = lastSpace > 0 ? truncated.slice(0, lastSpace) : truncated;
   return `${cleanSnippet}...read now`;
+}
+
+/**
+ * Formats an overview / subtitle snippet for post cards.
+ * Balances a length budget (targetLen) with a buffer window (buffer), ensuring
+ * sentences and words complete cleanly without awkward mid-sentence cutoffs.
+ */
+export function formatOverviewSnippet(
+  text: string | null | undefined,
+  targetLen = 120,
+  buffer = 25,
+): string {
+  if (!text) return '';
+  const cleaned = stripMarkdown(text).trim();
+  if (!cleaned) return '';
+
+  const maxLen = targetLen + buffer;
+  // If the text fits comfortably within targetLen + buffer, display it fully
+  if (cleaned.length <= maxLen) {
+    return cleaned;
+  }
+
+  const minLen = Math.max(20, targetLen - buffer);
+  const searchSlice = cleaned.slice(0, maxLen);
+
+  // Look for sentence terminators (. ! ?)
+  const sentenceMatches = Array.from(searchSlice.matchAll(/[.!?](?:\s|$)/g));
+  if (sentenceMatches.length > 0) {
+    const viable = sentenceMatches.filter((m) => (m.index ?? 0) + 1 >= minLen);
+    if (viable.length > 0) {
+      const best = viable[viable.length - 1];
+      return cleaned.slice(0, (best.index ?? 0) + 1).trim();
+    }
+  }
+
+  // If no sentence end in range, truncate at the last full word boundary
+  const wordSlice = cleaned.slice(0, targetLen);
+  const lastSpace = wordSlice.lastIndexOf(' ');
+  if (lastSpace > minLen) {
+    return cleaned.slice(0, lastSpace).trim() + '…';
+  }
+
+  return wordSlice.trim() + '…';
 }
 
 /**

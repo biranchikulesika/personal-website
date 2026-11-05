@@ -11,6 +11,7 @@
  * rectangular baseline shape but grow taller when content requires it.
  */
 import Image from 'next/image';
+import { cleanCoverImageUrl } from '@/lib/utils';
 
 export function EssayCover({
   title,
@@ -21,17 +22,23 @@ export function EssayCover({
   coverImage?: string;
   priority?: boolean;
 }) {
-  if (coverImage) {
+  const cleanSrc = cleanCoverImageUrl(coverImage);
+  if (cleanSrc) {
     return (
       <div className="relative flex h-[220px] w-full items-center justify-center overflow-hidden rounded-xl">
         <Image
-          src={coverImage}
+          src={cleanSrc}
           alt={`Cover for ${title}`}
           fill
           sizes="(max-width: 640px) 82vw, (max-width: 1024px) 50vw, 400px"
           className="object-contain"
           loading={priority ? undefined : 'lazy'}
           priority={priority}
+          unoptimized={
+            cleanSrc.startsWith('blob:') ||
+            cleanSrc.startsWith('http://127.0.0.1') ||
+            cleanSrc.startsWith('http://localhost')
+          }
         />
       </div>
     );

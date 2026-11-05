@@ -418,16 +418,7 @@ export function ComposeWorkspace({
                     activeTab.description ||
                     activeTab.title,
                 ],
-          sections:
-            sections.length > 0
-              ? sections
-              : [
-                  {
-                    id: "sec-1",
-                    heading: "Overview",
-                    paragraphs: [activeTab.content || ""],
-                  },
-                ],
+          sections: sections.length > 0 ? sections : [],
           books: activeTab.rawPost?.books || [],
           coverImage: activeTab.coverImage,
           status: statusToSet,

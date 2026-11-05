@@ -18,7 +18,8 @@
     "isolatedModules": true,
     "jsx": "react-jsx",
     "paths": {
-      "@/*": ["./*"]
+      "@/*": ["./*"],
+      "@vercel/geistcn/components": ["./components/ui/book"]
     },
     "plugins": [
       {

@@ -37,19 +37,22 @@ export function LibrarySection({ library, limit = 4, featured }: LibrarySectionP
           const safeLink = item.link && isSafeUrl(item.link) ? item.link : null;
           return (
             <article key={item.slug} className="group relative">
-              <Link href={safeLink ?? library.href} {...(safeLink ? { target: '_blank', rel: 'noopener noreferrer' } : {})} className="block">
-                <span className="absolute left-1/2 top-[34%] z-10 -translate-x-1/2 -translate-y-1/2 rounded-full bg-accent px-3.5 py-1 text-xs font-semibold text-paper shadow-lg opacity-0 transition-opacity duration-300 group-hover:opacity-100 backdrop-blur-sm">
-                  View
-                  <ExternalLinkIcon className="ml-1 inline h-[12px] w-[12px]" />
-                </span>
-                <BookCover title={item.title} cover={item.cover} />
-                <span className="mt-3 block transition-transform duration-300 group-hover:translate-y-1">
-                  <h3 className="font-sans text-base font-normal leading-snug text-paper transition-colors duration-300 group-hover:text-accent">
-                    {item.title}
-                  </h3>
-                  <p className="mt-1 text-xs text-gray-mid">{item.author}</p>
-                </span>
-              </Link>
+              <BookCover title={item.title} cover={item.cover} />
+              <span className="mt-3 block transition-transform duration-300 group-hover:translate-y-1">
+                <h3 className="font-sans text-base font-normal leading-snug text-paper transition-colors duration-300 group-hover:text-accent">
+                  <Link
+                    href={safeLink ?? library.href}
+                    {...(safeLink ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+                    className="inline-flex items-center gap-1.5 focus:outline-none focus-visible:ring-1 focus-visible:ring-accent"
+                  >
+                    <span>{item.title}</span>
+                    {safeLink && (
+                      <ExternalLinkIcon className="inline-block h-3.5 w-3.5 shrink-0 opacity-0 transition-opacity duration-200 group-hover:opacity-100 text-ink-soft group-hover:text-accent" />
+                    )}
+                  </Link>
+                </h3>
+                <p className="mt-1 text-xs text-gray-mid">{item.author}</p>
+              </span>
             </article>
           );
         })}
@@ -64,15 +67,22 @@ export function LibrarySection({ library, limit = 4, featured }: LibrarySectionP
               key={item.slug}
               className="group relative w-[42%] shrink-0 snap-start"
             >
-              <Link href={safeLink ?? library.href} {...(safeLink ? { target: '_blank', rel: 'noopener noreferrer' } : {})} className="block">
-                <BookCover title={item.title} cover={item.cover} />
-                <span className="mt-3 block">
-                  <h3 className="font-sans text-sm font-normal leading-snug text-paper transition-colors duration-300 group-hover:text-accent">
-                    {item.title}
-                  </h3>
-                  <p className="mt-1 text-xs text-gray-mid">{item.author}</p>
-                </span>
-              </Link>
+              <BookCover title={item.title} cover={item.cover} />
+              <span className="mt-3 block">
+                <h3 className="font-sans text-sm font-normal leading-snug text-paper transition-colors duration-300 group-hover:text-accent">
+                  <Link
+                    href={safeLink ?? library.href}
+                    {...(safeLink ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+                    className="inline-flex items-center gap-1 focus:outline-none focus-visible:ring-1 focus-visible:ring-accent"
+                  >
+                    <span>{item.title}</span>
+                    {safeLink && (
+                      <ExternalLinkIcon className="inline-block h-3 w-3 shrink-0 opacity-0 transition-opacity duration-200 group-hover:opacity-100 text-ink-soft group-hover:text-accent" />
+                    )}
+                  </Link>
+                </h3>
+                <p className="mt-1 text-xs text-gray-mid">{item.author}</p>
+              </span>
             </article>
           );
         })}
