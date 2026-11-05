@@ -7,6 +7,7 @@ import { SITE_DOMAIN } from '@/lib/constants';
 import { cleanCoverImageUrl } from '@/lib/utils';
 import { uploadMediaFile } from '@/lib/storage/upload-client';
 import { MediaInsertModal } from '../mdx-editor/media-insert-modal';
+import { toast } from '@/lib/toast';
 
 interface PublishDrawerProps {
   isOpen: boolean;
@@ -66,7 +67,6 @@ export function PublishDrawer({
   const [tagInput, setTagInput] = useState('');
   const [isMediaModalOpen, setIsMediaModalOpen] = useState(false);
   const [previewTab, setPreviewTab] = useState<'card' | 'og' | 'google'>('card');
-  const [coverError, setCoverError] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Sync input from parent tags on open
@@ -106,10 +106,10 @@ export function PublishDrawer({
         alt: file.name.replace(/\.[^.]+$/, ''),
         tags: isPost ? ['post', 'cover'] : ['note', 'cover'],
       });
-      setCoverError('');
       onCoverImageChange(media.src);
+      toast.success('Cover image uploaded successfully.');
     } catch (err: unknown) {
-      setCoverError((err as Error).message || 'Cover upload failed');
+      toast.error((err as Error).message || 'Failed to upload cover image. Please try again.');
     }
   }
 
@@ -228,12 +228,6 @@ export function PublishDrawer({
                     <span className="text-[11px] text-accent">Media Library</span>
                   </button>
                 </div>
-              )}
-
-              {coverError && !hasCoverImage && (
-                <p role="alert" className="text-[11px] text-red-400">
-                  {coverError}
-                </p>
               )}
             </div>
           )}

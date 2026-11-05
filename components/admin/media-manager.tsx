@@ -3,6 +3,7 @@
 import { useState, useRef, useTransition, useEffect, useMemo } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { ToastView } from '@/components/ui/toast-view';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import Image from 'next/image';
 import type { MediaItem } from '@/lib/types';
 import {
@@ -43,7 +44,6 @@ export function MediaManager({
   const [confirmDelete, setConfirmDelete] = useState<{
     items: MediaItem[];
   } | null>(null);
-  const [confirmTypedText, setConfirmTypedText] = useState('');
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
   const [editingMedia, setEditingMedia] = useState<MediaItem | null>(null);
@@ -52,7 +52,7 @@ export function MediaManager({
   const [isPending, startTransition] = useTransition();
   const [isUploading, setIsUploading] = useState(false);
   const [activePhoto, setActivePhoto] = useState<MediaItem | null>(null);
-  const { message: toastMessage, showToast } = useToast(3000);
+  const { message: toastMessage, showToast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const orphanedSrcs = new Set(orphanedList.map((m) => m.src));
@@ -205,7 +205,7 @@ export function MediaManager({
     }
     setCopiedId(id);
     setTimeout(() => setCopiedId(null), 2000);
-    showToast('Copied to clipboard!');
+    showToast('Link copied to clipboard.', 'info');
   }
 
   function handleAddMedia(e: React.FormEvent) {
@@ -252,12 +252,12 @@ export function MediaManager({
           setAltText('');
           setTagsInput('');
           setPendingFile(null);
-          showToast(`Resource "${fileName}" added to library!`);
+          showToast('Image uploaded successfully.', 'success');
         } else {
-          showToast(res.error || 'Failed to add media');
+          showToast(res.error || 'Failed to upload image. Please try again.', 'error');
         }
       } catch (err: unknown) {
-        showToast((err as Error).message || 'Failed to add media');
+        showToast((err as Error).message || 'Failed to upload image. Please try again.', 'error');
       }
     });
   }
@@ -275,7 +275,6 @@ export function MediaManager({
   }
 
   function requestDelete(items: MediaItem[]) {
-    setConfirmTypedText('');
     setConfirmDelete({ items });
   }
 
@@ -293,7 +292,7 @@ export function MediaManager({
           const removed = new Set(srcs);
           setOrphanedList((prev) => prev.filter((m) => !removed.has(m.src)));
         } else {
-          showToast(res.error || 'Failed to delete assets');
+          showToast(res.error || 'Failed to remove image. Please try again.', 'error');
           ok = false;
         }
       }
@@ -302,15 +301,19 @@ export function MediaManager({
         if (res.success) {
           setMediaList((prev) => prev.filter((m) => m.id !== media.id));
         } else {
-          showToast(res.error || 'Failed to delete media');
+          showToast(res.error || 'Failed to remove image. Please try again.', 'error');
           ok = false;
         }
       }
       if (ok) {
         setSelectedOrphanedIds(new Set());
         setConfirmDelete(null);
-        setConfirmTypedText('');
-        showToast(`Deleted ${items.length} asset${items.length > 1 ? 's' : ''}`);
+        showToast(
+          items.length > 1
+            ? `${items.length} images removed successfully.`
+            : 'Image removed successfully.',
+          'success',
+        );
       }
     });
   }
@@ -355,9 +358,9 @@ export function MediaManager({
         });
         setOrphanedList((prev) => prev.filter((m) => m.src !== target.src));
         setEditingMedia(null);
-        showToast('Resource updated successfully');
+        showToast('Changes saved successfully.', 'success');
       } else {
-        showToast(res.error || 'Failed to update resource');
+        showToast(res.error || 'Failed to update resource. Please try again.', 'error');
       }
     });
   }
@@ -379,8 +382,6 @@ export function MediaManager({
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, [menuOpenId]);
-
-  const confirmRequirement = 'DELETE';
 
   const filteredMedia = mediaList.filter((m) => {
     const q = search.toLowerCase();
@@ -1115,74 +1116,35 @@ export function MediaManager({
       )}
 
       {/* Delete Confirmation Modal */}
-      {confirmDelete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-xs" aria-hidden="true">
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-label={`Delete ${confirmDelete.items.length > 1 ? `${confirmDelete.items.length} assets` : confirmDelete.items[0].name}`}
-            className="w-full max-w-md rounded-3xl border border-tinted/20 bg-night-soft p-6 shadow-2xl animate-in zoom-in-95"
-            tabIndex={-1}
-          >
-            <h3 className="font-serif text-xl font-normal text-paper">
-              Delete {confirmDelete.items.length > 1 ? `${confirmDelete.items.length} assets` : 'image'}?
-            </h3>
-            <p className="mt-2 text-sm leading-relaxed text-gray-mid">
-              {confirmDelete.items.length === 1 ? (
-                <>
-                  Are you sure you want to delete{' '}
-                  <b className="text-paper">{confirmDelete.items[0].name}</b>?
-                  This action cannot be undone.
-                </>
-              ) : (
-                <>
-                  Are you sure you want to delete{' '}
-                  <b className="text-paper">
-                    {confirmDelete.items.length} assets
-                  </b>
-                  ? This action cannot be undone.
-                </>
-              )}
-              <span className="mt-3 block">
-                Type <b className="text-paper">DELETE</b> to confirm:
-              </span>
-            </p>
-            <input
-              type="text"
-              autoFocus
-              placeholder="Type DELETE to confirm"
-              aria-label="Type DELETE to confirm deletion"
-              value={confirmTypedText}
-              onChange={(e) => setConfirmTypedText(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && confirmTypedText === 'DELETE') {
-                  handleConfirmDelete();
-                }
-              }}
-              className="mt-3 w-full rounded-xl border border-tinted/20 bg-night px-3.5 py-2 text-sm text-paper placeholder:text-gray-mid/50 focus:border-tinted/40 focus:outline-none"
-            />
-            <div className="mt-6 flex justify-end gap-3">
-              <button
-                type="button"
-                onClick={() => setConfirmDelete(null)}
-                className="rounded-full px-4 py-2 text-xs font-medium text-gray-mid hover:text-paper"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                disabled={
-                  isPending || confirmTypedText !== confirmRequirement
-                }
-                onClick={handleConfirmDelete}
-                className="rounded-full bg-red-700 px-5 py-2 text-xs font-semibold text-white shadow-sm hover:brightness-110 disabled:opacity-50"
-              >
-                {isPending ? 'Deleting...' : 'Confirm Delete'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmDialog
+        isOpen={Boolean(confirmDelete)}
+        onClose={() => setConfirmDelete(null)}
+        onConfirm={handleConfirmDelete}
+        isLoading={isPending}
+        title={
+          confirmDelete && confirmDelete.items.length > 1
+            ? `Delete ${confirmDelete.items.length} assets?`
+            : "Remove image?"
+        }
+        description={
+          confirmDelete?.items.length === 1 ? (
+            <>
+              Are you sure you want to delete{" "}
+              <b className="text-paper">{confirmDelete.items[0].name}</b>? This
+              action cannot be undone.
+            </>
+          ) : (
+            <>
+              Are you sure you want to delete{" "}
+              <b className="text-paper">{confirmDelete?.items.length} assets</b>?
+              This action cannot be undone.
+            </>
+          )
+        }
+        confirmLabel="Confirm Delete"
+        variant="danger"
+        typeToConfirm="DELETE"
+      />
 
       {/* Edit Details Modal */}
       {editingMedia && (

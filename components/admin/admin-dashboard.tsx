@@ -19,6 +19,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { logoutAction } from "@/app/admin/login/actions";
 import { LoadingState } from "@/components/ui/states";
+import { toast } from "@/lib/toast";
 
 import { HomeOverview } from "./home-overview";
 
@@ -298,6 +299,7 @@ export function AdminDashboard({
           <button
             type="button"
             onClick={async () => {
+              toast.info("Signing out…");
               await logoutAction();
               window.location.href = "/admin/login";
             }}

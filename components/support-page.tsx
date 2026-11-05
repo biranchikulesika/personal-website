@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { toast } from '@/lib/toast';
 import {
   HeartIcon,
   DownloadIcon,
@@ -62,13 +63,13 @@ function SupporterModal({
       {/* Backdrop */}
       <div
         onClick={!isProcessing ? onClose : undefined}
-        className="fixed inset-0 bg-black/75 backdrop-blur-sm transition-opacity"
+        className="fixed inset-0 bg-black/80 backdrop-blur-md transition-opacity"
         aria-hidden="true"
       />
 
       {/* Modal Card */}
       <div
-        className="relative w-full max-w-lg overflow-hidden rounded-2xl border border-tinted/30 bg-[#161513] p-5 shadow-2xl transition-all sm:rounded-3xl sm:p-8"
+        className="relative w-full max-w-lg overflow-hidden rounded-3xl border border-tinted/20 bg-night-soft/95 backdrop-blur-xl p-6 sm:p-8 shadow-2xl transition-all"
       >
         {/* Close Button */}
         {!isProcessing && (
@@ -76,7 +77,7 @@ function SupporterModal({
             type="button"
             onClick={onClose}
             aria-label="Close modal"
-            className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full text-gray-mid transition-colors hover:bg-night-soft hover:text-paper sm:right-5 sm:top-5"
+            className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full text-ink-soft transition-colors hover:bg-post-card hover:text-paper sm:right-6 sm:top-6"
           >
             <CloseIcon className="h-4 w-4" />
           </button>
@@ -86,22 +87,22 @@ function SupporterModal({
         <div>
           <h3
             id="supporter-modal-title"
-            className="font-serif text-xl font-normal text-paper sm:text-2xl md:text-3xl"
+            className="font-serif text-2xl font-normal text-paper sm:text-3xl"
           >
             Supporter Details
           </h3>
-          <p className="mt-1 text-xs leading-relaxed text-gray-mid">
+          <p className="mt-1.5 text-xs leading-relaxed text-ink-soft/80">
             All fields below are completely optional. Feel free to contribute
             anonymously.
           </p>
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="mt-4 space-y-3.5 sm:mt-6 sm:space-y-4">
+        <form onSubmit={handleSubmit} className="mt-6 space-y-4">
           <div>
             <label
               htmlFor="modal-name"
-              className="block text-[11px] font-semibold uppercase tracking-wider text-gray-mid sm:text-xs"
+              className="block font-mono text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-ink-soft"
             >
               Your Name (Optional)
             </label>
@@ -112,14 +113,14 @@ function SupporterModal({
               value={name}
               onChange={(e) => setName(e.target.value)}
               disabled={isProcessing}
-              className="mt-1 w-full rounded-xl border border-tinted/20 bg-night-soft px-3.5 py-2.5 text-sm text-paper placeholder:text-ink-soft/40 transition-colors focus:border-tinted/40 focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0 sm:mt-1.5 sm:rounded-2xl sm:px-4 sm:py-3"
+              className="mt-1.5 w-full rounded-xl sm:rounded-2xl border border-tinted/20 bg-night px-4 py-2.5 sm:py-3 text-sm text-paper placeholder:text-ink-soft/40 transition-colors focus:border-accent/60 focus:ring-1 focus:ring-accent/20 focus:outline-none"
             />
           </div>
 
           <div>
             <label
               htmlFor="modal-email"
-              className="block text-[11px] font-semibold uppercase tracking-wider text-gray-mid sm:text-xs"
+              className="block font-mono text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-ink-soft"
             >
               Email Address (Optional)
             </label>
@@ -130,14 +131,14 @@ function SupporterModal({
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               disabled={isProcessing}
-              className="mt-1 w-full rounded-xl border border-tinted/20 bg-night-soft px-3.5 py-2.5 text-sm text-paper placeholder:text-ink-soft/40 transition-colors focus:border-tinted/40 focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0 sm:mt-1.5 sm:rounded-2xl sm:px-4 sm:py-3"
+              className="mt-1.5 w-full rounded-xl sm:rounded-2xl border border-tinted/20 bg-night px-4 py-2.5 sm:py-3 text-sm text-paper placeholder:text-ink-soft/40 transition-colors focus:border-accent/60 focus:ring-1 focus:ring-accent/20 focus:outline-none"
             />
           </div>
 
           <div>
             <label
               htmlFor="modal-note"
-              className="block text-[11px] font-semibold uppercase tracking-wider text-gray-mid sm:text-xs"
+              className="block font-mono text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-ink-soft"
             >
               Leave a Note (Optional)
             </label>
@@ -148,16 +149,16 @@ function SupporterModal({
               value={note}
               onChange={(e) => setNote(e.target.value)}
               disabled={isProcessing}
-              className="mt-1 w-full resize-none rounded-xl border border-tinted/20 bg-night-soft px-3.5 py-2.5 text-sm text-paper placeholder:text-ink-soft/40 transition-colors focus:border-tinted/40 focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0 sm:mt-1.5 sm:rounded-2xl sm:px-4 sm:py-3"
+              className="mt-1.5 w-full resize-none rounded-xl sm:rounded-2xl border border-tinted/20 bg-night px-4 py-2.5 sm:py-3 text-sm text-paper placeholder:text-ink-soft/40 transition-colors focus:border-accent/60 focus:ring-1 focus:ring-accent/20 focus:outline-none"
             />
           </div>
 
           {/* Submit Action */}
-          <div className="pt-1.5 sm:pt-2">
+          <div className="pt-2">
             <button
               type="submit"
               disabled={isProcessing}
-              className="group flex w-full items-center justify-center gap-2 rounded-full bg-accent py-3 text-sm font-semibold text-paper shadow-sm transition-all hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-50 sm:py-3.5"
+              className="group flex w-full items-center justify-center gap-2 rounded-full bg-accent py-3.5 text-sm sm:text-base font-semibold text-paper shadow-sm transition-all hover:bg-accent-hover active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"
             >
               {isProcessing ? (
                 <span>Connecting to payment...</span>
@@ -170,7 +171,7 @@ function SupporterModal({
             </button>
           </div>
 
-          <p className="text-center text-[10px] text-gray-mid sm:text-[11px]">
+          <p className="text-center font-mono text-[10px] sm:text-[11px] uppercase tracking-wider text-ink-soft/60">
             Processed securely via Razorpay
           </p>
         </form>
@@ -348,39 +349,13 @@ function downloadReceiptAsCanvas(receipt: ReceiptData) {
   link.download = `biranchi-patronage-receipt-${receipt.id}.png`;
   link.href = canvas.toDataURL('image/png', 1.0);
   link.click();
+  toast.info('Patronage receipt downloaded.');
 }
 
-const PRESET_AMOUNTS = [100, 300, 500, 1000, 2500];
-
-const LEDGER_ITEMS = [
-  {
-    index: '01',
-    category: 'Hosting & Server Costs',
-    lead: 'Domain renewals, fast hosting, databases, and software tools.',
-    body: 'Running this website costs money every month. Your support pays for domain names, server hosting, and development tools so the site stays fast and reliable.',
-  },
-  {
-    index: '02',
-    category: 'Books & Learning',
-    lead: 'Physical books, research papers, and study material.',
-    body: 'Most of what I write starts with something I read. Contributions help me buy books and research papers that I read, take notes on, and share in the public library.',
-  },
-  {
-    index: '03',
-    category: 'Time to Build & Write',
-    lead: 'Dedicated time to make things and write essays.',
-    body: 'Writing clear essays and building software tools takes focused, uninterrupted time. Your support gives me the freedom to work on useful things without worrying about sponsorships or client work.',
-  },
-  {
-    index: '04',
-    category: 'No Ads or Paywalls',
-    lead: 'No locked content, no tracking, and no sponsored posts.',
-    body: 'Everything on this website is free for anyone to read. There are no paywalls, no popups, and no ads. Your support allows me to keep it that way.',
-  },
-];
+const PRESET_AMOUNTS = [10, 100, 500, 1000];
 
 export function SupportPageView() {
-  const [amount, setAmount] = useState<string>('500');
+  const [amount, setAmount] = useState<string>('10');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [receipt, setReceipt] = useState<ReceiptData | null>(null);
@@ -499,6 +474,7 @@ export function SupportPageView() {
               setIsProcessing(false);
               setIsModalOpen(false);
               setReceipt(receiptPayload);
+              toast.success('Thank you for your direct patronage and support!');
             },
             modal: {
               ondismiss: function () {
@@ -528,6 +504,7 @@ export function SupportPageView() {
       setIsProcessing(false);
       setIsModalOpen(false);
       setReceipt(receiptPayload);
+      toast.success('Thank you for your direct patronage and support!');
     }, 600);
   }
 
@@ -631,7 +608,7 @@ export function SupportPageView() {
               type="button"
               onClick={() => {
                 setReceipt(null);
-                setAmount('500');
+                setAmount('10');
               }}
               className="inline-flex items-center justify-center rounded-full border border-tinted/30 bg-night-soft px-6 py-3 text-sm font-semibold text-paper transition-colors hover:bg-post-card"
             >
@@ -648,48 +625,43 @@ export function SupportPageView() {
       ) : (
         /* Primary Support Screen */
         <>
-          <section className="grid grid-cols-1 gap-8 lg:grid-cols-12 lg:items-center lg:gap-16">
+          <div className="mx-auto max-w-5xl">
+          <section className="grid grid-cols-1 gap-12 lg:grid-cols-12 lg:items-start lg:gap-16">
             {/* Left Column: Narrative Copy */}
-            <div className="flex flex-col justify-center lg:col-span-7 lg:pr-4">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-accent sm:text-xs md:text-sm">
-                PATRONAGE & SUPPORT
-              </p>
-              <h1 className="mt-2 font-serif text-2xl font-normal leading-[1.12] tracking-tight text-paper sm:mt-4 sm:text-4xl md:text-5xl xl:text-[3.5rem]">
+            <div className="flex flex-col justify-center lg:col-span-7 lg:pr-2">
+              <h1 className="font-serif text-3xl font-normal leading-[1.15] tracking-tight text-paper sm:text-4xl md:text-5xl lg:text-[3.25rem]">
                 Help me keep this corner of the web independent.
               </h1>
 
-              <div className="mt-4 space-y-3 text-sm leading-relaxed text-ink-soft sm:mt-6 sm:space-y-4 sm:text-base md:text-lg">
+              <div className="mt-6 space-y-5 font-serif text-base leading-relaxed text-ink-soft sm:mt-8 sm:text-lg md:text-[1.15rem]">
                 <p>
                   Everything I make here is open to everyone. There are no paywalls, ads, sponsored posts, or attention tricks.
                 </p>
                 <p>
                   If something I’ve built or written has been useful, interesting, or simply worth your time, you can help keep it going.
                 </p>
-                <p>
-                  Your support pays for the everyday things that keep this website running: servers, domains, books, tools, and time to write and build freely without ads or sponsors.
-                </p>
               </div>
             </div>
 
             {/* Right Column: Amount Selection & Support Button Only */}
             <div className="w-full max-w-md mx-auto lg:col-span-5 lg:max-w-none">
-              <div className="rounded-2xl border border-tinted/20 bg-night-soft p-5 shadow-xl sm:rounded-3xl sm:p-6 md:p-8 sm:shadow-2xl">
-                <form onSubmit={handleOpenModal} className="space-y-4 sm:space-y-6">
+              <div className="rounded-3xl border border-tinted/25 bg-night-soft/60 backdrop-blur-md p-6 sm:p-8 transition-colors">
+                <form onSubmit={handleOpenModal} className="space-y-5 sm:space-y-6">
                   {/* Preset Amount Chips */}
                   <div>
-                    <label className="block text-[11px] font-semibold uppercase tracking-wider text-gray-mid sm:text-xs">
+                    <label className="block font-mono text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-ink-soft">
                       Choose Contribution
                     </label>
-                    <div className="mt-2 grid grid-cols-5 gap-1.5 sm:mt-3 sm:flex sm:flex-wrap sm:gap-2.5">
+                    <div className="mt-2.5 grid grid-cols-4 gap-2 sm:gap-2.5">
                       {PRESET_AMOUNTS.map((val) => (
                         <button
                           key={val}
                           type="button"
                           onClick={() => setAmount(String(val))}
-                          className={`rounded-full py-1 text-center text-[11px] font-medium transition-all sm:px-4 sm:py-2 sm:text-sm sm:font-semibold ${
+                          className={`rounded-full py-2 sm:py-2.5 text-center text-xs sm:text-sm transition-all duration-200 flex items-center justify-center font-sans ${
                             amount === String(val)
-                              ? 'bg-accent font-semibold text-paper shadow-sm'
-                              : 'border border-tinted/20 bg-post-card text-gray-mid hover:border-tinted/40 hover:text-paper'
+                              ? 'bg-accent font-semibold text-paper border border-accent/60 shadow-xs scale-[1.02]'
+                              : 'border border-tinted/20 bg-night-soft/80 text-paper/75 hover:border-tinted/40 hover:text-paper hover:bg-post-card/50'
                           }`}
                         >
                           ₹{val}
@@ -702,12 +674,12 @@ export function SupportPageView() {
                   <div>
                     <label
                       htmlFor="support-amount"
-                      className="block text-[11px] font-semibold uppercase tracking-wider text-gray-mid sm:text-xs"
+                      className="block font-mono text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-ink-soft"
                     >
-                      Or Enter Custom Amount (INR)
+                      Or Enter Custom Amount
                     </label>
-                    <div className="mt-1.5 flex items-center rounded-xl border border-tinted/20 bg-post-card px-3.5 py-2.5 sm:mt-2 sm:rounded-2xl sm:px-4 sm:py-3.5">
-                      <span className="font-serif text-xl font-normal text-paper sm:text-2xl">
+                    <div className="mt-2 flex items-center rounded-full border border-tinted/20 bg-night-soft/80 px-5 py-2.5 sm:py-3 transition-all focus-within:border-accent/60 focus-within:ring-1 focus-within:ring-accent/30">
+                      <span className="font-serif text-2xl font-light text-accent/90 sm:text-3xl select-none mr-2">
                         ₹
                       </span>
                       <input
@@ -719,11 +691,8 @@ export function SupportPageView() {
                         placeholder="Amount"
                         value={amount}
                         onChange={(e) => setAmount(e.target.value)}
-                        className="ml-2.5 w-full border-none bg-transparent font-serif text-xl font-normal text-paper placeholder:font-sans placeholder:text-sm placeholder:text-ink-soft/40 outline-none ring-0 shadow-none focus:border-none focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none sm:ml-3 sm:text-2xl sm:placeholder:text-base"
+                        className="w-full border-none bg-transparent font-serif text-2xl sm:text-3xl font-normal text-paper placeholder:font-serif placeholder:text-ink-soft/30 outline-none ring-0 shadow-none focus:outline-none focus:ring-0 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                       />
-                      <span className="text-[11px] font-semibold uppercase tracking-wider text-gray-mid sm:text-xs">
-                        INR
-                      </span>
                     </div>
                   </div>
 
@@ -731,9 +700,9 @@ export function SupportPageView() {
                   <button
                     type="submit"
                     disabled={numAmount < 10}
-                    className="group flex w-full items-center justify-center gap-2 rounded-full bg-accent py-3 text-sm font-semibold text-paper shadow-sm transition-all hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-50 sm:py-4 sm:text-base"
+                    className="group relative flex w-full items-center justify-center gap-2.5 rounded-full bg-accent py-3.5 sm:py-4 px-6 text-sm sm:text-base font-semibold text-paper shadow-sm transition-all duration-200 hover:bg-accent-hover active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-40"
                   >
-                    <HeartIcon className="h-4 w-4 transition-transform group-hover:scale-110" />
+                    <HeartIcon className="h-4 w-4 sm:h-5 sm:w-5 text-paper/90 transition-transform duration-200 group-hover:scale-110" />
                     <span>
                       {numAmount >= 10
                         ? `Support with ₹${amount}`
@@ -741,7 +710,7 @@ export function SupportPageView() {
                     </span>
                   </button>
 
-                  <p className="text-center text-[10px] text-gray-mid sm:text-xs">
+                  <p className="text-center font-mono text-[10px] sm:text-[11px] uppercase tracking-wider text-ink-soft/60">
                     One-time contribution
                   </p>
                 </form>
@@ -749,68 +718,23 @@ export function SupportPageView() {
             </div>
           </section>
 
-          {/* 2. Where does the support go?: Editorial Open Ledger (No Cards) */}
-          <section className="mx-auto mt-16 max-w-4xl border-t border-tinted/20 pt-12 sm:mt-24 sm:pt-16 lg:mt-32">
-            {/* Section Header */}
-            <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-accent sm:text-xs">
-                HOW YOUR MONEY HELPS
-              </p>
-              <h2 className="mt-2 font-serif text-2xl font-normal tracking-tight text-paper sm:mt-3 sm:text-3xl md:text-4xl">
-                Where does the money go?
-              </h2>
-              <p className="mt-2.5 max-w-2xl text-sm leading-relaxed text-ink-soft sm:text-base md:text-lg">
-                I want to be completely open about what your contributions pay for:
-              </p>
-            </div>
-
-            {/* Editorial Ledger Rows */}
-            <div className="mt-10 divide-y divide-tinted/15 sm:mt-14">
-              {LEDGER_ITEMS.map((item) => (
-                <div
-                  key={item.category}
-                  className="grid grid-cols-1 gap-3 py-8 sm:grid-cols-12 sm:gap-8 sm:py-10"
-                >
-                  {/* Left Column: Number & Category */}
-                  <div className="sm:col-span-4 lg:col-span-5">
-                    <span className="font-mono text-xs font-semibold text-accent sm:text-sm">
-                      {item.index}
-                    </span>
-                    <h3 className="mt-1 font-serif text-lg font-normal text-paper sm:text-xl md:text-2xl">
-                      {item.category}
-                    </h3>
-                  </div>
-
-                  {/* Right Narrative Column */}
-                  <div className="space-y-2 sm:col-span-8 lg:col-span-7 sm:pt-1">
-                    <p className="text-sm font-medium leading-snug text-paper/90 sm:text-base">
-                      {item.lead}
-                    </p>
-                    <p className="text-xs leading-relaxed text-ink-soft sm:text-sm">
-                      {item.body}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          {/* 3. Closing Note */}
-          <footer className="mx-auto mt-12 max-w-2xl border-t border-tinted/20 pt-8 text-center sm:mt-20 sm:pt-12">
-            <p className="font-serif text-base font-medium text-paper sm:text-lg md:text-xl">
+          {/* Closing Note */}
+          <footer className="mt-20 max-w-2xl mx-auto border-t border-tinted/20 pt-12 text-center sm:mt-28 sm:pt-16">
+            <p className="font-serif italic text-base sm:text-lg md:text-xl text-paper/75 leading-relaxed">
               Thank you for reading, sharing, supporting, or simply being here.
             </p>
           </footer>
+        </div>
 
-          {/* Pop-up modal for supporter name, email, and note */}
-          <SupporterModal
-            amount={numAmount}
-            isOpen={isModalOpen}
-            onClose={() => setIsModalOpen(false)}
-            onSubmit={handleProceedPayment}
-            isProcessing={isProcessing}
-          />
-        </>
+        {/* Pop-up modal for supporter name, email, and note */}
+        <SupporterModal
+          amount={numAmount}
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          onSubmit={handleProceedPayment}
+          isProcessing={isProcessing}
+        />
+      </>
       )}
     </div>
   );
