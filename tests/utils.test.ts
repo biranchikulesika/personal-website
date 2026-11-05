@@ -6,6 +6,7 @@ import {
   formatDisplayDate,
   formatDisplayDateTime,
   formatNoteSnippet,
+  formatOverviewSnippet,
   stripMarkdown,
   textSnippet,
   sectionsToMarkdown,
@@ -248,6 +249,41 @@ test("formatNoteSnippet strips markdown syntax from raw stored content", () => {
   assert.ok(!snippet.includes("`"), snippet);
   assert.ok(snippet.includes("You can use these tips"));
   assert.ok(snippet.includes("supabase docs"));
+});
+
+// ── formatOverviewSnippet ───────────────────────────────────────────────────
+
+test("formatOverviewSnippet returns full text when within targetLen + buffer", () => {
+  const text = "The founder forwarded me a screenshot of a customer saying that he couldn't log in and that the website was taking forever to load.";
+  // 132 chars fits in 120 + 25 = 145 chars budget
+  const snippet = formatOverviewSnippet(text, 120, 25);
+  assert.equal(snippet, text);
+});
+
+test("formatOverviewSnippet finishes the last complete sentence when text exceeds limit", () => {
+  const text = "A routine account deletion exposed a database dependency. It triggered a chain of backend failures across services. We had to restore the database from backups.";
+  const snippet = formatOverviewSnippet(text, 120, 25);
+  // Sentence 2 ends at "across services."
+  assert.equal(
+    snippet,
+    "A routine account deletion exposed a database dependency. It triggered a chain of backend failures across services.",
+  );
+  assert.ok(snippet.endsWith("."));
+});
+
+test("formatOverviewSnippet truncates at last full word with ellipsis if no sentence ending in range", () => {
+  const text =
+    "This is a single very very long sentence without any periods that keeps going on and on and on and on and on and on and on and on and on and on until it reaches the outer limit of the card";
+  const snippet = formatOverviewSnippet(text, 120, 25);
+  assert.ok(snippet.endsWith("…"), `Snippet must end with ellipsis, got: ${snippet}`);
+  assert.ok(!snippet.includes("limit"));
+  assert.ok(snippet.endsWith("and…") || snippet.endsWith("on…"));
+});
+
+test("formatOverviewSnippet handles empty or whitespace input", () => {
+  assert.equal(formatOverviewSnippet(""), "");
+  assert.equal(formatOverviewSnippet(null), "");
+  assert.equal(formatOverviewSnippet(undefined), "");
 });
 
 // ── stripMarkdown / textSnippet ─────────────────────────────────────────────

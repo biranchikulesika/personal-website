@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import type { BlogPost, SectionGroup, WritingItem } from '@/lib/types';
 import { SectionHeading } from './section-heading';
-import { formatDisplayDate, stripMarkdown } from '@/lib/utils';
+import { formatDisplayDate, formatOverviewSnippet } from '@/lib/utils';
 import { EssayCover } from './ui/essay-cover';
 
 interface WritingSectionProps {
@@ -11,6 +11,8 @@ interface WritingSectionProps {
 }
 
 function EssayCard({ item, priority = false }: { item: WritingItem; priority?: boolean }) {
+  const overview = formatOverviewSnippet(item.description, 120, 25);
+
   return (
     <article className="group h-full">
       <Link
@@ -22,9 +24,11 @@ function EssayCard({ item, priority = false }: { item: WritingItem; priority?: b
           <h3 className="mt-4 font-serif text-lg font-normal leading-snug text-paper transition-colors duration-300 group-hover:text-accent">
             {item.title}
           </h3>
-          <p className="mt-2 text-sm leading-relaxed text-gray-mid line-clamp-2">
-            {stripMarkdown(item.description)}
-          </p>
+          {overview && (
+            <p className="mt-2 text-sm leading-relaxed text-gray-mid line-clamp-3">
+              {overview}
+            </p>
+          )}
         </div>
         <div className="mt-4 flex items-center border-t border-tinted/15 pt-3 text-xs text-gray-mid">
           <span>{formatDisplayDate(item.date)}</span>

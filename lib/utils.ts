@@ -340,6 +340,49 @@ export function formatNoteSnippet(
 }
 
 /**
+ * Formats an overview / subtitle snippet for post cards.
+ * Balances a length budget (targetLen) with a buffer window (buffer), ensuring
+ * sentences and words complete cleanly without awkward mid-sentence cutoffs.
+ */
+export function formatOverviewSnippet(
+  text: string | null | undefined,
+  targetLen = 120,
+  buffer = 25,
+): string {
+  if (!text) return '';
+  const cleaned = stripMarkdown(text).trim();
+  if (!cleaned) return '';
+
+  const maxLen = targetLen + buffer;
+  // If the text fits comfortably within targetLen + buffer, display it fully
+  if (cleaned.length <= maxLen) {
+    return cleaned;
+  }
+
+  const minLen = Math.max(20, targetLen - buffer);
+  const searchSlice = cleaned.slice(0, maxLen);
+
+  // Look for sentence terminators (. ! ?)
+  const sentenceMatches = Array.from(searchSlice.matchAll(/[.!?](?:\s|$)/g));
+  if (sentenceMatches.length > 0) {
+    const viable = sentenceMatches.filter((m) => (m.index ?? 0) + 1 >= minLen);
+    if (viable.length > 0) {
+      const best = viable[viable.length - 1];
+      return cleaned.slice(0, (best.index ?? 0) + 1).trim();
+    }
+  }
+
+  // If no sentence end in range, truncate at the last full word boundary
+  const wordSlice = cleaned.slice(0, targetLen);
+  const lastSpace = wordSlice.lastIndexOf(' ');
+  if (lastSpace > minLen) {
+    return cleaned.slice(0, lastSpace).trim() + '…';
+  }
+
+  return wordSlice.trim() + '…';
+}
+
+/**
  * Strips common Markdown/MDX syntax so raw content reads as plain prose
  * (used for OG image snippets).
  */
