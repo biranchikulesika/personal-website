@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
 import { ToastView } from '@/components/ui/toast-view';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { UserAvatar } from '@/components/ui/user-avatar';
 import {
   MailIcon,
@@ -94,6 +95,9 @@ export function AccountManager({
   const [sessions, setSessions] = useState<UserSession[]>(initialSessions);
   const [isSigningOutAll, setIsSigningOutAll] = useState(false);
   const [signingOutSessionId, setSigningOutSessionId] = useState<string | null>(null);
+  const [passkeyToDelete, setPasskeyToDelete] = useState<PasskeyItem | null>(null);
+  const [sessionToSignOut, setSessionToSignOut] = useState<UserSession | null>(null);
+  const [confirmSignOutAll, setConfirmSignOutAll] = useState(false);
   const { message: toastMessage, showToast } = useToast();
 
   async function handleAddPasskey() {
@@ -154,17 +158,20 @@ export function AccountManager({
     }
   }
 
-  async function handleRemovePasskey(id: string) {
+  async function handleConfirmRemovePasskey() {
+    if (!passkeyToDelete) return;
+    const { id } = passkeyToDelete;
     try {
       const result = await deletePasskeyAction(id);
       if (result.success) {
         setPasskeys((prev) => prev.filter((p) => p.id !== id));
-        showToast('Passkey removed');
+        setPasskeyToDelete(null);
+        showToast('Passkey removed successfully.', 'success');
       } else {
-        showToast(result.error || 'Failed to remove passkey');
+        showToast(result.error || 'Failed to remove passkey. Please try again.', 'error');
       }
     } catch {
-      showToast('Failed to remove passkey');
+      showToast('Failed to remove passkey. Please try again.', 'error');
     }
   }
 
@@ -182,13 +189,14 @@ export function AccountManager({
           prev.includes(providerId) ? prev : [...prev, providerId],
         );
         showToast(
-          `${CONNECTED_ACCOUNTS.find((p) => p.id === providerId)?.label} connected`,
+          `${CONNECTED_ACCOUNTS.find((p) => p.id === providerId)?.label} connected successfully.`,
+          'success',
         );
       } else {
-        showToast(result.error || 'Failed to connect provider');
+        showToast(result.error || 'Failed to connect provider', 'error');
       }
     } catch {
-      showToast('Failed to connect provider');
+      showToast('Failed to connect provider. Please try again.', 'error');
     } finally {
       setPendingProvider(null);
     }
@@ -199,6 +207,7 @@ export function AccountManager({
     if (connectedProviders.length <= 1) {
       showToast(
         'At least one authentication provider must remain connected to prevent lockout.',
+        'warning',
       );
       return;
     }
@@ -210,20 +219,22 @@ export function AccountManager({
           prev.filter((id) => id !== providerId),
         );
         showToast(
-          `${CONNECTED_ACCOUNTS.find((p) => p.id === providerId)?.label} disconnected`,
+          `${CONNECTED_ACCOUNTS.find((p) => p.id === providerId)?.label} disconnected successfully.`,
+          'success',
         );
       } else {
-        showToast(result.error || 'Failed to disconnect provider');
+        showToast(result.error || 'Failed to disconnect provider', 'error');
       }
     } catch {
-      showToast('Failed to disconnect provider');
+      showToast('Failed to disconnect provider. Please try again.', 'error');
     } finally {
       setPendingProvider(null);
     }
   }
 
-  async function handleSignOutSession(id: string) {
-    if (signingOutSessionId) return;
+  async function handleConfirmSignOutSession() {
+    if (!sessionToSignOut) return;
+    const { id } = sessionToSignOut;
     setSigningOutSessionId(id);
     try {
       const result = await signOutSessionAction(id);
@@ -233,31 +244,32 @@ export function AccountManager({
           return;
         }
         setSessions((prev) => prev.filter((s) => s.id !== id));
-        showToast('Session signed out');
+        setSessionToSignOut(null);
+        showToast('Session signed out successfully.', 'success');
       } else {
-        showToast(result.error || 'Failed to sign out session');
+        showToast(result.error || 'Failed to sign out session', 'error');
       }
     } catch {
-      showToast('Failed to sign out session');
+      showToast('Failed to sign out session. Please try again.', 'error');
     } finally {
       setSigningOutSessionId(null);
     }
   }
 
-  async function handleSignOutAll() {
+  async function handleConfirmSignOutAll() {
     if (isSigningOutAll) return;
     setIsSigningOutAll(true);
     try {
       const result = await signOutAllSessionsAction();
       if (result.success) {
-        showToast('Signed out of all sessions');
+        showToast('Signed out of all sessions successfully.', 'success');
         window.location.href = result.redirect || '/admin/login';
       } else {
-        showToast(result.error || 'Failed to sign out all sessions');
+        showToast(result.error || 'Failed to sign out all sessions', 'error');
         setIsSigningOutAll(false);
       }
     } catch {
-      showToast('Failed to sign out all sessions');
+      showToast('Failed to sign out all sessions. Please try again.', 'error');
       setIsSigningOutAll(false);
     }
   }
@@ -341,7 +353,7 @@ export function AccountManager({
                         type="button"
                         title="Remove passkey"
                         aria-label={`Remove ${passkey.label} passkey`}
-                        onClick={() => handleRemovePasskey(passkey.id)}
+                        onClick={() => setPasskeyToDelete(passkey)}
                         className="shrink-0 rounded-full p-2 text-gray-mid transition-colors hover:bg-red-950/40 hover:text-red-400 active:scale-95"
                       >
                         <TrashIcon className="h-4 w-4" />
@@ -444,7 +456,7 @@ export function AccountManager({
               <button
                 type="button"
                 disabled={isSigningOutAll}
-                onClick={handleSignOutAll}
+                onClick={() => setConfirmSignOutAll(true)}
                 className="rounded-full px-3 py-1 text-xs font-semibold text-gray-mid border border-tinted/20 hover:border-red-500/30 hover:bg-red-950/30 hover:text-red-400 transition-all disabled:opacity-50 active:scale-95"
               >
                 {isSigningOutAll ? 'Signing out all…' : 'Sign out all'}
@@ -485,7 +497,7 @@ export function AccountManager({
                   <button
                     type="button"
                     disabled={signingOutSessionId === session.id}
-                    onClick={() => handleSignOutSession(session.id)}
+                    onClick={() => setSessionToSignOut(session)}
                     className="rounded-lg px-2.5 py-1 text-xs font-semibold text-gray-mid hover:bg-red-950/40 hover:text-red-400 transition-colors disabled:opacity-50 active:scale-95"
                   >
                     {signingOutSessionId === session.id ? 'Signing out…' : 'Sign out'}
@@ -503,6 +515,57 @@ export function AccountManager({
           </div>
         </section>
       </div>
+
+      {/* Remove Passkey Confirmation */}
+      <ConfirmDialog
+        isOpen={Boolean(passkeyToDelete)}
+        onClose={() => setPasskeyToDelete(null)}
+        onConfirm={handleConfirmRemovePasskey}
+        title="Remove Passkey?"
+        description={
+          passkeyToDelete ? (
+            <>
+              Are you sure you want to remove the passkey{" "}
+              <b className="text-paper">{passkeyToDelete.label}</b>? You won&apos;t
+              be able to use it to sign in.
+            </>
+          ) : null
+        }
+        confirmLabel="Remove"
+        variant="danger"
+      />
+
+      {/* Revoke Session Confirmation */}
+      <ConfirmDialog
+        isOpen={Boolean(sessionToSignOut)}
+        onClose={() => setSessionToSignOut(null)}
+        onConfirm={handleConfirmSignOutSession}
+        isLoading={Boolean(signingOutSessionId)}
+        title="Revoke Session?"
+        description={
+          sessionToSignOut ? (
+            <>
+              Are you sure you want to sign out of the session on{" "}
+              <b className="text-paper">{sessionToSignOut.device}</b> (
+              {sessionToSignOut.location})?
+            </>
+          ) : null
+        }
+        confirmLabel="Sign Out"
+        variant="warning"
+      />
+
+      {/* Sign Out All Sessions Confirmation */}
+      <ConfirmDialog
+        isOpen={confirmSignOutAll}
+        onClose={() => setConfirmSignOutAll(false)}
+        onConfirm={handleConfirmSignOutAll}
+        isLoading={isSigningOutAll}
+        title="Sign Out All Other Sessions?"
+        description="Are you sure you want to sign out of all active sessions across all devices? You will be returned to the login screen."
+        confirmLabel="Sign Out All"
+        variant="warning"
+      />
     </div>
   );
 }

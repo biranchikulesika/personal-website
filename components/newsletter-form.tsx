@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import type { NewsletterConfig } from '@/lib/types';
 import { subscribeToNewsletterAction } from '@/app/admin/actions';
+import { toast } from '@/lib/toast';
 
 /**
  * Newsletter signup form.
@@ -22,28 +23,29 @@ export function NewsletterForm({
 }: NewsletterFormProps) {
   const [email, setEmail] = useState('');
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
-  const [message, setMessage] = useState('');
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!email.trim() || status === 'loading') return;
 
     setStatus('loading');
-    setMessage('');
 
     try {
       const res = await subscribeToNewsletterAction({ email });
       if (res.success) {
         setStatus('success');
-        setMessage(res.message || "You're on the list! Thank you.");
+        const msg = res.message || "Your subscription was successful. Thank you!";
         setEmail('');
+        toast.success(msg);
       } else {
         setStatus('error');
-        setMessage(res.error || 'Unable to subscribe. Please try again.');
+        const err = res.error || 'Unable to subscribe. Please try again.';
+        toast.error(err);
       }
     } catch {
       setStatus('error');
-      setMessage('Something went wrong. Please check your connection.');
+      const err = 'Something went wrong. Please check your connection.';
+      toast.error(err);
     }
   }
 
@@ -107,26 +109,7 @@ export function NewsletterForm({
         </button>
       </form>
 
-      {/* Status Feedback Message */}
-      {status === 'success' && (
-        <p
-          aria-live="polite"
-          className="mt-2.5 px-1 text-xs sm:text-[13px] font-medium text-emerald-400"
-        >
-          {message}
-        </p>
-      )}
-
-      {status === 'error' && (
-        <p
-          aria-live="polite"
-          className="mt-2.5 px-1 text-xs sm:text-[13px] font-medium text-rose-400"
-        >
-          {message}
-        </p>
-      )}
-
-      {status !== 'success' && status !== 'error' && showNote && (
+      {showNote && (
         <p className="mt-2.5 px-1 text-xs sm:text-[13px] leading-relaxed text-gray-mid">
           {newsletter.note}
         </p>

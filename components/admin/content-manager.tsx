@@ -35,6 +35,7 @@ import { EmptyTableState } from "@/components/ui/states";
 import { useState, useTransition, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { ToastView } from "@/components/ui/toast-view";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { BookCoverPicker } from "./book-cover-picker";
 import { PostEditorModal } from "./mdx-editor/post-editor-modal";
 import { NoteEditorModal } from "./mdx-editor/note-editor-modal";
@@ -94,26 +95,22 @@ export function ContentManager({
     }
   }, [openCreateBookTrigger]);
 
-  // Confirmation dialog state (publish / unpublish / delete)
+  // Confirmation dialog state (unpublish / delete)
   const [confirmAction, setConfirmAction] = useState<{
     kind: "post" | "note" | "book" | "now";
-    action: "publish" | "unpublish" | "delete";
+    action: "unpublish" | "delete";
     slug: string;
     id: string;
     title: string;
   } | null>(null);
 
-  // Type-to-confirm input for deletion
-  const [confirmTypedTitle, setConfirmTypedTitle] = useState("");
-
   function openConfirmAction(confirm: {
     kind: "post" | "note" | "book" | "now";
-    action: "publish" | "unpublish" | "delete";
+    action: "unpublish" | "delete";
     slug: string;
     id: string;
     title: string;
   }) {
-    setConfirmTypedTitle("");
     setConfirmAction(confirm);
   }
 
@@ -204,12 +201,13 @@ export function ContentManager({
           ),
         );
         showToast(
-          `Note is now ${
-            res.note.status === "unpublished" ? "Draft" : "Published"
-          }.`,
+          res.note.status === "unpublished"
+            ? "Note unpublished successfully."
+            : "Note published successfully.",
+          "success",
         );
       } else {
-        showToast(res.error || "Failed to toggle status");
+        showToast(res.error || "Failed to update note status.", "error");
       }
     });
   }
@@ -245,7 +243,7 @@ export function ContentManager({
 
   function handleSaveBookWithStatus(publish: boolean) {
     if (!bookTitle.trim() || !bookAuthor.trim()) {
-      showToast("Book title and author are required.");
+      showToast("Book title and author are required.", "warning");
       return;
     }
 
@@ -258,6 +256,7 @@ export function ContentManager({
     if (isTakenByBook || isTakenByPost || isTakenByNote) {
       showToast(
         `Slug "${cleanSlug}" is already in use. Please choose a unique slug.`,
+        "warning",
       );
       return;
     }
@@ -296,11 +295,12 @@ export function ContentManager({
         setIsEditingBook(false);
         showToast(
           publish
-            ? `Book "${bookTitle}" published to library shelf!`
-            : `Book "${bookTitle}" saved as draft!`,
+            ? "Book published successfully."
+            : "Draft saved successfully.",
+          "success",
         );
       } else {
-        showToast(res.error || "Failed to save book");
+        showToast(res.error || "Failed to save book. Please try again.", "error");
       }
     });
   }
@@ -312,7 +312,7 @@ export function ContentManager({
     handleSaveBookWithStatus(isCurrentlyPublished);
   }
 
-  // Confirmation action handler (publish / unpublish / delete)
+  // Confirmation action handler (unpublish / delete)
   function handleConfirmAction() {
     if (!confirmAction) return;
     const { kind, slug, id, action } = confirmAction;
@@ -324,18 +324,18 @@ export function ContentManager({
           if (res.success) {
             setPosts((prev) => prev.filter((p) => p.slug !== slug));
             setConfirmAction(null);
-            showToast("Essay deleted successfully");
+            showToast("Article deleted successfully.", "success");
           } else {
-            showToast(res.error || "Failed to delete essay");
+            showToast(res.error || "Failed to delete article. Please try again.", "error");
           }
         } else if (kind === "note") {
           const res = await deleteNoteAction(slug);
           if (res.success) {
             setNotes((prev) => prev.filter((n) => n.slug !== slug));
             setConfirmAction(null);
-            showToast("Note deleted successfully");
+            showToast("Note deleted successfully.", "success");
           } else {
-            showToast(res.error || "Failed to delete note");
+            showToast(res.error || "Failed to delete note. Please try again.", "error");
           }
         } else if (kind === "now") {
           // Now entries are keyed by id, not slug.
@@ -343,21 +343,22 @@ export function ContentManager({
           if (res.success) {
             setNowEntries((prev) => prev.filter((e) => e.id !== id));
             setConfirmAction(null);
-            showToast("Now entry removed from the timeline");
+            showToast("Now entry deleted successfully.", "success");
           } else {
-            showToast(res.error || "Failed to delete now entry");
+            showToast(res.error || "Failed to delete now entry. Please try again.", "error");
           }
         } else {
           const res = await deleteBookAction(slug);
           if (res.success) {
             setBooks((prev) => prev.filter((b) => b.slug !== slug));
             setConfirmAction(null);
-            showToast("Book removed from library");
+            showToast("Book deleted successfully.", "success");
           } else {
-            showToast(res.error || "Failed to delete book");
+            showToast(res.error || "Failed to delete book. Please try again.", "error");
           }
         }
       } else {
+        // action === "unpublish"
         if (kind === "post") {
           const res = await togglePostStatusAction(slug);
           if (res.success && res.post) {
@@ -367,13 +368,9 @@ export function ContentManager({
               ),
             );
             setConfirmAction(null);
-            showToast(
-              `Essay is now ${
-                res.post.status === "unpublished" ? "Draft" : "Published"
-              }.`,
-            );
+            showToast("Article unpublished successfully.", "success");
           } else {
-            showToast(res.error || "Failed to toggle status");
+            showToast(res.error || "Failed to unpublish article. Please try again.", "error");
           }
         } else if (kind === "book") {
           const res = await toggleBookStatusAction(slug);
@@ -390,38 +387,26 @@ export function ContentManager({
               ),
             );
             setConfirmAction(null);
-            showToast(
-              `Book is now ${
-                res.book.isPublished ? "Published" : "Draft"
-              }.`,
-            );
+            showToast("Book unpublished successfully.", "success");
           } else {
-            showToast(res.error || "Failed to toggle status");
+            showToast(res.error || "Failed to unpublish book. Please try again.", "error");
           }
         } else if (kind === "now") {
-          // Now entries have no dedicated status toggle; the save action
-          // upserts by id, so re-saving with a flipped status is the toggle.
           const entry = nowEntries.find((e) => e.id === id);
           if (!entry) {
             setConfirmAction(null);
-            showToast("Now entry not found");
+            showToast("Now entry not found.", "error");
             return;
           }
-          const nextStatus =
-            action === "publish" ? "published" : "unpublished";
-          const res = await saveNowEntryAction({ ...entry, status: nextStatus });
+          const res = await saveNowEntryAction({ ...entry, status: "unpublished" });
           if (res.success) {
             setNowEntries((prev) =>
-              prev.map((e) => (e.id === id ? { ...e, status: nextStatus } : e)),
+              prev.map((e) => (e.id === id ? { ...e, status: "unpublished" } : e)),
             );
             setConfirmAction(null);
-            showToast(
-              `Now entry is now ${
-                nextStatus === "published" ? "Published" : "Draft"
-              }.`,
-            );
+            showToast("Now entry unpublished successfully.", "success");
           } else {
-            showToast(res.error || "Failed to toggle status");
+            showToast(res.error || "Failed to unpublish now entry. Please try again.", "error");
           }
         } else {
           const res = await toggleNoteStatusAction(slug);
@@ -432,14 +417,79 @@ export function ContentManager({
               ),
             );
             setConfirmAction(null);
-            showToast(
-              `Note is now ${
-                res.note.status === "unpublished" ? "Draft" : "Published"
-              }.`,
-            );
+            showToast("Note unpublished successfully.", "success");
           } else {
-            showToast(res.error || "Failed to toggle status");
+            showToast(res.error || "Failed to unpublish note. Please try again.", "error");
           }
+        }
+      }
+    });
+  }
+
+  // Direct publish handler (ordinary constructive action with immediate feedback)
+  function handleDirectPublish(item: {
+    kind: "post" | "note" | "book" | "now";
+    slug: string;
+    id: string;
+    title: string;
+  }) {
+    startTransition(async () => {
+      if (item.kind === "post") {
+        const res = await togglePostStatusAction(item.slug);
+        if (res.success && res.post) {
+          setPosts((prev) =>
+            prev.map((p) =>
+              p.slug === item.slug ? { ...p, status: res.post!.status } : p,
+            ),
+          );
+          showToast("Article published successfully.", "success");
+        } else {
+          showToast(res.error || "Failed to publish article. Please try again.", "error");
+        }
+      } else if (item.kind === "note") {
+        const res = await toggleNoteStatusAction(item.slug);
+        if (res.success && res.note) {
+          setNotes((prev) =>
+            prev.map((n) =>
+              n.slug === item.slug ? { ...n, status: res.note!.status } : n,
+            ),
+          );
+          showToast("Note published successfully.", "success");
+        } else {
+          showToast(res.error || "Failed to publish note. Please try again.", "error");
+        }
+      } else if (item.kind === "book") {
+        const res = await toggleBookStatusAction(item.slug);
+        if (res.success && res.book) {
+          setBooks((prev) =>
+            prev.map((b) =>
+              b.slug === item.slug
+                ? {
+                    ...b,
+                    isPublished: res.book!.isPublished,
+                    status: res.book!.status,
+                  }
+                : b,
+            ),
+          );
+          showToast("Book published successfully.", "success");
+        } else {
+          showToast(res.error || "Failed to publish book. Please try again.", "error");
+        }
+      } else if (item.kind === "now") {
+        const entry = nowEntries.find((e) => e.id === item.id);
+        if (!entry) {
+          showToast("Now entry not found.", "error");
+          return;
+        }
+        const res = await saveNowEntryAction({ ...entry, status: "published" });
+        if (res.success) {
+          setNowEntries((prev) =>
+            prev.map((e) => (e.id === item.id ? { ...e, status: "published" } : e)),
+          );
+          showToast("Now entry published successfully.", "success");
+        } else {
+          showToast(res.error || "Failed to publish now entry. Please try again.", "error");
         }
       }
     });
@@ -754,13 +804,17 @@ export function ContentManager({
                                 disabled={isPending}
                                 onClick={() => {
                                   setMenuOpenId(null);
-                                  openConfirmAction({
-                                    kind: item.kind,
-                                    action: isPublished ? "unpublish" : "publish",
-                                    slug: item.slug,
-                                    id: item.id,
-                                    title: item.title,
-                                  });
+                                  if (isPublished) {
+                                    openConfirmAction({
+                                      kind: item.kind,
+                                      action: "unpublish",
+                                      slug: item.slug,
+                                      id: item.id,
+                                      title: item.title,
+                                    });
+                                  } else {
+                                    handleDirectPublish(item);
+                                  }
                                 }}
                                 className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors ${
                                   isPublished
@@ -1157,13 +1211,17 @@ export function ContentManager({
                                     disabled={isPending}
                                     onClick={() => {
                                       setMenuOpenId(null);
-                                      openConfirmAction({
-                                        kind: item.kind,
-                                        action: isPublished ? "unpublish" : "publish",
-                                        slug: item.slug,
-                                        id: item.id,
-                                        title: item.title,
-                                      });
+                                      if (isPublished) {
+                                        openConfirmAction({
+                                          kind: item.kind,
+                                          action: "unpublish",
+                                          slug: item.slug,
+                                          id: item.id,
+                                          title: item.title,
+                                        });
+                                      } else {
+                                        handleDirectPublish(item);
+                                      }
                                     }}
                                     className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors ${
                                       isPublished
@@ -1224,97 +1282,54 @@ export function ContentManager({
         </div>
       </div>
 
-      {/* Action Confirmation Modal (Publish / Unpublish / Delete) */}
-      {confirmAction && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-xs">
-          <div className="w-full max-w-md rounded-3xl border border-tinted/20 bg-night-soft p-6 shadow-2xl animate-in zoom-in-95">
-            <h3 className="font-serif text-xl font-normal text-paper">
-              {confirmAction.action === "delete"
-                ? `Delete ${
-                    confirmAction.kind === "post"
-                      ? "Essay"
-                      : confirmAction.kind === "note"
-                        ? "Note"
-                        : confirmAction.kind === "now"
-                          ? "Now Entry"
-                          : "Book"
-                  }?`
-                : confirmAction.action === "unpublish"
-                  ? "Unpublish?"
-                  : "Publish?"}
-            </h3>
-            <p className="mt-2 text-sm leading-relaxed text-gray-mid">
-              {confirmAction.action === "delete" ? (
-                <>
-                  Are you sure you want to delete{" "}
-                  <b className="text-paper">{confirmAction.title}</b>? This
-                  action cannot be undone.
-                  {confirmAction.action === "delete" && (
-                    <span className="mt-3 block">
-                      Type the full title to confirm:
-                    </span>
-                  )}
-                </>
-              ) : (
-                <>
-                  Are you sure you want to{" "}
-                  {confirmAction.action === "unpublish"
-                    ? "unpublish"
-                    : "publish"}{" "}
-                  <b className="text-paper">{confirmAction.title}</b>?
-                </>
-              )}
-            </p>
-            {confirmAction.action === "delete" && (
-              <input
-                type="text"
-                autoFocus
-                placeholder="Type the full title to confirm"
-                value={confirmTypedTitle}
-                onChange={(e) => setConfirmTypedTitle(e.target.value)}
-                onKeyDown={(e) => {
-                  if (
-                    e.key === "Enter" &&
-                    confirmTypedTitle === confirmAction.title
-                  ) {
-                    handleConfirmAction();
-                  }
-                }}
-                className="mt-3 w-full rounded-xl border border-tinted/20 bg-night px-3.5 py-2 text-sm text-paper placeholder:text-gray-mid/50 focus:border-tinted/40 focus:outline-none"
-              />
-            )}
-            <div className="mt-6 flex justify-end gap-3">
-              <button
-                type="button"
-                onClick={() => setConfirmAction(null)}
-                className="rounded-full px-4 py-2 text-xs font-medium text-gray-mid hover:text-paper"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                disabled={
-                  isPending ||
-                  (confirmAction.action === "delete" &&
-                    confirmTypedTitle !== confirmAction.title)
-                }
-                onClick={handleConfirmAction}
-                className={`rounded-full px-5 py-2 text-xs font-semibold text-white shadow-sm hover:brightness-110 disabled:opacity-50 ${
-                  confirmAction.action === "delete" ? "bg-red-700" : "bg-accent"
-                }`}
-              >
-                {isPending
-                  ? "Processing..."
-                  : confirmAction.action === "delete"
-                    ? "Confirm Delete"
-                    : confirmAction.action === "unpublish"
-                      ? "Unpublish"
-                      : "Publish"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Action Confirmation Modal (Unpublish / Delete) */}
+      <ConfirmDialog
+        isOpen={Boolean(confirmAction)}
+        onClose={() => setConfirmAction(null)}
+        onConfirm={handleConfirmAction}
+        isLoading={isPending}
+        title={
+          confirmAction?.action === "delete"
+            ? `Delete ${
+                confirmAction.kind === "post"
+                  ? "Article"
+                  : confirmAction.kind === "note"
+                  ? "Note"
+                  : confirmAction.kind === "now"
+                  ? "Now Entry"
+                  : "Book"
+              }?`
+            : `Unpublish ${
+                confirmAction?.kind === "post"
+                  ? "Article"
+                  : confirmAction?.kind === "note"
+                  ? "Note"
+                  : confirmAction?.kind === "now"
+                  ? "Now Entry"
+                  : "Book"
+              }?`
+        }
+        description={
+          confirmAction?.action === "delete" ? (
+            <>
+              Are you sure you want to permanently delete{" "}
+              <b className="text-paper">{confirmAction.title}</b>? This action
+              cannot be undone.
+            </>
+          ) : (
+            <>
+              Are you sure you want to unpublish{" "}
+              <b className="text-paper">{confirmAction?.title}</b>? It will no
+              longer be visible to visitors on the live site.
+            </>
+          )
+        }
+        confirmLabel={confirmAction?.action === "delete" ? "Delete" : "Unpublish"}
+        variant={confirmAction?.action === "delete" ? "danger" : "warning"}
+        typeToConfirm={
+          confirmAction?.action === "delete" ? confirmAction.title : undefined
+        }
+      />
 
       {/* Post Editor Modal: self-contained, does not cause ContentManager re-renders */}
       {isEditingPost && (

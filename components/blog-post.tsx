@@ -211,7 +211,7 @@ export async function BlogPostView({ post }: { post: BlogPost }) {
                   <ArrowRightIcon className="h-4 w-4 text-sea-blue transition-transform duration-300 group-hover:translate-x-0.5" />
                 </Link>
               </div>
-              <div className="no-scrollbar -mx-4 mt-6 flex snap-x snap-mandatory gap-4 overflow-x-auto overscroll-x-contain px-4 pb-1 sm:-mx-0 sm:px-0">
+              <div className="no-scrollbar -mx-4 mt-2 flex snap-x snap-mandatory gap-4 overflow-x-auto overscroll-x-contain px-4 pt-4 pb-3 sm:-mx-0 sm:mt-6 sm:px-0 sm:pt-0 sm:pb-0">
                 {post.books.map((book) => (
                   <BookCardView key={book.title} {...book} />
                 ))}

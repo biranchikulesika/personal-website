@@ -2,6 +2,7 @@
 
 import { ContentService } from '@/lib/services/content.service';
 import { revalidatePath } from 'next/cache';
+import { sanitizeErrorMessage } from '@/lib/errors';
 import type {
   BlogPost,
   BookItem,
@@ -100,7 +101,7 @@ export async function savePostAction(
     revalidateContent(['/', '/scribble', '/sitemap.xml', `/p/${post.slug}`]);
     return { success: true, post: saved };
   } catch (err: unknown) {
-    return { success: false, error: (err as Error).message || 'Failed to save post' };
+    return { success: false, error: sanitizeErrorMessage(err, 'Failed to save post') };
   }
 }
 
@@ -115,7 +116,7 @@ export async function togglePostStatusAction(
     revalidateContent(['/', '/scribble', '/sitemap.xml', `/p/${validSlug}`]);
     return { success: true, post: toggled };
   } catch (err: unknown) {
-    return { success: false, error: (err as Error).message || 'Failed to toggle status' };
+    return { success: false, error: sanitizeErrorMessage(err, 'Failed to toggle status') };
   }
 }
 
@@ -129,7 +130,7 @@ export async function deletePostAction(
     revalidateContent(['/', '/scribble', '/sitemap.xml', `/p/${validSlug}`]);
     return { success: deleted };
   } catch (err: unknown) {
-    return { success: false, error: (err as Error).message || 'Failed to delete post' };
+    return { success: false, error: sanitizeErrorMessage(err, 'Failed to delete post') };
   }
 }
 
@@ -150,7 +151,7 @@ export async function saveNoteAction(
     revalidateContent(['/', '/scribble', '/sitemap.xml', `/n/${note.slug}`]);
     return { success: true, note: saved };
   } catch (err: unknown) {
-    return { success: false, error: (err as Error).message || 'Failed to save note' };
+    return { success: false, error: sanitizeErrorMessage(err, 'Failed to save note') };
   }
 }
 
@@ -165,7 +166,7 @@ export async function toggleNoteStatusAction(
     revalidateContent(['/', '/scribble', '/sitemap.xml', `/n/${validSlug}`]);
     return { success: true, note: toggled };
   } catch (err: unknown) {
-    return { success: false, error: (err as Error).message || 'Failed to toggle status' };
+    return { success: false, error: sanitizeErrorMessage(err, 'Failed to toggle status') };
   }
 }
 
@@ -179,7 +180,7 @@ export async function deleteNoteAction(
     revalidateContent(['/', '/scribble', '/sitemap.xml', `/n/${validSlug}`]);
     return { success: deleted };
   } catch (err: unknown) {
-    return { success: false, error: (err as Error).message || 'Failed to delete note' };
+    return { success: false, error: sanitizeErrorMessage(err, 'Failed to delete note') };
   }
 }
 
@@ -200,7 +201,7 @@ export async function saveBookAction(
     revalidateContent(['/', '/library', '/scribble']);
     return { success: true, book: saved };
   } catch (err: unknown) {
-    return { success: false, error: (err as Error).message || 'Failed to save book' };
+    return { success: false, error: sanitizeErrorMessage(err, 'Failed to save book') };
   }
 }
 
@@ -214,7 +215,7 @@ export async function deleteBookAction(
     revalidateContent(['/', '/library', '/scribble']);
     return { success: deleted };
   } catch (err: unknown) {
-    return { success: false, error: (err as Error).message || 'Failed to delete book' };
+    return { success: false, error: sanitizeErrorMessage(err, 'Failed to delete book') };
   }
 }
 
@@ -229,7 +230,7 @@ export async function toggleBookStatusAction(
     revalidateContent(['/', '/library', '/scribble']);
     return { success: true, book };
   } catch (err: unknown) {
-    return { success: false, error: (err as Error).message || 'Failed to toggle book status' };
+    return { success: false, error: sanitizeErrorMessage(err, 'Failed to toggle book status') };
   }
 }
 
@@ -250,7 +251,7 @@ export async function saveNowEntryAction(
     revalidateContent(['/', '/now']);
     return { success: true, entry: saved };
   } catch (err: unknown) {
-    return { success: false, error: (err as Error).message || 'Failed to save now entry' };
+    return { success: false, error: sanitizeErrorMessage(err, 'Failed to save now entry') };
   }
 }
 
@@ -264,7 +265,7 @@ export async function deleteNowEntryAction(
     revalidateContent(['/', '/now']);
     return { success: deleted };
   } catch (err: unknown) {
-    return { success: false, error: (err as Error).message || 'Failed to delete now entry' };
+    return { success: false, error: sanitizeErrorMessage(err, 'Failed to delete now entry') };
   }
 }
 
@@ -285,7 +286,7 @@ export async function addMediaAction(
     safeRevalidatePath('/admin');
     return { success: true, media: added };
   } catch (err: unknown) {
-    return { success: false, error: (err as Error).message || 'Failed to add media' };
+    return { success: false, error: sanitizeErrorMessage(err, 'Failed to add media') };
   }
 }
 
@@ -299,7 +300,7 @@ export async function deleteMediaAction(
     safeRevalidatePath('/admin');
     return { success: deleted };
   } catch (err: unknown) {
-    return { success: false, error: (err as Error).message || 'Failed to delete media' };
+    return { success: false, error: sanitizeErrorMessage(err, 'Failed to delete media') };
   }
 }
 
@@ -314,7 +315,7 @@ export async function deleteOrphanedMediaAction(
   } catch (err: unknown) {
     return {
       success: false,
-      error: (err as Error).message || 'Failed to delete orphaned assets',
+      error: sanitizeErrorMessage(err, 'Failed to delete orphaned assets'),
     };
   }
 }
@@ -335,7 +336,7 @@ export async function generateAiMetadataAction(input: {
   } catch (err: unknown) {
     return {
       success: false,
-      error: (err as Error).message || 'Failed to generate AI metadata',
+      error: sanitizeErrorMessage(err, 'Failed to generate AI metadata'),
     };
   }
 }
@@ -394,7 +395,7 @@ export async function startPasskeyRegistrationAction(): Promise<{
   } catch (err: unknown) {
     return {
       success: false,
-      error: (err as Error).message || 'Failed to start passkey registration',
+      error: sanitizeErrorMessage(err, 'Failed to start passkey registration'),
     };
   }
 }
@@ -477,7 +478,7 @@ export async function verifyPasskeyRegistrationAction(params: {
   } catch (err: unknown) {
     return {
       success: false,
-      error: (err as Error).message || 'Failed to verify and register passkey',
+      error: sanitizeErrorMessage(err, 'Failed to verify and register passkey'),
     };
   }
 }
@@ -503,7 +504,7 @@ export async function deletePasskeyAction(
   } catch (err: unknown) {
     return {
       success: false,
-      error: (err as Error).message || 'Failed to remove passkey',
+      error: sanitizeErrorMessage(err, 'Failed to remove passkey'),
     };
   }
 }
@@ -536,7 +537,7 @@ export async function signOutSessionAction(
   } catch (err: unknown) {
     return {
       success: false,
-      error: (err as Error).message || 'Failed to sign out session',
+      error: sanitizeErrorMessage(err, 'Failed to sign out session'),
     };
   }
 }
@@ -558,7 +559,7 @@ export async function signOutAllSessionsAction(): Promise<{
   } catch (err: unknown) {
     return {
       success: false,
-      error: (err as Error).message || 'Failed to sign out of all sessions',
+      error: sanitizeErrorMessage(err, 'Failed to sign out of all sessions'),
     };
   }
 }
@@ -591,7 +592,7 @@ export async function connectProviderAction(
   } catch (err: unknown) {
     return {
       success: false,
-      error: (err as Error).message || 'Failed to connect account',
+      error: sanitizeErrorMessage(err, 'Failed to connect account'),
     };
   }
 }
@@ -641,7 +642,7 @@ export async function disconnectProviderAction(
   } catch (err: unknown) {
     return {
       success: false,
-      error: (err as Error).message || 'Failed to disconnect account',
+      error: sanitizeErrorMessage(err, 'Failed to disconnect account'),
     };
   }
 }
@@ -663,7 +664,7 @@ export async function subscribeToNewsletterAction(formData: {
   } catch (err: unknown) {
     return {
       success: false,
-      error: (err as Error).message || 'Subscription failed',
+      error: sanitizeErrorMessage(err, 'Subscription failed'),
     };
   }
 }
@@ -678,7 +679,7 @@ export async function deleteSubscriberAction(id: string) {
   } catch (err: unknown) {
     return {
       success: false,
-      error: (err as Error).message || 'Failed to delete subscriber',
+      error: sanitizeErrorMessage(err, 'Failed to delete subscriber'),
     };
   }
 }

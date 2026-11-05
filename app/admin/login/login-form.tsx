@@ -11,6 +11,7 @@ import {
 } from './actions';
 import { startAuthentication, browserSupportsWebAuthn } from '@simplewebauthn/browser';
 import { SITE_DOMAIN } from '@/lib/constants';
+import { toast } from '@/lib/toast';
 
 interface DailyBackground {
   imageUrl: string;
@@ -23,24 +24,27 @@ export function LoginForm() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
-  const [error, setError] = useState('');
   const [oauthLoading, setOAuthLoading] = useState<string | null>(null);
   const [passkeyLoading, setPasskeyLoading] = useState(false);
   const [background, setBackground] = useState<DailyBackground | null>(null);
 
   const errorParam = searchParams.get('error');
 
-  // Auto-dismiss error messages after a few seconds.
+  // Display authentication errors from URL query parameters via toast
   useEffect(() => {
-    if (!errorParam && !error) return;
-    const timer = setTimeout(() => {
-      setError('');
-      if (errorParam) {
-        router.replace(pathname);
-      }
-    }, 4000);
-    return () => clearTimeout(timer);
-  }, [errorParam, error, pathname, router]);
+    if (!errorParam) return;
+    const message =
+      errorParam === 'forbidden'
+        ? 'This account is not authorized to access the admin panel.'
+        : errorParam === 'not_registered'
+        ? 'Signups are disabled. Only the authorized administrator may access this panel.'
+        : errorParam === 'auth_not_configured'
+        ? 'Authentication is not configured yet.'
+        : 'Authentication failed. Please try again.';
+
+    toast.error(message);
+    router.replace(pathname);
+  }, [errorParam, pathname, router]);
 
   // Fetch daily background on mount
   useEffect(() => {
@@ -57,31 +61,29 @@ export function LoginForm() {
   }, []);
 
   async function handleOAuth(provider: 'google' | 'github') {
-    setError('');
     setOAuthLoading(provider);
 
     try {
       const action = provider === 'google' ? signInWithGoogle : signInWithGitHub;
       const result = await action();
       if (result.error) {
-        setError(result.error);
+        toast.error(result.error);
         setOAuthLoading(null);
       } else if (result.url) {
         window.location.href = result.url;
       }
     } catch {
-      setError('An unexpected error occurred');
+      toast.error('An unexpected error occurred. Please try again.');
       setOAuthLoading(null);
     }
   }
 
   async function handlePasskey() {
-    setError('');
     setPasskeyLoading(true);
 
     try {
       if (!browserSupportsWebAuthn()) {
-        setError('WebAuthn / Passkeys are not supported by this browser.');
+        toast.warning('WebAuthn / Passkeys are not supported by this browser.');
         setPasskeyLoading(false);
         return;
       }
@@ -89,7 +91,7 @@ export function LoginForm() {
       // 1. Fetch authentication options from the server
       const optResult = await generatePasskeyAuthenticationOptionsAction();
       if (!optResult.success || !optResult.options) {
-        setError(optResult.error || 'Failed to initialize passkey authentication.');
+        toast.error(optResult.error || 'Failed to initialize passkey authentication.');
         setPasskeyLoading(false);
         return;
       }
@@ -103,7 +105,7 @@ export function LoginForm() {
       } catch (webauthnErr: unknown) {
         const errName = (webauthnErr as { name?: string })?.name;
         if (errName === 'NotAllowedError' || errName === 'AbortError') {
-          setError('Passkey prompt cancelled or timed out.');
+          toast.info('Passkey prompt was cancelled.');
           setPasskeyLoading(false);
           return;
         }
@@ -116,12 +118,13 @@ export function LoginForm() {
       });
 
       if (!verifyResult.success || verifyResult.error) {
-        setError(verifyResult.error || 'Passkey authentication failed. Please try again.');
+        toast.error(verifyResult.error || 'Passkey authentication failed. Please try again.');
       } else {
+        toast.success('Signed in successfully.');
         window.location.href = '/admin';
       }
     } catch (err: unknown) {
-      setError((err as Error).message || 'Passkey authentication failed. Please try again.');
+      toast.error((err as Error).message || 'Passkey authentication failed. Please try again.');
     } finally {
       setPasskeyLoading(false);
     }
@@ -166,23 +169,6 @@ export function LoginForm() {
           <p className="mb-8 text-center text-sm text-ink-soft">
             Administrator
           </p>
-
-          {/* Error message */}
-          {(error || errorParam) && (
-            <div
-              role="alert"
-              className="mb-5 w-full rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-2.5 text-center text-sm text-red-400"
-            >
-              {error ||
-                (errorParam === 'forbidden'
-                  ? 'This account is not authorized to access the admin panel.'
-                  : errorParam === 'not_registered'
-                    ? 'Signups are disabled. Only the authorized administrator may access this panel.'
-                    : errorParam === 'auth_not_configured'
-                      ? 'Authentication is not configured yet.'
-                      : 'Authentication failed. Please try again.')}
-            </div>
-          )}
 
           {/* Auth methods */}
           <div className="flex items-center justify-center gap-10">

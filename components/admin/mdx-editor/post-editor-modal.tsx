@@ -18,6 +18,7 @@ import {
   slugify,
 } from '@/lib/utils';
 import { MDXEditor } from './mdx-editor';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 
 interface PostEditorModalProps {
   /** The post being edited, or null for create-new. */
@@ -53,6 +54,8 @@ export function PostEditorModal({
   showToast,
 }: PostEditorModalProps) {
   const [isPending, startTransition] = useTransition();
+  const [isDiscardConfirmOpen, setIsDiscardConfirmOpen] = useState(false);
+  const [isCloseConfirmOpen, setIsCloseConfirmOpen] = useState(false);
 
   // All post metadata state lives here, not in ContentManager.
   const [title, setTitle] = useState(editingPost?.title ?? '');
@@ -93,7 +96,7 @@ export function PostEditorModal({
         mdxContent !== sectionsToMarkdown(editingPost.intro, editingPost.sections)),
   );
 
-  function handleDiscard() {
+  function handleConfirmDiscard() {
     if (!editingPost) return;
     setTitle(editingPost.title);
     setSlug(editingPost.slug);
@@ -105,7 +108,16 @@ export function PostEditorModal({
     setLastEditedAt(editingPost.lastEditedAt || new Date().toISOString().split('T')[0]);
     setTargetAudience(editingPost.targetAudience || 'Curious technologists and builders');
     setMdxContent(sectionsToMarkdown(editingPost.intro, editingPost.sections));
+    setIsDiscardConfirmOpen(false);
     showToast(`Unpublished changes discarded for "${editingPost.title}". Reverted to published version.`);
+  }
+
+  function handleRequestClose() {
+    if (hasChanges) {
+      setIsCloseConfirmOpen(true);
+    } else {
+      onClose();
+    }
   }
 
   function handleSave(e: React.FormEvent) {
@@ -160,7 +172,10 @@ export function PostEditorModal({
           }
         }
         onSaved(postPayload, oldSlug);
-        showToast(`Essay "${title}" saved successfully with MDX!`);
+        const successMsg = editingPost
+          ? (status === 'published' ? 'Article published successfully.' : 'Changes saved successfully.')
+          : (status === 'published' ? 'Article published successfully.' : 'Article created successfully.');
+        showToast(successMsg);
       } else {
         showToast(res.error || 'Failed to save post');
       }
@@ -182,7 +197,7 @@ export function PostEditorModal({
           </div>
           <button
             type="button"
-            onClick={onClose}
+            onClick={handleRequestClose}
             className="rounded-full p-2 text-gray-mid hover:bg-night-soft hover:text-paper"
           >
             ✕
@@ -339,7 +354,7 @@ export function PostEditorModal({
               {hasChanges && (
                 <button
                   type="button"
-                  onClick={handleDiscard}
+                  onClick={() => setIsDiscardConfirmOpen(true)}
                   className="inline-flex items-center gap-1.5 rounded-full border border-rose-800/40 bg-rose-950/20 px-4 py-2 text-xs font-semibold text-rose-300 hover:bg-rose-950/50 transition-colors"
                   title="Discard unpublished modifications"
                 >
@@ -351,7 +366,7 @@ export function PostEditorModal({
             <div className="flex items-center gap-3">
               <button
                 type="button"
-                onClick={onClose}
+                onClick={handleRequestClose}
                 className="rounded-full px-5 py-2 text-xs font-semibold text-gray-mid hover:text-paper"
               >
                 Cancel
@@ -367,6 +382,28 @@ export function PostEditorModal({
           </div>
         </form>
       </div>
+
+      {/* Discard Changes Confirmation */}
+      <ConfirmDialog
+        isOpen={isDiscardConfirmOpen}
+        onClose={() => setIsDiscardConfirmOpen(false)}
+        onConfirm={handleConfirmDiscard}
+        title="Discard Unsaved Changes?"
+        description="Are you sure you want to discard your modifications? All changes made in this session will be reverted to the last saved version."
+        confirmLabel="Discard Changes"
+        variant="warning"
+      />
+
+      {/* Close with Unsaved Changes Confirmation */}
+      <ConfirmDialog
+        isOpen={isCloseConfirmOpen}
+        onClose={() => setIsCloseConfirmOpen(false)}
+        onConfirm={onClose}
+        title="Discard & Close?"
+        description="You have unsaved changes in this essay. Are you sure you want to close the editor and discard your modifications?"
+        confirmLabel="Discard & Close"
+        variant="warning"
+      />
     </div>
   );
 }

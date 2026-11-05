@@ -4,7 +4,7 @@ import Link from "next/link";
 import { ArrowRightIcon } from "./icons";
 import { LandscapeGallery } from "./landscape-gallery";
 import { NewsletterForm } from "./newsletter-form";
-import { EssayCover } from "./ui/essay-cover";
+import { EssayCard } from "./writing-section";
 
 interface AboutPageProps {
   site: SiteContent;
@@ -137,19 +137,7 @@ export function AboutPageView({ site, featuredWriting }: AboutPageProps) {
 
         <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
           {featuredWriting.slice(0, 3).map((item) => (
-            <Link
-              key={item.slug}
-              href={`/p/${item.slug}`}
-              className="group flex flex-col rounded-2xl border border-tinted/20 bg-post-card p-4 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md"
-            >
-              <EssayCover title={item.title} coverImage={item.coverImage} />
-              <h3 className="mt-4 font-serif text-lg font-normal leading-snug text-paper transition-colors duration-300 group-hover:text-accent">
-                {item.title}
-              </h3>
-              <p className="mt-1 text-xs uppercase tracking-wider text-ink-soft">
-                {item.tags.join(" · ")}
-              </p>
-            </Link>
+            <EssayCard key={item.slug} item={item} />
           ))}
         </div>
       </div>

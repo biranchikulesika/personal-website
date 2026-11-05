@@ -25,6 +25,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { ToastView } from "@/components/ui/toast-view";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { NoSearchResults, NoContentState } from "@/components/ui/states";
 import { EmbedInsertModal } from "../mdx-editor/embed-insert-modal";
 import { MDXPreview } from "../mdx-editor/mdx-preview";
@@ -199,6 +200,7 @@ export function ComposeWorkspace({
   >("book");
   const [isDraftsModalOpen, setIsDraftsModalOpen] = useState(false);
   const [isDiscardModalOpen, setIsDiscardModalOpen] = useState(false);
+  const [tabToClose, setTabToClose] = useState<DocumentTab | null>(null);
   const [draftsSearchQuery, setDraftsSearchQuery] = useState("");
   const { message: toastMessage, showToast } = useToast();
 
@@ -293,14 +295,32 @@ export function ComposeWorkspace({
   function handleCloseTab(idToClose: string, e: React.MouseEvent) {
     e.stopPropagation();
     if (tabs.length === 1) {
-      showToast("Cannot close the only open tab.");
+      showToast("Cannot close the only open tab.", "warning");
       return;
     }
+    const targetTab = tabs.find((t) => t.id === idToClose);
+    if (!targetTab) return;
+
+    if (targetTab.isDirty) {
+      setTabToClose(targetTab);
+      return;
+    }
+
     const nextTabs = tabs.filter((t) => t.id !== idToClose);
     setTabs(nextTabs);
     if (activeTabId === idToClose) {
       setActiveTabId(nextTabs[0].id);
     }
+  }
+
+  function confirmCloseTab() {
+    if (!tabToClose) return;
+    const nextTabs = tabs.filter((t) => t.id !== tabToClose.id);
+    setTabs(nextTabs);
+    if (activeTabId === tabToClose.id) {
+      setActiveTabId(nextTabs[0].id);
+    }
+    setTabToClose(null);
   }
 
   // Open existing post or note from Drafts Modal
@@ -441,12 +461,21 @@ export function ComposeWorkspace({
             isDirty: false,
           });
           setIsPublishDrawerOpen(false);
-          showToast(`Essay "${activeTab.title}" saved successfully!`);
+          const isUpdating =
+            activeTab.rawPost &&
+            activeTab.rawPost.status === "published" &&
+            statusToSet === "published";
+          const successMsg = isUpdating
+            ? "Changes saved successfully."
+            : statusToSet === "unpublished"
+            ? "Draft saved successfully."
+            : "Article published successfully.";
+          showToast(successMsg, "success");
           router.refresh();
         } else {
-          showToast(res.error || "Failed to save essay");
+          showToast(res.error || "Failed to save essay", "error");
         }
-} else if (activeTab.docType === "now") {
+      } else if (activeTab.docType === "now") {
         // A published entry is final, so each one is a new row. A draft reuses
         // its row (the repository upserts by id) and stays in the editor.
         const nowPayload: NowEntry = {
@@ -470,11 +499,12 @@ export function ComposeWorkspace({
           setIsPublishDrawerOpen(false);
           showToast(
             statusToSet === "unpublished"
-              ? "Now entry saved as draft."
+              ? "Draft saved successfully."
               : "Now entry added to the timeline.",
+            "success"
           );
         } else {
-          showToast(res.error || "Failed to save now entry");
+          showToast(res.error || "Failed to save now entry", "error");
         }
       } else {
         // Note collision check
@@ -486,6 +516,7 @@ export function ComposeWorkspace({
         if (isTakenByNote || isTakenByPost || isTakenByBook) {
           showToast(
             `Slug "${cleanSlug}" is already in use. Please choose a unique slug.`,
+            "warning"
           );
           return;
         }
@@ -525,10 +556,19 @@ export function ComposeWorkspace({
             isDirty: false,
           });
           setIsPublishDrawerOpen(false);
-          showToast(`Note "${activeTab.title}" saved successfully!`);
+          const isUpdatingNote =
+            activeTab.rawNote &&
+            activeTab.rawNote.status === "published" &&
+            statusToSet === "published";
+          const successMsg = isUpdatingNote
+            ? "Changes saved successfully."
+            : statusToSet === "unpublished"
+            ? "Draft saved successfully."
+            : "Note published successfully.";
+          showToast(successMsg, "success");
           router.refresh();
         } else {
-          showToast(res.error || "Failed to save note");
+          showToast(res.error || "Failed to save note", "error");
         }
       }
     });
@@ -601,7 +641,7 @@ export function ComposeWorkspace({
         content: sectionsToMarkdown(p.intro, p.sections),
         isDirty: false,
       });
-      showToast(`Unpublished changes discarded for "${p.title}". Reverted to published version.`);
+      showToast("Unpublished changes discarded.", "info");
     } else if (activeTab.docType === "note" && activeTab.rawNote) {
       const n = activeTab.rawNote;
       updateActiveTab({
@@ -616,7 +656,7 @@ export function ComposeWorkspace({
         content: n.content.join("\n\n"),
         isDirty: false,
       });
-      showToast(`Unpublished changes discarded for "${n.title}". Reverted to published version.`);
+      showToast("Unpublished changes discarded.", "info");
     } else if (activeTab.docType === "now" && activeTab.rawNow) {
       const now = activeTab.rawNow;
       updateActiveTab({
@@ -624,7 +664,7 @@ export function ComposeWorkspace({
         content: now.content,
         isDirty: false,
       });
-      showToast(`Unpublished changes discarded for "${now.title}".`);
+      showToast("Unpublished changes discarded.", "info");
     } else {
       const isNote = activeTab.docType === "note";
       const isNow = activeTab.docType === "now";
@@ -652,11 +692,25 @@ export function ComposeWorkspace({
           isDirty: false,
         });
       }
-      showToast("Unsaved changes discarded.");
+      showToast("Unpublished changes discarded.", "info");
     }
     setIsDiscardModalOpen(false);
     setIsPublishDrawerOpen(false);
   }
+
+  // Warn before navigating away when any tab has unsaved changes
+  const anyTabUnsaved = tabs.some((t) => t.isDirty) || hasUnpublishedChanges;
+
+  useEffect(() => {
+    if (!anyTabUnsaved) return;
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+      return "";
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [anyTabUnsaved]);
 
   // Word count & reading time metrics
   const wordCount = activeTab.content.trim()
@@ -1206,45 +1260,42 @@ export function ComposeWorkspace({
         onSelect={(snippet) => insertBlock(snippet)}
       />
 
-      {/* Discard Confirmation Modal */}
-      {isDiscardModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/70 backdrop-blur-xs p-4 animate-in fade-in">
-          <div className="w-full max-w-md rounded-2xl border border-tinted/20 bg-ink p-6 shadow-2xl space-y-4 text-paper">
-            <div className="flex items-center gap-3 text-rose-400">
-              <span className="text-xl">↺</span>
-              <h3 className="text-base font-semibold text-paper">
-                Discard Unpublished Changes?
-              </h3>
-            </div>
-            <p className="text-xs leading-relaxed text-ink-soft">
-              Are you sure you want to discard all unpublished edits for{" "}
-              <strong className="text-paper font-semibold">
-                “{activeTab.title || "Untitled"}”
-              </strong>
-              ?
-              {activeTab.rawPost || activeTab.rawNote || activeTab.rawNow
-                ? " All modifications will be reverted back to the published version. This action cannot be undone."
-                : " All unsaved draft content will be reset. This action cannot be undone."}
-            </p>
-            <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-tinted/20">
-              <button
-                type="button"
-                onClick={() => setIsDiscardModalOpen(false)}
-                className="rounded-lg border border-tinted/20 bg-night-soft hover:bg-tinted/10 px-4 py-2 text-xs font-medium text-paper/80 transition-colors"
-              >
-                Keep Editing
-              </button>
-              <button
-                type="button"
-                onClick={handleDiscardChanges}
-                className="rounded-lg bg-rose-600 hover:bg-rose-700 text-paper px-4 py-2 text-xs font-bold transition-colors shadow-sm"
-              >
-                Discard Changes
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Discard Unpublished Changes Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={isDiscardModalOpen}
+        onClose={() => setIsDiscardModalOpen(false)}
+        onConfirm={handleDiscardChanges}
+        title="Discard Unpublished Changes?"
+        description={
+          <>
+            Are you sure you want to discard all unpublished edits for{" "}
+            <b className="text-paper">“{activeTab.title || "Untitled"}”</b>?{" "}
+            {activeTab.rawPost || activeTab.rawNote || activeTab.rawNow
+              ? "All modifications will be reverted back to the published version. This action cannot be undone."
+              : "All unsaved draft content will be reset. This action cannot be undone."}
+          </>
+        }
+        confirmLabel="Discard Changes"
+        cancelLabel="Keep Editing"
+        variant="danger"
+      />
+
+      {/* Discard Tab Changes Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={Boolean(tabToClose)}
+        onClose={() => setTabToClose(null)}
+        onConfirm={confirmCloseTab}
+        title="Discard unsaved changes?"
+        description={
+          <>
+            Are you sure you want to close{" "}
+            <b className="text-paper">“{tabToClose?.title || "Untitled"}”</b>? Any unsaved edits in this tab will be permanently lost.
+          </>
+        }
+        confirmLabel="Discard & Close"
+        cancelLabel="Keep Tab Open"
+        variant="danger"
+      />
 
       {/* 5. Open Existing Drafts / Notes Modal (Triggered by Folder Icon) */}
       {isDraftsModalOpen && (
