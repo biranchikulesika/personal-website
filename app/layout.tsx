@@ -6,6 +6,7 @@ import { rootMetadata, websiteJsonLd, safeJsonLd } from '@/lib/seo';
 import GoogleAnalytics from '@/components/google-analytics';
 import GoogleTagManager from '@/components/google-tag-manager';
 import { SvgElementGuard } from '@/components/svg-element-guard';
+import { ToastContainer } from '@/components/ui/toast/toast-container';
 import { getSupabaseUrl } from '@/lib/config/env';
 
 export const metadata: Metadata = rootMetadata;
@@ -53,6 +54,7 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: safeJsonLd(websiteJsonLd()) }}
         />
         {children}
+        <ToastContainer />
         <SpeedInsights />
         <SvgElementGuard />
       </body>

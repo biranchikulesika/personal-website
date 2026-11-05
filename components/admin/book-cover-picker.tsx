@@ -1,11 +1,12 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import Image from 'next/image';
 import type { MediaItem } from '@/lib/types';
 import { uploadMediaFile } from '@/lib/storage/upload-client';
 import { UploadIcon, LinkIcon, ImageIcon, CheckIcon } from '@/components/icons';
 import { NoMediaState, NoSearchResults } from '@/components/ui/states';
+import { toast } from '@/lib/toast';
 
 interface BookCoverPickerProps {
   value: string;
@@ -55,27 +56,13 @@ export function BookCoverPicker({
 }: BookCoverPickerProps) {
   const [mode, setMode] = useState<SourceMode>('idle');
   const [search, setSearch] = useState('');
-  const [pasteError, setPasteError] = useState<string | null>(null);
-  const [toast, setToast] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  // Auto-dismiss the inline clipboard error.
-  useEffect(() => {
-    if (!pasteError) return;
-    const timer = setTimeout(() => setPasteError(null), 3500);
-    return () => clearTimeout(timer);
-  }, [pasteError]);
 
   const filteredMedia = mediaItems.filter(
     (m) =>
       m.name.toLowerCase().includes(search.toLowerCase()) ||
       m.alt.toLowerCase().includes(search.toLowerCase()),
   );
-
-  function showToast(msg: string) {
-    setToast(msg);
-    setTimeout(() => setToast(null), 2500);
-  }
 
   const commitCover = (url: string) => {
     onChange(url);
@@ -86,13 +73,10 @@ export function BookCoverPicker({
     const url = await readClipboardImageUrl();
     if (url) {
       commitCover(url);
-      setPasteError(null);
-      showToast('Cover set from clipboard link');
+      toast.info('Cover set from clipboard link.');
     } else {
       setMode('idle');
-      setPasteError(
-        "Clipboard doesn't contain a valid image URL. Copy a link or image and try again.",
-      );
+      toast.error('Clipboard does not contain a valid image URL.');
     }
   };
 
@@ -107,9 +91,9 @@ export function BookCoverPicker({
       });
       commitCover(media.src);
       onMediaAdded?.(media);
-      showToast(`"${media.name}" uploaded and set as cover`);
+      toast.success('Cover image uploaded successfully.');
     } catch (err: unknown) {
-      showToast((err as Error).message || 'Upload failed');
+      toast.error((err as Error).message || 'Failed to upload cover image. Please try again.');
     } finally {
       if (fileInputRef.current) fileInputRef.current.value = '';
     }
@@ -118,6 +102,7 @@ export function BookCoverPicker({
   const removeCover = () => {
     onChange('');
     setMode('idle');
+    toast.success('Image removed successfully.');
   };
 
   return (
@@ -208,7 +193,6 @@ export function BookCoverPicker({
                 type="button"
                 onClick={() => {
                   setMode(mode === 'import' ? 'idle' : 'import');
-                  setPasteError(null);
                 }}
                 title="Import from media library"
                 aria-label="Import cover image from media library"
@@ -226,16 +210,6 @@ export function BookCoverPicker({
                 />
               </button>
             </div>
-
-            {/* Inline clipboard error: never a popup */}
-            {pasteError && (
-              <p
-                role="alert"
-                className="mt-2 rounded-lg bg-red-950/40 border border-red-800/40 px-2 py-1 text-center text-[10px] font-medium text-red-400"
-              >
-                {pasteError}
-              </p>
-            )}
 
             {/* Import mode → media library grid */}
             {mode === 'import' && (
@@ -256,7 +230,7 @@ export function BookCoverPicker({
                         type="button"
                         onClick={() => {
                           commitCover(media.src);
-                          showToast(`"${media.name}" set as cover`);
+                          toast.success(`"${media.name}" set as cover.`);
                         }}
                         className={`group relative aspect-2/3 overflow-hidden rounded-md border transition-all focus:outline-none ${
                           selected
@@ -294,12 +268,6 @@ export function BookCoverPicker({
                   )}
                 </div>
               </div>
-            )}
-
-            {toast && (
-              <p className="mt-2 text-center text-[10px] font-medium text-accent">
-                {toast}
-              </p>
             )}
           </div>
         </div>

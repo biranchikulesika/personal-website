@@ -10,7 +10,7 @@ interface WritingSectionProps {
   featured?: BlogPost[];
 }
 
-function EssayCard({ item, priority = false }: { item: WritingItem; priority?: boolean }) {
+export function EssayCard({ item, priority = false }: { item: WritingItem; priority?: boolean }) {
   const overview = formatOverviewSnippet(item.description, 120, 25);
 
   return (

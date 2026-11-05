@@ -1,10 +1,12 @@
 "use client";
 
-import { useState, useEffect, useTransition } from "react";
+import { useState, useTransition } from "react";
 import type { NewsletterSubscriber } from "@/lib/types";
 import { formatDisplayDate } from "@/lib/utils";
 import { deleteSubscriberAction } from "@/app/admin/actions";
 import { NoContentState } from "@/components/ui/states";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { toast } from "@/lib/toast";
 
 interface SubscriberManagerProps {
   initialSubscribers: NewsletterSubscriber[];
@@ -18,16 +20,7 @@ export function SubscriberManager({
   );
   const [search, setSearch] = useState("");
   const [isPending, startTransition] = useTransition();
-  const [feedback, setFeedback] = useState<{ type: "success" | "error"; text: string } | null>(
-    null
-  );
-
-  // Auto-dismiss feedback after a few seconds.
-  useEffect(() => {
-    if (!feedback) return;
-    const timer = setTimeout(() => setFeedback(null), 3500);
-    return () => clearTimeout(timer);
-  }, [feedback]);
+  const [subscriberToDelete, setSubscriberToDelete] = useState<NewsletterSubscriber | null>(null);
 
   const filtered = subscribers.filter((s) =>
     s.email.toLowerCase().includes(search.toLowerCase().trim())
@@ -52,22 +45,25 @@ export function SubscriberManager({
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
+    toast.info("Subscriber list exported as CSV.");
   }
 
-  function handleDelete(id: string, email: string) {
-    if (!confirm(`Are you sure you want to remove ${email}?`)) return;
+  function handleConfirmDelete() {
+    if (!subscriberToDelete) return;
+    const { id, email } = subscriberToDelete;
 
     startTransition(async () => {
       try {
         const res = await deleteSubscriberAction(id);
         if (res.success) {
           setSubscribers((prev) => prev.filter((s) => s.id !== id));
-          setFeedback({ type: "success", text: `Removed ${email}` });
+          setSubscriberToDelete(null);
+          toast.success("Subscriber removed successfully.");
         } else {
-          setFeedback({ type: "error", text: res.error || "Failed to remove subscriber" });
+          toast.error(res.error || "Failed to remove subscriber. Please try again.");
         }
       } catch {
-        setFeedback({ type: "error", text: "Something went wrong. Please try again." });
+        toast.error("Failed to remove subscriber. Please try again.");
       }
     });
   }
@@ -96,20 +92,6 @@ export function SubscriberManager({
           </button>
         </div>
       </div>
-
-      {/* Feedback message */}
-      {feedback && (
-        <div
-          role="status"
-          className={`px-4 py-3 text-xs rounded-xl border ${
-            feedback.type === "success"
-              ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-300"
-              : "border-rose-500/20 bg-rose-500/10 text-rose-300"
-          }`}
-        >
-          {feedback.text}
-        </div>
-      )}
 
       {/* Search Filter */}
       {subscribers.length > 0 && (
@@ -166,7 +148,7 @@ export function SubscriberManager({
               <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => handleDelete(subscriber.id, subscriber.email)}
+                  onClick={() => setSubscriberToDelete(subscriber)}
                   disabled={isPending}
                   aria-label={`Remove ${subscriber.email}`}
                   className="rounded-full px-3 py-1 text-xs text-gray-mid hover:text-rose-400 hover:bg-rose-500/10 transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100 disabled:opacity-50"
@@ -178,6 +160,26 @@ export function SubscriberManager({
           ))}
         </div>
       )}
+
+      {/* Remove Subscriber Confirmation */}
+      <ConfirmDialog
+        isOpen={Boolean(subscriberToDelete)}
+        onClose={() => setSubscriberToDelete(null)}
+        onConfirm={handleConfirmDelete}
+        isLoading={isPending}
+        title="Remove Subscriber?"
+        description={
+          subscriberToDelete ? (
+            <>
+              Are you sure you want to remove{" "}
+              <b className="text-paper">{subscriberToDelete.email}</b> from the
+              newsletter list?
+            </>
+          ) : null
+        }
+        confirmLabel="Remove"
+        variant="danger"
+      />
     </div>
   );
 }

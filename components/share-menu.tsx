@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { toast } from '@/lib/toast';
 import {
   WhatsAppIcon,
   LinkedInIcon,
@@ -74,10 +75,13 @@ export function ShareMenu({ title, description }: ShareMenuProps) {
       try {
         await navigator.clipboard.writeText(currentUrl);
         setCopied(true);
+        toast.info('Link copied to clipboard.');
         setTimeout(() => setCopied(false), 2000);
       } catch {
-        // Clipboard access denied
+        toast.error('Unable to copy link to clipboard.');
       }
+    } else {
+      toast.error('Clipboard is not supported on this device.');
     }
   };
 

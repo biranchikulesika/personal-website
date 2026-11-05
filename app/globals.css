@@ -323,7 +323,9 @@ body {
 }
 
 .geist-book-perspective:hover .geist-book-rotate,
-.group:hover .geist-book-rotate {
+.geist-book-perspective:active .geist-book-rotate,
+.group:hover .geist-book-rotate,
+.group:active .geist-book-rotate {
   transform: rotateY(var(--hover-rotate)) scale(var(--hover-scale)) translateX(var(--hover-translate-x));
 }
 

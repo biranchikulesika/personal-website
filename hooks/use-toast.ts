@@ -1,62 +1,68 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback } from "react";
+import { toast } from "@/lib/toast";
 
-interface UseToastReturn {
-  /** The current toast message, or null if no toast is visible. */
+export interface UseToastReturn {
   message: string | null;
-  /** Show a toast message. Automatically dismisses after the configured duration. */
-  showToast: (msg: string) => void;
-  /** Immediately dismiss the current toast. */
+  showToast: (msg: string, type?: "success" | "error" | "warning" | "info") => void;
   dismissToast: () => void;
+  toast: typeof toast;
 }
 
 /**
- * Shared toast hook for admin components.
+ * Universal toast hook.
  *
- * Replaces the duplicated showToast pattern found in:
- * - account-manager.tsx
- * - compose-workspace.tsx
- * - book-cover-picker.tsx
- * - content-manager.tsx
- * - media-manager.tsx
- *
- * Renders the toast inline where used: no global context needed.
+ * Bridges seamlessly into the centralised toast notification system.
  */
-export function useToast(durationMs = 3500): UseToastReturn {
-  const [message, setMessage] = useState<string | null>(null);
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  // A toast timer must not keep firing after the component unmounts.
-  useEffect(
-    () => () => {
-      if (timerRef.current) clearTimeout(timerRef.current);
-    },
-    [],
-  );
-
+export function useToast(defaultDuration?: number): UseToastReturn {
+  void defaultDuration;
   const showToast = useCallback(
-    (msg: string) => {
-      // Clear any existing timer.
-      if (timerRef.current) {
-        clearTimeout(timerRef.current);
+    (
+      msg: string,
+      type?: "success" | "error" | "warning" | "info"
+    ) => {
+      if (!msg) return;
+
+      if (type) {
+        toast[type](msg);
+        return;
       }
-      setMessage(msg);
-      timerRef.current = setTimeout(() => {
-        setMessage(null);
-        timerRef.current = null;
-      }, durationMs);
+
+      const lower = msg.toLowerCase();
+      if (
+        lower.includes("success") ||
+        lower.includes("saved") ||
+        lower.includes("created") ||
+        lower.includes("uploaded") ||
+        lower.includes("added") ||
+        lower.includes("updated")
+      ) {
+        toast.success(msg);
+      } else if (
+        lower.includes("failed") ||
+        lower.includes("error") ||
+        lower.includes("unable") ||
+        lower.includes("cannot")
+      ) {
+        toast.error(msg);
+      } else if (lower.includes("warn") || lower.includes("discard")) {
+        toast.warning(msg);
+      } else {
+        toast.info(msg);
+      }
     },
-    [durationMs],
+    []
   );
 
   const dismissToast = useCallback(() => {
-    if (timerRef.current) {
-      clearTimeout(timerRef.current);
-      timerRef.current = null;
-    }
-    setMessage(null);
+    toast.dismissAll();
   }, []);
 
-  return { message, showToast, dismissToast };
+  return {
+    message: null,
+    showToast,
+    dismissToast,
+    toast,
+  };
 }

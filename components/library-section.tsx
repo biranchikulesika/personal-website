@@ -59,7 +59,7 @@ export function LibrarySection({ library, limit = 4, featured }: LibrarySectionP
       </div>
 
       {/* Mobile Mode: Sideways Scroll with End Card */}
-      <div className="no-scrollbar -mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto overscroll-x-contain px-4 pb-1 sm:hidden">
+      <div className="no-scrollbar -mx-4 -mt-4 flex snap-x snap-mandatory gap-4 overflow-x-auto overscroll-x-contain px-4 pt-4 pb-3 sm:hidden">
         {items.map((item) => {
           const safeLink = item.link && isSafeUrl(item.link) ? item.link : null;
           return (
