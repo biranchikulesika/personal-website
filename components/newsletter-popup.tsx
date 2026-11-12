@@ -6,7 +6,7 @@ import type { NewsletterConfig } from '@/lib/types';
 import { NewsletterForm } from './newsletter-form';
 
 const DISMISSED_KEY = 'newsletter-popup-dismissed-at';
-const SHOW_AFTER_MS = 28_000;
+const SHOW_AFTER_MS = 200_000;
 const HIDE_FOR_MS = 7 * 24 * 60 * 60 * 1000;
 
 /**
