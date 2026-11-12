@@ -71,16 +71,33 @@ export class ContentService {
     return getCachedAllPosts(this.repo);
   }
 
-  savePost(post: BlogPost, persona?: Persona): Promise<BlogPost> {
-    return this.repo.savePost(post, persona);
+  async savePost(post: BlogPost, persona?: Persona): Promise<BlogPost> {
+    return this.repo.savePost(await this.stampPublishDate(post), persona);
   }
 
   deletePost(slug: string): Promise<boolean> {
     return this.repo.deletePost(slug);
   }
 
-  togglePostStatus(slug: string): Promise<BlogPost | null> {
-    return this.repo.togglePostStatus(slug);
+  async togglePostStatus(slug: string): Promise<BlogPost | null> {
+    const post = await this.repo.getPost(slug);
+    if (!post) return null;
+    const status = post.status === "unpublished" ? "published" : "unpublished";
+    return this.savePost({ ...post, status }, post.persona);
+  }
+
+  // Drafts are saved with the day they were created, so publishing has to stamp
+  // the real publish date. A date the author changed in the editor is kept.
+  private async stampPublishDate(post: BlogPost): Promise<BlogPost> {
+    if ((post.status ?? "published") !== "published") return post;
+    const existing = await this.repo.getPost(post.slug);
+    if (
+      existing?.status === "unpublished" &&
+      post.publishedAt === existing.publishedAt
+    ) {
+      return { ...post, publishedAt: new Date().toISOString().split("T")[0] };
+    }
+    return post;
   }
 
   getNote(slug: string): Promise<NoteItem | null> {

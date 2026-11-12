@@ -11,7 +11,7 @@ interface WritingSectionProps {
 }
 
 export function EssayCard({ item, priority = false }: { item: WritingItem; priority?: boolean }) {
-  const overview = formatOverviewSnippet(item.description, 120, 25);
+  const overview = formatOverviewSnippet(item.subtitle || item.description, 120, 25);
 
   return (
     <article className="group h-full">
@@ -44,6 +44,7 @@ export function WritingSection({ writing, limit = 4, featured }: WritingSectionP
         id: post.slug,
         slug: post.slug,
         title: post.title,
+        subtitle: post.subtitle,
         description: post.description,
         date: post.publishedAt,
         persona: post.persona ?? 'builder',

@@ -128,6 +128,22 @@ export function formatDisplayDate(value: string): string {
 }
 
 /**
+ * Returns true when two date strings are at least one calendar year apart.
+ * Invalid or empty input returns false.
+ */
+export function isAtLeastOneYearApart(a: string, b: string): boolean {
+  const dateA = new Date(a);
+  const dateB = new Date(b);
+  if (Number.isNaN(dateA.getTime()) || Number.isNaN(dateB.getTime())) {
+    return false;
+  }
+  const [earlier, later] = dateA <= dateB ? [dateA, dateB] : [dateB, dateA];
+  const oneYearLater = new Date(earlier);
+  oneYearLater.setFullYear(oneYearLater.getFullYear() + 1);
+  return later >= oneYearLater;
+}
+
+/**
  * Formats a date or timestamp string with both date and time for display.
  * E.g. "2026-09-20T02:35:00.000Z" -> "Sep 20, 2026, 2:35 AM"
  * If only a date string is provided (e.g. "2026-09-20"), returns formatted date: "Sep 20, 2026".
@@ -319,8 +335,8 @@ export function parseUserAgent(ua?: string | null): {
 
 /**
  * Formats note snippet for listing and homepages.
- * When the content character limit is about to be reached, truncates cleanly
- * at word boundary and ends with "...read now" for a professional feel.
+ * Truncates cleanly at a word boundary and ends with an ellipsis when the
+ * content exceeds the character budget.
  */
 export function formatNoteSnippet(
   content: string | string[] | undefined,
@@ -336,7 +352,7 @@ export function formatNoteSnippet(
   const truncated = fullText.slice(0, maxLen);
   const lastSpace = truncated.lastIndexOf(' ');
   const cleanSnippet = lastSpace > 0 ? truncated.slice(0, lastSpace) : truncated;
-  return `${cleanSnippet}...read now`;
+  return `${cleanSnippet}…`;
 }
 
 /**

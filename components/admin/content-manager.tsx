@@ -503,7 +503,7 @@ export function ContentManager({
       slug: p.slug,
       title: p.title,
       date: p.publishedAt,
-      persona: "builder" as Persona,
+      persona: p.persona || "builder",
       status: p.status || "published",
       rawPost: p,
       rawNote: undefined,

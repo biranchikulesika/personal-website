@@ -137,6 +137,7 @@ export interface ScribbleEntry {
   id: string;
   type: ScribbleEntryType;
   title: string;
+  subtitle?: string;
   description: string;
   date: string;
   persona: Persona;

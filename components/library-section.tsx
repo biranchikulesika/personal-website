@@ -38,7 +38,7 @@ export function LibrarySection({ library, limit = 4, featured }: LibrarySectionP
           return (
             <article key={item.slug} className="group relative">
               <BookCover title={item.title} cover={item.cover} />
-              <span className="mt-3 block transition-transform duration-300 group-hover:translate-y-1">
+              <span className="mt-3 block">
                 <h3 className="font-sans text-base font-normal leading-snug text-paper transition-colors duration-300 group-hover:text-accent">
                   <Link
                     href={safeLink ?? library.href}

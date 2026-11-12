@@ -1,5 +1,5 @@
 import type { BlogPost, PostSection } from "@/lib/types";
-import { formatDisplayDate, postToDocs } from "@/lib/utils";
+import { formatDisplayDate, isAtLeastOneYearApart, postToDocs } from "@/lib/utils";
 import { renderMdx } from "@/lib/mdx";
 import Link from "next/link";
 import {
@@ -146,7 +146,7 @@ export async function BlogPostView({ post }: { post: BlogPost }) {
                   <span className="font-sans text-paper/95">{formatDisplayDate(post.publishedAt)}</span>
                 </div>
 
-                {post.lastEditedAt !== post.publishedAt && (
+                {isAtLeastOneYearApart(post.publishedAt, post.lastEditedAt) && (
                   <>
                     <span className="text-tinted" aria-hidden="true">·</span>
                     <div

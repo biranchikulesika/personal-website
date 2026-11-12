@@ -61,7 +61,9 @@ export function PostEditorModal({
   const [title, setTitle] = useState(editingPost?.title ?? '');
   const [slug, setSlug] = useState(editingPost?.slug ?? '');
   const [description, setDescription] = useState(editingPost?.description ?? '');
-  const [persona, setPersona] = useState<Persona>('builder');
+  const [persona, setPersona] = useState<Persona>(
+    editingPost?.persona ?? 'builder',
+  );
   const [status, setStatus] = useState<'published' | 'unpublished'>(
     editingPost?.status ?? 'published',
   );
@@ -89,6 +91,7 @@ export function PostEditorModal({
         slug !== editingPost.slug ||
         description !== editingPost.description ||
         tagsInput !== editingPost.tags.join(', ') ||
+        persona !== (editingPost.persona ?? 'builder') ||
         publishedAt !== (editingPost.publishedAt || '') ||
         lastEditedAt !== (editingPost.lastEditedAt || '') ||
         targetAudience !== (editingPost.targetAudience || '') ||
@@ -101,7 +104,7 @@ export function PostEditorModal({
     setTitle(editingPost.title);
     setSlug(editingPost.slug);
     setDescription(editingPost.description);
-    setPersona('builder');
+    setPersona(editingPost.persona ?? 'builder');
     setStatus(editingPost.status || 'published');
     setTagsInput(editingPost.tags.join(', '));
     setPublishedAt(editingPost.publishedAt || new Date().toISOString().split('T')[0]);
@@ -156,6 +159,7 @@ export function PostEditorModal({
       intro: intro.length > 0 ? intro : [description],
       sections: sections.length > 0 ? sections : [],
       books: editingPost?.books || [],
+      persona,
       status,
     };
 
@@ -171,7 +175,7 @@ export function PostEditorModal({
             showToast(`Saved, but the old "/p/${oldSlug}" entry could not be removed.`);
           }
         }
-        onSaved(postPayload, oldSlug);
+        onSaved(res.post, oldSlug);
         const successMsg = editingPost
           ? (status === 'published' ? 'Article published successfully.' : 'Changes saved successfully.')
           : (status === 'published' ? 'Article published successfully.' : 'Article created successfully.');

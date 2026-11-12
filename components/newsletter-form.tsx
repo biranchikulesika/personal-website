@@ -15,11 +15,13 @@ import { toast } from '@/lib/toast';
 interface NewsletterFormProps {
   newsletter: NewsletterConfig;
   showNote?: boolean;
+  onSuccess?: () => void;
 }
 
 export function NewsletterForm({
   newsletter,
   showNote = true,
+  onSuccess,
 }: NewsletterFormProps) {
   const [email, setEmail] = useState('');
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
@@ -37,6 +39,7 @@ export function NewsletterForm({
         const msg = res.message || "Your subscription was successful. Thank you!";
         setEmail('');
         toast.success(msg);
+        onSuccess?.();
       } else {
         setStatus('error');
         const err = res.error || 'Unable to subscribe. Please try again.';

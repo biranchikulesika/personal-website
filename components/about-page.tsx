@@ -1,15 +1,6 @@
-import type { SiteContent, WritingItem } from "@/lib/types";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRightIcon } from "./icons";
 import { LandscapeGallery } from "./landscape-gallery";
-import { NewsletterForm } from "./newsletter-form";
-import { EssayCard } from "./writing-section";
-
-interface AboutPageProps {
-  site: SiteContent;
-  featuredWriting: WritingItem[];
-}
 
 const ABOUT_GALLERY_IMAGES = [
   {
@@ -37,12 +28,10 @@ const CURIOSITIES = [
 /**
  * About page view:
  * 1. Bold hero headline with introductory copy and 2-column image mosaic
- * 2. Dedicated newsletter card
- * 3. 3-column featured essays & focus grid
- * 4. Rich background story & philosophy prose
- * 5. Small human details & curiosities cluster
+ * 2. Rich background story & philosophy prose
+ * 3. Small human details & curiosities cluster
  */
-export function AboutPageView({ site, featuredWriting }: AboutPageProps) {
+export function AboutPageView() {
   return (
     <section
       aria-label="About Biranchi Kulesika"
@@ -100,49 +89,7 @@ export function AboutPageView({ site, featuredWriting }: AboutPageProps) {
         </div>
       </div>
 
-      {/* 2. Newsletter Banner */}
-      <div className="mb-20 rounded-3xl border border-tinted/20 bg-night-soft p-8 shadow-2xl md:p-12 lg:mb-28">
-        <div className="mx-auto flex max-w-5xl flex-col gap-8 md:flex-row md:items-center md:justify-between md:gap-12">
-          <div className="flex-1 md:min-w-105">
-            <h2 className="font-serif text-2xl font-normal text-paper md:text-3xl lg:text-[34px] md:whitespace-nowrap">
-              Things I Keep Thinking About
-            </h2>
-            <p className="mt-3 max-w-xl text-base leading-relaxed text-ink-soft md:text-lg">
-              {site.hero.newsletter.note}
-            </p>
-          </div>
-          <div className="w-full flex-1 md:max-w-sm lg:max-w-md">
-            <NewsletterForm
-              newsletter={site.hero.newsletter}
-              showNote={false}
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* 3. Featured Spots / Selected Writing */}
-      <div className="mx-auto mb-20 max-w-4xl lg:mb-28">
-        <div className="mb-8 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2">
-          <h2 className="font-serif text-2xl font-normal text-paper md:text-3xl">
-            Selected essays & ideas
-          </h2>
-          <Link
-            href="/scribble"
-            className="group inline-flex items-center gap-1.5 text-sm text-ink-soft transition-colors hover:text-accent"
-          >
-            Explore all on Scribble
-            <ArrowRightIcon className="h-4 w-4 text-sea-blue transition-transform duration-300 group-hover:translate-x-0.5" />
-          </Link>
-        </div>
-
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-          {featuredWriting.slice(0, 3).map((item) => (
-            <EssayCard key={item.slug} item={item} />
-          ))}
-        </div>
-      </div>
-
-      {/* 4. Bio Section */}
+      {/* 2. Bio Section */}
       <div className="mx-auto mb-20 max-w-3xl lg:mb-28">
         <h2 className="mb-6 font-serif text-3xl font-normal text-paper md:text-4xl">
           My background
@@ -242,7 +189,7 @@ export function AboutPageView({ site, featuredWriting }: AboutPageProps) {
         </div>
       </div>
 
-      {/* 5. Small Details & Curiosities */}
+      {/* 3. Small Details & Curiosities */}
       <div className="mx-auto max-w-2xl border-t border-tinted/20 pt-12 text-center">
         <h2 className="mb-6 text-xs font-semibold uppercase tracking-widest text-ink-soft">
           Small details & curiosities

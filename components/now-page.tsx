@@ -53,7 +53,7 @@ export async function NowPageView({ entries }: NowPageViewProps) {
             <span className="ml-3 text-sea-blue">{entries.length}</span>
           </h1>
           <p className="mt-2 font-serif text-lg italic text-ink-soft md:text-xl">
-            What I’m reading, exploring, working on, and thinking about these days.
+            What I’m focused on right now, what I’m building, what I’m reading, and what I’m confused about.
           </p>
         </header>
 

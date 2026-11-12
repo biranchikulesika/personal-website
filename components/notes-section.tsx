@@ -27,26 +27,23 @@ export function NotesSection({ notes }: NotesSectionProps) {
               : item.description;
           const snippet = formatNoteSnippet(noteText, 160);
 
-          const isTruncated = snippet.endsWith('...read now');
-          const mainSnippet = isTruncated ? snippet.slice(0, -11) : snippet;
-
           return (
             <article key={item.slug} className="group">
               <Link href={`/n/${item.slug}`} className="block">
                 <h3 className="font-serif text-lg font-normal leading-snug text-paper transition-colors duration-200 group-hover:text-accent">
                   {item.title}
                 </h3>
-                <p className="mt-1.5 text-sm leading-relaxed text-gray-mid line-clamp-3">
-                  {mainSnippet}
-                  {isTruncated && (
-                    <span className="ml-1 inline font-medium text-accent/90 transition-colors group-hover:text-accent">
-                      ...read now
+                <p className="mt-1.5 text-sm leading-relaxed text-gray-mid">
+                  {snippet}
+                  {snippet.endsWith('…') && (
+                    <span className="ml-1 font-medium text-accent/90 transition-colors group-hover:text-accent">
+                      Read note
                     </span>
                   )}
                 </p>
-                <p className="mt-2 text-xs text-gray-mid">
+                <div className="mt-2 text-xs text-gray-mid">
                   <span>{formatDisplayDate(item.date)}</span>
-                </p>
+                </div>
               </Link>
             </article>
           );

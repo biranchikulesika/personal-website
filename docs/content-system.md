@@ -55,7 +55,7 @@ The website features an editorial content engine supporting long-form essays, at
 
 ### 4. Now Entries (`NowEntry`)
 - **Route**: `/now`
-- **Description**: Living chronological snapshots of current focus, active projects, and daily rhythms.
+- **Description**: Living chronological snapshots of current focus, active projects, and monthly rhythms.
 - **Identity**: Each entry has a unique `id` and a URL-friendly `slug` derived from the entry title.
 
 ### 5. Scribble (`ScribbleEntry`)
