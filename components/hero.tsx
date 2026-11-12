@@ -1,5 +1,5 @@
-import Image from 'next/image';
 import { Fragment } from 'react';
+import { HeroImageStack } from '@/components/hero-image-stack';
 import type { HeroContent } from '@/lib/types';
 
 interface HeroProps {
@@ -72,23 +72,13 @@ export function Hero({ hero }: HeroProps) {
       </div>
 
       <div className="relative hidden items-center justify-center lg:flex">
-        <svg
+        <div
           aria-hidden
-          className="absolute left-1/2 top-1/2 h-[440px] w-[440px] -translate-x-1/2 -translate-y-1/2"
-          viewBox="0 0 480 480"
-        >
-          <circle cx="240" cy="240" r="240" fill="var(--color-night-soft)" />
-        </svg>
-        <div className="relative z-10 aspect-[4/5] w-full max-w-[360px] overflow-hidden rounded-2xl shadow-2xl ring-1 ring-tinted/20">
-          <Image
-            src={hero.image.src}
-            alt={hero.image.alt}
-            fill
-            loading="eager"
-            sizes="(min-width: 1024px) 360px, 100vw"
-            className="object-cover object-[center_60%]"
-          />
-        </div>
+          className="absolute h-[440px] w-[440px] rounded-full border border-tinted/20"
+        />
+        <HeroImageStack
+          images={hero.gallery.length > 0 ? hero.gallery : [hero.image]}
+        />
       </div>
     </section>
   );

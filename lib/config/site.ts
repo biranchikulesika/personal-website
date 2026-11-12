@@ -32,6 +32,24 @@ export const SITE_CONFIG: SiteContent = {
       src: "/biranchi.webp",
       alt: "A portrait of Biranchi Kulesika",
     },
+    gallery: [
+      {
+        src: "/biranchi.webp",
+        alt: "A portrait of Biranchi Kulesika",
+      },
+      {
+        src: "/biranchi-2.jpeg",
+        alt: "Biranchi Kulesika",
+      },
+      {
+        src: "/biranchi-3.jpeg",
+        alt: "Biranchi Kulesika",
+      },
+      {
+        src: "/biranchi-4.jpeg",
+        alt: "Biranchi Kulesika",
+      },
+    ],
   },
   footer: {
     bio: {

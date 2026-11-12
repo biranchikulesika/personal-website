@@ -36,6 +36,7 @@ export interface HeroContent {
   points: string[];
   newsletter: NewsletterConfig;
   image: HeroImage;
+  gallery: HeroImage[];
 }
 
 // Footer ---------------------------------------------------------------------
