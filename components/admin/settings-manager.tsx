@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import type {
   BlogPost,
   BookItem,
@@ -9,14 +8,18 @@ import type {
   NoteItem,
   NowEntry,
   PasskeyItem,
-  UserSession,
 } from "@/lib/types";
-import { SITE_URL } from "@/lib/constants";
 import { UserAvatar } from "@/components/ui/user-avatar";
 import { toast } from "@/lib/toast";
-import { Button, PageHeader, SectionHeading, StatusBadge } from "./ui";
+import {
+  Button,
+  Card,
+  PageHeader,
+  SectionHeading,
+  StatusBadge,
+} from "./ui";
 import { AccountManager } from "./account-manager";
-import { DownloadIcon, ExternalLinkIcon } from "@/components/icons";
+import { DownloadIcon } from "@/components/icons";
 
 interface SettingsManagerProps {
   userName: string;
@@ -25,7 +28,6 @@ interface SettingsManagerProps {
   userRole: string;
   initialPasskeys?: PasskeyItem[];
   initialConnectedProviders?: string[];
-  initialSessions?: UserSession[];
   exportData: {
     posts: BlogPost[];
     notes: NoteItem[];
@@ -43,7 +45,6 @@ export function SettingsManager({
   userRole,
   initialPasskeys = [],
   initialConnectedProviders = ["google"],
-  initialSessions = [],
   exportData,
 }: SettingsManagerProps) {
   function handleExport() {
@@ -69,74 +70,70 @@ export function SettingsManager({
   }
 
   return (
-    <div className="space-y-10">
+    <div className="space-y-8">
       <PageHeader
         title="Settings"
-        description="Your profile, sign-in methods, and active sessions."
+        description="Manage your account, security, and data."
       />
 
-      {/* Profile */}
-      <section aria-labelledby="profile-heading" className="space-y-3">
-        <SectionHeading title="Profile" />
-        <div className="rounded-xl border border-tinted/20 bg-night-soft p-4">
-          <div className="flex flex-wrap items-center gap-4">
-            <UserAvatar src={userAvatarUrl} name={userName} size={56} />
-            <div className="min-w-0 flex-1">
-              <div className="flex flex-wrap items-center gap-2">
-                <p className="text-base font-medium text-paper">{userName}</p>
-                <StatusBadge status="active" />
+      <div className="grid gap-6 lg:grid-cols-[19rem_minmax(0,1fr)] lg:items-start">
+        <aside className="space-y-5 lg:sticky lg:top-6">
+          {/* Account summary */}
+          <section>
+            <SectionHeading title="Account" />
+            <Card className="mt-2">
+              <div className="flex items-start gap-3">
+                <UserAvatar src={userAvatarUrl} name={userName} size={48} />
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="truncate text-sm font-medium text-paper">
+                      {userName}
+                    </p>
+                    <StatusBadge status="active" />
+                  </div>
+                  <p className="mt-0.5 truncate text-xs text-gray-mid">
+                    {userEmail}
+                  </p>
+                  <p className="mt-1 text-[11px] capitalize tracking-wide text-gray-mid">
+                    {userRole.replace(/_/g, " ")}
+                  </p>
+                </div>
               </div>
-              <p className="mt-0.5 truncate text-sm text-gray-mid">{userEmail}</p>
-              <p className="mt-1 text-xs capitalize text-gray-mid">
-                {userRole.replace(/_/g, " ")}
-              </p>
-            </div>
-            <Link
-              href={SITE_URL}
-              target="_blank"
-              className="inline-flex items-center gap-1.5 rounded-lg border border-tinted/40 bg-night px-3 py-1.5 text-xs text-paper transition-colors hover:border-tinted/60 hover:bg-post-card"
-            >
-              View public site
-              <ExternalLinkIcon className="h-3.5 w-3.5" />
-            </Link>
-          </div>
-          <p className="mt-4 border-t border-tinted/20 pt-3 text-xs text-gray-mid">
-            Name, avatar, and email come from your sign-in provider. Update them
-            there and they will appear here on next sign-in.
-          </p>
-        </div>
-      </section>
+            </Card>
+          </section>
 
-      <AccountManager
-        showIdentity={false}
-        userName={userName}
-        userEmail={userEmail}
-        userAvatarUrl={userAvatarUrl}
-        userRole={userRole}
-        initialPasskeys={initialPasskeys}
-        initialConnectedProviders={initialConnectedProviders}
-        initialSessions={initialSessions}
-      />
-
-      {/* Data */}
-      <section aria-labelledby="data-heading" className="space-y-3">
-        <SectionHeading title="Your data" />
-        <div className="rounded-xl border border-tinted/20 bg-night-soft p-4">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <p className="text-sm font-medium text-paper">Export your data</p>
-              <p className="mt-0.5 text-xs text-gray-mid">
+          {/* Data */}
+          <section>
+            <SectionHeading title="Your data" />
+            <Card className="mt-2">
+              <p className="text-xs leading-relaxed text-gray-mid">
                 Download every essay, note, book, Now entry, media record, and
                 subscriber as JSON.
               </p>
-            </div>
-            <Button variant="secondary" onClick={handleExport}>
-              <DownloadIcon className="h-3.5 w-3.5" />
-              Export data
-            </Button>
-          </div>
+              <Button
+                variant="secondary"
+                onClick={handleExport}
+                className="mt-3 w-full"
+              >
+                <DownloadIcon className="h-3.5 w-3.5" />
+                Export data
+              </Button>
+            </Card>
+          </section>
+        </aside>
+
+        <div className="min-w-0">
+          <AccountManager
+            showIdentity={false}
+            userName={userName}
+            userEmail={userEmail}
+            userAvatarUrl={userAvatarUrl}
+            userRole={userRole}
+            initialPasskeys={initialPasskeys}
+            initialConnectedProviders={initialConnectedProviders}
+          />
         </div>
-      </section>
+      </div>
     </div>
   );
 }

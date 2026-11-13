@@ -9,7 +9,6 @@ import { UserAvatar } from '@/components/ui/user-avatar';
 import {
   MailIcon,
   FingerprintIcon,
-  LaptopIcon,
   TrashIcon,
   GitHubIcon,
   GoogleIcon,
@@ -22,10 +21,8 @@ import {
   deletePasskeyAction,
   connectProviderAction,
   disconnectProviderAction,
-  signOutSessionAction,
-  signOutAllSessionsAction,
 } from '@/app/admin/actions';
-import type { PasskeyItem, UserSession } from '@/lib/types';
+import type { PasskeyItem } from '@/lib/types';
 
 interface AccountManagerProps {
   userName: string;
@@ -34,7 +31,6 @@ interface AccountManagerProps {
   userRole: string;
   initialPasskeys?: PasskeyItem[];
   initialConnectedProviders?: string[];
-  initialSessions?: UserSession[];
   /** Hidden on the Settings page, which renders its own profile section. */
   showIdentity?: boolean;
 }
@@ -85,7 +81,6 @@ export function AccountManager({
   userRole,
   initialPasskeys = [],
   initialConnectedProviders = ['google'],
-  initialSessions = [],
   showIdentity = true,
 }: AccountManagerProps) {
   const [passkeys, setPasskeys] = useState<PasskeyItem[]>(initialPasskeys);
@@ -94,12 +89,7 @@ export function AccountManager({
     initialConnectedProviders.length > 0 ? initialConnectedProviders : ['google'],
   );
   const [pendingProvider, setPendingProvider] = useState<string | null>(null);
-  const [sessions, setSessions] = useState<UserSession[]>(initialSessions);
-  const [isSigningOutAll, setIsSigningOutAll] = useState(false);
-  const [signingOutSessionId, setSigningOutSessionId] = useState<string | null>(null);
   const [passkeyToDelete, setPasskeyToDelete] = useState<PasskeyItem | null>(null);
-  const [sessionToSignOut, setSessionToSignOut] = useState<UserSession | null>(null);
-  const [confirmSignOutAll, setConfirmSignOutAll] = useState(false);
   const { message: toastMessage, showToast } = useToast();
 
   async function handleAddPasskey() {
@@ -231,48 +221,6 @@ export function AccountManager({
       showToast('Failed to disconnect provider. Please try again.', 'error');
     } finally {
       setPendingProvider(null);
-    }
-  }
-
-  async function handleConfirmSignOutSession() {
-    if (!sessionToSignOut) return;
-    const { id } = sessionToSignOut;
-    setSigningOutSessionId(id);
-    try {
-      const result = await signOutSessionAction(id);
-      if (result.success) {
-        if (result.redirect) {
-          window.location.href = result.redirect;
-          return;
-        }
-        setSessions((prev) => prev.filter((s) => s.id !== id));
-        setSessionToSignOut(null);
-        showToast('Session signed out successfully.', 'success');
-      } else {
-        showToast(result.error || 'Failed to sign out session', 'error');
-      }
-    } catch {
-      showToast('Failed to sign out session. Please try again.', 'error');
-    } finally {
-      setSigningOutSessionId(null);
-    }
-  }
-
-  async function handleConfirmSignOutAll() {
-    if (isSigningOutAll) return;
-    setIsSigningOutAll(true);
-    try {
-      const result = await signOutAllSessionsAction();
-      if (result.success) {
-        showToast('Signed out of all sessions successfully.', 'success');
-        window.location.href = result.redirect || '/admin/login';
-      } else {
-        showToast(result.error || 'Failed to sign out all sessions', 'error');
-        setIsSigningOutAll(false);
-      }
-    } catch {
-      showToast('Failed to sign out all sessions. Please try again.', 'error');
-      setIsSigningOutAll(false);
     }
   }
 
@@ -437,71 +385,6 @@ export function AccountManager({
             </div>
           </section>
         </div>
-
-        {/* ── Active Sessions ── */}
-        <section>
-          <div className="flex items-center justify-between gap-3">
-            <SectionHeading title="Active Sessions" />
-            {sessions.length > 0 && (
-              <button
-                type="button"
-                disabled={isSigningOutAll}
-                onClick={() => setConfirmSignOutAll(true)}
-                className="rounded-full border border-tinted/20 px-2.5 py-0.5 text-[11px] font-semibold text-gray-mid transition-all hover:border-red-500/30 hover:bg-red-950/30 hover:text-red-400 disabled:opacity-50 active:scale-95"
-              >
-                {isSigningOutAll ? 'Signing out all…' : 'Sign out all'}
-              </button>
-            )}
-          </div>
-          <div className="mt-2 divide-y divide-tinted/20 overflow-hidden rounded-xl border border-tinted/20 bg-post-card">
-            {sessions.map((session) => (
-              <div
-                key={session.id}
-                className="flex items-center justify-between gap-3 px-3 py-2 transition-colors hover:bg-night-soft/30"
-              >
-                <div className="flex min-w-0 items-center gap-2.5">
-                  <IconChip>
-                    <LaptopIcon className="h-4 w-4 text-teal" />
-                  </IconChip>
-                  <div className="min-w-0">
-                    <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-                      <p className="truncate text-xs font-medium text-paper">
-                        {session.device}
-                      </p>
-                      {session.isCurrent && (
-                        <span className="rounded-full border border-tinted/20 bg-night px-1.5 py-0.5 text-[10px] font-semibold text-teal">
-                          This device
-                        </span>
-                      )}
-                    </div>
-                    <p className="truncate text-[11px] text-gray-mid">
-                      {session.location} · Started {session.startedAt}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex shrink-0 items-center gap-2">
-                  <span className="hidden items-center gap-1 text-[10px] font-semibold text-emerald-400 sm:inline-flex">
-                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-                    Active
-                  </span>
-                  <button
-                    type="button"
-                    disabled={signingOutSessionId === session.id}
-                    onClick={() => setSessionToSignOut(session)}
-                    className="rounded-lg px-2 py-1 text-[11px] font-semibold text-gray-mid transition-colors hover:bg-red-950/40 hover:text-red-400 disabled:opacity-50 active:scale-95"
-                  >
-                    {signingOutSessionId === session.id ? 'Signing out…' : 'Sign out'}
-                  </button>
-                </div>
-              </div>
-            ))}
-            {sessions.length === 0 && (
-              <p className="px-3 py-3 text-[11px] text-gray-mid">
-                No active sessions.
-              </p>
-            )}
-          </div>
-        </section>
       </div>
 
       {/* Remove Passkey Confirmation */}
@@ -521,38 +404,6 @@ export function AccountManager({
         }
         confirmLabel="Remove"
         variant="danger"
-      />
-
-      {/* Revoke Session Confirmation */}
-      <ConfirmDialog
-        isOpen={Boolean(sessionToSignOut)}
-        onClose={() => setSessionToSignOut(null)}
-        onConfirm={handleConfirmSignOutSession}
-        isLoading={Boolean(signingOutSessionId)}
-        title="Revoke Session?"
-        description={
-          sessionToSignOut ? (
-            <>
-              Are you sure you want to sign out of the session on{" "}
-              <b className="text-paper">{sessionToSignOut.device}</b> (
-              {sessionToSignOut.location})?
-            </>
-          ) : null
-        }
-        confirmLabel="Sign Out"
-        variant="warning"
-      />
-
-      {/* Sign Out All Sessions Confirmation */}
-      <ConfirmDialog
-        isOpen={confirmSignOutAll}
-        onClose={() => setConfirmSignOutAll(false)}
-        onConfirm={handleConfirmSignOutAll}
-        isLoading={isSigningOutAll}
-        title="Sign Out All Other Sessions?"
-        description="Are you sure you want to sign out of all active sessions across all devices? You will be returned to the login screen."
-        confirmLabel="Sign Out All"
-        variant="warning"
       />
     </div>
   );

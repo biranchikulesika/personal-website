@@ -2,7 +2,13 @@
 
 import { useState, useRef, useTransition, useEffect, useMemo } from 'react';
 import Image from 'next/image';
-import type { BlogPost, BookItem, MediaItem, NoteItem } from '@/lib/types';
+import type {
+  BlogPost,
+  BookItem,
+  MediaItem,
+  NoteItem,
+  NowEntry,
+} from '@/lib/types';
 import {
   addMediaAction,
   deleteMediaAction,
@@ -39,7 +45,7 @@ import {
 } from '@/components/admin/ui';
 
 interface Usage {
-  kind: 'post' | 'note' | 'book';
+  kind: 'post' | 'note' | 'now' | 'book';
   title: string;
   slug: string;
   published: boolean;
@@ -52,6 +58,7 @@ interface MediaManagerProps {
   allContent: {
     posts: BlogPost[];
     notes: NoteItem[];
+    nowEntries: NowEntry[];
     books: BookItem[];
   };
   initialSearchQuery?: string;
@@ -66,6 +73,13 @@ function tagList(media: MediaItem): string[] {
   return tags
     .map((t) => t.trim().toLowerCase())
     .filter((t) => t && t !== 'atmosphere' && t !== 'profile');
+}
+
+/** Intrinsic size for the masonry grid; falls back to 3:2 when unknown. */
+function imageSizeFor(media: MediaItem): { width: number; height: number } {
+  const match = /^(\d+)\s*[×x]\s*(\d+)$/.exec(media.dimensions ?? '');
+  if (!match) return { width: 1200, height: 800 };
+  return { width: Number(match[1]), height: Number(match[2]) };
 }
 
 function parseTags(value: string): string[] {
@@ -134,7 +148,8 @@ export function MediaManager({
     return Array.from(set).sort();
   }, [mediaList]);
 
-  // Where each asset is referenced across essays, notes and books.
+  // Where each asset is referenced: covers, figures, and inline images inside
+  // any essay, note, now entry or book — drafts and unpublished items included.
   const usageBySrc = useMemo(() => {
     const map = new Map<string, Usage[]>();
     const add = (src: string | undefined, usage: Usage) => {
@@ -149,6 +164,15 @@ export function MediaManager({
       }
     };
 
+    const mediaKeys = [...mediaList, ...orphanedList]
+      .map((m) => normalizeSrc(m.src))
+      .filter(Boolean);
+    const addText = (text: string, usage: Usage) => {
+      for (const key of mediaKeys) {
+        if (text.includes(key)) add(key, usage);
+      }
+    };
+
     for (const post of allContent.posts) {
       const usage: Usage = {
         kind: 'post',
@@ -159,11 +183,20 @@ export function MediaManager({
       };
       add(post.coverImage, usage);
       for (const section of post.sections) add(section.figure?.src, usage);
+      addText(
+        [
+          post.description,
+          ...post.intro,
+          ...post.sections.flatMap((section) => [
+            ...section.paragraphs,
+            section.quote?.text ?? '',
+            ...(section.footnotes ?? []),
+          ]),
+        ].join('\n'),
+        usage,
+      );
     }
 
-    const mediaKeys = [...mediaList, ...orphanedList].map((m) =>
-      normalizeSrc(m.src),
-    );
     for (const note of allContent.notes) {
       const usage: Usage = {
         kind: 'note',
@@ -174,10 +207,19 @@ export function MediaManager({
       };
       add(note.coverImage, usage);
       // Notes keep image URLs inside their markdown/HTML content strings.
-      const content = note.content.join('\n');
-      for (const key of mediaKeys) {
-        if (key && content.includes(key)) add(key, usage);
-      }
+      addText(note.content.join('\n'), usage);
+    }
+
+    for (const entry of allContent.nowEntries) {
+      const usage: Usage = {
+        kind: 'now',
+        title: entry.title,
+        slug: entry.slug ?? entry.id,
+        published: entry.status === 'published',
+        href: '/now',
+      };
+      // Now entries are plain markdown with inline image URLs.
+      addText(entry.content, usage);
     }
 
     for (const book of allContent.books) {
@@ -738,36 +780,36 @@ export function MediaManager({
           resetLabel="Reset filters"
         />
       ) : view === 'grid' ? (
-        <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+        <ul className="columns-2 gap-3 sm:columns-3 lg:columns-4">
           {filteredMedia.map((media) => {
             const isOrphaned = orphanedSrcs.has(media.src);
             const isSelected = selectedOrphanedIds.has(media.id);
             const isMenuOpen = menuOpenId === media.id;
-            const usages = usagesFor(media.src);
-            const tags = tagList(media);
+            const imageSize = imageSizeFor(media);
 
             return (
               <li
                 key={media.id}
-                className={`group overflow-hidden rounded-xl border bg-night-soft transition-colors ${
+                className={`group mb-3 break-inside-avoid overflow-hidden rounded-xl border bg-night-soft transition-colors ${
                   isSelected
                     ? 'border-amber-500/60'
                     : 'border-tinted/20 hover:border-tinted/40'
                 }`}
               >
-                <div className="relative aspect-[4/3] w-full bg-night">
+                <div className="relative w-full bg-night">
                   <button
                     type="button"
                     onClick={() => openDetails(media)}
                     aria-label={`Open details for ${media.name}`}
-                    className="absolute inset-0 h-full w-full focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent"
+                    className="block w-full focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent"
                   >
                     <Image
                       src={media.src}
                       alt={media.alt || media.name}
-                      fill
+                      width={imageSize.width}
+                      height={imageSize.height}
                       sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                      className="object-cover"
+                      className="h-auto w-full"
                       unoptimized
                     />
                   </button>
@@ -873,47 +915,11 @@ export function MediaManager({
                   </div>
                 </div>
 
-                <div className="space-y-1.5 p-3">
-                  <div className="flex items-start justify-between gap-2">
-                    <button
-                      type="button"
-                      onClick={() => openDetails(media)}
-                      title={media.name}
-                      className="min-w-0 truncate text-left font-mono text-[11px] text-paper hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-                    >
-                      {media.name}
-                    </button>
-                    {usages.length > 0 ? (
-                      <Badge tone="grey" className="shrink-0">
-                        Used in {usages.length}
-                      </Badge>
-                    ) : (
-                      <Badge tone="grey" className="shrink-0">
-                        Unused
-                      </Badge>
-                    )}
-                  </div>
-                  <p className="text-[11px] tabular-nums text-gray-mid">
-                    {[media.dimensions, media.size, formatDisplayDate(media.uploadedAt)]
-                      .filter(Boolean)
-                      .join(' · ')}
-                  </p>
-                  {tags.length > 0 && (
-                    <div className="flex flex-wrap gap-1">
-                      {tags.map((tag) => (
-                        <button
-                          key={tag}
-                          type="button"
-                          onClick={() => setActiveTag(tag)}
-                          title={`Filter by #${tag}`}
-                          className="rounded border border-tinted/20 px-1.5 py-0.5 font-mono text-[10px] text-gray-mid transition-colors hover:border-accent/40 hover:text-accent"
-                        >
-                          #{tag}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                <p className="p-3 text-[11px] tabular-nums text-gray-mid">
+                  {[media.size, media.dimensions, formatDisplayDate(media.uploadedAt)]
+                    .filter(Boolean)
+                    .join(' · ')}
+                </p>
               </li>
             );
           })}

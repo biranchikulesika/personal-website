@@ -146,7 +146,7 @@ export function HomeOverview({
     })),
   ]
     .sort((a, b) => (b.date || "").localeCompare(a.date || ""))
-    .slice(0, 8);
+    .slice(0, 4);
 
   return (
     <div className="space-y-8">

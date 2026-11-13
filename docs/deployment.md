@@ -15,7 +15,7 @@ This guide details how to build, configure, and deploy the application to produc
                                ▼
 ┌─────────────────────────────────────────────────────────────┐
 │                 Next.js Production Runtime                  │
-│       (Node.js 24+ standalone output or Vercel Serverless)  │
+│       (Node.js 26+ standalone output or Vercel Serverless)  │
 └──────────────────────────────┬──────────────────────────────┘
                                │
                                ▼

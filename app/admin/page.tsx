@@ -105,7 +105,6 @@ export default async function AdminPage({
     orphanedMedia,
     nowEntries,
     passkeys,
-    sessions,
     subscribers,
   ] = await Promise.all([
     contentService.getAllPosts(),
@@ -115,7 +114,6 @@ export default async function AdminPage({
     contentService.getOrphanedMedia(),
     contentService.getNowEntries(),
     contentService.getPasskeys(user.id),
-    contentService.getSessions(user.id, 'sess-current'),
     contentService.getSubscribers(),
   ]);
 
@@ -130,7 +128,6 @@ export default async function AdminPage({
       initialSubscribers={subscribers}
       initialPasskeys={passkeys}
       initialConnectedProviders={connectedProviders}
-      initialSessions={sessions}
       initialTab={initialTab}
       userName={userName}
       userEmail={userEmail}

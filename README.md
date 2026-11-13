@@ -27,7 +27,7 @@ The structure and implementation reflect how I currently build web software. Som
 
 | Category | Technologies | Description |
 | :--- | :--- | :--- |
-| **Framework & Runtime** | Next.js 16 (App Router), React 19, Node.js 24+ | Server Components, Server Actions, and standalone build artifact. |
+| **Framework & Runtime** | Next.js 16 (App Router), React 19, Node.js 26+ | Server Components, Server Actions, and standalone build artifact. |
 | **Language & Type Safety** | TypeScript, Zod | Static typing and runtime input schema validation at server boundaries. |
 | **Styling & Typography** | Tailwind CSS v4, Newsreader, Space Grotesk | Dark editorial ledger aesthetic, custom theme tokens, zero-layout-shift web fonts. |
 | **Database & Persistence** | PostgreSQL, Drizzle ORM, Supabase Storage | Portable relational queries via Drizzle ORM (driver: postgres), 10 schema tables, connection pooling. |
@@ -197,7 +197,7 @@ Full technical guides are available in the [`docs/`](./docs/) directory:
 
 ### Prerequisites
 
-* **Node.js**: `>= 24.16.0` (Recommended: `24.18.0`)
+* **Node.js**: `26.13.1` (LTS Lithium)
 * **Package Manager**: `npm`
 
 ### Installation

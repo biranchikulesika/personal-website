@@ -7,7 +7,6 @@ import type {
   NoteItem,
   NowEntry,
   PasskeyItem,
-  UserSession,
   SidepanelTab,
   NewsletterSubscriber,
 } from "@/lib/types";
@@ -21,7 +20,6 @@ import {
   ExternalLinkIcon,
   HomeIcon,
   LibraryIcon,
-  ComposeIcon,
   ImageIcon,
   UsersIcon,
   SettingsIcon,
@@ -73,7 +71,6 @@ interface AdminDashboardProps {
   initialSubscribers?: NewsletterSubscriber[];
   initialPasskeys?: PasskeyItem[];
   initialConnectedProviders?: string[];
-  initialSessions?: UserSession[];
   userName: string;
   userEmail: string;
   userAvatarUrl: string | null;
@@ -92,7 +89,6 @@ const validTabs: SidepanelTab[] = [
 const navItems = [
   { id: "home" as const, label: "Overview", icon: HomeIcon },
   { id: "content" as const, label: "Library", icon: LibraryIcon },
-  { id: "write" as const, label: "Write", icon: ComposeIcon },
   { id: "media" as const, label: "Media", icon: ImageIcon },
   { id: "subscribers" as const, label: "Audience", icon: UsersIcon },
   { id: "settings" as const, label: "Settings", icon: SettingsIcon },
@@ -108,7 +104,6 @@ export function AdminDashboard({
   initialSubscribers = [],
   initialPasskeys = [],
   initialConnectedProviders = ["google"],
-  initialSessions = [],
   initialTab = "home",
   userName,
   userEmail,
@@ -249,21 +244,14 @@ export function AdminDashboard({
     <>
       <nav aria-label="Admin" className="flex-1 space-y-1 px-2 pt-5">
         {navItems.map((item) => {
-          const isAction = item.id === "write";
-          const isActive = !isAction && activeTab === item.id;
+          const isActive = activeTab === item.id;
           const Icon = item.icon;
           return (
             <button
               key={item.id}
               type="button"
               aria-current={isActive ? "page" : undefined}
-              onClick={() => {
-                if (isAction) {
-                  router.push("/admin/compose?type=post");
-                  return;
-                }
-                navigateTab(item.id);
-              }}
+              onClick={() => navigateTab(item.id)}
               className={`flex w-full items-center gap-2.5 rounded-lg border px-3 py-2 text-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
                 isActive
                   ? "border-tinted/30 bg-post-card text-paper"
@@ -280,17 +268,6 @@ export function AdminDashboard({
           );
         })}
       </nav>
-
-      <div className="mt-auto border-t border-tinted/20 p-3">
-        <Link
-          href="/"
-          target="_blank"
-          className="flex items-center justify-between rounded-lg px-2 py-2 text-xs text-gray-mid transition-colors hover:bg-post-card hover:text-paper"
-        >
-          <span>View public site</span>
-          <ExternalLinkIcon className="h-3.5 w-3.5" />
-        </Link>
-      </div>
     </>
   );
 
@@ -435,6 +412,7 @@ export function AdminDashboard({
               allContent={{
                 posts: initialPosts,
                 notes: initialNotes,
+                nowEntries: initialNowEntries,
                 books: initialBooks,
               }}
               initialSearchQuery={mediaSearch}
@@ -453,7 +431,6 @@ export function AdminDashboard({
               userRole={userRole}
               initialPasskeys={initialPasskeys}
               initialConnectedProviders={initialConnectedProviders}
-              initialSessions={initialSessions}
               exportData={{
                 posts: initialPosts,
                 notes: initialNotes,
