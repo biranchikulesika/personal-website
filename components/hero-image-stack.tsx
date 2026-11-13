@@ -20,18 +20,19 @@ interface HeroImageStackProps {
  * one comes forward. Hover pauses the rotation.
  */
 export function HeroImageStack({ images }: HeroImageStackProps) {
-  const [active, setActive] = useState(0);
+  const [tick, setTick] = useState(0);
   const [paused, setPaused] = useState(false);
+  const active = tick % images.length;
 
+  // A single ticking counter drives both auto-rotation and taps, so a click
+  // restarts the 4.2s timer instead of racing it.
   useEffect(() => {
     if (images.length < 2 || paused) return;
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
-    const id = window.setInterval(() => {
-      setActive((current) => (current + 1) % images.length);
-    }, 4200);
-    return () => window.clearInterval(id);
-  }, [images.length, paused]);
+    const id = window.setTimeout(() => setTick((current) => current + 1), 4200);
+    return () => window.clearTimeout(id);
+  }, [images.length, paused, tick]);
 
   return (
     <div
@@ -67,6 +68,13 @@ export function HeroImageStack({ images }: HeroImageStackProps) {
           </div>
         );
       })}
+      <button
+        type="button"
+        onClick={() => setTick((current) => current + 1)}
+        aria-label="Show next photo"
+        style={{ zIndex: images.length + 1 }}
+        className="absolute inset-0 cursor-pointer rounded-2xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
+      />
     </div>
   );
 }

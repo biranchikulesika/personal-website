@@ -12,15 +12,14 @@ import type {
   NewsletterSubscriber,
 } from "@/lib/types";
 import { formatDisplayDate } from "@/lib/utils";
-import Image from "next/image";
 import Link from "next/link";
 import dynamic from "next/dynamic";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { logoutAction } from "@/app/admin/login/actions";
 import { LoadingState } from "@/components/ui/states";
-import { toast } from "@/lib/toast";
+import { CloseIcon } from "@/components/icons";
 
+import { AccountMenu } from "./account-menu";
 import { HomeOverview } from "./home-overview";
 
 // Lazy-load tab-specific managers. They are only needed when their tab is
@@ -89,8 +88,21 @@ export function AdminDashboard({
 }: AdminDashboardProps) {
   const [activeTab, setActiveTab] = useState<SidepanelTab>(initialTab);
   const [isComposeOpen, setIsComposeOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [createBookTrigger, setCreateBookTrigger] = useState(0);
+  const settingsCloseRef = useRef<HTMLButtonElement>(null);
   const router = useRouter();
+
+  // Account settings live in a dialog now, so wire up Escape and initial focus.
+  useEffect(() => {
+    if (!isSettingsOpen) return;
+    settingsCloseRef.current?.focus();
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setIsSettingsOpen(false);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [isSettingsOpen]);
 
   // Sync state if initialTab prop changes (e.g. server-side navigation)
   useEffect(() => {
@@ -104,7 +116,6 @@ export function AdminDashboard({
       "content",
       "media",
       "subscribers",
-      "account",
     ];
 
     const handlePopState = () => {
@@ -228,26 +239,6 @@ export function AdminDashboard({
         </svg>
       ),
     },
-    {
-      id: "account" as const,
-      label: "Account",
-      icon: (
-        <svg
-          className="h-4 w-4"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          strokeWidth={2}
-          aria-hidden="true"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"
-          />
-        </svg>
-      ),
-    },
   ];
 
   return (
@@ -255,6 +246,15 @@ export function AdminDashboard({
       {/* ── 1. Desktop Left Fixed Sidebar ── */}
       <aside className="sticky top-0 hidden h-screen w-64 md:w-72 shrink-0 border-r border-tinted/20 bg-night-soft md:flex flex-col justify-between p-5 overflow-y-auto">
         <div className="space-y-6">
+          {/* Account Menu */}
+          <AccountMenu
+            userName={userName}
+            userEmail={userEmail}
+            userAvatarUrl={userAvatarUrl}
+            userRole={userRole}
+            onOpenSettings={() => setIsSettingsOpen(true)}
+          />
+
           {/* Navigation Links */}
           <nav aria-label="Admin Navigation" className="space-y-1.5">
             {navItems.map((item) => {
@@ -296,19 +296,19 @@ export function AdminDashboard({
             <span>View Public Site</span>
             <span>↗</span>
           </Link>
-          <button
-            type="button"
-            onClick={async () => {
-              toast.info("Signing out…");
-              await logoutAction();
-              window.location.href = "/admin/login";
-            }}
-            className="flex w-full items-center justify-center gap-1.5 rounded-full border border-tinted/20 bg-night-soft py-2.5 text-xs font-semibold text-gray-mid transition-colors hover:border-red-500/30 hover:bg-red-500/10 hover:text-red-400"
-          >
-            Sign out
-          </button>
         </div>
       </aside>
+
+      {/* ── Mobile Account Bar ── */}
+      <div className="sticky top-0 z-30 border-b border-tinted/20 bg-night-soft/95 px-4 py-2 backdrop-blur md:hidden">
+        <AccountMenu
+          userName={userName}
+          userEmail={userEmail}
+          userAvatarUrl={userAvatarUrl}
+          userRole={userRole}
+          onOpenSettings={() => setIsSettingsOpen(true)}
+        />
+      </div>
 
       {/* ── 2. Main Scrollable Workspace Area ── */}
       <main className="flex-1 min-w-0 overflow-y-auto p-4 sm:p-8 lg:p-12 pb-28 md:pb-12 bg-night">
@@ -349,17 +349,6 @@ export function AdminDashboard({
           )}
           {activeTab === "subscribers" && (
             <SubscriberManager initialSubscribers={initialSubscribers} />
-          )}
-          {activeTab === "account" && (
-            <AccountManager
-              userName={userName}
-              userEmail={userEmail}
-              userAvatarUrl={userAvatarUrl}
-              userRole={userRole}
-              initialPasskeys={initialPasskeys}
-              initialConnectedProviders={initialConnectedProviders}
-              initialSessions={initialSessions}
-            />
           )}
         </div>
       </main>
@@ -506,26 +495,51 @@ export function AdminDashboard({
             <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
           </svg>
         </button>
-
-        {/* Account Tab */}
-        <button
-          type="button"
-          aria-label="Account"
-          onClick={() => {
-            navigateTab("account");
-            setIsComposeOpen(false);
-          }}
-          className={`flex h-11 w-11 items-center justify-center rounded-full transition-all ${
-            activeTab === "account"
-              ? "bg-post-card text-accent border border-tinted/30 shadow-xs"
-              : "text-gray-mid hover:bg-post-card/50 hover:text-paper"
-          }`}
-        >
-          <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
-          </svg>
-        </button>
       </nav>
+
+      {/* ── Account Settings Dialog (was the Account tab) ── */}
+      {isSettingsOpen && (
+        <div
+          className="fixed inset-0 z-[100] overflow-y-auto bg-black/75 p-4 backdrop-blur-xs sm:p-6"
+          onClick={(event) => {
+            if (event.target === event.currentTarget) setIsSettingsOpen(false);
+          }}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="account-settings-title"
+            className="relative mx-auto w-full max-w-2xl rounded-2xl border border-tinted/20 bg-night p-4 shadow-2xl sm:p-5"
+          >
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <h2
+                id="account-settings-title"
+                className="font-serif text-lg font-normal text-paper sm:text-xl"
+              >
+                Account &amp; Security
+              </h2>
+              <button
+                ref={settingsCloseRef}
+                type="button"
+                onClick={() => setIsSettingsOpen(false)}
+                aria-label="Close account settings"
+                className="rounded-full p-1.5 text-gray-mid transition-colors hover:bg-post-card hover:text-paper focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
+              >
+                <CloseIcon className="h-4 w-4" />
+              </button>
+            </div>
+            <AccountManager
+              userName={userName}
+              userEmail={userEmail}
+              userAvatarUrl={userAvatarUrl}
+              userRole={userRole}
+              initialPasskeys={initialPasskeys}
+              initialConnectedProviders={initialConnectedProviders}
+              initialSessions={initialSessions}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

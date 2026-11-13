@@ -38,7 +38,7 @@ export function Hero({ hero }: HeroProps) {
                 style={{ animationDelay: `${index * 130}ms` }}
               >
                 <span
-                  className={`inline-block rounded-sm px-2 py-1 text-night transition-transform duration-300 ease-out hover:rotate-0 hover:scale-105 sm:px-3 ${WORD_STYLES[index % WORD_STYLES.length]}`}
+                  className={`inline-block rounded-sm px-2 py-1 text-night transition-transform duration-300 ease-out hover:rotate-0 hover:scale-105 active:rotate-0 active:scale-105 sm:px-3 ${WORD_STYLES[index % WORD_STYLES.length]}`}
                 >
                   {word}
                 </span>
