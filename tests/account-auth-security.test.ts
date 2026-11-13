@@ -3,6 +3,28 @@ import { test } from "node:test";
 import { ContentService } from "../lib/services/content.service";
 import { InMemoryTestContentRepository } from "./in-memory-test-content-repository";
 import { parseUserAgent } from "../lib/utils";
+import {
+  ALLOWED_ADMIN_EMAILS,
+  PRIMARY_ADMIN_EMAIL,
+  isAllowedAdminEmail,
+} from "../lib/auth/admin";
+
+// ── Admin email allowlist ───────────────────────────────────────────────────
+
+test("only the hardcoded owner addresses may sign in to the admin", () => {
+  assert.equal(PRIMARY_ADMIN_EMAIL, "biranchikulesika@gmail.com");
+  assert.equal(ALLOWED_ADMIN_EMAILS.length, 4);
+
+  for (const email of ALLOWED_ADMIN_EMAILS) {
+    assert.equal(isAllowedAdminEmail(email), true, `${email} should be allowed`);
+  }
+
+  assert.equal(isAllowedAdminEmail("  BIRANCHIKULESIKA@GMAIL.COM  "), true);
+  assert.equal(isAllowedAdminEmail("attacker@example.com"), false);
+  assert.equal(isAllowedAdminEmail(""), false);
+  assert.equal(isAllowedAdminEmail(null), false);
+  assert.equal(isAllowedAdminEmail(undefined), false);
+});
 
 // ── User Agent & Device Parser ──────────────────────────────────────────────
 

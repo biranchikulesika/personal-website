@@ -18,6 +18,7 @@ import {
   consumePasskeyChallengeCookie,
 } from "@/lib/auth/webauthn";
 import type { PasskeyItem } from "@/lib/types";
+import { isAllowedAdminEmail } from "@/lib/auth/admin";
 
 const contentService = new ContentService();
 
@@ -299,6 +300,13 @@ export async function verifyPasskeyLoginAction(params?: {
     await contentService.savePasskey(credRecord.userId, updatedPasskey);
 
     // 5. Verify that the user still has an active administrative role in the trusted role store
+    if (!isAllowedAdminEmail(credRecord.userEmail)) {
+      return {
+        success: false,
+        error: "Forbidden: Account is not permitted to access the admin.",
+      };
+    }
+
     const role = await contentService.getUserRole(credRecord.userId);
     if (role !== "super_admin" && role !== "content_admin") {
       return {

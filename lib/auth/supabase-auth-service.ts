@@ -1,5 +1,5 @@
 import { getSupabaseServer } from "@/lib/supabase/server";
-import { isAdminRole } from "./admin";
+import { isAdminRole, isAllowedAdminEmail } from "./admin";
 import { getContentRepository } from "@/lib/repositories";
 import { getSupabaseUrl, getSupabasePublishableKey } from "@/lib/config/env";
 import type { AppRole } from "@/lib/types";
@@ -43,6 +43,11 @@ export class SupabaseAuthService implements AuthService {
 
   async requireAdmin(): Promise<{ user: AuthUser; role: AppRole }> {
     const user = await this.requireUser();
+
+    if (!isAllowedAdminEmail(user.email)) {
+      throw new Error("Forbidden: Account is not permitted to access the admin");
+    }
+
     const repo = getContentRepository();
     const role = await repo.getUserRole(user.id);
 

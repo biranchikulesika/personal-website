@@ -11,16 +11,29 @@ import type {
   SidepanelTab,
   NewsletterSubscriber,
 } from "@/lib/types";
-import { formatDisplayDate } from "@/lib/utils";
 import Link from "next/link";
 import dynamic from "next/dynamic";
-import { useState, useEffect, useRef } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { LoadingState } from "@/components/ui/states";
-import { CloseIcon } from "@/components/icons";
+import {
+  CloseIcon,
+  ExternalLinkIcon,
+  HomeIcon,
+  LibraryIcon,
+  ComposeIcon,
+  ImageIcon,
+  UsersIcon,
+  SettingsIcon,
+  SearchIcon,
+  PlusIcon,
+} from "@/components/icons";
 
 import { AccountMenu } from "./account-menu";
 import { HomeOverview } from "./home-overview";
+import { NewContentDialog } from "./new-content-dialog";
+import { SearchPalette } from "./search-palette";
+import { Button } from "./ui";
 
 // Lazy-load tab-specific managers. They are only needed when their tab is
 // active, so splitting them into separate chunks reduces the initial admin
@@ -28,7 +41,7 @@ import { HomeOverview } from "./home-overview";
 const ContentManager = dynamic(
   () => import("./content-manager").then((m) => m.ContentManager),
   {
-    loading: () => <LoadingState title="Loading content…" />,
+    loading: () => <LoadingState title="Loading library…" />,
   },
 );
 const MediaManager = dynamic(
@@ -37,17 +50,16 @@ const MediaManager = dynamic(
     loading: () => <LoadingState title="Loading media…" />,
   },
 );
-const AccountManager = dynamic(
-  () => import("./account-manager").then((m) => m.AccountManager),
+const SettingsManager = dynamic(
+  () => import("./settings-manager").then((m) => m.SettingsManager),
   {
-    loading: () => <LoadingState title="Loading account…" />,
+    loading: () => <LoadingState title="Loading settings…" />,
   },
 );
-
 const SubscriberManager = dynamic(
   () => import("./subscriber-manager").then((m) => m.SubscriberManager),
   {
-    loading: () => <LoadingState title="Loading subscribers…" />,
+    loading: () => <LoadingState title="Loading audience…" />,
   },
 );
 
@@ -69,6 +81,23 @@ interface AdminDashboardProps {
   initialTab?: SidepanelTab;
 }
 
+const validTabs: SidepanelTab[] = [
+  "home",
+  "content",
+  "media",
+  "subscribers",
+  "settings",
+];
+
+const navItems = [
+  { id: "home" as const, label: "Overview", icon: HomeIcon },
+  { id: "content" as const, label: "Library", icon: LibraryIcon },
+  { id: "write" as const, label: "Write", icon: ComposeIcon },
+  { id: "media" as const, label: "Media", icon: ImageIcon },
+  { id: "subscribers" as const, label: "Audience", icon: UsersIcon },
+  { id: "settings" as const, label: "Settings", icon: SettingsIcon },
+];
+
 export function AdminDashboard({
   initialPosts,
   initialNotes,
@@ -87,37 +116,35 @@ export function AdminDashboard({
   userRole,
 }: AdminDashboardProps) {
   const [activeTab, setActiveTab] = useState<SidepanelTab>(initialTab);
-  const [isComposeOpen, setIsComposeOpen] = useState(false);
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isNewOpen, setIsNewOpen] = useState(false);
+  const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
+  const [mediaSearch, setMediaSearch] = useState("");
   const [createBookTrigger, setCreateBookTrigger] = useState(0);
-  const settingsCloseRef = useRef<HTMLButtonElement>(null);
   const router = useRouter();
-
-  // Account settings live in a dialog now, so wire up Escape and initial focus.
-  useEffect(() => {
-    if (!isSettingsOpen) return;
-    settingsCloseRef.current?.focus();
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setIsSettingsOpen(false);
-    };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [isSettingsOpen]);
 
   // Sync state if initialTab prop changes (e.g. server-side navigation)
   useEffect(() => {
     setActiveTab(initialTab);
   }, [initialTab]);
 
-  // Handle browser back/forward buttons and initial localStorage fallback
+  // Cmd/Ctrl+K opens global search from any admin screen.
   useEffect(() => {
-    const validTabs: SidepanelTab[] = [
-      "home",
-      "content",
-      "media",
-      "subscribers",
-    ];
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (
+        (event.metaKey || event.ctrlKey) &&
+        event.key.toLowerCase() === "k"
+      ) {
+        event.preventDefault();
+        setIsSearchOpen((open) => !open);
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
 
+  // Handle browser back/forward buttons and initial localStorage fallback.
+  useEffect(() => {
     const handlePopState = () => {
       const params = new URLSearchParams(window.location.search);
       const tabParam = params.get("tab") as SidepanelTab | null;
@@ -128,7 +155,7 @@ export function AdminDashboard({
 
     window.addEventListener("popstate", handlePopState);
 
-    // If loaded on /admin without ?tab= parameter, restore saved tab from localStorage
+    // If loaded on /admin without ?tab=, restore the last visited tab.
     const params = new URLSearchParams(window.location.search);
     const tabParam = params.get("tab") as SidepanelTab | null;
     if (tabParam && validTabs.includes(tabParam)) {
@@ -150,169 +177,225 @@ export function AdminDashboard({
     return () => window.removeEventListener("popstate", handlePopState);
   }, [router]);
 
-  const navigateTab = (tab: SidepanelTab) => {
-    setActiveTab(tab);
-    try {
-      localStorage.setItem("admin_active_tab", tab);
-    } catch {}
-    router.replace(`/admin?tab=${tab}`, { scroll: false });
-  };
+  // Lock background scroll while the mobile drawer is open.
+  useEffect(() => {
+    if (!isMobileNavOpen) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setIsMobileNavOpen(false);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.body.style.overflow = previous;
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [isMobileNavOpen]);
 
-  const navItems = [
-    {
-      id: "home" as const,
-      label: "Home",
-      icon: (
-        <svg
-          className="h-4 w-4"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          strokeWidth={2}
-          aria-hidden="true"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
-          />
-        </svg>
-      ),
+  const navigateTab = useCallback(
+    (tab: SidepanelTab) => {
+      setActiveTab(tab);
+      setIsMobileNavOpen(false);
+      try {
+        localStorage.setItem("admin_active_tab", tab);
+      } catch {}
+      router.replace(`/admin?tab=${tab}`, { scroll: false });
     },
-    {
-      id: "content" as const,
-      label: "Content",
-      icon: (
-        <svg
-          className="h-4 w-4"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          strokeWidth={2}
-          aria-hidden="true"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"
-          />
-        </svg>
-      ),
+    [router],
+  );
+
+  const openSettings = useCallback(
+    () => navigateTab("settings"),
+    [navigateTab],
+  );
+
+  const openContent = useCallback(
+    (kind: "post" | "note" | "now" | "book", slug: string) => {
+      setIsSearchOpen(false);
+      if (kind === "book") {
+        navigateTab("content");
+        return;
+      }
+      router.push(
+        `/admin/compose?type=${kind}&slug=${encodeURIComponent(slug)}`,
+      );
     },
-    {
-      id: "media" as const,
-      label: "Resources",
-      icon: (
-        <svg
-          className="h-4 w-4"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          strokeWidth={2}
-          aria-hidden="true"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z"
-          />
-        </svg>
-      ),
+    [navigateTab, router],
+  );
+
+  const openMedia = useCallback(
+    (query: string) => {
+      setIsSearchOpen(false);
+      setMediaSearch(query);
+      navigateTab("media");
     },
-    {
-      id: "subscribers" as const,
-      label: "Subscribers",
-      icon: (
-        <svg
-          className="h-4 w-4"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          strokeWidth={2}
-          aria-hidden="true"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75"
-          />
-        </svg>
-      ),
+    [navigateTab],
+  );
+
+  const handleCreate = useCallback(
+    (kind: "post" | "note" | "now" | "book") => {
+      setIsNewOpen(false);
+      if (kind === "book") {
+        navigateTab("content");
+        setCreateBookTrigger((trigger) => trigger + 1);
+        return;
+      }
+      router.push(`/admin/compose?type=${kind}`);
     },
-  ];
+    [navigateTab, router],
+  );
+
+  const sidebar = (
+    <>
+      <nav aria-label="Admin" className="flex-1 space-y-1 px-2 pt-5">
+        {navItems.map((item) => {
+          const isAction = item.id === "write";
+          const isActive = !isAction && activeTab === item.id;
+          const Icon = item.icon;
+          return (
+            <button
+              key={item.id}
+              type="button"
+              aria-current={isActive ? "page" : undefined}
+              onClick={() => {
+                if (isAction) {
+                  router.push("/admin/compose?type=post");
+                  return;
+                }
+                navigateTab(item.id);
+              }}
+              className={`flex w-full items-center gap-2.5 rounded-lg border px-3 py-2 text-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
+                isActive
+                  ? "border-tinted/30 bg-post-card text-paper"
+                  : "border-transparent text-gray-mid hover:bg-post-card/50 hover:text-paper"
+              }`}
+            >
+              <Icon
+                className={`h-4 w-4 shrink-0 ${
+                  isActive ? "text-accent" : "text-gray-mid"
+                }`}
+              />
+              {item.label}
+            </button>
+          );
+        })}
+      </nav>
+
+      <div className="mt-auto border-t border-tinted/20 p-3">
+        <Link
+          href="/"
+          target="_blank"
+          className="flex items-center justify-between rounded-lg px-2 py-2 text-xs text-gray-mid transition-colors hover:bg-post-card hover:text-paper"
+        >
+          <span>View public site</span>
+          <ExternalLinkIcon className="h-3.5 w-3.5" />
+        </Link>
+      </div>
+    </>
+  );
 
   return (
-    <div className="flex min-h-screen w-full flex-col md:flex-row bg-night text-paper font-sans">
-      {/* ── 1. Desktop Left Fixed Sidebar ── */}
-      <aside className="sticky top-0 hidden h-screen w-64 md:w-72 shrink-0 border-r border-tinted/20 bg-night-soft md:flex flex-col justify-between p-5 overflow-y-auto">
-        <div className="space-y-6">
-          {/* Account Menu */}
-          <AccountMenu
-            userName={userName}
-            userEmail={userEmail}
-            userAvatarUrl={userAvatarUrl}
-            userRole={userRole}
-            onOpenSettings={() => setIsSettingsOpen(true)}
-          />
-
-          {/* Navigation Links */}
-          <nav aria-label="Admin Navigation" className="space-y-1.5">
-            {navItems.map((item) => {
-              const isActive = activeTab === item.id;
-              return (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => navigateTab(item.id)}
-                  className={`group flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium transition-all ${
-                    isActive
-                      ? "bg-post-card text-paper shadow-xs border border-tinted/30"
-                      : "text-gray-mid hover:bg-post-card/60 hover:text-paper"
-                  }`}
-                >
-                  <span
-                    className={
-                      isActive
-                        ? "text-accent"
-                        : "text-gray-mid group-hover:text-paper"
-                    }
-                  >
-                    {item.icon}
-                  </span>
-                  <span>{item.label}</span>
-                </button>
-              );
-            })}
-          </nav>
-        </div>
-
-        {/* Sidebar Bottom Footer */}
-        <div className="space-y-3 border-t border-tinted/20 pt-4">
-          <Link
-            href="/"
-            target="_blank"
-            className="flex w-full items-center justify-center gap-1.5 rounded-full bg-night-soft border border-tinted/20 py-2.5 text-xs font-semibold text-paper transition-colors hover:bg-post-card hover:border-accent/40"
-          >
-            <span>View Public Site</span>
-            <span>↗</span>
-          </Link>
-        </div>
+    <div className="flex min-h-screen w-full bg-night font-sans text-paper">
+      {/* Desktop sidebar */}
+      <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col border-r border-tinted/20 bg-night-soft/30 md:flex">
+        {sidebar}
       </aside>
 
-      {/* ── Mobile Account Bar ── */}
-      <div className="sticky top-0 z-30 border-b border-tinted/20 bg-night-soft/95 px-4 py-2 backdrop-blur md:hidden">
-        <AccountMenu
-          userName={userName}
-          userEmail={userEmail}
-          userAvatarUrl={userAvatarUrl}
-          userRole={userRole}
-          onOpenSettings={() => setIsSettingsOpen(true)}
-        />
-      </div>
+      {/* Mobile drawer */}
+      {isMobileNavOpen && (
+        <div className="fixed inset-0 z-[90] md:hidden">
+          <div
+            className="absolute inset-0 bg-black/70 backdrop-blur-xs"
+            onClick={() => setIsMobileNavOpen(false)}
+            aria-hidden="true"
+          />
+          <aside
+            role="dialog"
+            aria-modal="true"
+            aria-label="Admin navigation"
+            className="relative flex h-full w-72 max-w-[85vw] flex-col border-r border-tinted/20 bg-night-soft shadow-2xl"
+          >
+            <button
+              type="button"
+              onClick={() => setIsMobileNavOpen(false)}
+              aria-label="Close navigation"
+              className="absolute right-3 top-3 rounded-full p-1.5 text-gray-mid transition-colors hover:bg-post-card hover:text-paper"
+            >
+              <CloseIcon className="h-4 w-4" />
+            </button>
+            {sidebar}
+          </aside>
+        </div>
+      )}
 
-      {/* ── 2. Main Scrollable Workspace Area ── */}
-      <main className="flex-1 min-w-0 overflow-y-auto p-4 sm:p-8 lg:p-12 pb-28 md:pb-12 bg-night">
-        <div className="mx-auto max-w-6xl">
+      {/* Main column */}
+      <div className="flex min-w-0 flex-1 flex-col">
+        <header className="sticky top-0 z-40 flex h-14 shrink-0 items-center gap-2 border-b border-tinted/20 bg-night/90 px-3 backdrop-blur-md sm:px-4 lg:px-6">
+          <button
+            type="button"
+            onClick={() => setIsMobileNavOpen(true)}
+            aria-label="Open navigation"
+            aria-expanded={isMobileNavOpen}
+            className="rounded-lg p-2 text-gray-mid transition-colors hover:bg-post-card hover:text-paper md:hidden"
+          >
+            <svg
+              className="h-4 w-4"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={1.75}
+              strokeLinecap="round"
+              aria-hidden="true"
+            >
+              <path d="M4 7h16M4 12h16M4 17h16" />
+            </svg>
+          </button>
+
+          <p className="text-sm font-medium text-paper md:hidden">
+            {navItems.find((item) => item.id === activeTab)?.label ?? "Workspace"}
+          </p>
+
+          <div className="ml-auto flex items-center gap-1.5 sm:gap-2">
+            <button
+              type="button"
+              onClick={() => setIsSearchOpen(true)}
+              className="flex h-9 items-center gap-2 rounded-lg border border-tinted/30 bg-night-soft px-2.5 text-xs text-gray-mid transition-colors hover:border-tinted/50 hover:text-paper sm:min-w-[220px]"
+              aria-label="Search (Command K)"
+            >
+              <SearchIcon className="h-3.5 w-3.5 shrink-0" />
+              <span className="hidden sm:inline">Search</span>
+              <kbd className="ml-auto hidden rounded border border-tinted/40 px-1 py-0.5 text-[10px] sm:inline">
+                ⌘K
+              </kbd>
+            </button>
+
+            <Button variant="primary" onClick={() => setIsNewOpen(true)}>
+              <PlusIcon className="h-3.5 w-3.5" />
+              New
+            </Button>
+
+            <Link
+              href="/"
+              target="_blank"
+              aria-label="View public site"
+              title="View public site"
+              className="hidden h-9 items-center justify-center rounded-lg border border-tinted/30 bg-night-soft px-2.5 text-gray-mid transition-colors hover:border-tinted/50 hover:text-paper sm:flex"
+            >
+              <ExternalLinkIcon className="h-4 w-4" />
+            </Link>
+
+            <AccountMenu
+              compact
+              userName={userName}
+              userEmail={userEmail}
+              userAvatarUrl={userAvatarUrl}
+              userRole={userRole}
+              onOpenSettings={openSettings}
+            />
+          </div>
+        </header>
+
+        <main className="mx-auto w-full max-w-[1120px] flex-1 px-4 py-6 sm:px-6 lg:px-8">
           {activeTab === "home" && (
             <HomeOverview
               posts={initialPosts}
@@ -327,7 +410,10 @@ export function AdminDashboard({
               userAvatarUrl={userAvatarUrl}
               userRole={userRole}
               onNavigateTab={(tab) => navigateTab(tab)}
-              onTriggerCreateBook={() => setCreateBookTrigger((prev) => prev + 1)}
+              onTriggerCreateBook={() => {
+                navigateTab("content");
+                setCreateBookTrigger((trigger) => trigger + 1);
+              }}
             />
           )}
 
@@ -341,194 +427,26 @@ export function AdminDashboard({
               openCreateBookTrigger={createBookTrigger}
             />
           )}
+
           {activeTab === "media" && (
             <MediaManager
               initialMedia={initialMedia}
               initialOrphanedMedia={initialOrphanedMedia}
+              allContent={{
+                posts: initialPosts,
+                notes: initialNotes,
+                books: initialBooks,
+              }}
+              initialSearchQuery={mediaSearch}
             />
           )}
+
           {activeTab === "subscribers" && (
             <SubscriberManager initialSubscribers={initialSubscribers} />
           )}
-        </div>
-      </main>
 
-      {/* ── Mobile Compose Semicircle Overlay & Backdrop ── */}
-      {isComposeOpen && (
-        <div
-          className="fixed inset-0 z-30 bg-black/60 backdrop-blur-xs transition-opacity animate-in fade-in duration-200 md:hidden"
-          onClick={() => setIsComposeOpen(false)}
-          aria-hidden="true"
-        />
-      )}
-
-      {/* ── 3. Mobile Bottom Tab Bar ── */}
-      <nav
-        aria-label="Mobile Bottom Navigation"
-        className="fixed bottom-0 left-0 right-0 z-35 flex md:hidden items-center justify-around border-t border-tinted/20 bg-night-soft/95 px-2 py-1.5 backdrop-blur-lg pb-[max(0.375rem,env(safe-area-inset-bottom))]"
-      >
-        {/* Semicircle Options Menu floating directly above Compose button */}
-        {isComposeOpen && (
-          <div className="absolute bottom-16 left-1/2 -translate-x-1/2 flex items-center justify-center pointer-events-none z-40">
-            {/* Now Option */}
-            <Link
-              href="/admin/compose?type=now"
-              onClick={() => setIsComposeOpen(false)}
-              className="pointer-events-auto absolute flex flex-col items-center justify-center rounded-2xl border border-tinted/30 bg-post-card px-3 py-2 text-paper shadow-2xl transition-all duration-300 hover:bg-night-soft hover:scale-105 active:scale-95 animate-in zoom-in-75"
-              style={{ transform: "translate(-86px, -36px)" }}
-            >
-              <span className="text-sm">⏱</span>
-              <span className="text-[10px] font-semibold tracking-tight text-paper mt-0.5">Now</span>
-            </Link>
-
-            {/* Note Option */}
-            <Link
-              href="/admin/compose?type=note"
-              onClick={() => setIsComposeOpen(false)}
-              className="pointer-events-auto absolute flex flex-col items-center justify-center rounded-2xl border border-tinted/30 bg-post-card px-3 py-2 text-paper shadow-2xl transition-all duration-300 hover:bg-night-soft hover:scale-105 active:scale-95 animate-in zoom-in-75"
-              style={{ transform: "translate(-32px, -82px)" }}
-            >
-              <span className="text-sm">📝</span>
-              <span className="text-[10px] font-semibold tracking-tight text-paper mt-0.5">Note</span>
-            </Link>
-
-            {/* Post Option */}
-            <Link
-              href="/admin/compose?type=post"
-              onClick={() => setIsComposeOpen(false)}
-              className="pointer-events-auto absolute flex flex-col items-center justify-center rounded-2xl border border-tinted/30 bg-post-card px-3 py-2 text-paper shadow-2xl transition-all duration-300 hover:bg-night-soft hover:scale-105 active:scale-95 animate-in zoom-in-75"
-              style={{ transform: "translate(32px, -82px)" }}
-            >
-              <span className="text-sm">📄</span>
-              <span className="text-[10px] font-semibold tracking-tight text-paper mt-0.5">Post</span>
-            </Link>
-
-            {/* Book Option */}
-            <button
-              type="button"
-              onClick={() => {
-                navigateTab("content");
-                setCreateBookTrigger((prev) => prev + 1);
-                setIsComposeOpen(false);
-              }}
-              className="pointer-events-auto absolute flex flex-col items-center justify-center rounded-2xl border border-tinted/30 bg-post-card px-3 py-2 text-paper shadow-2xl transition-all duration-300 hover:bg-night-soft hover:scale-105 active:scale-95 animate-in zoom-in-75"
-              style={{ transform: "translate(86px, -36px)" }}
-            >
-              <span className="text-sm">📚</span>
-              <span className="text-[10px] font-semibold tracking-tight text-paper mt-0.5">Book</span>
-            </button>
-          </div>
-        )}
-
-        {/* Home Tab */}
-        <button
-          type="button"
-          aria-label="Home"
-          onClick={() => {
-            navigateTab("home");
-            setIsComposeOpen(false);
-          }}
-          className={`flex h-11 w-11 items-center justify-center rounded-full transition-all ${
-            activeTab === "home"
-              ? "bg-post-card text-accent border border-tinted/30 shadow-xs"
-              : "text-gray-mid hover:bg-post-card/50 hover:text-paper"
-          }`}
-        >
-          <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-          </svg>
-        </button>
-
-        {/* Content Tab */}
-        <button
-          type="button"
-          aria-label="Content"
-          onClick={() => {
-            navigateTab("content");
-            setIsComposeOpen(false);
-          }}
-          className={`flex h-11 w-11 items-center justify-center rounded-full transition-all ${
-            activeTab === "content"
-              ? "bg-post-card text-accent border border-tinted/30 shadow-xs"
-              : "text-gray-mid hover:bg-post-card/50 hover:text-paper"
-          }`}
-        >
-          <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
-          </svg>
-        </button>
-
-        {/* Center Compose Action Button */}
-        <button
-          type="button"
-          onClick={() => setIsComposeOpen((prev) => !prev)}
-          className="flex items-center justify-center focus:outline-none"
-          aria-label={isComposeOpen ? "Close compose options" : "Open compose options"}
-          aria-expanded={isComposeOpen}
-        >
-          <div
-            className={`flex h-11 w-11 items-center justify-center rounded-full shadow-lg transition-all duration-200 border-2 border-night active:scale-90 ${
-              isComposeOpen
-                ? "bg-night-soft text-paper border-tinted/40 rotate-45"
-                : "bg-accent text-paper hover:bg-accent-hover"
-            }`}
-          >
-            <span className="text-2xl leading-none font-light">+</span>
-          </div>
-        </button>
-
-        {/* Resources Tab */}
-        <button
-          type="button"
-          aria-label="Resources"
-          onClick={() => {
-            navigateTab("media");
-            setIsComposeOpen(false);
-          }}
-          className={`flex h-11 w-11 items-center justify-center rounded-full transition-all ${
-            activeTab === "media"
-              ? "bg-post-card text-accent border border-tinted/30 shadow-xs"
-              : "text-gray-mid hover:bg-post-card/50 hover:text-paper"
-          }`}
-        >
-          <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
-          </svg>
-        </button>
-      </nav>
-
-      {/* ── Account Settings Dialog (was the Account tab) ── */}
-      {isSettingsOpen && (
-        <div
-          className="fixed inset-0 z-[100] overflow-y-auto bg-black/75 p-4 backdrop-blur-xs sm:p-6"
-          onClick={(event) => {
-            if (event.target === event.currentTarget) setIsSettingsOpen(false);
-          }}
-        >
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="account-settings-title"
-            className="relative mx-auto w-full max-w-2xl rounded-2xl border border-tinted/20 bg-night p-4 shadow-2xl sm:p-5"
-          >
-            <div className="mb-3 flex items-center justify-between gap-3">
-              <h2
-                id="account-settings-title"
-                className="font-serif text-lg font-normal text-paper sm:text-xl"
-              >
-                Account &amp; Security
-              </h2>
-              <button
-                ref={settingsCloseRef}
-                type="button"
-                onClick={() => setIsSettingsOpen(false)}
-                aria-label="Close account settings"
-                className="rounded-full p-1.5 text-gray-mid transition-colors hover:bg-post-card hover:text-paper focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
-              >
-                <CloseIcon className="h-4 w-4" />
-              </button>
-            </div>
-            <AccountManager
+          {activeTab === "settings" && (
+            <SettingsManager
               userName={userName}
               userEmail={userEmail}
               userAvatarUrl={userAvatarUrl}
@@ -536,10 +454,36 @@ export function AdminDashboard({
               initialPasskeys={initialPasskeys}
               initialConnectedProviders={initialConnectedProviders}
               initialSessions={initialSessions}
+              exportData={{
+                posts: initialPosts,
+                notes: initialNotes,
+                books: initialBooks,
+                nowEntries: initialNowEntries,
+                media: initialMedia,
+                subscribers: initialSubscribers,
+              }}
             />
-          </div>
-        </div>
-      )}
+          )}
+        </main>
+      </div>
+
+      <SearchPalette
+        isOpen={isSearchOpen}
+        onClose={() => setIsSearchOpen(false)}
+        posts={initialPosts}
+        notes={initialNotes}
+        books={initialBooks}
+        nowEntries={initialNowEntries}
+        media={initialMedia}
+        onOpenContent={openContent}
+        onOpenMedia={openMedia}
+      />
+
+      <NewContentDialog
+        isOpen={isNewOpen}
+        onClose={() => setIsNewOpen(false)}
+        onSelect={handleCreate}
+      />
     </div>
   );
 }

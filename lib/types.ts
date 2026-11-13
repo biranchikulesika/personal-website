@@ -299,4 +299,9 @@ export interface NewsletterSubscriber {
 
 // Admin Navigation -----------------------------------------------------------
 
-export type SidepanelTab = "home" | "content" | "media" | "subscribers";
+export type SidepanelTab =
+  | "home"
+  | "content"
+  | "media"
+  | "subscribers"
+  | "settings";

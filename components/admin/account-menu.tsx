@@ -13,11 +13,13 @@ interface AccountMenuProps {
   userAvatarUrl?: string | null;
   userRole: string;
   onOpenSettings: () => void;
+  /** Avatar-only trigger for the top bar; full row for the sidebar/drawer. */
+  compact?: boolean;
 }
 
 /**
- * Sidebar account button: avatar + name that opens a popover with the signed-in
- * identity, a link to the Account settings tab, and sign out.
+ * Account button: avatar + name that opens a popover with the signed-in
+ * identity, a link to Settings, and sign out.
  */
 export function AccountMenu({
   userName,
@@ -25,6 +27,7 @@ export function AccountMenu({
   userAvatarUrl,
   userRole,
   onOpenSettings,
+  compact = false,
 }: AccountMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
@@ -48,35 +51,46 @@ export function AccountMenu({
         onClick={() => setIsOpen((prev) => !prev)}
         aria-haspopup="menu"
         aria-expanded={isOpen}
-        className={`flex w-full items-center gap-3 rounded-xl border px-2.5 py-2 text-left transition-colors ${
-          isOpen
-            ? 'border-tinted/30 bg-post-card'
-            : 'border-transparent hover:border-tinted/20 hover:bg-post-card/60'
-        }`}
+        aria-label={compact ? "Account menu" : undefined}
+        className={
+          compact
+            ? `flex items-center gap-1 rounded-full p-0.5 transition-colors ${
+                isOpen ? "bg-post-card" : "hover:bg-post-card/60"
+              }`
+            : `flex w-full items-center gap-3 rounded-xl border px-2.5 py-2 text-left transition-colors ${
+                isOpen
+                  ? "border-tinted/30 bg-post-card"
+                  : "border-transparent hover:border-tinted/20 hover:bg-post-card/60"
+              }`
+        }
       >
-        <UserAvatar src={userAvatarUrl} name={userName} size={34} />
-        <span className="min-w-0 flex-1">
-          <span className="block truncate text-sm font-medium text-paper">
-            {userName}
+        <UserAvatar src={userAvatarUrl} name={userName} size={compact ? 30 : 34} />
+        {!compact && (
+          <span className="min-w-0 flex-1">
+            <span className="block truncate text-sm font-medium text-paper">
+              {userName}
+            </span>
+            <span className="block truncate text-[11px] capitalize text-gray-mid">
+              {userRole.replace("_", " ")}
+            </span>
           </span>
-          <span className="block truncate text-[11px] capitalize text-gray-mid">
-            {userRole.replace('_', ' ')}
-          </span>
-        </span>
+        )}
         <ChevronDownIcon
           className={`h-4 w-4 shrink-0 text-gray-mid transition-transform duration-150 ${
-            isOpen ? 'rotate-180' : ''
-          }`}
+            isOpen ? "rotate-180" : ""
+          } ${compact ? "hidden sm:block" : ""}`}
         />
       </button>
 
       <div
         role="menu"
         aria-label="Account menu"
-        className={`absolute inset-x-0 top-full z-50 mt-2 origin-top rounded-2xl border border-tinted/20 bg-night-soft p-1.5 shadow-2xl transition-all duration-150 ease-out ${
+        className={`absolute top-full z-50 mt-2 origin-top rounded-2xl border border-tinted/20 bg-night-soft p-1.5 shadow-2xl transition-all duration-150 ease-out ${
+          compact ? "right-0 w-64" : "inset-x-0"
+        } ${
           isOpen
-            ? 'visible translate-y-0 scale-100 opacity-100'
-            : 'invisible -translate-y-1 scale-95 opacity-0'
+            ? "visible translate-y-0 scale-100 opacity-100"
+            : "invisible -translate-y-1 scale-95 opacity-0"
         }`}
       >
         <div className="flex items-center gap-3 px-2.5 py-2.5">

@@ -22,11 +22,17 @@ export default async function AdminPage({
   searchParams: Promise<{ tab?: string }>;
 }) {
   const { tab: initialTabParam } = await searchParams;
-  // Only accept a known tab id: an unknown/missing value falls back to home.
-  const initialTab: SidepanelTab = ["home", "content", "media", "subscribers"].includes(
-    initialTabParam as SidepanelTab,
-  )
-    ? (initialTabParam as SidepanelTab)
+  // Only accept a known tab id. Legacy `?tab=account` maps to the new Settings
+  // page; an unknown/missing value falls back to Overview.
+  const legacyTab = initialTabParam === "account" ? "settings" : initialTabParam;
+  const initialTab: SidepanelTab = [
+    "home",
+    "content",
+    "media",
+    "subscribers",
+    "settings",
+  ].includes(legacyTab as SidepanelTab)
+    ? (legacyTab as SidepanelTab)
     : "home";
 
   const authService = getAuthService();

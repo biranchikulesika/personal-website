@@ -9,8 +9,22 @@ import type {
   SidepanelTab,
   NewsletterSubscriber,
 } from "@/lib/types";
-import { formatDisplayDate } from "@/lib/utils";
+import { formatDisplayDate, stripMarkdown } from "@/lib/utils";
 import Link from "next/link";
+import {
+  ArrowRightIcon,
+  ComposeIcon,
+  ExternalLinkIcon,
+} from "@/components/icons";
+import {
+  Button,
+  buttonClassName,
+  CountStat,
+  PageHeader,
+  SectionHeading,
+  StatusBadge,
+  TypeBadge,
+} from "./ui";
 
 interface HomeOverviewProps {
   posts: BlogPost[];
@@ -28,6 +42,17 @@ interface HomeOverviewProps {
   onTriggerCreateBook: () => void;
 }
 
+type ActivityItem = {
+  id: string;
+  kind: "post" | "note" | "now" | "book";
+  title: string;
+  subtitle?: string;
+  date: string;
+  ok: boolean;
+  href: string;
+  publicHref?: string;
+};
+
 export function HomeOverview({
   posts,
   notes,
@@ -36,276 +61,293 @@ export function HomeOverview({
   subscribers = [],
   userName,
   onNavigateTab,
-  onTriggerCreateBook,
 }: HomeOverviewProps) {
-  const publishedPosts = posts.filter((p) => p.status !== "unpublished");
-  const draftPosts = posts.filter((p) => p.status === "unpublished");
+  const publishedPosts = posts.filter((post) => post.status !== "unpublished");
+  const publishedNotes = notes.filter((note) => note.status !== "unpublished");
+  const publishedBooks = books.filter(
+    (book) => book.isPublished !== false && book.status !== "unpublished",
+  );
+  const activeSubscribers = subscribers.filter(
+    (subscriber) => subscriber.status === "active",
+  );
 
-  const publishedNotes = notes.filter((n) => n.status !== "unpublished");
-  const draftNotes = notes.filter((n) => n.status === "unpublished");
+  const latestNow =
+    nowEntries.find((entry) => entry.status !== "unpublished") ??
+    nowEntries[0] ??
+    null;
 
-  const allDrafts = [
-    ...draftPosts.map((p) => ({
-      id: `post-${p.slug}`,
-      type: "post" as const,
-      title: p.title,
-      date: p.lastEditedAt || p.publishedAt || "",
-      slug: p.slug,
-    })),
-    ...draftNotes.map((n) => ({
-      id: `note-${n.slug}`,
-      type: "note" as const,
-      title: n.title,
-      date: n.date || "",
-      slug: n.slug,
-    })),
-  ];
+  const drafts = [
+    ...posts
+      .filter((post) => post.status === "unpublished")
+      .map((post) => ({
+        id: `post-${post.slug}`,
+        kind: "post" as const,
+        title: post.title,
+        date: post.lastEditedAt || post.publishedAt || "",
+        href: `/admin/compose?type=post&slug=${encodeURIComponent(post.slug)}`,
+      })),
+    ...notes
+      .filter((note) => note.status === "unpublished")
+      .map((note) => ({
+        id: `note-${note.slug}`,
+        kind: "note" as const,
+        title: note.title,
+        date: note.date || "",
+        href: `/admin/compose?type=note&slug=${encodeURIComponent(note.slug)}`,
+      })),
+  ]
+    .sort((a, b) => (b.date || "").localeCompare(a.date || ""))
+    .slice(0, 2);
 
-  type ActivityItem = {
-    id: string;
-    type: "post" | "note" | "book" | "now";
-    title: string;
-    subtitle?: string;
-    date: string;
-    slug?: string;
-    status?: "published" | "unpublished";
-    extra?: string;
-  };
-
-  const recentItems: ActivityItem[] = [
-    ...posts.map((p) => ({
-      id: `post-${p.slug}`,
-      type: "post" as const,
-      title: p.title,
-      subtitle: p.subtitle || p.description,
-      date: p.lastEditedAt || p.publishedAt || "",
-      slug: p.slug,
-      status: p.status || "published",
-      extra: p.persona || "builder",
+  const activity: ActivityItem[] = [
+    ...posts.map((post) => ({
+      id: `post-${post.slug}`,
+      kind: "post" as const,
+      title: post.title,
+      subtitle: post.subtitle || post.description,
+      date: post.lastEditedAt || post.publishedAt || "",
+      ok: post.status !== "unpublished",
+      href: `/admin/compose?type=post&slug=${encodeURIComponent(post.slug)}`,
+      publicHref:
+        post.status !== "unpublished" ? `/p/${post.slug}` : undefined,
     })),
-    ...notes.map((n) => ({
-      id: `note-${n.slug}`,
-      type: "note" as const,
-      title: n.title,
-      subtitle: n.subtitle || (n.content?.[0] ? n.content[0].slice(0, 100) : n.description),
-      date: n.date || "",
-      slug: n.slug,
-      status: n.status || "published",
-      extra: n.persona,
+    ...notes.map((note) => ({
+      id: `note-${note.slug}`,
+      kind: "note" as const,
+      title: note.title,
+      subtitle: note.subtitle || note.description,
+      date: note.date || "",
+      ok: note.status !== "unpublished",
+      href: `/admin/compose?type=note&slug=${encodeURIComponent(note.slug)}`,
+      publicHref:
+        note.status !== "unpublished" ? `/n/${note.slug}` : undefined,
     })),
-    ...nowEntries.map((e) => ({
-      id: `now-${e.id}`,
-      type: "now" as const,
-      title: e.title || "Now Timeline",
-      subtitle: undefined,
-      date: e.date || "",
-      status: "published" as const,
-      extra: "timeline",
+    ...books.map((book) => ({
+      id: `book-${book.slug}`,
+      kind: "book" as const,
+      title: book.title,
+      subtitle: `by ${book.author}`,
+      date: book.date || "",
+      ok: book.isPublished !== false && book.status !== "unpublished",
+      href: "/admin?tab=content",
+      publicHref: "/library",
     })),
-    ...books.map((b) => ({
-      id: `book-${b.slug}`,
-      type: "book" as const,
-      title: b.title,
-      subtitle: `by ${b.author}`,
-      date: b.date || "",
-      slug: b.slug,
-      status: "published" as const,
-      extra: "library",
+    ...nowEntries.map((entry) => ({
+      id: `now-${entry.id}`,
+      kind: "now" as const,
+      title: entry.title || "Now entry",
+      subtitle: stripMarkdown(entry.content || "").slice(0, 90),
+      date: entry.date || "",
+      ok: entry.status !== "unpublished",
+      href: `/admin/compose?type=now&slug=${encodeURIComponent(
+        entry.slug || entry.id,
+      )}`,
+      publicHref: "/now",
     })),
   ]
     .sort((a, b) => (b.date || "").localeCompare(a.date || ""))
-    .slice(0, 10);
-
-  const latestNow = nowEntries.length > 0 ? nowEntries[0] : null;
+    .slice(0, 8);
 
   return (
-    <div className="space-y-12">
-      {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between border-b border-tinted/15 pb-6">
-        <div>
-          <h1 className="font-serif text-3xl font-normal text-paper md:text-4xl">
-            {userName}
-          </h1>
-          <p className="mt-2 text-xs text-gray-mid tracking-wide">
-            {publishedPosts.length} published essays · {publishedNotes.length} notes · {books.length} books ·{" "}
-            <button
-              type="button"
-              onClick={() => onNavigateTab("subscribers")}
-              className="text-accent hover:underline focus:outline-none"
-            >
-              {subscribers.length} subscribers
-            </button>
-          </p>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2">
-          <Link
-            href="/admin/compose?type=post"
-            className="rounded-full bg-accent px-4 py-1.5 text-xs font-medium text-paper hover:bg-accent-hover transition-colors shadow-xs"
+    <div className="space-y-8">
+      <PageHeader
+        title="Overview"
+        description={`Welcome back, ${userName.split(" ")[0]}. Here is where things stand.`}
+        actions={
+          <Button
+            variant="secondary"
+            onClick={() => onNavigateTab("content")}
           >
-            + Post
-          </Link>
-          <Link
-            href="/admin/compose?type=note"
-            className="rounded-full border border-tinted/20 bg-night-soft px-4 py-1.5 text-xs font-medium text-paper hover:bg-tinted/10 transition-colors"
-          >
-            + Note
-          </Link>
-          <Link
-            href="/admin/compose?type=now"
-            className="rounded-full border border-tinted/20 bg-night-soft px-4 py-1.5 text-xs font-medium text-paper hover:bg-tinted/10 transition-colors"
-          >
-            + Now
-          </Link>
-          <button
-            type="button"
-            onClick={() => {
-              onNavigateTab("content");
-              onTriggerCreateBook();
-            }}
-            className="rounded-full border border-tinted/20 bg-night-soft px-4 py-1.5 text-xs font-medium text-paper hover:bg-tinted/10 transition-colors"
-          >
-            + Book
-          </button>
-        </div>
-      </div>
+            Open library
+            <ArrowRightIcon className="h-3.5 w-3.5" />
+          </Button>
+        }
+      />
 
-      {/* In-Progress Drafts (if any) */}
-      {allDrafts.length > 0 && (
-        <section aria-labelledby="drafts-heading" className="space-y-4">
-          <div className="flex items-center justify-between border-b border-tinted/10 pb-2">
-            <h2 id="drafts-heading" className="text-xs font-semibold uppercase tracking-wider text-accent">
-              Drafts in Progress ({allDrafts.length})
-            </h2>
-          </div>
-
-          <div className="divide-y divide-tinted/10">
-            {allDrafts.map((item) => (
-              <div
-                key={item.id}
-                className="flex items-center justify-between py-3 group"
-              >
-                <div className="min-w-0 pr-4">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs capitalize text-accent font-medium">
-                      {item.type}
-                    </span>
-                    <span className="text-xs text-paper font-normal truncate">
-                      {item.title}
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-gray-mid mt-0.5">
-                    {item.date ? formatDisplayDate(item.date) : "Draft"}
-                  </p>
-                </div>
-
-                <Link
-                  href={`/admin/compose?type=${item.type}&slug=${encodeURIComponent(item.slug)}`}
-                  className="shrink-0 text-xs text-accent hover:underline font-medium"
+      {/* Current status */}
+      <section aria-labelledby="now-heading">
+        <div className="rounded-xl border border-tinted/20 bg-night-soft p-4 sm:p-5">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <h2
+                  id="now-heading"
+                  className="text-[11px] font-semibold uppercase tracking-[0.14em] text-gray-mid"
                 >
-                  Resume →
-                </Link>
+                  Current status
+                </h2>
+                {latestNow && (
+                  <span className="text-[11px] text-gray-mid">
+                    · {latestNow.date ? formatDisplayDate(latestNow.date) : "Today"}
+                  </span>
+                )}
               </div>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* Current /now status snippet */}
-      {latestNow && (
-        <section aria-labelledby="now-heading" className="space-y-2">
-          <div className="flex items-center justify-between border-b border-tinted/10 pb-2">
-            <div className="flex items-center gap-2">
-              <h2 id="now-heading" className="text-xs font-semibold uppercase tracking-wider text-gray-mid">
-                Current Status (/now)
-              </h2>
-              <span className="text-[11px] text-gray-mid">· {latestNow.date ? formatDisplayDate(latestNow.date) : "Draft"}</span>
+              {latestNow ? (
+                <p className="mt-2 line-clamp-3 max-w-2xl font-serif text-lg leading-relaxed text-paper">
+                  {stripMarkdown(latestNow.content || latestNow.title || "")}
+                </p>
+              ) : (
+                <p className="mt-2 text-sm text-gray-mid">
+                  No current status yet. Add one to tell readers what you are
+                  doing now.
+                </p>
+              )}
             </div>
+
             <Link
-              href="/admin/compose?type=now"
-              className="text-xs text-gray-mid hover:text-paper"
+              href={
+                latestNow
+                  ? `/admin/compose?type=now&slug=${encodeURIComponent(
+                      latestNow.slug || latestNow.id,
+                    )}`
+                  : "/admin/compose?type=now"
+              }
+              className={buttonClassName(latestNow ? "secondary" : "primary")}
             >
-              Update →
+              {latestNow ? "Edit status" : "Add status"}
             </Link>
           </div>
-          <p className="text-sm text-paper/80 leading-relaxed font-serif pt-1">
-            {latestNow.title || "Now Timeline overview"}
-          </p>
-        </section>
-      )}
-
-      {/* Recent Writing & Activity */}
-      <section aria-labelledby="recent-heading" className="space-y-4">
-        <div className="flex items-center justify-between border-b border-tinted/10 pb-2">
-          <h2 id="recent-heading" className="text-xs font-semibold uppercase tracking-wider text-gray-mid">
-            Recent Publications & Edits
-          </h2>
-          <button
-            type="button"
-            onClick={() => onNavigateTab("content")}
-            className="text-xs text-gray-mid hover:text-paper transition-colors"
-          >
-            All Content →
-          </button>
         </div>
+      </section>
 
-        <div className="divide-y divide-tinted/10">
-          {recentItems.map((item) => (
-            <div
-              key={item.id}
-              className="flex items-center justify-between py-3.5 group"
+      {/* Basic counts */}
+      <section aria-label="Publishing counts" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <CountStat
+          label="Published essays"
+          value={publishedPosts.length}
+          onClick={() => onNavigateTab("content")}
+        />
+        <CountStat
+          label="Published notes"
+          value={publishedNotes.length}
+          onClick={() => onNavigateTab("content")}
+        />
+        <CountStat
+          label="Books on shelf"
+          value={publishedBooks.length}
+          onClick={() => onNavigateTab("content")}
+        />
+        <CountStat
+          label="Active subscribers"
+          value={activeSubscribers.length}
+          onClick={() => onNavigateTab("subscribers")}
+        />
+      </section>
+
+      {/* Continue writing */}
+      <section aria-labelledby="drafts-heading" className="space-y-3">
+        <SectionHeading
+          title="Continue writing"
+          action={
+            <button
+              type="button"
+              onClick={() => onNavigateTab("content")}
+              className="text-xs text-gray-mid transition-colors hover:text-paper"
             >
-              <div className="min-w-0 pr-4">
-                <div className="flex items-center gap-2.5">
-                  <span className="text-[11px] font-mono text-gray-mid uppercase">
-                    {item.type}
+              View drafts
+            </button>
+          }
+        />
+        {drafts.length === 0 ? (
+          <p className="rounded-xl border border-dashed border-tinted/30 px-4 py-6 text-sm text-gray-mid">
+            Nothing in progress. Start a new essay or note from{" "}
+            <button
+              type="button"
+              onClick={() => onNavigateTab("content")}
+              className="text-accent hover:underline"
+            >
+              the library
+            </button>
+            .
+          </p>
+        ) : (
+          <div className="divide-y divide-tinted/15 rounded-xl border border-tinted/20 bg-night-soft">
+            {drafts.map((draft) => (
+              <Link
+                key={draft.id}
+                href={draft.href}
+                className="flex items-center justify-between gap-4 px-4 py-3 transition-colors hover:bg-post-card/60"
+              >
+                <div className="flex min-w-0 items-center gap-3">
+                  <ComposeIcon className="h-4 w-4 shrink-0 text-gray-mid" />
+                  <div className="min-w-0">
+                    <p className="truncate text-sm text-paper">{draft.title}</p>
+                    <p className="mt-0.5 text-xs text-gray-mid">
+                      Draft · last edited{" "}
+                      {draft.date ? formatDisplayDate(draft.date) : "recently"}
+                    </p>
+                  </div>
+                </div>
+                <ArrowRightIcon className="h-4 w-4 shrink-0 text-gray-mid" />
+              </Link>
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* Recent activity */}
+      <section aria-labelledby="activity-heading" className="space-y-3">
+        <SectionHeading
+          title="Recent activity"
+          action={
+            <button
+              type="button"
+              onClick={() => onNavigateTab("content")}
+              className="text-xs text-gray-mid transition-colors hover:text-paper"
+            >
+              All content
+            </button>
+          }
+        />
+        {activity.length === 0 ? (
+          <p className="rounded-xl border border-dashed border-tinted/30 px-4 py-6 text-sm text-gray-mid">
+            Nothing published yet. Your latest edits will show up here.
+          </p>
+        ) : (
+          <ul className="divide-y divide-tinted/15 rounded-xl border border-tinted/20 bg-night-soft">
+            {activity.map((item) => (
+              <li
+                key={item.id}
+                className="flex items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-post-card/40"
+              >
+                <div className="flex min-w-0 items-center gap-3">
+                  <span className="w-14 shrink-0">
+                    <TypeBadge kind={item.kind} />
                   </span>
-                  <Link
-                    href={
-                      item.slug
-                        ? `/admin/compose?type=${item.type}&slug=${encodeURIComponent(item.slug)}`
-                        : `/admin/compose?type=${item.type}`
-                    }
-                    className="truncate text-sm font-normal text-paper hover:text-accent transition-colors"
-                  >
-                    {item.title}
-                  </Link>
-                  {item.status === "unpublished" && (
-                    <span className="text-[10px] text-accent font-medium">
-                      (Draft)
-                    </span>
+                  <div className="min-w-0">
+                    <Link
+                      href={item.href}
+                      className="block truncate text-sm text-paper transition-colors hover:text-accent"
+                    >
+                      {item.title}
+                    </Link>
+                    {item.subtitle && (
+                      <p className="mt-0.5 truncate text-xs text-gray-mid">
+                        {item.subtitle}
+                      </p>
+                    )}
+                  </div>
+                </div>
+                <div className="flex shrink-0 items-center gap-2">
+                  <span className="hidden text-[11px] text-gray-mid sm:inline">
+                    {item.date ? formatDisplayDate(item.date) : ""}
+                  </span>
+                  <StatusBadge status={item.ok ? "published" : "draft"} />
+                  {item.publicHref && (
+                    <Link
+                      href={item.publicHref}
+                      target="_blank"
+                      aria-label={`View ${item.title} on the public site`}
+                      className="rounded p-1 text-gray-mid transition-colors hover:bg-post-card hover:text-paper"
+                    >
+                      <ExternalLinkIcon className="h-3.5 w-3.5" />
+                    </Link>
                   )}
                 </div>
-
-                {item.subtitle && (
-                  <p className="text-xs text-gray-mid truncate mt-1">
-                    {item.subtitle}
-                  </p>
-                )}
-              </div>
-
-              <div className="flex items-center gap-3 shrink-0 text-xs text-gray-mid">
-                <span>{formatDisplayDate(item.date)}</span>
-                {item.slug && item.status !== "unpublished" && (
-                  <Link
-                    href={
-                      item.type === "post"
-                        ? `/p/${item.slug}`
-                        : item.type === "note"
-                          ? `/n/${item.slug}`
-                          : "/library"
-                    }
-                    target="_blank"
-                    className="hover:text-paper transition-colors"
-                    title="View on site"
-                  >
-                    ↗
-                  </Link>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
     </div>
   );

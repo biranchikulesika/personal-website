@@ -1,35 +1,85 @@
 'use client';
 
 import { useState, useRef, useTransition, useEffect, useMemo } from 'react';
-import { useToast } from '@/hooks/use-toast';
-import { ToastView } from '@/components/ui/toast-view';
-import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import Image from 'next/image';
-import type { MediaItem } from '@/lib/types';
+import type { BlogPost, BookItem, MediaItem, NoteItem } from '@/lib/types';
 import {
   addMediaAction,
   deleteMediaAction,
   deleteOrphanedMediaAction,
 } from '@/app/admin/actions';
 import { uploadMediaFile } from '@/lib/storage/upload-client';
+import { useToast } from '@/hooks/use-toast';
+import { ToastView } from '@/components/ui/toast-view';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { NoContentState, NoSearchResults } from '@/components/ui/states';
 import {
-  TrashIcon,
-  LinkIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  CloseIcon,
   CodeIcon,
   EllipsisVerticalIcon,
+  GridIcon,
+  LinkIcon,
+  ListIcon,
   PencilIcon,
+  SearchIcon,
+  TrashIcon,
+  UploadIcon,
 } from '@/components/icons';
-import { NoMediaState, NoSearchResults } from '@/components/ui/states';
-import { formatDisplayDateTime } from '@/lib/utils';
+import { formatDisplayDate, formatDisplayDateTime } from '@/lib/utils';
+import {
+  Badge,
+  Button,
+  Field,
+  PageHeader,
+  SectionHeading,
+  TextInput,
+  Toolbar,
+} from '@/components/admin/ui';
+
+interface Usage {
+  kind: 'post' | 'note' | 'book';
+  title: string;
+  slug: string;
+  published: boolean;
+  href: string;
+}
 
 interface MediaManagerProps {
   initialMedia: MediaItem[];
   initialOrphanedMedia?: MediaItem[];
+  allContent: {
+    posts: BlogPost[];
+    notes: NoteItem[];
+    books: BookItem[];
+  };
+  initialSearchQuery?: string;
+}
+
+function normalizeSrc(src: string): string {
+  return src.replace(/^\/+/, '');
+}
+
+function tagList(media: MediaItem): string[] {
+  const tags = Array.isArray(media.tags) ? media.tags : media.tag ? [media.tag] : [];
+  return tags
+    .map((t) => t.trim().toLowerCase())
+    .filter((t) => t && t !== 'atmosphere' && t !== 'profile');
+}
+
+function parseTags(value: string): string[] {
+  return value
+    .split(',')
+    .map((t) => t.trim().toLowerCase())
+    .filter((t) => t && t !== 'atmosphere' && t !== 'profile');
 }
 
 export function MediaManager({
   initialMedia,
   initialOrphanedMedia = [],
+  allContent,
+  initialSearchQuery = '',
 }: MediaManagerProps) {
   const [mediaList, setMediaList] = useState<MediaItem[]>(initialMedia);
   const [orphanedList, setOrphanedList] = useState<MediaItem[]>(
@@ -38,6 +88,7 @@ export function MediaManager({
   const [search, setSearch] = useState('');
   const [activeTag, setActiveTag] = useState<string>('all');
   const [showOrphanedOnly, setShowOrphanedOnly] = useState(false);
+  const [view, setView] = useState<'grid' | 'list'>('grid');
   const [selectedOrphanedIds, setSelectedOrphanedIds] = useState<Set<string>>(
     new Set(),
   );
@@ -46,16 +97,20 @@ export function MediaManager({
   } | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
-  const [editingMedia, setEditingMedia] = useState<MediaItem | null>(null);
-  const [captionInput, setCaptionInput] = useState('');
-  const [editTagsInput, setEditTagsInput] = useState('');
+  const [drawerMedia, setDrawerMedia] = useState<MediaItem | null>(null);
+  const [drawerAlt, setDrawerAlt] = useState('');
+  const [drawerTags, setDrawerTags] = useState('');
   const [isPending, startTransition] = useTransition();
   const [isUploading, setIsUploading] = useState(false);
-  const [activePhoto, setActivePhoto] = useState<MediaItem | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
   const { message: toastMessage, showToast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const drawerRef = useRef<HTMLElement>(null);
 
-  const orphanedSrcs = new Set(orphanedList.map((m) => m.src));
+  const orphanedSrcs = useMemo(
+    () => new Set(orphanedList.map((m) => m.src)),
+    [orphanedList],
+  );
 
   // New Media Form State
   const [fileName, setFileName] = useState('');
@@ -66,21 +121,81 @@ export function MediaManager({
   const [dimensions, setDimensions] = useState('1200 × 800');
   const [pendingFile, setPendingFile] = useState<File | null>(null);
 
+  // Sync the global-search query into the library search box.
+  useEffect(() => {
+    setSearch(initialSearchQuery);
+  }, [initialSearchQuery]);
+
   const allTags = useMemo(() => {
     const set = new Set<string>();
     for (const m of mediaList) {
-      const tags = Array.isArray(m.tags)
-        ? m.tags
-        : m.tag ? [m.tag] : [];
-      for (const t of tags) {
-        const cleaned = t.trim().toLowerCase();
-        if (cleaned && cleaned !== 'atmosphere' && cleaned !== 'profile') {
-          set.add(cleaned);
-        }
-      }
+      for (const t of tagList(m)) set.add(t);
     }
     return Array.from(set).sort();
   }, [mediaList]);
+
+  // Where each asset is referenced across essays, notes and books.
+  const usageBySrc = useMemo(() => {
+    const map = new Map<string, Usage[]>();
+    const add = (src: string | undefined, usage: Usage) => {
+      if (!src) return;
+      const key = normalizeSrc(src);
+      if (!key) return;
+      const list = map.get(key);
+      if (!list) {
+        map.set(key, [usage]);
+      } else if (!list.some((u) => u.href === usage.href)) {
+        list.push(usage);
+      }
+    };
+
+    for (const post of allContent.posts) {
+      const usage: Usage = {
+        kind: 'post',
+        title: post.title,
+        slug: post.slug,
+        published: post.status === 'published',
+        href: `/p/${post.slug}`,
+      };
+      add(post.coverImage, usage);
+      for (const section of post.sections) add(section.figure?.src, usage);
+    }
+
+    const mediaKeys = [...mediaList, ...orphanedList].map((m) =>
+      normalizeSrc(m.src),
+    );
+    for (const note of allContent.notes) {
+      const usage: Usage = {
+        kind: 'note',
+        title: note.title,
+        slug: note.slug,
+        published: note.status === 'published',
+        href: `/n/${note.slug}`,
+      };
+      add(note.coverImage, usage);
+      // Notes keep image URLs inside their markdown/HTML content strings.
+      const content = note.content.join('\n');
+      for (const key of mediaKeys) {
+        if (key && content.includes(key)) add(key, usage);
+      }
+    }
+
+    for (const book of allContent.books) {
+      add(book.cover, {
+        kind: 'book',
+        title: book.title,
+        slug: book.slug,
+        published: book.status === 'published' || book.isPublished === true,
+        href: '/library',
+      });
+    }
+
+    return map;
+  }, [allContent, mediaList, orphanedList]);
+
+  function usagesFor(src: string): Usage[] {
+    return usageBySrc.get(normalizeSrc(src)) ?? [];
+  }
 
   function getCleanExtension(file: File): string {
     const mime = file.type.toLowerCase();
@@ -169,9 +284,8 @@ export function MediaManager({
     });
   }
 
-  function handleFileSelected(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  function processImageFile(file: File) {
+    if (!file.type.startsWith('image/')) return;
 
     const reader = new FileReader();
     reader.onload = async () => {
@@ -196,7 +310,30 @@ export function MediaManager({
       setIsUploading(true);
     };
     reader.readAsDataURL(file);
+  }
+
+  function handleFileSelected(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (file) processImageFile(file);
     if (fileInputRef.current) fileInputRef.current.value = '';
+  }
+
+  function handleDragOver(e: React.DragEvent) {
+    if (!Array.from(e.dataTransfer.types).includes('Files')) return;
+    e.preventDefault();
+    setIsDragging(true);
+  }
+
+  function handleDragLeave(e: React.DragEvent) {
+    if (e.currentTarget.contains(e.relatedTarget as Node | null)) return;
+    setIsDragging(false);
+  }
+
+  function handleDrop(e: React.DragEvent) {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file && file.type.startsWith('image/')) processImageFile(file);
   }
 
   function handleCopy(id: string, text: string) {
@@ -212,10 +349,7 @@ export function MediaManager({
     e.preventDefault();
     if (!fileName.trim() || !fileSrc.trim()) return;
 
-    const parsedTags = tagsInput
-      .split(',')
-      .map((t) => t.trim().toLowerCase())
-      .filter((t) => t && t !== 'atmosphere' && t !== 'profile');
+    const parsedTags = parseTags(tagsInput);
 
     startTransition(async () => {
       try {
@@ -308,6 +442,12 @@ export function MediaManager({
       if (ok) {
         setSelectedOrphanedIds(new Set());
         setConfirmDelete(null);
+        setDrawerMedia((current) => {
+          if (!current) return null;
+          return items.some((m) => m.id === current.id || m.src === current.src)
+            ? null
+            : current;
+        });
         showToast(
           items.length > 1
             ? `${items.length} images removed successfully.`
@@ -318,32 +458,20 @@ export function MediaManager({
     });
   }
 
-  function handleOpenEditDetails(media: MediaItem) {
+  function openDetails(media: MediaItem) {
     setMenuOpenId(null);
-    setEditingMedia(media);
-    setCaptionInput(media.alt || '');
-    const tags = Array.isArray(media.tags)
-      ? media.tags
-      : media.tag ? [media.tag] : [];
-    setEditTagsInput(
-      tags.filter((t) => t !== 'atmosphere' && t !== 'profile').join(', ')
-    );
+    setDrawerMedia(media);
   }
 
   function handleSaveDetails(e?: React.FormEvent) {
     if (e) e.preventDefault();
-    if (!editingMedia) return;
-    const target = editingMedia;
-    const newCaption = captionInput.trim();
-    const parsedTags = editTagsInput
-      .split(',')
-      .map((t) => t.trim().toLowerCase())
-      .filter((t) => t && t !== 'atmosphere' && t !== 'profile');
+    if (!drawerMedia) return;
+    const target = drawerMedia;
 
     const updatedMedia: MediaItem = {
       ...target,
-      alt: newCaption,
-      tags: parsedTags,
+      alt: drawerAlt.trim(),
+      tags: parseTags(drawerTags),
     };
 
     startTransition(async () => {
@@ -357,7 +485,7 @@ export function MediaManager({
           return [res.media!, ...prev];
         });
         setOrphanedList((prev) => prev.filter((m) => m.src !== target.src));
-        setEditingMedia(null);
+        setDrawerMedia(res.media);
         showToast('Changes saved successfully.', 'success');
       } else {
         showToast(res.error || 'Failed to update resource. Please try again.', 'error');
@@ -365,6 +493,7 @@ export function MediaManager({
     });
   }
 
+  // Close the row menu on any outside click or Escape.
   useEffect(() => {
     if (!menuOpenId) return;
     function handleClick() {
@@ -383,57 +512,80 @@ export function MediaManager({
     };
   }, [menuOpenId]);
 
-  const filteredMedia = mediaList.filter((m) => {
-    const q = search.toLowerCase();
-    const itemTags = (Array.isArray(m.tags) ? m.tags : m.tag ? [m.tag] : [])
-      .map((t) => t.toLowerCase())
-      .filter((t) => t !== 'atmosphere' && t !== 'profile');
+  const filteredMedia = useMemo(() => {
+    const base = showOrphanedOnly ? orphanedList : mediaList;
+    const q = search.toLowerCase().trim();
+    return base.filter((m) => {
+      const itemTags = tagList(m);
+      const matchSearch =
+        !q ||
+        m.name.toLowerCase().includes(q) ||
+        (m.alt || '').toLowerCase().includes(q) ||
+        itemTags.some((t) => t.includes(q));
+      const matchTag =
+        activeTag === 'all' || itemTags.includes(activeTag.toLowerCase());
+      return matchSearch && matchTag;
+    });
+  }, [mediaList, orphanedList, search, activeTag, showOrphanedOnly]);
 
-    const matchSearch =
-      m.name.toLowerCase().includes(q) ||
-      m.alt.toLowerCase().includes(q) ||
-      itemTags.some((t) => t.includes(q));
-
-    const matchTag =
-      activeTag === 'all' || itemTags.includes(activeTag.toLowerCase());
-
-    return matchSearch && matchTag;
-  });
-
-  const visibleMedia = showOrphanedOnly
-    ? orphanedList.filter((m) => {
-        const q = search.toLowerCase();
-        return (
-          m.name.toLowerCase().includes(q) ||
-          m.alt.toLowerCase().includes(q) ||
-          m.src.toLowerCase().includes(q)
-        );
-      })
-    : filteredMedia;
-
+  // Drawer: lock scroll, move focus in, Esc closes, arrows page through assets.
   useEffect(() => {
-    if (!activePhoto) return;
-    const currentPhoto = activePhoto;
+    const media = drawerMedia;
+    if (!media) return;
+
+    setDrawerAlt(media.alt || '');
+    setDrawerTags(tagList(media).join(', '));
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    drawerRef.current?.focus();
+
     function handleKeyDown(e: KeyboardEvent) {
       if (e.key === 'Escape') {
-        setActivePhoto(null);
-      } else if (e.key === 'ArrowLeft') {
-        const idx = visibleMedia.findIndex((m) => m.id === currentPhoto.id);
-        if (idx > 0) setActivePhoto(visibleMedia[idx - 1]);
-        else if (visibleMedia.length > 0) setActivePhoto(visibleMedia[visibleMedia.length - 1]);
-      } else if (e.key === 'ArrowRight') {
-        const idx = visibleMedia.findIndex((m) => m.id === currentPhoto.id);
-        if (idx < visibleMedia.length - 1) setActivePhoto(visibleMedia[idx + 1]);
-        else if (visibleMedia.length > 0) setActivePhoto(visibleMedia[0]);
+        setDrawerMedia(null);
+        return;
       }
+      if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+      setDrawerMedia((current) => {
+        if (!current || filteredMedia.length < 2) return current;
+        const index = filteredMedia.findIndex((m) => m.id === current.id);
+        if (index === -1) return current;
+        const next = e.key === 'ArrowRight' ? index + 1 : index - 1;
+        return filteredMedia[(next + filteredMedia.length) % filteredMedia.length];
+      });
     }
+
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [activePhoto, visibleMedia]);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [drawerMedia, filteredMedia]);
+
+  const deleteItems = confirmDelete?.items ?? [];
+  const deleteUsages = deleteItems.flatMap((item) => usagesFor(item.src));
+  const publishedDeleteUsages = deleteUsages.filter((u) => u.published);
+  const selectedOrphanedCount = selectedOrphanedIds.size;
+
+  function tagPillClass(active: boolean) {
+    return `rounded-full px-3 py-1 text-[11px] font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
+      active
+        ? 'bg-accent text-night'
+        : 'border border-tinted/20 bg-night-soft text-gray-mid hover:border-tinted/40 hover:text-paper'
+    }`;
+  }
+
+  function markdownFor(media: MediaItem) {
+    return `![${media.alt}](${media.src})`;
+  }
 
   return (
-    <div className="space-y-6 font-sans">
-      {/* Toast Notification */}
+    <div
+      className="space-y-6"
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+    >
       <ToastView message={toastMessage} />
 
       {/* Hidden Device File Picker Input */}
@@ -445,65 +597,53 @@ export function MediaManager({
         onChange={handleFileSelected}
       />
 
-      {/* ── Mobile Phone Gallery View (md:hidden) ── */}
-      <div className="block md:hidden space-y-3">
-        {/* Mobile Search & Upload Header */}
-        <div className="flex items-center gap-2">
-          <div className="relative flex-1">
-            <input
-              type="text"
-              placeholder="Search photos..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full rounded-full border border-tinted/20 bg-night-soft px-4 py-2 text-xs text-paper placeholder:text-gray-mid/50 focus:border-tinted/40 focus:outline-none"
-            />
+      {isDragging && (
+        <div className="pointer-events-none fixed inset-0 z-[100] flex items-center justify-center bg-night/85 p-4 backdrop-blur-xs">
+          <div className="flex h-full w-full flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-accent/60 text-center">
+            <UploadIcon className="h-8 w-8 text-accent" />
+            <p className="text-sm font-medium text-paper">Drop images to upload</p>
+            <p className="text-xs text-gray-mid">JPG, PNG, WebP, GIF or SVG</p>
           </div>
-
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            aria-label="Add resource"
-            title="Add resource"
-            className="flex h-9 shrink-0 items-center justify-center rounded-full bg-accent px-3 text-xs font-semibold text-paper shadow-xs hover:bg-accent-hover active:scale-95 transition-all"
-          >
-            + Resource
-          </button>
         </div>
+      )}
 
-        {/* Mobile Horizontal Filter Pills */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
+      <PageHeader
+        title="Media"
+        description={`${mediaList.length} asset${mediaList.length === 1 ? '' : 's'} in the library${
+          orphanedList.length > 0 ? ` · ${orphanedList.length} unreferenced in storage` : ''
+        }.`}
+        actions={
+          <Button
+            variant="primary"
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <UploadIcon className="h-3.5 w-3.5" />
+            Upload
+          </Button>
+        }
+      />
+
+      <Toolbar className="justify-between">
+        <div className="flex flex-wrap items-center gap-1.5">
           <button
             type="button"
-            onClick={() => {
-              setActiveTag('all');
-              setShowOrphanedOnly(false);
-            }}
-            className={`rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-wider shrink-0 transition-all ${
-              activeTag === 'all' && !showOrphanedOnly
-                ? 'bg-accent text-paper shadow-xs'
-                : 'bg-night-soft text-gray-mid border border-tinted/20'
-            }`}
+            onClick={() => setActiveTag('all')}
+            aria-pressed={activeTag === 'all'}
+            className={tagPillClass(activeTag === 'all')}
           >
             All
           </button>
-          {allTags.map((tagItem) => (
+          {allTags.map((tag) => (
             <button
-              key={`mob-filter-${tagItem}`}
+              key={tag}
               type="button"
-              onClick={() => {
-                setActiveTag(tagItem);
-                setShowOrphanedOnly(false);
-              }}
-              className={`rounded-full px-3 py-1 text-[11px] font-semibold tracking-wider shrink-0 transition-all ${
-                activeTag === tagItem && !showOrphanedOnly
-                  ? 'bg-accent text-paper shadow-xs'
-                  : 'bg-night-soft text-gray-mid border border-tinted/20'
-              }`}
+              onClick={() => setActiveTag(tag)}
+              aria-pressed={activeTag === tag}
+              className={tagPillClass(activeTag === tag)}
             >
-              #{tagItem}
+              #{tag}
             </button>
           ))}
-
           {orphanedSrcs.size > 0 && (
             <button
               type="button"
@@ -511,489 +651,183 @@ export function MediaManager({
                 setShowOrphanedOnly((v) => !v);
                 setActiveTag('all');
               }}
-              className={`rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-wider shrink-0 transition-all ${
+              aria-pressed={showOrphanedOnly}
+              title="Media assets in the storage bucket that are not used anywhere on the site"
+              className={`rounded-full px-3 py-1 text-[11px] font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
                 showOrphanedOnly
-                  ? 'bg-amber-600 text-white shadow-xs'
-                  : 'bg-amber-950/40 text-amber-400 border border-amber-800/40'
+                  ? 'bg-amber-500/20 text-amber-300 ring-1 ring-amber-500/40'
+                  : 'text-amber-400 ring-1 ring-amber-500/25 hover:bg-amber-500/10'
               }`}
             >
-              {orphanedSrcs.size} orphaned
+              {orphanedSrcs.size} unreferenced
             </button>
           )}
         </div>
 
-        {/* 3-Column Square Gallery Grid */}
-        <div className="grid grid-cols-3 gap-1 sm:gap-1.5">
-          {visibleMedia.map((media) => {
-            const isOrphaned = orphanedSrcs.has(media.src);
-            return (
-              <button
-                key={`mob-photo-${media.id}`}
-                type="button"
-                onClick={() => setActivePhoto(media)}
-                className="group relative aspect-square w-full overflow-hidden rounded-lg bg-night focus:outline-none active:scale-95 transition-transform"
-              >
-                {isOrphaned ? (
-                  <div className="flex h-full w-full flex-col items-center justify-center bg-amber-950/30 p-1 text-center">
-                    <svg
-                      className="h-5 w-5 text-amber-400"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      strokeWidth={1.5}
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z"
-                      />
-                    </svg>
-                    <span className="mt-0.5 text-[8px] font-bold uppercase text-amber-400">
-                      Orphan
-                    </span>
-                  </div>
-                ) : (
-                  <Image
-                    src={media.src}
-                    alt={media.alt}
-                    fill
-                    sizes="33vw"
-                    className="object-cover"
-                    unoptimized
-                  />
-                )}
-                {media.tags && media.tags.length > 0 && (
-                  <span className="absolute bottom-1 right-1 rounded bg-black/70 px-1 py-0.2 text-[8px] font-mono text-paper/90 backdrop-blur-xs">
-                    #{media.tags[0]}
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </div>
-
-        {visibleMedia.length === 0 && (
-          <div className="rounded-2xl border border-tinted/20 bg-post-card p-6 text-center">
-            <p className="font-serif text-base text-paper">No photos found</p>
-            <p className="mt-1 text-xs text-gray-mid">No media items match your search or filter.</p>
+        <div className="flex items-center gap-2">
+          <div className="relative flex-1 sm:w-72 sm:flex-none">
+            <SearchIcon className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-mid" />
+            <TextInput
+              type="search"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search name, alt or tags…"
+              aria-label="Search media"
+              className="pl-9"
+            />
           </div>
-        )}
-      </div>
-
-      {/* ── Fullscreen Gallery Lightbox Modal ── */}
-      {activePhoto && (
-        <div
-          className="fixed inset-0 z-50 flex flex-col justify-between bg-black/95 p-4 sm:p-6 backdrop-blur-md animate-in fade-in duration-200"
-          role="dialog"
-          aria-modal="true"
-          aria-label={`Photo viewer for ${activePhoto.name}`}
-        >
-          {/* Lightbox Header */}
-          <div className="flex items-center justify-between border-b border-tinted/20 pb-3 sm:pb-4">
-            <div className="min-w-0 flex-1 pr-4">
-              <h4 className="truncate font-mono text-xs sm:text-sm md:text-base font-semibold text-paper">
-                {activePhoto.name}
-              </h4>
-              <div className="mt-0.5 flex flex-wrap items-center gap-2 text-[11px] sm:text-xs text-gray-mid">
-                {activePhoto.tags && activePhoto.tags.length > 0 && (
-                  <div className="flex flex-wrap items-center gap-1">
-                    {activePhoto.tags.map((t) => (
-                      <span
-                        key={t}
-                        className="rounded bg-night px-1.5 py-0.5 text-[9px] sm:text-[10px] font-mono text-gray-mid border border-tinted/20"
-                      >
-                        #{t}
-                      </span>
-                    ))}
-                  </div>
-                )}
-                <span>{activePhoto.dimensions || 'Image'}</span>
-                <span>·</span>
-                <span>{activePhoto.size}</span>
-                {activePhoto.uploadedAt && (
-                  <>
-                    <span>·</span>
-                    <span>Uploaded {formatDisplayDateTime(activePhoto.uploadedAt)}</span>
-                  </>
-                )}
-                {activePhoto.alt && activePhoto.alt !== activePhoto.name && (
-                  <>
-                    <span className="hidden sm:inline">·</span>
-                    <span className="hidden sm:inline italic text-gray-mid/80 truncate max-w-md">
-                      &ldquo;{activePhoto.alt}&rdquo;
-                    </span>
-                  </>
-                )}
-              </div>
-            </div>
-            <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-              <button
-                type="button"
-                onClick={() => {
-                  const target = activePhoto;
-                  setActivePhoto(null);
-                  handleOpenEditDetails(target);
-                }}
-                className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full bg-night-soft text-paper hover:bg-post-card transition-colors shrink-0"
-                aria-label="Edit details"
-                title="Edit details"
-              >
-                <PencilIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  const target = activePhoto;
-                  setActivePhoto(null);
-                  requestDelete([target]);
-                }}
-                className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full bg-night-soft text-red-400 hover:bg-post-card transition-colors shrink-0"
-                aria-label="Delete photo"
-                title="Delete photo"
-              >
-                <TrashIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-              </button>
-              <button
-                type="button"
-                onClick={() => setActivePhoto(null)}
-                className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full bg-night-soft text-paper hover:bg-post-card transition-colors shrink-0"
-                aria-label="Close photo preview"
-                title="Close (Esc)"
-              >
-                ✕
-              </button>
-            </div>
-          </div>
-
-          {/* Lightbox Image Stage with Previous & Next controls */}
           <div
-            className="relative flex flex-1 items-center justify-center overflow-hidden py-3 sm:py-6 cursor-zoom-out"
-            onClick={(e) => {
-              if (e.target === e.currentTarget) setActivePhoto(null);
-            }}
+            className="inline-flex shrink-0 rounded-lg border border-tinted/30 bg-night p-0.5"
+            role="group"
+            aria-label="View mode"
           >
-            <div className="relative h-full w-full max-h-[70vh] sm:max-h-[78vh] max-w-5xl cursor-default">
-              <Image
-                src={activePhoto.src}
-                alt={activePhoto.alt || activePhoto.name}
-                fill
-                className="object-contain"
-                unoptimized
-              />
-            </div>
-
-            {/* Nav Controls */}
-            {visibleMedia.length > 1 && (
-              <>
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    const idx = visibleMedia.findIndex((m) => m.id === activePhoto.id);
-                    if (idx > 0) setActivePhoto(visibleMedia[idx - 1]);
-                    else setActivePhoto(visibleMedia[visibleMedia.length - 1]);
-                  }}
-                  className="absolute left-2 sm:left-6 flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-full bg-black/60 text-paper text-xl sm:text-2xl backdrop-blur-xs hover:bg-black/80 active:scale-95 transition-all"
-                  aria-label="Previous photo"
-                  title="Previous (Left arrow)"
-                >
-                  ‹
-                </button>
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    const idx = visibleMedia.findIndex((m) => m.id === activePhoto.id);
-                    if (idx < visibleMedia.length - 1) setActivePhoto(visibleMedia[idx + 1]);
-                    else setActivePhoto(visibleMedia[0]);
-                  }}
-                  className="absolute right-2 sm:right-6 flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-full bg-black/60 text-paper text-xl sm:text-2xl backdrop-blur-xs hover:bg-black/80 active:scale-95 transition-all"
-                  aria-label="Next photo"
-                  title="Next (Right arrow)"
-                >
-                  ›
-                </button>
-              </>
-            )}
-          </div>
-
-          {/* Lightbox Bottom Action Bar */}
-          <div className="border-t border-tinted/20 pt-3 sm:pt-4">
-            <div className="mx-auto flex max-w-md items-center justify-center gap-3">
-              <button
-                type="button"
-                onClick={() => handleCopy(`url-${activePhoto.id}`, activePhoto.src)}
-                className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-night-soft border border-tinted/20 py-2.5 text-xs font-medium text-paper transition-all hover:bg-night hover:border-tinted/40 active:scale-95"
-              >
-                {copiedId === `url-${activePhoto.id}` ? (
-                  <span className="text-emerald-400">✓ Copied URL</span>
-                ) : (
-                  <>
-                    <LinkIcon className="h-3.5 w-3.5 text-gray-mid" />
-                    <span>Copy URL</span>
-                  </>
-                )}
-              </button>
-              <button
-                type="button"
-                onClick={() => handleCopy(`md-${activePhoto.id}`, `![${activePhoto.alt}](${activePhoto.src})`)}
-                className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-night-soft border border-tinted/20 py-2.5 text-xs font-medium text-paper transition-all hover:bg-night hover:border-tinted/40 active:scale-95"
-              >
-                {copiedId === `md-${activePhoto.id}` ? (
-                  <span className="text-emerald-400">✓ Copied MD</span>
-                ) : (
-                  <>
-                    <CodeIcon className="h-3.5 w-3.5 text-gray-mid" />
-                    <span>Copy Markdown</span>
-                  </>
-                )}
-              </button>
-            </div>
-
-            {orphanedSrcs.has(activePhoto.src) && (
-              <div className="mt-2.5 mx-auto max-w-md">
-                <button
-                  type="button"
-                  onClick={() => {
-                    const target = activePhoto;
-                    setActivePhoto(null);
-                    requestDelete([target]);
-                  }}
-                  className="flex w-full items-center justify-center gap-1.5 rounded-xl bg-red-950/50 border border-red-800/40 py-2 text-xs font-semibold text-red-400 hover:bg-red-900/60 transition-colors"
-                >
-                  <TrashIcon className="h-3.5 w-3.5" />
-                  <span>Delete from bucket</span>
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* ── Desktop View (hidden md:block) ── */}
-      <div className="hidden md:block space-y-6">
-        {/* Header */}
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h2 className="font-serif text-2xl font-normal text-paper md:text-3xl">
-              Resources
-            </h2>
-          </div>
-
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            className="inline-flex items-center rounded-full bg-accent px-4 py-2 text-xs font-semibold text-paper shadow-xs transition-all hover:bg-accent-hover active:scale-95"
-          >
-            + Resource
-          </button>
-        </div>
-
-        {/* Filter & Search Bar */}
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
-              onClick={() => {
-                setActiveTag('all');
-                setShowOrphanedOnly(false);
-              }}
-              className={`rounded-full px-3.5 py-1 text-xs font-semibold uppercase tracking-wider transition-all ${
-                activeTag === 'all' && !showOrphanedOnly
-                  ? 'bg-accent text-paper shadow-xs'
-                  : 'bg-night-soft text-gray-mid border border-tinted/20 hover:text-paper'
+              onClick={() => setView('grid')}
+              aria-pressed={view === 'grid'}
+              aria-label="Grid view"
+              title="Grid view"
+              className={`rounded-md p-1.5 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
+                view === 'grid'
+                  ? 'bg-post-card text-paper'
+                  : 'text-gray-mid hover:text-paper'
               }`}
             >
-              All
+              <GridIcon className="h-4 w-4" />
             </button>
-
-            {allTags.map((tagItem) => (
-              <button
-                key={`desk-filter-${tagItem}`}
-                type="button"
-                onClick={() => {
-                  setActiveTag(tagItem);
-                  setShowOrphanedOnly(false);
-                }}
-                className={`rounded-full px-3.5 py-1 text-xs font-semibold tracking-wider transition-all ${
-                  activeTag === tagItem && !showOrphanedOnly
-                    ? 'bg-accent text-paper shadow-xs'
-                    : 'bg-night-soft text-gray-mid border border-tinted/20 hover:text-paper'
-                }`}
-              >
-                #{tagItem}
-              </button>
-            ))}
-
-            {orphanedSrcs.size > 0 && (
-              <button
-                type="button"
-                onClick={() => {
-                  setShowOrphanedOnly((v) => !v);
-                  setActiveTag('all');
-                }}
-                title="Media assets in the storage bucket that are not used anywhere on the site"
-                aria-pressed={showOrphanedOnly}
-                className={`rounded-full px-3.5 py-1 text-xs font-semibold uppercase tracking-wider transition-all ${
-                  showOrphanedOnly
-                    ? 'bg-amber-600 text-white shadow-xs'
-                    : 'bg-amber-950/40 text-amber-400 border border-amber-800/40 hover:bg-amber-950/60'
-                }`}
-              >
-                {orphanedSrcs.size} orphaned
-              </button>
-            )}
+            <button
+              type="button"
+              onClick={() => setView('list')}
+              aria-pressed={view === 'list'}
+              aria-label="List view"
+              title="List view"
+              className={`rounded-md p-1.5 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
+                view === 'list'
+                  ? 'bg-post-card text-paper'
+                  : 'text-gray-mid hover:text-paper'
+              }`}
+            >
+              <ListIcon className="h-4 w-4" />
+            </button>
           </div>
-
-          <input
-            type="text"
-            placeholder="Search assets by name or tag..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full max-w-xs rounded-full border border-tinted/20 bg-night-soft px-4 py-1.5 text-xs text-paper placeholder:text-gray-mid/50 focus:border-tinted/40 focus:outline-none"
-          />
         </div>
+      </Toolbar>
 
-        {/* Media Grid */}
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {visibleMedia.map((media) => {
-            const markdownSnippet = `![${media.alt}](${media.src})`;
+      {mediaList.length === 0 && orphanedList.length === 0 ? (
+        <NoContentState
+          title="No media yet"
+          description="Images you upload here are available to every essay, note and book cover."
+          action={
+            <Button
+              variant="primary"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <UploadIcon className="h-3.5 w-3.5" />
+              Upload image
+            </Button>
+          }
+        />
+      ) : filteredMedia.length === 0 ? (
+        <NoSearchResults
+          query={search || undefined}
+          onReset={() => {
+            setSearch('');
+            setActiveTag('all');
+            setShowOrphanedOnly(false);
+          }}
+          resetLabel="Reset filters"
+        />
+      ) : view === 'grid' ? (
+        <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+          {filteredMedia.map((media) => {
             const isOrphaned = orphanedSrcs.has(media.src);
             const isSelected = selectedOrphanedIds.has(media.id);
             const isMenuOpen = menuOpenId === media.id;
+            const usages = usagesFor(media.src);
+            const tags = tagList(media);
+
             return (
-              <div
+              <li
                 key={media.id}
-                className={`group flex flex-col overflow-hidden rounded-2xl border bg-post-card shadow-sm transition-all hover:shadow-md ${
+                className={`group overflow-hidden rounded-xl border bg-night-soft transition-colors ${
                   isSelected
-                    ? 'border-amber-500 ring-1 ring-amber-400'
-                    : 'border-tinted/20 hover:border-accent/40'
+                    ? 'border-amber-500/60'
+                    : 'border-tinted/20 hover:border-tinted/40'
                 }`}
               >
-                {/* Photo Preview */}
-                <div
-                  className="relative aspect-4/3 w-full overflow-hidden bg-night cursor-pointer"
-                  onClick={() => setActivePhoto(media)}
-                  role="button"
-                  tabIndex={0}
-                  aria-label={`View full picture of ${media.name}`}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      setActivePhoto(media);
-                    }
-                  }}
-                >
-                  {isOrphaned ? (
-                    <div className="flex h-full w-full flex-col items-center justify-center gap-2 bg-amber-950/20">
-                      <svg
-                        className="h-8 w-8 text-amber-500"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                        strokeWidth={1.5}
-                        aria-hidden
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z"
-                        />
-                      </svg>
-                      <span className="text-[10px] font-semibold uppercase tracking-wider text-amber-400">
-                        In bucket · unreferenced
-                      </span>
-                    </div>
-                  ) : (
+                <div className="relative aspect-[4/3] w-full bg-night">
+                  <button
+                    type="button"
+                    onClick={() => openDetails(media)}
+                    aria-label={`Open details for ${media.name}`}
+                    className="absolute inset-0 h-full w-full focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent"
+                  >
                     <Image
                       src={media.src}
-                      alt={media.alt || 'Resource photo'}
+                      alt={media.alt || media.name}
                       fill
-                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                      sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
                       className="object-cover"
                       unoptimized
                     />
-                  )}
+                  </button>
 
-                  {/* Top-Left: Status / Checkbox + Dimensions & Size Pill */}
-                  <div className="absolute top-2.5 left-2.5 z-20 flex items-center gap-1.5">
-                    {isOrphaned && (
+                  <div className="absolute left-2 top-2 z-10 flex items-center gap-1.5">
+                    {showOrphanedOnly && (
                       <button
                         type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          toggleOrphanedSelection(media.id);
-                        }}
+                        onClick={() => toggleOrphanedSelection(media.id)}
                         aria-label={
-                          isSelected
-                            ? `Deselect ${media.name}`
-                            : `Select ${media.name}`
+                          isSelected ? `Deselect ${media.name}` : `Select ${media.name}`
                         }
                         aria-pressed={isSelected}
-                        className={`flex h-5 w-5 items-center justify-center rounded-full ring-1 transition-colors ${
+                        className={`flex h-5 w-5 items-center justify-center rounded-full text-[10px] transition-colors ${
                           isSelected
-                            ? 'bg-amber-600 text-white ring-amber-600'
-                            : 'bg-night text-transparent ring-tinted/40 hover:ring-amber-500'
+                            ? 'bg-amber-600 text-white'
+                            : 'bg-night/80 text-transparent ring-1 ring-tinted/50 hover:ring-amber-500'
                         }`}
                       >
-                        <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                        <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3} aria-hidden>
                           <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
                         </svg>
                       </button>
                     )}
-
-                    {(media.dimensions || media.size) && (
-                      <span className="pointer-events-none select-none rounded-full bg-night/80 backdrop-blur-xs px-2 py-1 text-[10px] font-mono text-gray-mid border border-tinted/20">
-                        {media.dimensions ? `${media.dimensions} · ` : ''}{media.size}
-                      </span>
-                    )}
+                    {isOrphaned && <Badge tone="amber">Unreferenced</Badge>}
                   </div>
 
-                  {/* Top-Right: Quick Actions (Copy URL, Copy MD, Three-Dot Menu) */}
                   <div
-                    className={`absolute top-2.5 right-2.5 z-20 flex items-center gap-1.5 transition-opacity duration-200 ${
+                    className={`absolute right-2 top-2 z-20 flex items-center gap-1 transition-opacity focus-within:pointer-events-auto focus-within:opacity-100 group-hover:pointer-events-auto group-hover:opacity-100 ${
                       isMenuOpen
-                        ? 'opacity-100 pointer-events-auto'
-                        : 'opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 pointer-events-none group-hover:pointer-events-auto group-focus-within:pointer-events-auto'
+                        ? 'pointer-events-auto opacity-100'
+                        : 'pointer-events-none opacity-0'
                     }`}
                   >
-                    {/* Copy URL Button */}
                     <button
                       type="button"
-                      aria-label="Copy URL"
+                      aria-label={`Copy URL for ${media.name}`}
                       title="Copy URL"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleCopy(`url-${media.id}`, media.src);
-                      }}
-                      className="flex h-7 w-7 items-center justify-center rounded-full bg-night/80 text-paper/90 backdrop-blur-xs border border-tinted/20 transition-all hover:bg-night hover:text-paper hover:border-tinted/40 focus:outline-none focus:ring-1 focus:ring-accent active:scale-95"
+                      onClick={() => handleCopy(`url-${media.id}`, media.src)}
+                      className="flex h-7 w-7 items-center justify-center rounded-md bg-night/85 text-gray-mid ring-1 ring-tinted/30 transition-colors hover:text-paper focus-visible:outline-2 focus-visible:outline-accent"
                     >
                       {copiedId === `url-${media.id}` ? (
                         <span className="text-[11px] font-bold text-emerald-400">✓</span>
                       ) : (
-                        <LinkIcon className="h-3.5 w-3.5 text-gray-mid hover:text-paper" />
+                        <LinkIcon className="h-3.5 w-3.5" />
                       )}
                     </button>
-
-                    {/* Copy MD Button */}
                     <button
                       type="button"
-                      aria-label="Copy Markdown"
+                      aria-label={`Copy Markdown for ${media.name}`}
                       title="Copy Markdown"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleCopy(`md-${media.id}`, markdownSnippet);
-                      }}
-                      className="flex h-7 w-7 items-center justify-center rounded-full bg-night/80 text-paper/90 backdrop-blur-xs border border-tinted/20 transition-all hover:bg-night hover:text-paper hover:border-tinted/40 focus:outline-none focus:ring-1 focus:ring-accent active:scale-95"
+                      onClick={() => handleCopy(`md-${media.id}`, markdownFor(media))}
+                      className="flex h-7 w-7 items-center justify-center rounded-md bg-night/85 text-gray-mid ring-1 ring-tinted/30 transition-colors hover:text-paper focus-visible:outline-2 focus-visible:outline-accent"
                     >
                       {copiedId === `md-${media.id}` ? (
                         <span className="text-[11px] font-bold text-emerald-400">✓</span>
                       ) : (
-                        <CodeIcon className="h-3.5 w-3.5 text-gray-mid hover:text-paper" />
+                        <CodeIcon className="h-3.5 w-3.5" />
                       )}
                     </button>
-
-                    {/* Three-Dot Menu */}
                     <div className="relative">
                       <button
                         type="button"
@@ -1004,20 +838,20 @@ export function MediaManager({
                           e.stopPropagation();
                           setMenuOpenId(isMenuOpen ? null : media.id);
                         }}
-                        className="flex h-7 w-7 items-center justify-center rounded-full bg-night/80 text-paper/90 backdrop-blur-xs border border-tinted/20 transition-all hover:bg-night hover:text-paper hover:border-tinted/40 focus:outline-none focus:ring-1 focus:ring-accent active:scale-95"
+                        className="flex h-7 w-7 items-center justify-center rounded-md bg-night/85 text-gray-mid ring-1 ring-tinted/30 transition-colors hover:text-paper focus-visible:outline-2 focus-visible:outline-accent"
                       >
-                        <EllipsisVerticalIcon className="h-4 w-4 text-gray-mid hover:text-paper" />
+                        <EllipsisVerticalIcon className="h-4 w-4" />
                       </button>
 
                       {isMenuOpen && (
                         <div
-                          className="absolute right-0 top-full mt-1.5 z-40 w-36 rounded-xl border border-tinted/20 bg-night-soft p-1 shadow-xl animate-in fade-in zoom-in-95 text-left"
+                          className="absolute right-0 top-full z-40 mt-1.5 w-36 rounded-lg border border-tinted/20 bg-night-soft p-1 text-left shadow-xl animate-in fade-in zoom-in-95"
                           onClick={(e) => e.stopPropagation()}
                         >
                           <button
                             type="button"
-                            onClick={() => handleOpenEditDetails(media)}
-                            className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-medium text-paper transition-colors hover:bg-night"
+                            onClick={() => openDetails(media)}
+                            className="flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-xs font-medium text-paper transition-colors hover:bg-post-card"
                           >
                             <PencilIcon className="h-3.5 w-3.5 text-gray-mid" />
                             <span>Edit details</span>
@@ -1028,7 +862,7 @@ export function MediaManager({
                               setMenuOpenId(null);
                               requestDelete([media]);
                             }}
-                            className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-medium text-red-400 transition-colors hover:bg-red-950/40 hover:text-red-300"
+                            className="flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-xs font-medium text-rose-300 transition-colors hover:bg-rose-500/10"
                           >
                             <TrashIcon className="h-3.5 w-3.5" />
                             <span>Delete</span>
@@ -1037,80 +871,227 @@ export function MediaManager({
                       )}
                     </div>
                   </div>
+                </div>
 
-                  {/* Bottom Image Overlay: Tags (shown on hover) */}
-                  {media.tags && media.tags.length > 0 && (
-                    <div className="absolute bottom-2 left-2.5 right-2.5 z-10 flex flex-wrap items-center gap-1 overflow-hidden opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity duration-200 pointer-events-none group-hover:pointer-events-auto group-focus-within:pointer-events-auto">
-                      {media.tags.map((t) => (
+                <div className="space-y-1.5 p-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <button
+                      type="button"
+                      onClick={() => openDetails(media)}
+                      title={media.name}
+                      className="min-w-0 truncate text-left font-mono text-[11px] text-paper hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                    >
+                      {media.name}
+                    </button>
+                    {usages.length > 0 ? (
+                      <Badge tone="grey" className="shrink-0">
+                        Used in {usages.length}
+                      </Badge>
+                    ) : (
+                      <Badge tone="grey" className="shrink-0">
+                        Unused
+                      </Badge>
+                    )}
+                  </div>
+                  <p className="text-[11px] tabular-nums text-gray-mid">
+                    {[media.dimensions, media.size, formatDisplayDate(media.uploadedAt)]
+                      .filter(Boolean)
+                      .join(' · ')}
+                  </p>
+                  {tags.length > 0 && (
+                    <div className="flex flex-wrap gap-1">
+                      {tags.map((tag) => (
                         <button
-                          key={t}
+                          key={tag}
                           type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setActiveTag(t);
-                            setShowOrphanedOnly(false);
-                          }}
-                          title={`Filter by #${t}`}
-                          className="rounded-md bg-black/75 backdrop-blur-xs px-1.5 py-0.5 text-[10px] font-mono text-paper/90 border border-white/10 hover:border-accent hover:text-accent transition-colors"
+                          onClick={() => setActiveTag(tag)}
+                          title={`Filter by #${tag}`}
+                          className="rounded border border-tinted/20 px-1.5 py-0.5 font-mono text-[10px] text-gray-mid transition-colors hover:border-accent/40 hover:text-accent"
                         >
-                          #{t}
+                          #{tag}
                         </button>
                       ))}
                     </div>
                   )}
                 </div>
-              </div>
+              </li>
             );
           })}
-
-          {visibleMedia.length === 0 && (
-            <div className="col-span-full">
-              {mediaList.length === 0 ? (
-                <NoMediaState onUpload={() => fileInputRef.current?.click()} />
-              ) : (
-                <NoSearchResults
-                  query={search || undefined}
-                  onReset={
-                    search || activeTag !== 'all'
-                      ? () => {
-                          setSearch('');
-                          setActiveTag('all');
-                        }
-                      : undefined
-                  }
-                  resetLabel="Reset filters"
-                />
-              )}
-            </div>
-          )}
+        </ul>
+      ) : (
+        <div className="overflow-hidden rounded-xl border border-tinted/20">
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[760px] border-collapse text-left">
+              <thead>
+                <tr className="border-b border-tinted/20 bg-night-soft/60">
+                  <th className="px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-gray-mid">
+                    Asset
+                  </th>
+                  <th className="px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-gray-mid">
+                    Details
+                  </th>
+                  <th className="px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-gray-mid">
+                    Uploaded
+                  </th>
+                  <th className="px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-gray-mid">
+                    Tags
+                  </th>
+                  <th className="px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-gray-mid">
+                    Used
+                  </th>
+                  <th className="w-32 px-4 py-2.5">
+                    <span className="sr-only">Actions</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-tinted/15">
+                {filteredMedia.map((media) => {
+                  const isOrphaned = orphanedSrcs.has(media.src);
+                  const usages = usagesFor(media.src);
+                  return (
+                    <tr
+                      key={media.id}
+                      className="group cursor-pointer transition-colors hover:bg-post-card/40"
+                      onClick={() => openDetails(media)}
+                    >
+                      <td className="px-4 py-2.5">
+                        <div className="flex items-center gap-3">
+                          <div className="relative h-10 w-14 shrink-0 overflow-hidden rounded-md bg-night">
+                            <Image
+                              src={media.src}
+                              alt={media.alt || media.name}
+                              fill
+                              sizes="56px"
+                              className="object-cover"
+                              unoptimized
+                            />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="max-w-[24ch] truncate font-mono text-xs text-paper">
+                              {media.name}
+                            </p>
+                            {isOrphaned && (
+                              <span className="mt-0.5 inline-block">
+                                <Badge tone="amber">Unreferenced</Badge>
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-4 py-2.5 text-xs tabular-nums text-gray-mid">
+                        {[media.dimensions, media.size].filter(Boolean).join(' · ')}
+                      </td>
+                      <td className="px-4 py-2.5 text-xs text-gray-mid">
+                        {formatDisplayDate(media.uploadedAt)}
+                      </td>
+                      <td className="px-4 py-2.5">
+                        <div className="flex flex-wrap gap-1">
+                          {tagList(media).map((tag) => (
+                            <Badge key={tag} tone="grey">
+                              #{tag}
+                            </Badge>
+                          ))}
+                        </div>
+                      </td>
+                      <td className="px-4 py-2.5">
+                        {usages.length > 0 ? (
+                          <Badge tone="accent">Used in {usages.length}</Badge>
+                        ) : (
+                          <Badge tone="grey">Unused</Badge>
+                        )}
+                      </td>
+                      <td className="px-4 py-2.5">
+                        <div
+                          className="flex items-center justify-end gap-0.5"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <button
+                            type="button"
+                            onClick={() => handleCopy(`url-${media.id}`, media.src)}
+                            aria-label={`Copy URL for ${media.name}`}
+                            title="Copy URL"
+                            className="rounded-md p-1.5 text-gray-mid transition-colors hover:bg-post-card hover:text-paper focus-visible:outline-2 focus-visible:outline-accent"
+                          >
+                            {copiedId === `url-${media.id}` ? (
+                              <span className="text-[11px] font-bold text-emerald-400">✓</span>
+                            ) : (
+                              <LinkIcon className="h-3.5 w-3.5" />
+                            )}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleCopy(`md-${media.id}`, markdownFor(media))}
+                            aria-label={`Copy Markdown for ${media.name}`}
+                            title="Copy Markdown"
+                            className="rounded-md p-1.5 text-gray-mid transition-colors hover:bg-post-card hover:text-paper focus-visible:outline-2 focus-visible:outline-accent"
+                          >
+                            {copiedId === `md-${media.id}` ? (
+                              <span className="text-[11px] font-bold text-emerald-400">✓</span>
+                            ) : (
+                              <CodeIcon className="h-3.5 w-3.5" />
+                            )}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => openDetails(media)}
+                            aria-label={`Edit details for ${media.name}`}
+                            title="Edit details"
+                            className="rounded-md p-1.5 text-gray-mid transition-colors hover:bg-post-card hover:text-paper focus-visible:outline-2 focus-visible:outline-accent"
+                          >
+                            <PencilIcon className="h-3.5 w-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => requestDelete([media])}
+                            aria-label={`Delete ${media.name}`}
+                            title="Delete"
+                            className="rounded-md p-1.5 text-gray-mid transition-colors hover:bg-rose-500/10 hover:text-rose-300 focus-visible:outline-2 focus-visible:outline-accent"
+                          >
+                            <TrashIcon className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          <div className="flex items-center justify-between border-t border-tinted/20 bg-night-soft/40 px-4 py-2 text-[11px] text-gray-mid">
+            <span>
+              {filteredMedia.length} of{' '}
+              {showOrphanedOnly ? orphanedList.length : mediaList.length} assets
+            </span>
+            <Badge tone="grey">
+              {filteredMedia.filter((m) => usagesFor(m.src).length === 0).length} unused
+            </Badge>
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* Bulk action bar for selected orphaned assets */}
-      {showOrphanedOnly && selectedOrphanedIds.size > 0 && (
+      {/* Bulk action bar for selected unreferenced assets */}
+      {showOrphanedOnly && selectedOrphanedCount > 0 && (
         <div className="sticky bottom-4 z-30 mx-auto flex max-w-xl items-center justify-between gap-3 rounded-full border border-tinted/20 bg-night-soft px-5 py-2.5 shadow-xl">
           <span className="text-xs font-semibold text-paper">
-            {selectedOrphanedIds.size} selected
+            {selectedOrphanedCount} selected
           </span>
           <div className="flex items-center gap-2">
-            <button
-              type="button"
+            <Button
+              variant="ghost"
               onClick={() => setSelectedOrphanedIds(new Set())}
-              className="rounded-full px-3 py-1 text-xs font-semibold text-gray-mid hover:text-paper"
             >
               Clear
-            </button>
-            <button
-              type="button"
+            </Button>
+            <Button
+              variant="danger"
               onClick={() =>
                 requestDelete(
                   orphanedList.filter((m) => selectedOrphanedIds.has(m.id)),
                 )
               }
-              className="rounded-full bg-red-600 px-4 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-red-700"
             >
               Delete selected
-            </button>
+            </Button>
           </div>
         </div>
       )}
@@ -1122,282 +1103,385 @@ export function MediaManager({
         onConfirm={handleConfirmDelete}
         isLoading={isPending}
         title={
-          confirmDelete && confirmDelete.items.length > 1
-            ? `Delete ${confirmDelete.items.length} assets?`
-            : "Remove image?"
+          deleteItems.length > 1
+            ? `Delete ${deleteItems.length} assets?`
+            : 'Remove image?'
         }
         description={
-          confirmDelete?.items.length === 1 ? (
-            <>
-              Are you sure you want to delete{" "}
-              <b className="text-paper">{confirmDelete.items[0].name}</b>? This
-              action cannot be undone.
-            </>
-          ) : (
-            <>
-              Are you sure you want to delete{" "}
-              <b className="text-paper">{confirmDelete?.items.length} assets</b>?
-              This action cannot be undone.
-            </>
-          )
+          <>
+            <p>
+              {deleteItems.length === 1 ? (
+                <>
+                  Delete <b className="text-paper">{deleteItems[0].name}</b>? This
+                  action cannot be undone.
+                </>
+              ) : (
+                <>
+                  Delete <b className="text-paper">{deleteItems.length} assets</b>?
+                  This action cannot be undone.
+                </>
+              )}
+            </p>
+            {publishedDeleteUsages.length > 0 ? (
+              <div className="mt-3 rounded-lg border border-rose-500/30 bg-rose-500/10 p-3">
+                <p className="font-medium text-rose-300">
+                  This asset is used by {publishedDeleteUsages.length} published{' '}
+                  {publishedDeleteUsages.length === 1 ? 'item' : 'items'} and those
+                  pages will show a broken image:
+                </p>
+                <ul className="mt-1.5 list-disc pl-4">
+                  {publishedDeleteUsages.map((usage, index) => (
+                    <li key={`${usage.kind}-${usage.slug}-${index}`}>
+                      {usage.title}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : deleteUsages.length > 0 ? (
+              <p className="mt-2">
+                Only used in {deleteUsages.length} draft{' '}
+                {deleteUsages.length === 1 ? 'item' : 'items'} — nothing published
+                will break.
+              </p>
+            ) : (
+              <p className="mt-2">Not used anywhere on the site.</p>
+            )}
+          </>
         }
         confirmLabel="Confirm Delete"
         variant="danger"
         typeToConfirm="DELETE"
       />
 
-      {/* Edit Details Modal */}
-      {editingMedia && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-xs"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="edit-details-title"
-        >
-          <div className="w-full max-w-md rounded-3xl border border-tinted/20 bg-night-soft p-6 shadow-2xl animate-in zoom-in-95">
-            <div className="flex items-center justify-between border-b border-tinted/20 pb-4">
-              <h3 id="edit-details-title" className="font-serif text-xl font-normal text-paper">
-                Edit Resource Details
-              </h3>
-              <button
-                type="button"
-                onClick={() => setEditingMedia(null)}
-                className="rounded-full p-1.5 text-gray-mid hover:bg-night hover:text-paper transition-colors"
-                aria-label="Close dialog"
-              >
-                ✕
-              </button>
-            </div>
-
-            <form onSubmit={handleSaveDetails} className="mt-4 space-y-4">
-              {/* Image Preview Thumbnail */}
-              <div className="flex items-center gap-3 rounded-2xl border border-tinted/20 bg-night p-2.5">
-                <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl bg-night-soft">
-                  <Image
-                    src={editingMedia.src}
-                    alt={editingMedia.alt || 'Preview'}
-                    fill
-                    sizes="64px"
-                    className="object-cover"
-                    unoptimized
-                  />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate font-mono text-xs font-semibold text-paper">
-                    {editingMedia.name}
-                  </p>
-                  <p className="mt-0.5 text-[11px] text-gray-mid">
-                    {editingMedia.dimensions || '-'} · {editingMedia.size || '-'}
-                    {editingMedia.uploadedAt && ` · Uploaded ${formatDisplayDateTime(editingMedia.uploadedAt)}`}
-                  </p>
-                </div>
-              </div>
-
+      {/* Add Media Modal */}
+      {isUploading && (
+        <div className="fixed inset-0 z-[105] flex items-center justify-center overflow-y-auto bg-black/70 p-4 backdrop-blur-xs">
+          <div className="relative my-8 w-full max-w-lg rounded-2xl border border-tinted/20 bg-night p-5 shadow-2xl sm:p-6">
+            <div className="flex items-start justify-between gap-3 border-b border-tinted/20 pb-4">
               <div>
-                <label
-                  htmlFor="caption-input"
-                  className="block text-xs font-semibold uppercase tracking-wider text-gray-mid"
-                >
-                  Caption / Alt Text
-                </label>
-                <input
-                  id="caption-input"
-                  type="text"
-                  autoFocus
-                  placeholder="Enter a descriptive caption"
-                  value={captionInput}
-                  onChange={(e) => setCaptionInput(e.target.value)}
-                  className="mt-1.5 w-full rounded-xl border border-tinted/20 bg-night px-3.5 py-2 text-sm text-paper placeholder:text-gray-mid/50 focus:border-tinted/40 focus:outline-none"
-                />
-                <p className="mt-1 text-[11px] text-gray-mid">
-                  Used as the alt text when inserting this image into essays and notes.
+                <h3 className="text-lg font-semibold text-paper">Upload image</h3>
+                <p className="mt-0.5 text-xs text-gray-mid">
+                  Review details before adding it to the library.
                 </p>
               </div>
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  setIsUploading(false);
+                  setFileSrc('');
+                  setPendingFile(null);
+                }}
+                aria-label="Close upload"
+              >
+                <CloseIcon className="h-4 w-4" />
+              </Button>
+            </div>
 
-              <div>
-                <div className="flex items-center justify-between">
-                  <label
-                    htmlFor="edit-tags-input"
-                    className="block text-xs font-semibold uppercase tracking-wider text-gray-mid"
-                  >
-                    Tags
-                  </label>
-                  <span className="text-[11px] text-gray-mid/60">Comma separated</span>
+            {isUploading && isPending && (
+              <div className="mt-4" role="status" aria-live="polite">
+                <div className="h-1 w-full overflow-hidden rounded-full bg-night-soft">
+                  <div className="h-full w-1/3 animate-pulse rounded-full bg-accent" />
                 </div>
-                <input
-                  id="edit-tags-input"
-                  type="text"
-                  placeholder="e.g. essay, cover, workspace"
-                  value={editTagsInput}
-                  onChange={(e) => setEditTagsInput(e.target.value)}
-                  className="mt-1.5 w-full rounded-xl border border-tinted/20 bg-night px-3.5 py-2 text-sm text-paper placeholder:text-gray-mid/50 focus:border-tinted/40 focus:outline-none"
-                />
-                {editTagsInput.trim() && (
-                  <div className="mt-2 flex flex-wrap gap-1.5">
-                    {editTagsInput
-                      .split(',')
-                      .map((t) => t.trim().toLowerCase())
-                      .filter(Boolean)
-                      .map((t) => (
-                        <span
-                          key={t}
-                          className="inline-flex items-center rounded-md bg-night-soft px-2 py-0.5 text-[11px] font-mono text-gray-mid border border-tinted/20"
-                        >
-                          #{t}
-                        </span>
-                      ))}
-                  </div>
-                )}
+                <p className="mt-1.5 text-[11px] text-gray-mid">Uploading…</p>
               </div>
+            )}
 
-              <div className="mt-6 flex justify-end gap-3 pt-2 border-t border-tinted/20">
-                <button
-                  type="button"
-                  onClick={() => setEditingMedia(null)}
-                  className="rounded-full px-4 py-2 text-xs font-medium text-gray-mid hover:text-paper transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isPending}
-                  className="rounded-full bg-accent px-5 py-2 text-xs font-semibold text-paper shadow-sm hover:bg-accent-hover transition-colors disabled:opacity-50"
-                >
-                  {isPending ? 'Saving...' : 'Save Changes'}
-                </button>
+            <form onSubmit={handleAddMedia} className="mt-5 space-y-4">
+              {fileSrc && (
+                <div className="flex max-h-56 items-center justify-center overflow-hidden rounded-lg border border-tinted/20 bg-night-soft p-2">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={fileSrc}
+                    alt={altText || fileName}
+                    className="max-h-52 w-auto rounded-md object-contain"
+                  />
+                </div>
+              )}
+
+              <Field label="File name" htmlFor="upload-name">
+                <TextInput
+                  id="upload-name"
+                  required
+                  placeholder="e.g. res-20260920-a8f3b1c2.jpg"
+                  value={fileName}
+                  onChange={(e) => setFileName(e.target.value)}
+                  className="font-mono text-xs"
+                />
+              </Field>
+
+              <Field
+                label="Alt text"
+                htmlFor="upload-alt"
+                hint="Used as the alt text when this image is inserted into essays and notes."
+              >
+                <TextInput
+                  id="upload-alt"
+                  placeholder="Describe the image"
+                  value={altText}
+                  onChange={(e) => setAltText(e.target.value)}
+                />
+              </Field>
+
+              <Field
+                label="Tags"
+                htmlFor="upload-tags"
+                hint="Comma separated — e.g. essay, cover, workspace"
+              >
+                <TextInput
+                  id="upload-tags"
+                  placeholder="essay, cover, workspace"
+                  value={tagsInput}
+                  onChange={(e) => setTagsInput(e.target.value)}
+                />
+              </Field>
+
+              <div className="flex items-center justify-between gap-3 border-t border-tinted/20 pt-4">
+                <p className="text-[11px] tabular-nums text-gray-mid">
+                  {dimensions} · {fileSize}
+                </p>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="ghost"
+                    onClick={() => {
+                      setIsUploading(false);
+                      setFileSrc('');
+                      setPendingFile(null);
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                  <Button type="submit" variant="primary" disabled={isPending}>
+                    {isPending ? 'Uploading…' : 'Upload'}
+                  </Button>
+                </div>
               </div>
             </form>
           </div>
         </div>
       )}
 
-      {/* Add Media Modal */}
-      {isUploading && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/70 p-4 backdrop-blur-xs">
-          <div className="relative my-8 w-full max-w-lg rounded-3xl border border-tinted/20 bg-night p-6 shadow-2xl sm:p-8">
-            <div className="flex items-center justify-between border-b border-tinted/20 pb-4">
-              <div>
-                <h3 className="font-serif text-2xl font-normal text-paper">
-                  Add Resource
-                </h3>
-                <p className="mt-0.5 text-xs text-gray-mid">
-                  Review details and add to your media library.
-                </p>
+      {/* Detail Drawer */}
+      {drawerMedia && (
+        <div className="fixed inset-0 z-[100]">
+          <div
+            className="absolute inset-0 bg-black/70 backdrop-blur-xs animate-in fade-in"
+            aria-hidden
+            onClick={() => setDrawerMedia(null)}
+          />
+          <aside
+            ref={drawerRef}
+            tabIndex={-1}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="media-drawer-title"
+            className="absolute inset-y-0 right-0 flex w-full max-w-md flex-col overflow-y-auto border-l border-tinted/20 bg-night-soft shadow-2xl outline-none animate-in slide-in-from-right"
+          >
+            <header className="sticky top-0 z-10 flex items-center justify-between gap-2 border-b border-tinted/20 bg-night-soft px-4 py-3">
+              <div className="flex items-center gap-0.5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const index = filteredMedia.findIndex(
+                      (m) => m.id === drawerMedia.id,
+                    );
+                    if (index === -1) return;
+                    setDrawerMedia(
+                      filteredMedia[
+                        (index - 1 + filteredMedia.length) % filteredMedia.length
+                      ],
+                    );
+                  }}
+                  disabled={filteredMedia.length < 2}
+                  aria-label="Previous asset"
+                  title="Previous (Left arrow)"
+                  className="rounded-md p-1.5 text-gray-mid transition-colors hover:bg-post-card hover:text-paper disabled:opacity-30 focus-visible:outline-2 focus-visible:outline-accent"
+                >
+                  <ChevronLeftIcon className="h-4 w-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const index = filteredMedia.findIndex(
+                      (m) => m.id === drawerMedia.id,
+                    );
+                    if (index === -1) return;
+                    setDrawerMedia(filteredMedia[(index + 1) % filteredMedia.length]);
+                  }}
+                  disabled={filteredMedia.length < 2}
+                  aria-label="Next asset"
+                  title="Next (Right arrow)"
+                  className="rounded-md p-1.5 text-gray-mid transition-colors hover:bg-post-card hover:text-paper disabled:opacity-30 focus-visible:outline-2 focus-visible:outline-accent"
+                >
+                  <ChevronRightIcon className="h-4 w-4" />
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={() => {
-                  setIsUploading(false);
-                  setFileSrc('');
-                  setPendingFile(null);
-                }}
-                className="rounded-full p-2 text-gray-mid hover:bg-night-soft hover:text-paper"
+              <h2
+                id="media-drawer-title"
+                className="min-w-0 truncate text-xs font-semibold uppercase tracking-wider text-gray-mid"
               >
-                ✕
-              </button>
-            </div>
+                Asset details
+              </h2>
+              <Button
+                variant="ghost"
+                onClick={() => setDrawerMedia(null)}
+                aria-label="Close asset details"
+                title="Close (Esc)"
+              >
+                <CloseIcon className="h-4 w-4" />
+              </Button>
+            </header>
 
-            <form onSubmit={handleAddMedia} className="mt-6 space-y-4">
-              {/* Preview Thumbnail */}
-              {fileSrc && (
-                <div className="overflow-hidden rounded-2xl border border-tinted/20 bg-night-soft flex items-center justify-center max-h-56 p-2">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={fileSrc}
-                    alt={altText || fileName}
-                    className="max-h-52 w-auto object-contain rounded-xl"
-                  />
-                </div>
-              )}
-
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-gray-mid">
-                  File Name
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. res-20260920-a8f3b1c2.jpg"
-                  value={fileName}
-                  onChange={(e) => setFileName(e.target.value)}
-                  className="mt-1.5 w-full rounded-xl border border-tinted/20 bg-night-soft px-3.5 py-2 font-mono text-xs text-paper placeholder:text-gray-mid/50 focus:border-tinted/40 focus:outline-none"
+            <div className="space-y-5 px-4 py-4">
+              <div className="relative aspect-[4/3] w-full overflow-hidden rounded-lg border border-tinted/20 bg-night">
+                <Image
+                  src={drawerMedia.src}
+                  alt={drawerMedia.alt || drawerMedia.name}
+                  fill
+                  sizes="(max-width: 768px) 100vw, 448px"
+                  className="object-contain"
+                  unoptimized
                 />
               </div>
 
               <div>
-                <div className="flex items-center justify-between">
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-gray-mid">
-                    Alt Text
-                  </label>
-                  <span className="text-[11px] text-gray-mid/60">Optional</span>
-                </div>
-                <input
-                  type="text"
-                  placeholder="Leave empty or enter accessible description..."
-                  value={altText}
-                  onChange={(e) => setAltText(e.target.value)}
-                  className="mt-1.5 w-full rounded-xl border border-tinted/20 bg-night-soft px-3.5 py-2 text-sm text-paper placeholder:text-gray-mid/50 focus:border-tinted/40 focus:outline-none"
-                />
-              </div>
-
-              <div>
-                <div className="flex items-center justify-between">
-                  <label
-                    htmlFor="upload-tags-input"
-                    className="block text-xs font-semibold uppercase tracking-wider text-gray-mid"
-                  >
-                    Tags
-                  </label>
-                  <span className="text-[11px] text-gray-mid/60">Comma separated (optional)</span>
-                </div>
-                <input
-                  id="upload-tags-input"
-                  type="text"
-                  placeholder="e.g. essay, cover, workspace"
-                  value={tagsInput}
-                  onChange={(e) => setTagsInput(e.target.value)}
-                  className="mt-1.5 w-full rounded-xl border border-tinted/20 bg-night-soft px-3.5 py-2 text-sm text-paper placeholder:text-gray-mid/50 focus:border-tinted/40 focus:outline-none"
-                />
-                {tagsInput.trim() && (
-                  <div className="mt-2 flex flex-wrap gap-1.5">
-                    {tagsInput
-                      .split(',')
-                      .map((t) => t.trim().toLowerCase())
-                      .filter(Boolean)
-                      .map((t) => (
-                        <span
-                          key={t}
-                          className="inline-flex items-center rounded-md bg-night px-2 py-0.5 text-[11px] font-mono text-gray-mid border border-tinted/20"
-                        >
-                          #{t}
-                        </span>
-                      ))}
+                <p className="break-all font-mono text-xs text-paper">
+                  {drawerMedia.name}
+                </p>
+                <p className="mt-1 text-[11px] tabular-nums text-gray-mid">
+                  {[
+                    drawerMedia.dimensions,
+                    drawerMedia.size,
+                    drawerMedia.uploadedAt
+                      ? `Uploaded ${formatDisplayDateTime(drawerMedia.uploadedAt)}`
+                      : '',
+                  ]
+                    .filter(Boolean)
+                    .join(' · ')}
+                </p>
+                {tagList(drawerMedia).length > 0 && (
+                  <div className="mt-2 flex flex-wrap gap-1">
+                    {tagList(drawerMedia).map((tag) => (
+                      <Badge key={tag} tone="grey">
+                        #{tag}
+                      </Badge>
+                    ))}
                   </div>
                 )}
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-tinted/20">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsUploading(false);
-                    setFileSrc('');
-                    setPendingFile(null);
-                  }}
-                  className="rounded-full px-5 py-2 text-xs font-semibold text-gray-mid hover:text-paper"
+              <form
+                onSubmit={handleSaveDetails}
+                className="space-y-3 border-t border-tinted/20 pt-4"
+              >
+                <SectionHeading title="Details" />
+                <Field label="Alt text" htmlFor="drawer-alt">
+                  <TextInput
+                    id="drawer-alt"
+                    placeholder="Describe the image"
+                    value={drawerAlt}
+                    onChange={(e) => setDrawerAlt(e.target.value)}
+                  />
+                </Field>
+                <Field label="Tags" htmlFor="drawer-tags" hint="Comma separated">
+                  <TextInput
+                    id="drawer-tags"
+                    placeholder="essay, cover, workspace"
+                    value={drawerTags}
+                    onChange={(e) => setDrawerTags(e.target.value)}
+                  />
+                </Field>
+                <Button type="submit" variant="secondary" disabled={isPending}>
+                  {isPending ? 'Saving…' : 'Save changes'}
+                </Button>
+              </form>
+
+              <div className="grid grid-cols-2 gap-2 border-t border-tinted/20 pt-4">
+                <Button
+                  variant="secondary"
+                  onClick={() => handleCopy(`url-${drawerMedia.id}`, drawerMedia.src)}
                 >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isPending}
-                  className="rounded-full bg-accent px-6 py-2 text-xs font-semibold text-paper shadow-sm hover:bg-accent-hover transition-colors disabled:opacity-50"
+                  {copiedId === `url-${drawerMedia.id}` ? (
+                    <>✓ Copied URL</>
+                  ) : (
+                    <>
+                      <LinkIcon className="h-3.5 w-3.5" />
+                      Copy URL
+                    </>
+                  )}
+                </Button>
+                <Button
+                  variant="secondary"
+                  onClick={() =>
+                    handleCopy(`md-${drawerMedia.id}`, markdownFor(drawerMedia))
+                  }
                 >
-                  {isPending ? 'Uploading...' : 'Add Resource'}
-                </button>
+                  {copiedId === `md-${drawerMedia.id}` ? (
+                    <>✓ Copied MD</>
+                  ) : (
+                    <>
+                      <CodeIcon className="h-3.5 w-3.5" />
+                      Copy Markdown
+                    </>
+                  )}
+                </Button>
               </div>
-            </form>
-          </div>
+
+              <div className="border-t border-tinted/20 pt-4">
+                <SectionHeading
+                  title="Used in"
+                  action={
+                    <Badge
+                      tone="grey"
+                    >
+                      {usagesFor(drawerMedia.src).length} reference
+                      {usagesFor(drawerMedia.src).length === 1 ? '' : 's'}
+                    </Badge>
+                  }
+                />
+                {usagesFor(drawerMedia.src).length === 0 ? (
+                  <p className="mt-2 text-xs text-gray-mid">
+                    Not used anywhere. Deleting it is safe.
+                  </p>
+                ) : (
+                  <ul className="mt-1 divide-y divide-tinted/15">
+                    {usagesFor(drawerMedia.src).map((usage) => (
+                      <li key={`${usage.kind}-${usage.slug}`}>
+                        <a
+                          href={
+                            usage.published
+                              ? usage.href
+                              : usage.kind === "book"
+                                ? "/admin?tab=content"
+                                : `/admin/compose?type=${usage.kind}&slug=${encodeURIComponent(
+                                    usage.slug,
+                                  )}`
+                          }
+                          target="_blank"
+                          rel="noreferrer"
+                          className="flex items-center justify-between gap-3 py-2 text-xs text-paper transition-colors hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                        >
+                          <span className="min-w-0 truncate">{usage.title}</span>
+                          <Badge tone={usage.published ? 'green' : 'grey'}>
+                            {usage.published ? 'Published' : 'Draft'}
+                          </Badge>
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+
+              <div className="border-t border-tinted/20 pb-6 pt-4">
+                <Button
+                  variant="danger"
+                  onClick={() => requestDelete([drawerMedia])}
+                >
+                  <TrashIcon className="h-3.5 w-3.5" />
+                  Delete asset
+                </Button>
+              </div>
+            </div>
+          </aside>
         </div>
       )}
     </div>

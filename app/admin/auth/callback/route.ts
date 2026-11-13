@@ -4,7 +4,7 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { getSupabaseUrl, getSupabasePublishableKey } from "@/lib/config/env";
 import { getSupabaseAdmin } from "@/lib/supabase/server";
-import { isAdminRole } from "@/lib/auth/admin";
+import { isAdminRole, isAllowedAdminEmail } from "@/lib/auth/admin";
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
@@ -66,6 +66,14 @@ export async function GET(request: Request) {
       } = await supabase.auth.getUser();
 
       if (user) {
+        // Only the owner's hardcoded addresses may ever enter the admin.
+        if (!isAllowedAdminEmail(user.email)) {
+          await supabase.auth.signOut().catch(() => {});
+          return NextResponse.redirect(
+            `${origin}/admin/login?error=forbidden`,
+          );
+        }
+
         const adminClient = getSupabaseAdmin();
         const role = adminClient
           ? await adminClient
@@ -76,11 +84,28 @@ export async function GET(request: Request) {
               .then((res) => res.data?.role)
           : null;
 
+        // Allowlisted owner emails are provisioned as super_admin on first
+        // sign-in. Content is global, so every alias opens the same workspace.
         if (!isAdminRole(role)) {
-          await supabase.auth.signOut().catch(() => {});
-          return NextResponse.redirect(
-            `${origin}/admin/login?error=forbidden`,
-          );
+          if (!adminClient) {
+            await supabase.auth.signOut().catch(() => {});
+            return NextResponse.redirect(
+              `${origin}/admin/login?error=forbidden`,
+            );
+          }
+          const { error: roleError } = await adminClient
+            .from("user_roles")
+            .upsert(
+              { user_id: user.id, role: "super_admin" },
+              { onConflict: "user_id" },
+            );
+
+          if (roleError) {
+            await supabase.auth.signOut().catch(() => {});
+            return NextResponse.redirect(
+              `${origin}/admin/login?error=forbidden`,
+            );
+          }
         }
       }
 

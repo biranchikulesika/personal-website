@@ -35,6 +35,8 @@ interface AccountManagerProps {
   initialPasskeys?: PasskeyItem[];
   initialConnectedProviders?: string[];
   initialSessions?: UserSession[];
+  /** Hidden on the Settings page, which renders its own profile section. */
+  showIdentity?: boolean;
 }
 
 interface ConnectedAccount {
@@ -84,6 +86,7 @@ export function AccountManager({
   initialPasskeys = [],
   initialConnectedProviders = ['google'],
   initialSessions = [],
+  showIdentity = true,
 }: AccountManagerProps) {
   const [passkeys, setPasskeys] = useState<PasskeyItem[]>(initialPasskeys);
   const [isRegistering, setIsRegistering] = useState(false);
@@ -278,24 +281,26 @@ export function AccountManager({
       {/* Toast Notification */}
       <ToastView message={toastMessage} />
 
-      {/* Identity row (title lives in the dialog header) */}
-      <div className="flex min-w-0 items-center gap-3">
-        <UserAvatar src={userAvatarUrl} name={userName} size={40} />
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <p className="truncate text-sm font-medium text-paper">
-              {userName}
+      {/* Identity row (hidden when the Settings page supplies its own profile) */}
+      {showIdentity && (
+        <div className="flex min-w-0 items-center gap-3">
+          <UserAvatar src={userAvatarUrl} name={userName} size={40} />
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="truncate text-sm font-medium text-paper">
+                {userName}
+              </p>
+              <span className="rounded-full border border-tinted/20 bg-night-soft px-2 py-0.5 text-[10px] font-semibold capitalize tracking-wide text-gray-mid">
+                {userRole.replace('_', ' ')}
+              </span>
+            </div>
+            <p className="mt-0.5 flex items-center gap-1.5 truncate text-[11px] text-gray-mid">
+              <MailIcon className="h-3 w-3 shrink-0" />
+              <span>{userEmail || `admin@${SITE_DOMAIN}`}</span>
             </p>
-            <span className="rounded-full border border-tinted/20 bg-night-soft px-2 py-0.5 text-[10px] font-semibold capitalize tracking-wide text-gray-mid">
-              {userRole.replace('_', ' ')}
-            </span>
           </div>
-          <p className="mt-0.5 flex items-center gap-1.5 truncate text-[11px] text-gray-mid">
-            <MailIcon className="h-3 w-3 shrink-0" />
-            <span>{userEmail || `admin@${SITE_DOMAIN}`}</span>
-          </p>
         </div>
-      </div>
+      )}
 
       <div className="space-y-4">
         {/* ── 2-Column Grid for Authentication & Connected Accounts ── */}
@@ -361,7 +366,7 @@ export function AccountManager({
                   type="button"
                   disabled={isRegistering}
                   onClick={handleAddPasskey}
-                  className="flex w-full items-center justify-center gap-1.5 rounded-full bg-accent py-2 text-xs font-semibold text-paper shadow-sm transition-all hover:bg-accent-hover active:scale-98 disabled:opacity-50"
+                  className="flex w-full items-center justify-center gap-1.5 rounded-full bg-accent py-2 text-xs font-semibold text-night shadow-sm transition-all hover:bg-accent-hover active:scale-98 disabled:opacity-50"
                 >
                   <FingerprintIcon className="h-3.5 w-3.5" />
                   <span>{isRegistering ? 'Creating passkey…' : 'Add passkey'}</span>
