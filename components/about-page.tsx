@@ -1,5 +1,5 @@
 import Image from "next/image";
-import Link from "next/link";
+import { StageLink as Link } from "@/components/paint-transition";
 import { LandscapeGallery } from "./landscape-gallery";
 
 const ABOUT_GALLERY_IMAGES = [

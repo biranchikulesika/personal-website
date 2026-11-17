@@ -25,7 +25,7 @@ export function EssayCover({
   const cleanSrc = cleanCoverImageUrl(coverImage);
   if (cleanSrc) {
     return (
-      <div className="relative flex h-[220px] w-full items-center justify-center overflow-hidden rounded-xl">
+      <div className="relative flex h-[160px] sm:h-[220px] w-full items-center justify-center overflow-hidden rounded-xl">
         <Image
           src={cleanSrc}
           alt={`Cover for ${title}`}
@@ -45,8 +45,8 @@ export function EssayCover({
   }
 
   return (
-    <div className="flex min-h-[220px] items-center justify-center overflow-hidden rounded-xl bg-[radial-gradient(ellipse_at_center,rgba(250,249,245,0.08)_15%,transparent_75%)]">
-      <span className="font-serif text-5xl italic text-paper/70">
+    <div className="flex h-[160px] sm:min-h-[220px] items-center justify-center overflow-hidden rounded-xl bg-[radial-gradient(ellipse_at_center,rgba(250,249,245,0.08)_15%,transparent_75%)]">
+      <span className="font-serif text-4xl sm:text-5xl italic text-paper/70">
         {title.charAt(0)}
       </span>
     </div>

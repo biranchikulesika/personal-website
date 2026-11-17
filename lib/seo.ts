@@ -129,6 +129,7 @@ export function postMetadata(post: BlogPost): Metadata {
   return {
     title,
     description,
+    keywords: post.tags,
     alternates: { canonical: url },
     robots: isDraft ? { index: false, follow: false } : undefined,
     openGraph: {
@@ -168,6 +169,7 @@ export function noteMetadata(note: NoteItem): Metadata {
   return {
     title,
     description,
+    keywords: note.tags,
     alternates: { canonical: url },
     robots: isDraft ? { index: false, follow: false } : undefined,
     openGraph: {

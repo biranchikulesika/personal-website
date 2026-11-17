@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import { StageLink as Link } from '@/components/paint-transition';
 import type { FooterContent } from '@/lib/types';
 
 interface FooterProps {

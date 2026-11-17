@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import { StageLink as Link } from '@/components/paint-transition';
 import type { BlogPost, SectionGroup, WritingItem } from '@/lib/types';
 import { SectionHeading } from './section-heading';
 import { formatDisplayDate, formatOverviewSnippet } from '@/lib/utils';
@@ -17,20 +17,20 @@ export function EssayCard({ item, priority = false }: { item: WritingItem; prior
     <article className="group h-full">
       <Link
         href={`/p/${item.slug}`}
-        className="flex h-full flex-col justify-between rounded-2xl border border-tinted/20 bg-post-card p-4 sm:p-5 shadow-xs transition-all duration-300 hover:scale-[1.02] hover:shadow-md"
+        className="flex h-full flex-col justify-between rounded-2xl border border-tinted/20 bg-post-card p-3 sm:p-5 shadow-xs transition-all duration-300 hover:scale-[1.02] hover:shadow-md"
       >
         <div>
           <EssayCover title={item.title} coverImage={item.coverImage} priority={priority} />
-          <h3 className="mt-4 font-serif text-lg font-normal leading-snug text-paper transition-colors duration-300 group-hover:text-accent">
+          <h3 className="mt-2.5 sm:mt-4 font-serif text-base sm:text-lg font-normal leading-snug text-paper transition-colors duration-300 group-hover:text-accent">
             {item.title}
           </h3>
           {overview && (
-            <p className="mt-2 text-sm leading-relaxed text-gray-mid line-clamp-3">
+            <p className="mt-1.5 sm:mt-2 text-xs sm:text-sm leading-relaxed text-gray-mid line-clamp-2 sm:line-clamp-3">
               {overview}
             </p>
           )}
         </div>
-        <div className="mt-4 flex items-center border-t border-tinted/15 pt-3 text-xs text-gray-mid">
+        <div className="mt-2.5 sm:mt-4 flex items-center border-t border-tinted/15 pt-2 sm:pt-3 text-[11px] sm:text-xs text-gray-mid">
           <span>{formatDisplayDate(item.date)}</span>
         </div>
       </Link>

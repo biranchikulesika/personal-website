@@ -683,7 +683,7 @@ export function MediaManager({
               aria-pressed={activeTag === tag}
               className={tagPillClass(activeTag === tag)}
             >
-              #{tag}
+              {tag}
             </button>
           ))}
           {orphanedSrcs.size > 0 && (
@@ -994,7 +994,7 @@ export function MediaManager({
                         <div className="flex flex-wrap gap-1">
                           {tagList(media).map((tag) => (
                             <Badge key={tag} tone="grey">
-                              #{tag}
+                              {tag}
                             </Badge>
                           ))}
                         </div>
@@ -1368,7 +1368,7 @@ export function MediaManager({
                   <div className="mt-2 flex flex-wrap gap-1">
                     {tagList(drawerMedia).map((tag) => (
                       <Badge key={tag} tone="grey">
-                        #{tag}
+                        {tag}
                       </Badge>
                     ))}
                   </div>
