@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import Link from 'next/link';
+import { StageLink as Link } from '@/components/paint-transition';
 import { usePathname } from 'next/navigation';
 import type { Identity, NavLink } from '@/lib/types';
 import { useClickOutside } from './ui/use-click-outside';

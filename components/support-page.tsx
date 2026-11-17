@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Link from 'next/link';
+import { StageLink as Link } from '@/components/paint-transition';
 import { toast } from '@/lib/toast';
 import {
   HeartIcon,

@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import { StageLink as Link } from '@/components/paint-transition';
 import type { BookItem, SectionGroup } from '@/lib/types';
 import { SectionHeading } from './section-heading';
 import { ExternalLinkIcon } from './icons';

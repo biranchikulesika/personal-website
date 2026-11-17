@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import { StageLink as Link } from '@/components/paint-transition';
 
 export function NotFoundView() {
   return (

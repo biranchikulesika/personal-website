@@ -62,9 +62,7 @@ export function ShareMenu({ title, description }: ShareMenuProps) {
 
   const twitterHref = `https://x.com/intent/post?text=${encodedTitle}&url=${encodedUrl}`;
   const linkedinHref = `https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}`;
-  const whatsappHref = `https://api.whatsapp.com/send?text=${encodeURIComponent(
-    title ? `${title} ${shareUrl}` : shareUrl,
-  )}`;
+  const whatsappHref = `https://api.whatsapp.com/send?text=${encodedUrl}`;
   const redditHref = `https://reddit.com/submit?url=${encodedUrl}&title=${encodedTitle}`;
   const telegramHref = `https://t.me/share/url?url=${encodedUrl}&text=${encodedTitle}`;
   const mailHref = `mailto:?subject=${encodedTitle}&body=${encodedDesc}%0A%0A${encodedUrl}`;

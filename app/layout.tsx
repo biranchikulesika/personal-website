@@ -5,8 +5,10 @@ import './globals.css';
 import { rootMetadata, websiteJsonLd, safeJsonLd } from '@/lib/seo';
 import GoogleAnalytics from '@/components/google-analytics';
 import GoogleTagManager from '@/components/google-tag-manager';
+import MicrosoftClarity from '@/components/microsoft-clarity';
 import { SvgElementGuard } from '@/components/svg-element-guard';
 import { ToastContainer } from '@/components/ui/toast/toast-container';
+import { StageTransitionProvider } from '@/components/paint-transition';
 import { getSupabaseUrl } from '@/lib/config/env';
 
 export const metadata: Metadata = rootMetadata;
@@ -49,11 +51,14 @@ export default function RootLayout({
       <body className="min-h-screen bg-night text-paper antialiased">
         <GoogleTagManager />
         <GoogleAnalytics />
+        <MicrosoftClarity />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: safeJsonLd(websiteJsonLd()) }}
         />
-        {children}
+        <StageTransitionProvider>
+          {children}
+        </StageTransitionProvider>
         <ToastContainer />
         <SpeedInsights />
         <SvgElementGuard />

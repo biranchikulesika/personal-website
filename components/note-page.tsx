@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import { StageLink as Link } from '@/components/paint-transition';
 import type { NoteItem } from '@/lib/types';
 import { formatDisplayDate } from '@/lib/utils';
 import { renderMdx } from '@/lib/mdx';
@@ -35,19 +35,9 @@ export async function NotePageView({ note }: { note: NoteItem }) {
             )}
 
             <div className="mt-8 flex w-full items-center justify-between gap-2.5 border-y border-tinted/20 py-2.5 sm:gap-3 sm:py-3">
-              {/* Left: Persona Split Identifier Badge + Content Tags */}
-              <div className="no-scrollbar flex min-w-0 shrink items-center gap-1.5 overflow-x-auto whitespace-nowrap sm:gap-2">
-                <PersonaBadge persona={note.persona} />
-
-                {note.tags.slice(0, 4).map((tag) => (
-                  <span
-                    key={tag}
-                    className="hidden shrink-0 items-center rounded-md border border-tinted/30 bg-night-soft/40 px-1.5 py-0.5 font-mono text-[11px] text-ink-soft transition-colors hover:border-tinted/60 hover:text-paper sm:inline-flex sm:px-2 sm:text-xs"
-                  >
-                    <span className="mr-0.5 text-accent" aria-hidden="true">#</span>
-                    {tag}
-                  </span>
-                ))}
+              {/* Left: Persona Identifier Badge */}
+              <div className="flex shrink-0 items-center whitespace-nowrap">
+                <PersonaBadge persona={note.persona} showIcon={false} />
               </div>
 
               {/* Right: Pub. Date & Elevated Share Menu */}
