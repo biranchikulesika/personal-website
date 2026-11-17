@@ -129,6 +129,7 @@ export function postMetadata(post: BlogPost): Metadata {
   return {
     title,
     description,
+    keywords: post.tags,
     alternates: { canonical: url },
     robots: isDraft ? { index: false, follow: false } : undefined,
     openGraph: {
@@ -168,6 +169,7 @@ export function noteMetadata(note: NoteItem): Metadata {
   return {
     title,
     description,
+    keywords: note.tags,
     alternates: { canonical: url },
     robots: isDraft ? { index: false, follow: false } : undefined,
     openGraph: {
@@ -238,7 +240,7 @@ export function libraryMetadata(): Metadata {
   const url = `${SITE_URL}/library`;
   const title = "Library";
   const description =
-    "Books I've read, loved, and recommend for others to read.";
+    "Books that changed how I think, with the one idea from each that stuck. Not a must-read list, just the shelf I keep coming back to.";
   const ogUrl = versionedOgUrl(`${SITE_URL}/api/og?type=library`);
 
   return {
@@ -269,7 +271,8 @@ export function libraryMetadata(): Metadata {
 export function scribbleMetadata(): Metadata {
   const url = `${SITE_URL}/scribble`;
   const title = "Scribble";
-  const description = "Writing and thinking, shared openly.";
+  const description =
+    "Long essays and short notes. Essays when I have an answer, notes when I only have a question.";
   const ogUrl = versionedOgUrl(`${SITE_URL}/api/og?type=scribble`);
 
   return {
@@ -301,7 +304,7 @@ export function nowMetadata(): Metadata {
   const url = `${SITE_URL}/now`;
   const title = "Now";
   const description =
-    "What I’m reading, exploring, working on, and thinking about these days.";
+    "What I’m focused on right now, what I’m building, what I’m reading, and what I’m confused about.";
   const ogUrl = versionedOgUrl(`${SITE_URL}/api/og?type=now`);
 
   return {

@@ -93,7 +93,7 @@ export function ComposeWorkspace({
         title: p.title,
         subtitle: p.subtitle || "",
         description: p.description,
-        persona: "builder",
+        persona: p.persona || "builder",
         status: p.status || "published",
         tags: p.tags || ["essay"],
         coverImage: p.coverImage,
@@ -346,7 +346,7 @@ export function ComposeWorkspace({
         title: p.title,
         subtitle: p.subtitle || "",
         description: p.description,
-        persona: "builder",
+        persona: p.persona || "builder",
         status: p.status || "published",
         tags: p.tags || ["essay"],
         coverImage: p.coverImage,
@@ -429,7 +429,9 @@ export function ComposeWorkspace({
             activeTab.rawPost?.publishedAt ||
             new Date().toISOString().split("T")[0],
           lastEditedAt: new Date().toISOString().split("T")[0],
-          targetAudience: "Curious readers and builders",
+          targetAudience:
+            activeTab.rawPost?.targetAudience ||
+            "Curious readers and builders",
           intro:
             intro.length > 0
               ? intro
@@ -441,6 +443,7 @@ export function ComposeWorkspace({
           sections: sections.length > 0 ? sections : [],
           books: activeTab.rawPost?.books || [],
           coverImage: activeTab.coverImage,
+          persona: activeTab.persona,
           status: statusToSet,
         };
 
@@ -633,7 +636,7 @@ export function ComposeWorkspace({
         title: p.title,
         subtitle: p.subtitle || "",
         description: p.description,
-        persona: "builder",
+        persona: p.persona || "builder",
         status: p.status || "published",
         tags: p.tags || ["essay"],
         coverImage: p.coverImage,

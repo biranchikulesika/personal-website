@@ -13,7 +13,7 @@ import { createServerClient } from "@supabase/ssr";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { getSupabaseUrl, getSupabasePublishableKey } from "@/lib/config/env";
-import { isAdminRole } from "@/lib/auth/admin";
+import { isAdminRole, isAllowedAdminEmail } from "@/lib/auth/admin";
 
 export default async function proxy(request: NextRequest) {
   let response = NextResponse.next({
@@ -71,7 +71,8 @@ export default async function proxy(request: NextRequest) {
       .select("role")
       .eq("user_id", user.id)
       .maybeSingle();
-    const isAdmin = isAdminRole(roleRow?.role);
+    const isAdmin =
+      isAdminRole(roleRow?.role) && isAllowedAdminEmail(user.email);
 
     // Admin visiting login page -> go to dashboard
     if (pathname === "/admin/login" && isAdmin) {

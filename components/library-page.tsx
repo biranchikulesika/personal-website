@@ -251,9 +251,20 @@ export function LibraryPageView({ books, title, subheader }: LibraryPageProps) {
 
       {/* Reading Philosophy Note */}
       <footer className="mx-auto mt-20 max-w-2xl border-t border-tinted/20 pt-12 text-center">
-        <p className="font-serif text-lg italic text-ink-soft">
-          “Read slowly, re-read often, and let good ideas change the way you build.”
-        </p>
+        <blockquote className="font-serif text-lg italic text-ink-soft md:text-xl">
+          &ldquo;Read what you love until you love to read&rdquo;
+          <span className="block mt-2 font-sans text-sm not-italic font-normal text-gray-mid">
+            &mdash;{' '}
+            <a
+              href="https://nav.al"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-paper underline decoration-tinted/40 underline-offset-4 transition-colors hover:text-accent hover:decoration-accent"
+            >
+              Naval Ravikant
+            </a>
+          </span>
+        </blockquote>
       </footer>
     </section>
   );

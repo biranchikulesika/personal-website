@@ -36,6 +36,7 @@ export interface HeroContent {
   points: string[];
   newsletter: NewsletterConfig;
   image: HeroImage;
+  gallery: HeroImage[];
 }
 
 // Footer ---------------------------------------------------------------------
@@ -137,6 +138,7 @@ export interface ScribbleEntry {
   id: string;
   type: ScribbleEntryType;
   title: string;
+  subtitle?: string;
   description: string;
   date: string;
   persona: Persona;
@@ -297,4 +299,9 @@ export interface NewsletterSubscriber {
 
 // Admin Navigation -----------------------------------------------------------
 
-export type SidepanelTab = "home" | "content" | "media" | "subscribers" | "account";
+export type SidepanelTab =
+  | "home"
+  | "content"
+  | "media"
+  | "subscribers"
+  | "settings";

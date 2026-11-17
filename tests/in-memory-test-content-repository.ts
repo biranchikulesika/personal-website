@@ -97,7 +97,7 @@ export class InMemoryTestContentRepository implements ContentRepository {
         title: "Notes",
         href: "/scribble",
         subheader:
-          "Things I want to share, stories, opinions, observations, and thoughts.",
+          "Shorter and rougher than essays. What I learned today, what broke, what I'm still confused about.",
         items: allNotes.filter((n) => n.status !== "unpublished"),
       },
       library,
@@ -109,11 +109,13 @@ export class InMemoryTestContentRepository implements ContentRepository {
     return {
       title: "Writing",
       href: "/scribble",
-      subheader: "Thoughts and ideas I want to explore and explain",
+      subheader:
+        "Long essays where I slow down and explain an idea properly. Mostly about building software, breaking systems, and the philosophy behind both.",
       items: published.map((p) => ({
         id: p.slug,
         slug: p.slug,
         title: p.title,
+        subtitle: p.subtitle,
         description: p.description,
         date: p.publishedAt,
         persona: p.persona ?? "builder",
@@ -128,7 +130,8 @@ export class InMemoryTestContentRepository implements ContentRepository {
     return {
       title: "Library",
       href: "/library",
-      subheader: "Books I've read, loved, and recommend for others to read.",
+      subheader:
+        "Books that changed how I think, with the one idea from each that stuck. Not a must-read list, just the shelf I keep coming back to.",
       items: this.books.filter(
         (b) => b.isPublished !== false && b.status !== "unpublished",
       ),
@@ -266,6 +269,7 @@ export class InMemoryTestContentRepository implements ContentRepository {
         id: p.slug,
         type: "essay",
         title: p.title,
+        subtitle: p.subtitle,
         description: p.description,
         date: p.publishedAt,
         persona: p.persona ?? "builder",

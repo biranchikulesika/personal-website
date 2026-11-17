@@ -22,11 +22,17 @@ export default async function AdminPage({
   searchParams: Promise<{ tab?: string }>;
 }) {
   const { tab: initialTabParam } = await searchParams;
-  // Only accept a known tab id: an unknown/missing value falls back to home.
-  const initialTab: SidepanelTab = ["home", "content", "media", "subscribers", "account"].includes(
-    initialTabParam as SidepanelTab,
-  )
-    ? (initialTabParam as SidepanelTab)
+  // Only accept a known tab id. Legacy `?tab=account` maps to the new Settings
+  // page; an unknown/missing value falls back to Overview.
+  const legacyTab = initialTabParam === "account" ? "settings" : initialTabParam;
+  const initialTab: SidepanelTab = [
+    "home",
+    "content",
+    "media",
+    "subscribers",
+    "settings",
+  ].includes(legacyTab as SidepanelTab)
+    ? (legacyTab as SidepanelTab)
     : "home";
 
   const authService = getAuthService();
@@ -99,7 +105,6 @@ export default async function AdminPage({
     orphanedMedia,
     nowEntries,
     passkeys,
-    sessions,
     subscribers,
   ] = await Promise.all([
     contentService.getAllPosts(),
@@ -109,7 +114,6 @@ export default async function AdminPage({
     contentService.getOrphanedMedia(),
     contentService.getNowEntries(),
     contentService.getPasskeys(user.id),
-    contentService.getSessions(user.id, 'sess-current'),
     contentService.getSubscribers(),
   ]);
 
@@ -124,7 +128,6 @@ export default async function AdminPage({
       initialSubscribers={subscribers}
       initialPasskeys={passkeys}
       initialConnectedProviders={connectedProviders}
-      initialSessions={sessions}
       initialTab={initialTab}
       userName={userName}
       userEmail={userEmail}

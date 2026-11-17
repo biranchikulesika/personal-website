@@ -9,12 +9,10 @@ import { UserAvatar } from '@/components/ui/user-avatar';
 import {
   MailIcon,
   FingerprintIcon,
-  LaptopIcon,
   TrashIcon,
   GitHubIcon,
   GoogleIcon,
 } from '@/components/icons';
-import { NoContentState } from '@/components/ui/states';
 import { SITE_DOMAIN } from '@/lib/constants';
 import { startRegistration, browserSupportsWebAuthn } from '@simplewebauthn/browser';
 import {
@@ -23,10 +21,8 @@ import {
   deletePasskeyAction,
   connectProviderAction,
   disconnectProviderAction,
-  signOutSessionAction,
-  signOutAllSessionsAction,
 } from '@/app/admin/actions';
-import type { PasskeyItem, UserSession } from '@/lib/types';
+import type { PasskeyItem } from '@/lib/types';
 
 interface AccountManagerProps {
   userName: string;
@@ -35,7 +31,8 @@ interface AccountManagerProps {
   userRole: string;
   initialPasskeys?: PasskeyItem[];
   initialConnectedProviders?: string[];
-  initialSessions?: UserSession[];
+  /** Hidden on the Settings page, which renders its own profile section. */
+  showIdentity?: boolean;
 }
 
 interface ConnectedAccount {
@@ -63,7 +60,7 @@ function getDeviceLabel(): string {
 
 function IconChip({ children }: { children: React.ReactNode }) {
   return (
-    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-night-soft text-gray-mid border border-tinted/20">
+    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-night-soft text-gray-mid border border-tinted/20">
       {children}
     </span>
   );
@@ -84,7 +81,7 @@ export function AccountManager({
   userRole,
   initialPasskeys = [],
   initialConnectedProviders = ['google'],
-  initialSessions = [],
+  showIdentity = true,
 }: AccountManagerProps) {
   const [passkeys, setPasskeys] = useState<PasskeyItem[]>(initialPasskeys);
   const [isRegistering, setIsRegistering] = useState(false);
@@ -92,12 +89,7 @@ export function AccountManager({
     initialConnectedProviders.length > 0 ? initialConnectedProviders : ['google'],
   );
   const [pendingProvider, setPendingProvider] = useState<string | null>(null);
-  const [sessions, setSessions] = useState<UserSession[]>(initialSessions);
-  const [isSigningOutAll, setIsSigningOutAll] = useState(false);
-  const [signingOutSessionId, setSigningOutSessionId] = useState<string | null>(null);
   const [passkeyToDelete, setPasskeyToDelete] = useState<PasskeyItem | null>(null);
-  const [sessionToSignOut, setSessionToSignOut] = useState<UserSession | null>(null);
-  const [confirmSignOutAll, setConfirmSignOutAll] = useState(false);
   const { message: toastMessage, showToast } = useToast();
 
   async function handleAddPasskey() {
@@ -232,99 +224,46 @@ export function AccountManager({
     }
   }
 
-  async function handleConfirmSignOutSession() {
-    if (!sessionToSignOut) return;
-    const { id } = sessionToSignOut;
-    setSigningOutSessionId(id);
-    try {
-      const result = await signOutSessionAction(id);
-      if (result.success) {
-        if (result.redirect) {
-          window.location.href = result.redirect;
-          return;
-        }
-        setSessions((prev) => prev.filter((s) => s.id !== id));
-        setSessionToSignOut(null);
-        showToast('Session signed out successfully.', 'success');
-      } else {
-        showToast(result.error || 'Failed to sign out session', 'error');
-      }
-    } catch {
-      showToast('Failed to sign out session. Please try again.', 'error');
-    } finally {
-      setSigningOutSessionId(null);
-    }
-  }
-
-  async function handleConfirmSignOutAll() {
-    if (isSigningOutAll) return;
-    setIsSigningOutAll(true);
-    try {
-      const result = await signOutAllSessionsAction();
-      if (result.success) {
-        showToast('Signed out of all sessions successfully.', 'success');
-        window.location.href = result.redirect || '/admin/login';
-      } else {
-        showToast(result.error || 'Failed to sign out all sessions', 'error');
-        setIsSigningOutAll(false);
-      }
-    } catch {
-      showToast('Failed to sign out all sessions. Please try again.', 'error');
-      setIsSigningOutAll(false);
-    }
-  }
-
   return (
-    <div className="space-y-6 sm:space-y-8 font-sans">
+    <div className="space-y-4 font-sans">
       {/* Toast Notification */}
       <ToastView message={toastMessage} />
 
-      {/* Header */}
-      <div>
-        <h2 className="font-serif text-2xl font-normal text-paper md:text-3xl">
-          Account & Security
-        </h2>
-      </div>
-
-      <div className="max-w-5xl space-y-6 sm:space-y-8">
-        {/* ── Identity with Profile Picture ── */}
-        <div className="rounded-2xl sm:rounded-3xl border border-tinted/20 bg-post-card p-4 sm:p-6 shadow-sm transition-all hover:border-tinted/30">
-          <div className="flex items-center gap-3.5 sm:gap-4 min-w-0">
-            <UserAvatar
-              src={userAvatarUrl}
-              name={userName}
-              size={56}
-            />
-            <div className="min-w-0 flex-1">
-              <div className="flex flex-wrap items-center gap-2">
-                <p className="truncate font-serif text-lg sm:text-xl font-medium text-paper">
-                  {userName}
-                </p>
-                <span className="rounded-full bg-night-soft px-2.5 py-0.5 text-[10px] font-semibold text-gray-mid border border-tinted/20 capitalize tracking-wide">
-                  {userRole.replace('_', ' ')}
-                </span>
-              </div>
-              <p className="mt-1 flex items-center gap-1.5 truncate text-xs text-gray-mid">
-                <MailIcon className="h-3.5 w-3.5 shrink-0" />
-                <span>{userEmail || `admin@${SITE_DOMAIN}`}</span>
+      {/* Identity row (hidden when the Settings page supplies its own profile) */}
+      {showIdentity && (
+        <div className="flex min-w-0 items-center gap-3">
+          <UserAvatar src={userAvatarUrl} name={userName} size={40} />
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="truncate text-sm font-medium text-paper">
+                {userName}
               </p>
+              <span className="rounded-full border border-tinted/20 bg-night-soft px-2 py-0.5 text-[10px] font-semibold capitalize tracking-wide text-gray-mid">
+                {userRole.replace('_', ' ')}
+              </span>
             </div>
+            <p className="mt-0.5 flex items-center gap-1.5 truncate text-[11px] text-gray-mid">
+              <MailIcon className="h-3 w-3 shrink-0" />
+              <span>{userEmail || `admin@${SITE_DOMAIN}`}</span>
+            </p>
           </div>
         </div>
+      )}
 
+      <div className="space-y-4">
         {/* ── 2-Column Grid for Authentication & Connected Accounts ── */}
-        <div className="grid gap-6 sm:gap-8 md:grid-cols-2">
+        <div className="grid gap-4 sm:grid-cols-2">
           {/* ── Sign-in & Authentication ── */}
           <section className="flex flex-col">
             <SectionHeading title="Sign-in & Authentication" />
-            <div className="mt-3 flex flex-1 flex-col justify-between divide-y divide-tinted/20 overflow-hidden rounded-2xl border border-tinted/20 bg-post-card shadow-sm">
+            <div className="mt-2 flex flex-1 flex-col justify-between divide-y divide-tinted/20 overflow-hidden rounded-xl border border-tinted/20 bg-post-card">
               <div>
                 {/* Passkeys header */}
-                <div className="flex items-center justify-between px-4 sm:px-5 py-3 bg-night-soft/40">
-                  <p className="text-xs font-semibold uppercase tracking-wider text-gray-mid">
+                <div className="flex items-center justify-between bg-night-soft/40 px-3 py-2">
+                  <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-mid">
                     Passkeys
                   </p>
-                  <span className="rounded-full bg-night px-2 py-0.5 text-[10px] font-semibold text-paper border border-tinted/20">
+                  <span className="rounded-full border border-tinted/20 bg-night px-2 py-0.5 text-[10px] font-semibold text-paper">
                     {passkeys.length}
                   </span>
                 </div>
@@ -334,17 +273,17 @@ export function AccountManager({
                   {passkeys.map((passkey) => (
                     <div
                       key={passkey.id}
-                      className="flex items-center justify-between gap-3 px-4 sm:px-5 py-3.5 transition-colors hover:bg-night-soft/30"
+                      className="flex items-center justify-between gap-2 px-3 py-2 transition-colors hover:bg-night-soft/30"
                     >
-                      <div className="flex min-w-0 items-center gap-3">
+                      <div className="flex min-w-0 items-center gap-2.5">
                         <IconChip>
                           <FingerprintIcon className="h-4 w-4 text-teal" />
                         </IconChip>
                         <div className="min-w-0">
-                          <p className="truncate text-sm font-medium text-paper">
+                          <p className="truncate text-xs font-medium text-paper">
                             {passkey.label}
                           </p>
-                          <p className="mt-0.5 text-xs text-gray-mid">
+                          <p className="text-[11px] text-gray-mid">
                             Last used {passkey.lastUsedAt}
                           </p>
                         </div>
@@ -354,29 +293,28 @@ export function AccountManager({
                         title="Remove passkey"
                         aria-label={`Remove ${passkey.label} passkey`}
                         onClick={() => setPasskeyToDelete(passkey)}
-                        className="shrink-0 rounded-full p-2 text-gray-mid transition-colors hover:bg-red-950/40 hover:text-red-400 active:scale-95"
+                        className="shrink-0 rounded-full p-1.5 text-gray-mid transition-colors hover:bg-red-950/40 hover:text-red-400 active:scale-95"
                       >
-                        <TrashIcon className="h-4 w-4" />
+                        <TrashIcon className="h-3.5 w-3.5" />
                       </button>
                     </div>
                   ))}
 
                   {passkeys.length === 0 && (
-                    <NoContentState
-                      compact
-                      title="No passkeys registered"
-                    />
+                    <p className="px-3 py-3 text-[11px] text-gray-mid">
+                      No passkeys registered yet.
+                    </p>
                   )}
                 </div>
               </div>
 
               {/* Add passkey */}
-              <div className="p-4 sm:p-5 bg-night-soft/20">
+              <div className="p-2.5">
                 <button
                   type="button"
                   disabled={isRegistering}
                   onClick={handleAddPasskey}
-                  className="flex w-full items-center justify-center gap-1.5 rounded-full bg-accent py-2.5 text-xs font-semibold text-paper shadow-sm transition-all hover:bg-accent-hover active:scale-98 disabled:opacity-50"
+                  className="flex w-full items-center justify-center gap-1.5 rounded-full bg-accent py-2 text-xs font-semibold text-night shadow-sm transition-all hover:bg-accent-hover active:scale-98 disabled:opacity-50"
                 >
                   <FingerprintIcon className="h-3.5 w-3.5" />
                   <span>{isRegistering ? 'Creating passkey…' : 'Add passkey'}</span>
@@ -388,7 +326,7 @@ export function AccountManager({
           {/* ── Connected Accounts ── */}
           <section className="flex flex-col">
             <SectionHeading title="Connected Accounts" />
-            <div className="mt-3 flex flex-1 flex-col divide-y divide-tinted/20 overflow-hidden rounded-2xl border border-tinted/20 bg-post-card shadow-sm">
+            <div className="mt-2 flex flex-1 flex-col divide-y divide-tinted/20 overflow-hidden rounded-xl border border-tinted/20 bg-post-card">
               {CONNECTED_ACCOUNTS.map((provider) => {
                 const isConnected = connectedProviders.includes(provider.id);
                 const isPending = pendingProvider === provider.id;
@@ -398,14 +336,14 @@ export function AccountManager({
                 return (
                   <div
                     key={provider.id}
-                    className="flex items-center justify-between gap-3 px-4 sm:px-5 py-4 transition-colors hover:bg-night-soft/30"
+                    className="flex items-center justify-between gap-2 px-3 py-2.5 transition-colors hover:bg-night-soft/30"
                   >
-                    <div className="flex min-w-0 items-center gap-3">
+                    <div className="flex min-w-0 items-center gap-2.5">
                       <IconChip>
                         <provider.Icon className="h-4 w-4" />
                       </IconChip>
                       <div className="min-w-0">
-                        <p className="text-sm font-medium text-paper">
+                        <p className="text-xs font-medium text-paper">
                           {provider.label}
                         </p>
                         {isConnected && !canDisconnect && (
@@ -422,12 +360,12 @@ export function AccountManager({
                           type="button"
                           disabled={isPending}
                           onClick={() => handleDisconnect(provider.id)}
-                          className="shrink-0 rounded-full px-3 py-1 text-xs font-semibold text-red-400 transition-colors hover:bg-red-950/40 hover:text-red-300 disabled:cursor-wait disabled:opacity-50 active:scale-95"
+                          className="shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold text-red-400 transition-colors hover:bg-red-950/40 hover:text-red-300 disabled:cursor-wait disabled:opacity-50 active:scale-95"
                         >
                           {isPending ? 'Disconnecting…' : 'Disconnect'}
                         </button>
                       ) : (
-                        <span className="shrink-0 rounded-full bg-emerald-950/60 px-2.5 py-1 text-[10px] font-semibold text-emerald-400 border border-emerald-800/40">
+                        <span className="shrink-0 rounded-full border border-emerald-800/40 bg-emerald-950/60 px-2 py-0.5 text-[10px] font-semibold text-emerald-400">
                           Connected
                         </span>
                       )
@@ -436,7 +374,7 @@ export function AccountManager({
                         type="button"
                         disabled={isPending}
                         onClick={() => handleConnect(provider.id)}
-                        className="shrink-0 rounded-full bg-night-soft border border-tinted/20 px-3 py-1 text-xs font-semibold text-paper transition-all hover:bg-accent hover:border-accent disabled:cursor-not-allowed disabled:opacity-50 active:scale-95"
+                        className="shrink-0 rounded-full border border-tinted/20 bg-night-soft px-2.5 py-1 text-[11px] font-semibold text-paper transition-all hover:border-accent hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50 active:scale-95"
                       >
                         {isPending ? 'Connecting…' : 'Connect'}
                       </button>
@@ -447,73 +385,6 @@ export function AccountManager({
             </div>
           </section>
         </div>
-
-        {/* ── Active Sessions ── */}
-        <section>
-          <div className="flex items-center justify-between gap-3">
-            <SectionHeading title="Active Sessions" />
-            {sessions.length > 0 && (
-              <button
-                type="button"
-                disabled={isSigningOutAll}
-                onClick={() => setConfirmSignOutAll(true)}
-                className="rounded-full px-3 py-1 text-xs font-semibold text-gray-mid border border-tinted/20 hover:border-red-500/30 hover:bg-red-950/30 hover:text-red-400 transition-all disabled:opacity-50 active:scale-95"
-              >
-                {isSigningOutAll ? 'Signing out all…' : 'Sign out all'}
-              </button>
-            )}
-          </div>
-          <div className="mt-3 divide-y divide-tinted/20 overflow-hidden rounded-2xl border border-tinted/20 bg-post-card shadow-sm">
-            {sessions.map((session) => (
-              <div
-                key={session.id}
-                className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-4 sm:px-5 py-4 transition-colors hover:bg-night-soft/30"
-              >
-                <div className="flex min-w-0 items-center gap-3">
-                  <IconChip>
-                    <LaptopIcon className="h-4 w-4 text-teal" />
-                  </IconChip>
-                  <div className="min-w-0">
-                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                      <p className="text-sm font-medium text-paper">
-                        {session.device}
-                      </p>
-                      {session.isCurrent && (
-                        <span className="rounded-full bg-night px-2 py-0.5 text-[10px] font-semibold text-teal border border-tinted/20">
-                          This device
-                        </span>
-                      )}
-                    </div>
-                    <p className="mt-0.5 text-xs text-gray-mid">
-                      {session.location} · Started {session.startedAt}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex shrink-0 items-center justify-between sm:justify-end gap-3 pl-12 sm:pl-0">
-                  <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-400">
-                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-                    Active
-                  </span>
-                  <button
-                    type="button"
-                    disabled={signingOutSessionId === session.id}
-                    onClick={() => setSessionToSignOut(session)}
-                    className="rounded-lg px-2.5 py-1 text-xs font-semibold text-gray-mid hover:bg-red-950/40 hover:text-red-400 transition-colors disabled:opacity-50 active:scale-95"
-                  >
-                    {signingOutSessionId === session.id ? 'Signing out…' : 'Sign out'}
-                  </button>
-                </div>
-              </div>
-            ))}
-            {sessions.length === 0 && (
-              <NoContentState
-                compact
-                title="No active sessions"
-                description="Sign in to see your active devices here."
-              />
-            )}
-          </div>
-        </section>
       </div>
 
       {/* Remove Passkey Confirmation */}
@@ -533,38 +404,6 @@ export function AccountManager({
         }
         confirmLabel="Remove"
         variant="danger"
-      />
-
-      {/* Revoke Session Confirmation */}
-      <ConfirmDialog
-        isOpen={Boolean(sessionToSignOut)}
-        onClose={() => setSessionToSignOut(null)}
-        onConfirm={handleConfirmSignOutSession}
-        isLoading={Boolean(signingOutSessionId)}
-        title="Revoke Session?"
-        description={
-          sessionToSignOut ? (
-            <>
-              Are you sure you want to sign out of the session on{" "}
-              <b className="text-paper">{sessionToSignOut.device}</b> (
-              {sessionToSignOut.location})?
-            </>
-          ) : null
-        }
-        confirmLabel="Sign Out"
-        variant="warning"
-      />
-
-      {/* Sign Out All Sessions Confirmation */}
-      <ConfirmDialog
-        isOpen={confirmSignOutAll}
-        onClose={() => setConfirmSignOutAll(false)}
-        onConfirm={handleConfirmSignOutAll}
-        isLoading={isSigningOutAll}
-        title="Sign Out All Other Sessions?"
-        description="Are you sure you want to sign out of all active sessions across all devices? You will be returned to the login screen."
-        confirmLabel="Sign Out All"
-        variant="warning"
       />
     </div>
   );

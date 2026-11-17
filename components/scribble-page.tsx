@@ -1,6 +1,6 @@
 'use client';
 
-import Link from 'next/link';
+import { StageLink as Link } from '@/components/paint-transition';
 import { useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import type {
@@ -49,8 +49,6 @@ function CardMeta({
 
 function NoteCard({ entry }: { entry: ScribbleEntry }) {
   const snippet = formatNoteSnippet(entry.description, 180);
-  const isTruncated = snippet.endsWith('...read now');
-  const mainSnippet = isTruncated ? snippet.slice(0, -11) : snippet;
 
   return (
     <article className="py-2">
@@ -59,17 +57,14 @@ function NoteCard({ entry }: { entry: ScribbleEntry }) {
           {entry.title}
         </h2>
         <p className="mt-2 text-sm leading-relaxed text-gray-mid">
-          {mainSnippet}
-          {isTruncated && (
-            <span className="ml-1 inline font-medium text-accent/90 transition-colors group-hover:text-accent">
-              ...read now
+          {snippet}
+          {snippet.endsWith('…') && (
+            <span className="ml-1 font-medium text-accent/90 transition-colors group-hover:text-accent">
+              Read note
             </span>
           )}
         </p>
-        <CardMeta
-          type={entry.type}
-          date={entry.date}
-        />
+        <CardMeta type={entry.type} date={entry.date} />
       </Link>
     </article>
   );
@@ -80,18 +75,19 @@ function EssayCard({ entry, priority = false }: { entry: ScribbleEntry; priority
     <article>
       <Link
         href={entry.href}
-        className="group block rounded-2xl border border-tinted/20 bg-post-card p-4 shadow-xs transition-all duration-300 hover:scale-[1.02] hover:shadow-md"
+        className="group block rounded-2xl border border-tinted/20 bg-post-card p-3 sm:p-4 shadow-xs transition-all duration-300 hover:scale-[1.02] hover:shadow-md"
       >
         <EssayCover title={entry.title} coverImage={entry.coverImage} priority={priority} />
-        <div className="mt-3.5">
-          <h2 className="font-serif text-lg font-normal leading-snug text-paper transition-colors duration-300 group-hover:text-accent">
+        <div className="mt-2.5 sm:mt-3.5">
+          <h2 className="font-serif text-base sm:text-lg font-normal leading-snug text-paper transition-colors duration-300 group-hover:text-accent">
             {entry.title}
           </h2>
-          <p className="mt-1.5 text-sm leading-relaxed text-gray-mid">{stripMarkdown(entry.description)}</p>
-          <CardMeta
-            type={entry.type}
-            date={entry.date}
-          />
+          <p className="mt-1 sm:mt-1.5 text-xs sm:text-sm leading-relaxed text-gray-mid line-clamp-2 sm:line-clamp-none">
+            {stripMarkdown(entry.subtitle || entry.description)}
+          </p>
+          <div className="mt-2 sm:mt-0">
+            <CardMeta type={entry.type} date={entry.date} />
+          </div>
         </div>
       </Link>
     </article>
@@ -260,7 +256,7 @@ export function ScribblePage({ entries }: ScribblePageProps) {
             <span className="ml-3 text-sea-blue">{entries.length}</span>
           </h1>
           <p className="mt-2 font-serif text-lg italic text-ink-soft md:text-xl">
-            Writing and thinking, shared openly.
+            Long essays and short notes. Essays when I have an answer, notes when I only have a question.
           </p>
         </div>
         <div className="relative w-full max-w-xs pt-1">

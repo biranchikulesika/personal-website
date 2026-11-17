@@ -9,3 +9,27 @@ export function isAdminRole(
 ): role is "super_admin" | "content_admin" {
   return role === "super_admin" || role === "content_admin";
 }
+
+// ── Admin allowlist ────────────────────────────────────────────────────────
+// This is a single-owner publication. Only these addresses may sign in to
+// /admin; every alias opens the same admin workspace. Add an address here to
+// grant access, remove it to revoke access. Keep this file server-only.
+
+export const PRIMARY_ADMIN_EMAIL = "biranchikulesika@gmail.com";
+
+export const ALLOWED_ADMIN_EMAILS = [
+  PRIMARY_ADMIN_EMAIL,
+  "biranchi.dev@proton.me",
+  "biranchi@kulesika.in",
+  "kulesikabiranchi@gmail.com",
+] as const;
+
+/** Case-insensitive exact match against the hardcoded allowlist. */
+export function isAllowedAdminEmail(
+  email: string | null | undefined,
+): boolean {
+  if (!email) return false;
+  return (ALLOWED_ADMIN_EMAILS as readonly string[]).includes(
+    email.trim().toLowerCase(),
+  );
+}

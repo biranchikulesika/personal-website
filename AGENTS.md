@@ -209,7 +209,7 @@ The platform strictly follows a **4-tier layered architecture**. Maintain clean,
 - **Build**: `npm run build`
 - **Linting**: `npm run lint`
 - **Automated Tests**: `npm test` _(runs native test suite via `npx tsx --test tests/_.test.ts`)\*
-- **Node Version**: `>=24.16.0` _(enforced via `.nvmrc`: `24.18.0`)_
+- **Node Version**: `>=26.13.1` _(LTS Lithium; enforced via `.nvmrc`: `26.13.1`)_
 
 ### Verification Mandate
 

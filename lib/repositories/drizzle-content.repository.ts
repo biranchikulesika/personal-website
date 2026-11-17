@@ -164,7 +164,7 @@ export class DrizzleContentRepository implements ContentRepository {
         title: "Notes",
         href: "/scribble",
         subheader:
-          "Things I want to share, stories, opinions, observations, and thoughts.",
+          "Shorter and rougher than essays. What I learned today, what broke, what I'm still confused about.",
         items: publishedNotes,
       },
       library,
@@ -182,6 +182,7 @@ export class DrizzleContentRepository implements ContentRepository {
       id: row.slug,
       slug: row.slug,
       title: row.title,
+      subtitle: row.subtitle ?? undefined,
       description: row.description,
       date: row.publishedAt ?? "",
       persona: (row.persona as Persona) ?? "builder",
@@ -193,7 +194,8 @@ export class DrizzleContentRepository implements ContentRepository {
     return {
       title: "Writing",
       href: "/scribble",
-      subheader: "Thoughts and ideas I want to explore and explain",
+      subheader:
+        "Long essays where I slow down and explain an idea properly. Mostly about building software, breaking systems, and the philosophy behind both.",
       items,
     };
   }
@@ -208,7 +210,8 @@ export class DrizzleContentRepository implements ContentRepository {
     return {
       title: "Library",
       href: "/library",
-      subheader: "Books I've read, loved, and recommend for others to read.",
+      subheader:
+        "Books that changed how I think, with the one idea from each that stuck. Not a must-read list, just the shelf I keep coming back to.",
       items: rows.map(bookRowToDomain),
     };
   }
@@ -541,6 +544,7 @@ export class DrizzleContentRepository implements ContentRepository {
         id: post.slug,
         type: "essay" as const,
         title: post.title,
+        subtitle: post.subtitle,
         description: post.description,
         date: post.publishedAt,
         persona: post.persona ?? "builder",

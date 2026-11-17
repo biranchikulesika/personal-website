@@ -599,6 +599,49 @@ export function LockIcon({ className }: IconProps) {
 }
 
 /**
+ * Settings: gear used by the admin account menu.
+ */
+export function SettingsIcon({ className }: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden
+    >
+      <circle cx="12" cy="12" r="3" />
+      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+    </svg>
+  );
+}
+
+/**
+ * Log out: door with an arrow, used by the admin account menu.
+ */
+export function LogoutIcon({ className }: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden
+    >
+      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+      <path d="m16 17 5-5-5-5" />
+      <path d="M21 12H9" />
+    </svg>
+  );
+}
+
+/**
  * Close / Dismiss icon.
  */
 export function CloseIcon({ className }: IconProps) {
@@ -790,6 +833,175 @@ export function EllipsisVerticalIcon({ className }: IconProps) {
       <circle cx="12" cy="5" r="1.5" />
       <circle cx="12" cy="12" r="1.5" />
       <circle cx="12" cy="19" r="1.5" />
+    </svg>
+  );
+}
+
+/**
+ * Home: Overview navigation item.
+ */
+export function HomeIcon({ className }: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden
+    >
+      <path d="M3 10.5 12 3l9 7.5" />
+      <path d="M5.25 9.75v9.75a1.5 1.5 0 0 0 1.5 1.5H10v-5.25h4V21h3.25a1.5 1.5 0 0 0 1.5-1.5V9.75" />
+    </svg>
+  );
+}
+
+/**
+ * Library: content library navigation item.
+ */
+export function LibraryIcon({ className }: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden
+    >
+      <path d="M4 19.5V5.25A2.25 2.25 0 0 1 6.25 3H20v15H6.25A2.25 2.25 0 0 0 4 20.25" />
+      <path d="M4 19.5A2.25 2.25 0 0 0 6.25 21.75H20" />
+      <path d="M8 7h8M8 11h6" />
+    </svg>
+  );
+}
+
+/**
+ * Compose: writing / new document navigation item.
+ */
+export function ComposeIcon({ className }: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden
+    >
+      <path d="M16.5 3.75a2.121 2.121 0 0 1 3 3L7.5 18.75 3 20.25l1.5-4.5L16.5 3.75Z" />
+      <path d="m15 5.25 3.75 3.75" />
+    </svg>
+  );
+}
+
+/**
+ * Users: audience / subscribers navigation item.
+ */
+export function UsersIcon({ className }: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden
+    >
+      <path d="M15.75 19.5v-1.5a3.75 3.75 0 0 0-3.75-3.75h-4.5A3.75 3.75 0 0 0 3.75 18v1.5" />
+      <circle cx="9.75" cy="7.5" r="3.25" />
+      <path d="M17.25 11.25a3 3 0 1 0 0-6M20.25 19.5v-1.5a3.75 3.75 0 0 0-2.25-3.44" />
+    </svg>
+  );
+}
+
+/**
+ * Plus: primary create buttons.
+ */
+export function PlusIcon({ className }: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      className={className}
+      aria-hidden
+    >
+      <path d="M12 5v14M5 12h14" />
+    </svg>
+  );
+}
+
+/**
+ * Grid: grid view toggle.
+ */
+export function GridIcon({ className }: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden
+    >
+      <rect x="3.75" y="3.75" width="7" height="7" rx="1.5" />
+      <rect x="13.25" y="3.75" width="7" height="7" rx="1.5" />
+      <rect x="3.75" y="13.25" width="7" height="7" rx="1.5" />
+      <rect x="13.25" y="13.25" width="7" height="7" rx="1.5" />
+    </svg>
+  );
+}
+
+/**
+ * List: list view toggle.
+ */
+export function ListIcon({ className }: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden
+    >
+      <path d="M8.25 6.75h12M8.25 12h12M8.25 17.25h12M3.75 6.75h.008M3.75 12h.008M3.75 17.25h.008" />
+    </svg>
+  );
+}
+
+/**
+ * Archive: archive row/bulk action.
+ */
+export function ArchiveIcon({ className }: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden
+    >
+      <rect x="3" y="4.5" width="18" height="4" rx="1.25" />
+      <path d="M4.5 8.5v10A1.5 1.5 0 0 0 6 20h12a1.5 1.5 0 0 0 1.5-1.5v-10M10 12.5h4" />
     </svg>
   );
 }

@@ -5,6 +5,7 @@ import {
   nowSlug,
   formatDisplayDate,
   formatDisplayDateTime,
+  isAtLeastOneYearApart,
   formatNoteSnippet,
   formatOverviewSnippet,
   stripMarkdown,
@@ -71,6 +72,21 @@ test("formatDisplayDate passes through pre-formatted strings", () => {
 
 test("formatDisplayDate handles empty input", () => {
   assert.equal(formatDisplayDate(""), "");
+});
+
+// ── isAtLeastOneYearApart ───────────────────────────────────────────────────
+
+test("isAtLeastOneYearApart requires a full calendar year", () => {
+  assert.equal(isAtLeastOneYearApart("2025-08-20", "2026-08-20"), true);
+  assert.equal(isAtLeastOneYearApart("2026-08-20", "2025-08-20"), true);
+  assert.equal(isAtLeastOneYearApart("2025-08-20", "2026-08-19"), false);
+  assert.equal(isAtLeastOneYearApart("2026-08-20", "2026-08-20"), false);
+  assert.equal(isAtLeastOneYearApart("2025-12-31", "2026-01-01"), false);
+});
+
+test("isAtLeastOneYearApart rejects invalid input", () => {
+  assert.equal(isAtLeastOneYearApart("", "2026-08-20"), false);
+  assert.equal(isAtLeastOneYearApart("2026-08-20", "not-a-date"), false);
 });
 
 // ── formatDisplayDateTime ───────────────────────────────────────────────────
@@ -229,10 +245,11 @@ test("formatNoteSnippet returns full string if within limit", () => {
   assert.equal(formatNoteSnippet(["Short", "paragraph"], 50), "Short paragraph");
 });
 
-test("formatNoteSnippet truncates cleanly and appends ...read now when limit exceeded", () => {
+test("formatNoteSnippet truncates cleanly and ends with an ellipsis when limit exceeded", () => {
   const longText = "This is a longer atomic note discussing architecture design principles and systems thinking across modern web applications.";
   const formatted = formatNoteSnippet(longText, 60);
-  assert.ok(formatted.endsWith("...read now"), "snippet must end with ...read now");
+  assert.ok(formatted.endsWith("…"), "snippet must end with an ellipsis");
+  assert.ok(!formatted.includes("read now"), "snippet must not embed a call to action");
   assert.ok(!formatted.includes("applications"), "exceeded text should be trimmed");
 });
 

@@ -251,6 +251,10 @@ CREATE TABLE IF NOT EXISTS "public"."media" (
 
 ALTER TABLE "public"."media" ADD COLUMN IF NOT EXISTS "tags" "text"[] DEFAULT '{}'::"text"[];
 
+-- Backfill before tightening, so the NOT NULL sticks on databases that predate the column.
+UPDATE "public"."media" SET "tags" = '{}'::"text"[] WHERE "tags" IS NULL;
+ALTER TABLE "public"."media" ALTER COLUMN "tags" SET NOT NULL;
+
 
 ALTER TABLE "public"."media" OWNER TO "postgres";
 
@@ -917,8 +921,7 @@ ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TAB
 -- \unrestrict P4K1L9vIoKpgeQSxpuSciLmI42Pa4bhQ0metgWVJmS5lZ6Vbdk5qPNg6QU4Ukse
 
 -- ── Contributions & Patronage (Razorpay & Direct Support) ───────────────────
--- NOTE: live Supabase currently lacks this table; it is re-added here because
--- the app writes to public.contributions via the service role (Razorpay flow).
+-- Written by the app via the service role (Razorpay flow).
 
 CREATE TABLE IF NOT EXISTS "public"."contributions" (
     "id" text PRIMARY KEY,
@@ -953,3 +956,26 @@ GRANT ALL ON TABLE "public"."contributions" TO "service_role";
 INSERT INTO storage.buckets (id, name, public)
     VALUES ('media', 'media', true)
     ON CONFLICT (id) DO NOTHING;
+
+-- ── Storage object policies ───────────────────────────────────────────────────
+-- Mirrors production: public read for the media bucket, authenticated write.
+
+DROP POLICY IF EXISTS "Admin Full Access to Storage" ON "storage"."objects";
+CREATE POLICY "Admin Full Access to Storage" ON "storage"."objects" FOR ALL TO PUBLIC
+    USING ((auth.role() = 'authenticated'::text));
+
+DROP POLICY IF EXISTS "media_select_public" ON "storage"."objects";
+CREATE POLICY "media_select_public" ON "storage"."objects" FOR SELECT TO PUBLIC
+    USING ((bucket_id = 'media'::text));
+
+DROP POLICY IF EXISTS "media_insert_authenticated" ON "storage"."objects";
+CREATE POLICY "media_insert_authenticated" ON "storage"."objects" FOR INSERT TO PUBLIC
+    WITH CHECK (((bucket_id = 'media'::text) AND (auth.role() = 'authenticated'::text)));
+
+DROP POLICY IF EXISTS "media_update_authenticated" ON "storage"."objects";
+CREATE POLICY "media_update_authenticated" ON "storage"."objects" FOR UPDATE TO PUBLIC
+    USING (((bucket_id = 'media'::text) AND (auth.role() = 'authenticated'::text)));
+
+DROP POLICY IF EXISTS "media_delete_authenticated" ON "storage"."objects";
+CREATE POLICY "media_delete_authenticated" ON "storage"."objects" FOR DELETE TO PUBLIC
+    USING (((bucket_id = 'media'::text) AND (auth.role() = 'authenticated'::text)));

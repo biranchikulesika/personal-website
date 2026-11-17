@@ -65,6 +65,93 @@ test("toggle post status switches between published and unpublished", async () =
   await service.deletePost("toggle-lifecycle-test");
 });
 
+test("publishing a draft stamps the real publish date, not the draft date", async () => {
+  const repo = new InMemoryTestContentRepository();
+  const service = new ContentService(repo);
+  const today = new Date().toISOString().split("T")[0];
+  const draft = {
+    slug: "draft-publish-date-test",
+    title: "Draft Date Test",
+    description: "Test",
+    tags: [],
+    publishedAt: "2026-08-20",
+    lastEditedAt: "2026-08-20",
+    targetAudience: "Test",
+    intro: [],
+    sections: [],
+    books: [],
+  };
+
+  await service.savePost({ ...draft, status: "unpublished" }, "builder");
+
+  const saved = await service.savePost(
+    { ...draft, status: "published" },
+    "builder",
+  );
+  assert.equal(saved.publishedAt, today);
+
+  const toggled = await service.togglePostStatus(draft.slug);
+  assert.equal(toggled?.status, "unpublished");
+  assert.equal(toggled?.publishedAt, today, "unpublishing keeps the publish date");
+
+  await service.deletePost(draft.slug);
+});
+
+test("publishing a draft keeps a publish date the author chose", async () => {
+  const repo = new InMemoryTestContentRepository();
+  const service = new ContentService(repo);
+  const draft = {
+    slug: "backdated-publish-test",
+    title: "Backdated Publish Test",
+    description: "Test",
+    tags: [],
+    publishedAt: "2026-08-20",
+    lastEditedAt: "2026-08-20",
+    targetAudience: "Test",
+    intro: [],
+    sections: [],
+    books: [],
+  };
+
+  await service.savePost({ ...draft, status: "unpublished" }, "builder");
+  const saved = await service.savePost(
+    { ...draft, publishedAt: "2026-09-01", status: "published" },
+    "builder",
+  );
+  assert.equal(saved.publishedAt, "2026-09-01");
+
+  await service.deletePost(draft.slug);
+});
+
+test("publishing a draft through the status toggle stamps today", async () => {
+  const repo = new InMemoryTestContentRepository();
+  const service = new ContentService(repo);
+  const today = new Date().toISOString().split("T")[0];
+
+  await service.savePost(
+    {
+      slug: "toggle-publish-date-test",
+      title: "Toggle Publish Date Test",
+      description: "Test",
+      tags: [],
+      publishedAt: "2026-08-20",
+      lastEditedAt: "2026-08-20",
+      targetAudience: "Test",
+      intro: [],
+      sections: [],
+      books: [],
+      status: "unpublished",
+    },
+    "builder",
+  );
+
+  const toggled = await service.togglePostStatus("toggle-publish-date-test");
+  assert.equal(toggled?.status, "published");
+  assert.equal(toggled?.publishedAt, today);
+
+  await service.deletePost("toggle-publish-date-test");
+});
+
 test("discarding unpublished edits restores the original published post", async () => {
   const repo = new InMemoryTestContentRepository();
   const service = new ContentService(repo);

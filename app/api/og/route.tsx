@@ -170,19 +170,16 @@ async function generateOG(request: NextRequest): Promise<ImageResponse> {
 
   if (type === "home") {
     let siteName = SITE_NAME;
-    let greeting = "HI, I'M BIRANCHI";
-    let headline =
-      "I build things nobody asked for, and write about things I can't stop thinking about.";
+    let headline = "Developer, writer, thinker.";
     let supporting =
-      "Learning, questioning, unlearning, and occasionally figuring things out";
+      "I build things nobody asked for, and write about things I can't stop thinking about.";
     let heroImageSrc = "/biranchi.jpeg";
 
     try {
       const site = SITE_CONFIG;
       if (site?.identity?.name) siteName = site.identity.name;
-      if (site?.hero?.greeting) greeting = site.hero.greeting;
       if (site?.hero?.headline) headline = site.hero.headline;
-      if (site?.hero?.points?.length) supporting = site.hero.points[0];
+      if (site?.hero?.supporting) supporting = site.hero.supporting;
       if (site?.hero?.image?.src) heroImageSrc = site.hero.image.src;
     } catch {
       // Use fallback
@@ -194,7 +191,6 @@ async function generateOG(request: NextRequest): Promise<ImageResponse> {
 
     return generateHomeOG({
       siteName,
-      greeting,
       headline,
       supporting,
       heroImageB64,
@@ -239,7 +235,7 @@ async function generateOG(request: NextRequest): Promise<ImageResponse> {
     let title = "Library";
     let description =
       searchParams.get("description") ||
-      "Books I've read, loved, and recommend for others to read.";
+      "Books that changed how I think, with the one idea from each that stuck. Not a must-read list, just the shelf I keep coming back to.";
     let totalCount = 0;
 
     try {
@@ -249,7 +245,7 @@ async function generateOG(request: NextRequest): Promise<ImageResponse> {
         title = library.title || "Library";
         description =
           searchParams.get("description") ||
-          "Books I've read, loved, and recommend for others to read.";
+          "Books that changed how I think, with the one idea from each that stuck. Not a must-read list, just the shelf I keep coming back to.";
         books = selectBooksForOG(library.items);
         totalCount = library.items.length;
       }
@@ -304,7 +300,8 @@ async function generateOG(request: NextRequest): Promise<ImageResponse> {
       persona?: string;
     }[] = [];
     const description =
-      searchParams.get("description") || "Writing and thinking, shared openly.";
+      searchParams.get("description") ||
+      "Long essays and short notes. Essays when I have an answer, notes when I only have a question.";
     let totalCount = 0;
 
     try {
@@ -331,7 +328,7 @@ async function generateOG(request: NextRequest): Promise<ImageResponse> {
     let entryCount = 1;
     const description =
       searchParams.get("description") ||
-      "What I’m reading, exploring, working on, and thinking about these days.";
+      "What I’m focused on right now, what I’m building, what I’m reading, and what I’m confused about.";
 
     try {
       const service = new ContentService();
@@ -389,13 +386,11 @@ async function generateOG(request: NextRequest): Promise<ImageResponse> {
 
 function generateHomeOG({
   siteName,
-  greeting,
   headline,
   supporting,
   heroImageB64,
 }: {
   siteName: string;
-  greeting: string;
   headline: string;
   supporting: string;
   heroImageB64: string | null;
@@ -1301,7 +1296,8 @@ function generateLibraryOG({
   totalCount: number;
 }) {
   const desc =
-    description || "Books I've read, loved, and recommend for others to read.";
+    description ||
+    "Books that changed how I think, with the one idea from each that stuck. Not a must-read list, just the shelf I keep coming back to.";
 
   const rotations = [-7, 0, 7];
 
@@ -1583,7 +1579,9 @@ function generateScribbleOG({
   }[];
   totalCount: number;
 }) {
-  const desc = description || "Writing and thinking, shared openly.";
+  const desc =
+    description ||
+    "Long essays and short notes. Essays when I have an answer, notes when I only have a question.";
   const featured = entries.slice(0, 3);
   const hasEntries = featured.length > 0;
 
@@ -1882,7 +1880,7 @@ function generateNowOG({
 }) {
   const desc =
     description ||
-    "What I’m reading, exploring, working on, and thinking about these days.";
+    "What I’m focused on right now, what I’m building, what I’m reading, and what I’m confused about.";
 
   // Extract snippet from latest entry content
   const contentSnippet = latestEntry

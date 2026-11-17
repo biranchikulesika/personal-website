@@ -17,16 +17,14 @@ export const SITE_CONFIG: SiteContent = {
     ],
   },
   hero: {
-    greeting: "HI, I'M BIRANCHI",
+    greeting: "",
     name: "",
-    headline:
+    headline: "Developer, writer, thinker.",
+    supporting:
       "I build things nobody asked for, and write about things I can't stop thinking about.",
-    supporting: "",
-    points: [
-      "Learning, questioning, unlearning, and occasionally figuring things out",
-    ],
+    points: [],
     newsletter: {
-      note: "Thoughts, systems, stories, and ideas that stay with me long enough to write about.",
+      note: "An essay when it's ready, plus short notes from what I'm building and reading. No spam, no schedule, unsubscribe anytime.",
       placeholder: "Your email address",
       button: "Subscribe",
     },
@@ -34,6 +32,24 @@ export const SITE_CONFIG: SiteContent = {
       src: "/biranchi.webp",
       alt: "A portrait of Biranchi Kulesika",
     },
+    gallery: [
+      {
+        src: "/biranchi.webp",
+        alt: "A portrait of Biranchi Kulesika",
+      },
+      {
+        src: "/biranchi-2.jpeg",
+        alt: "Biranchi Kulesika",
+      },
+      {
+        src: "/biranchi-3.jpeg",
+        alt: "Biranchi Kulesika",
+      },
+      {
+        src: "/biranchi-4.jpeg",
+        alt: "Biranchi Kulesika",
+      },
+    ],
   },
   footer: {
     bio: {
