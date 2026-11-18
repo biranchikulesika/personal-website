@@ -122,29 +122,27 @@ export async function BlogPostView({ post }: { post: BlogPost }) {
 
             <div className="mt-8 flex w-full items-center justify-between gap-2.5 border-y border-tinted/20 py-2.5 sm:gap-3 sm:py-3">
               {/* Left: Persona Identifier Badge */}
-              <div className="flex shrink-0 items-center whitespace-nowrap">
-                <PersonaBadge persona={post.persona} showIcon={false} />
-              </div>
+              <PersonaBadge persona={post.persona} showIcon={false} />
 
               {/* Right: Pub. / Ed. Dates & Elevated Share Menu */}
-              <div className="flex shrink-0 items-center gap-2 font-mono text-[11px] whitespace-nowrap sm:gap-3 sm:text-xs">
+              <div className="ml-auto flex shrink-0 items-center gap-2 font-mono text-[11px] whitespace-nowrap sm:gap-3 sm:text-xs">
                 <div
-                  className="flex shrink-0 items-center gap-1 text-ink-soft sm:gap-1.5"
+                  className="flex shrink-0 items-center gap-1.5 text-ink-soft"
                   title={`Published: ${formatPostDate(post.publishedAt)}`}
                 >
-                  <CalendarIcon className="h-3 w-3 text-ink-soft sm:h-3.5 sm:w-3.5" />
-                  <span className="font-sans text-paper/95">{formatPostDate(post.publishedAt)}</span>
+                  <CalendarIcon className="h-3 w-3 shrink-0 text-ink-soft sm:h-3.5 sm:w-3.5" />
+                  <span className="font-sans leading-none text-paper/95">{formatPostDate(post.publishedAt)}</span>
                 </div>
 
                 {isAtLeastOneYearApart(post.publishedAt, post.lastEditedAt) && (
                   <>
                     <span className="text-tinted" aria-hidden="true">·</span>
                     <div
-                      className="flex shrink-0 items-center gap-1 text-ink-soft sm:gap-1.5"
+                      className="flex shrink-0 items-center gap-1.5 text-ink-soft"
                       title={`Last Edited: ${formatDisplayDate(post.lastEditedAt)}`}
                     >
-                      <EditHistoryIcon className="h-3 w-3 text-ink-soft sm:h-3.5 sm:w-3.5" />
-                      <span className="font-sans text-paper/95">{formatDisplayDate(post.lastEditedAt)}</span>
+                      <EditHistoryIcon className="h-3 w-3 shrink-0 text-ink-soft sm:h-3.5 sm:w-3.5" />
+                      <span className="font-sans leading-none text-paper/95">{formatDisplayDate(post.lastEditedAt)}</span>
                     </div>
                   </>
                 )}

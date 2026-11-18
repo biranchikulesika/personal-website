@@ -36,18 +36,16 @@ export async function NotePageView({ note }: { note: NoteItem }) {
 
             <div className="mt-8 flex w-full items-center justify-between gap-2.5 border-y border-tinted/20 py-2.5 sm:gap-3 sm:py-3">
               {/* Left: Persona Identifier Badge */}
-              <div className="flex shrink-0 items-center whitespace-nowrap">
-                <PersonaBadge persona={note.persona} showIcon={false} />
-              </div>
+              <PersonaBadge persona={note.persona} showIcon={false} />
 
               {/* Right: Pub. Date & Elevated Share Menu */}
-              <div className="flex shrink-0 items-center gap-2 font-mono text-[11px] whitespace-nowrap sm:gap-3 sm:text-xs">
+              <div className="ml-auto flex shrink-0 items-center gap-2 font-mono text-[11px] whitespace-nowrap sm:gap-3 sm:text-xs">
                 <div
-                  className="flex shrink-0 items-center gap-1 text-ink-soft sm:gap-1.5"
+                  className="flex shrink-0 items-center gap-1.5 text-ink-soft"
                   title={`Published: ${formatDisplayDate(note.date)}`}
                 >
-                  <CalendarIcon className="h-3 w-3 text-ink-soft sm:h-3.5 sm:w-3.5" />
-                  <span className="font-sans text-paper/95">{formatDisplayDate(note.date)}</span>
+                  <CalendarIcon className="h-3 w-3 shrink-0 text-ink-soft sm:h-3.5 sm:w-3.5" />
+                  <span className="font-sans leading-none text-paper/95">{formatDisplayDate(note.date)}</span>
                 </div>
 
                 <div className="h-3 w-[1px] bg-tinted/30 shrink-0 sm:h-3.5" aria-hidden="true" />

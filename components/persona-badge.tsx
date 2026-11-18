@@ -58,7 +58,7 @@ export function PersonaBadge({
           <PersonaIcon persona={key} className="h-3 w-3 shrink-0" />
         </span>
       )}
-      <span className="whitespace-nowrap">{label}</span>
+      {label}
     </span>
   );
 }

@@ -111,11 +111,11 @@ export function MDXPreview({
 
             {/* Right: Pub. Date */}
             <div
-              className="flex shrink-0 items-center gap-1 text-[11px] font-mono text-ink-soft sm:gap-1.5 sm:text-xs"
+              className="flex shrink-0 items-center gap-1.5 text-[11px] font-mono text-ink-soft sm:text-xs"
               title={`Published: ${effectiveDate}`}
             >
-              <CalendarIcon className="h-3 w-3 text-ink-soft sm:h-3.5 sm:w-3.5" />
-              <span className="font-sans text-paper/95">{effectiveDate}</span>
+              <CalendarIcon className="h-3 w-3 shrink-0 text-ink-soft sm:h-3.5 sm:w-3.5" />
+              <span className="font-sans leading-none text-paper/95">{effectiveDate}</span>
             </div>
           </div>
         </header>
