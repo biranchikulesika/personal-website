@@ -4,6 +4,7 @@ import {
   slugify,
   nowSlug,
   formatDisplayDate,
+  formatPostDate,
   formatDisplayDateTime,
   isAtLeastOneYearApart,
   formatNoteSnippet,
@@ -72,6 +73,45 @@ test("formatDisplayDate passes through pre-formatted strings", () => {
 
 test("formatDisplayDate handles empty input", () => {
   assert.equal(formatDisplayDate(""), "");
+});
+
+// ── formatPostDate ──────────────────────────────────────────────────────────
+
+test("formatPostDate omits publication year when publication year and current year are the same", () => {
+  const current2026 = new Date("2026-11-19T00:00:00");
+
+  // ISO date format (YYYY-MM-DD)
+  assert.equal(formatPostDate("2026-03-12", current2026), "Mar 12");
+  assert.equal(formatPostDate("2026-08-20", current2026), "Aug 20");
+
+  // ISO timestamp with time and timezone
+  assert.equal(formatPostDate("2026-03-12T14:30:00.000Z", current2026), "Mar 12");
+
+  // Year and month only
+  assert.equal(formatPostDate("2026-09", current2026), "Sep");
+
+  // Pre-formatted string
+  assert.equal(formatPostDate("Mar 12, 2026", current2026), "Mar 12");
+});
+
+test("formatPostDate includes publication year when publication year and current year differ", () => {
+  const current2026 = new Date("2026-11-19T00:00:00");
+
+  // Previous year
+  assert.equal(formatPostDate("2025-03-12", current2026), "Mar 12, 2025");
+  assert.equal(formatPostDate("2024-08-20T14:30:00.000Z", current2026), "Aug 20, 2024");
+  assert.equal(formatPostDate("2025-09", current2026), "Sep 2025");
+  assert.equal(formatPostDate("Mar 12, 2025", current2026), "Mar 12, 2025");
+
+  // In a future year, 2026 posts include the publication year
+  const future2027 = new Date("2027-01-15T00:00:00");
+  assert.equal(formatPostDate("2026-03-12", future2027), "Mar 12, 2026");
+});
+
+test("formatPostDate handles edge cases and invalid/empty inputs", () => {
+  assert.equal(formatPostDate(""), "");
+  assert.equal(formatPostDate("   "), "");
+  assert.equal(formatPostDate("2026"), "2026");
 });
 
 // ── isAtLeastOneYearApart ───────────────────────────────────────────────────

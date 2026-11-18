@@ -1,5 +1,5 @@
 import type { BlogPost, PostSection } from "@/lib/types";
-import { formatDisplayDate, isAtLeastOneYearApart, postToDocs } from "@/lib/utils";
+import { formatDisplayDate, formatPostDate, isAtLeastOneYearApart, postToDocs } from "@/lib/utils";
 import { renderMdx } from "@/lib/mdx";
 import { StageLink as Link } from "@/components/paint-transition";
 import {
@@ -130,10 +130,10 @@ export async function BlogPostView({ post }: { post: BlogPost }) {
               <div className="flex shrink-0 items-center gap-2 font-mono text-[11px] whitespace-nowrap sm:gap-3 sm:text-xs">
                 <div
                   className="flex shrink-0 items-center gap-1 text-ink-soft sm:gap-1.5"
-                  title={`Published: ${formatDisplayDate(post.publishedAt)}`}
+                  title={`Published: ${formatPostDate(post.publishedAt)}`}
                 >
                   <CalendarIcon className="h-3 w-3 text-ink-soft sm:h-3.5 sm:w-3.5" />
-                  <span className="font-sans text-paper/95">{formatDisplayDate(post.publishedAt)}</span>
+                  <span className="font-sans text-paper/95">{formatPostDate(post.publishedAt)}</span>
                 </div>
 
                 {isAtLeastOneYearApart(post.publishedAt, post.lastEditedAt) && (

@@ -1,4 +1,4 @@
-import { formatDisplayDate } from '@/lib/utils';
+import { formatPostDate } from '@/lib/utils';
 
 /**
  * PostBlock: rendered from a `<Post slug="..." title="..." ... />` tag inside
@@ -27,7 +27,7 @@ export function PostBlock({
           {date && (
             <>
               <span className="text-ink-soft/40">·</span>
-              <span>{formatDisplayDate(date)}</span>
+              <span>{formatPostDate(date)}</span>
             </>
           )}
         </div>

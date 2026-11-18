@@ -12,7 +12,7 @@ import {
   ChevronRightIcon,
   SearchIcon,
 } from './icons';
-import { formatDisplayDate, formatNoteSnippet, stripMarkdown } from '@/lib/utils';
+import { formatDisplayDate, formatNoteSnippet, formatPostDate, stripMarkdown } from '@/lib/utils';
 import { PERSONA_LABELS, ALL_PERSONAS } from '@/lib/constants';
 import { EssayCover } from './ui/essay-cover';
 import { NoSearchResults, NoContentState } from './ui/states';
@@ -36,11 +36,12 @@ function CardMeta({
   type: string;
   date: string;
 }) {
+  const displayDate = type === 'essay' ? formatPostDate(date) : formatDisplayDate(date);
   return (
     <p className="mt-3 flex items-center gap-1.5 text-xs text-gray-mid">
       <span>{TYPE_LABELS[type]}</span>
       <span className="h-1 w-1 rounded-full bg-gray-mid" aria-hidden />
-      <span>{formatDisplayDate(date)}</span>
+      <span>{displayDate}</span>
     </p>
   );
 }

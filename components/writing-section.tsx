@@ -1,7 +1,7 @@
 import { StageLink as Link } from '@/components/paint-transition';
 import type { BlogPost, SectionGroup, WritingItem } from '@/lib/types';
 import { SectionHeading } from './section-heading';
-import { formatDisplayDate, formatOverviewSnippet } from '@/lib/utils';
+import { formatOverviewSnippet, formatPostDate } from '@/lib/utils';
 import { EssayCover } from './ui/essay-cover';
 
 interface WritingSectionProps {
@@ -31,7 +31,7 @@ export function EssayCard({ item, priority = false }: { item: WritingItem; prior
           )}
         </div>
         <div className="mt-2.5 sm:mt-4 flex items-center border-t border-tinted/15 pt-2 sm:pt-3 text-[11px] sm:text-xs text-gray-mid">
-          <span>{formatDisplayDate(item.date)}</span>
+          <span>{formatPostDate(item.date)}</span>
         </div>
       </Link>
     </article>

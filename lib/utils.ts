@@ -88,22 +88,38 @@ export function sanitizeRedirectPath(
 
 // Date utilities ---------------------------------------------------------------
 
+export interface FormatDisplayDateOptions {
+  omitCurrentYear?: boolean;
+  now?: Date;
+}
+
 /**
  * Formats a date string for display. Accepts either an ISO date
- * ("2026-03-12") or a pre-formatted string ("Mar 12, 2026") and always
- * renders the full day-month-year form.
+ * ("2026-03-12") or a pre-formatted string ("Mar 12, 2026").
+ * By default, renders the full day-month-year form.
+ * When `omitCurrentYear` is true and the date's year matches the current year,
+ * omits the year and renders only the day and month (e.g. "Mar 12").
  */
-export function formatDisplayDate(value: string): string {
+export function formatDisplayDate(value: string, options?: FormatDisplayDateOptions): string {
   if (!value) return '';
   const trimmed = value.trim();
+  if (!trimmed) return '';
 
   // Year only ("2025")
   if (/^\d{4}$/.test(trimmed)) return trimmed;
 
+  const currentYear = (options?.now ?? new Date()).getFullYear();
+
   // Year and month only ("2026-09")
   if (/^\d{4}-\d{2}$/.test(trimmed)) {
+    const pubYear = Number.parseInt(trimmed.slice(0, 4), 10);
     const date = new Date(`${trimmed}-01T00:00:00`);
     if (!Number.isNaN(date.getTime())) {
+      if (options?.omitCurrentYear && pubYear === currentYear) {
+        return date.toLocaleDateString('en-US', {
+          month: 'short',
+        });
+      }
       return date.toLocaleDateString('en-US', {
         month: 'short',
         year: 'numeric',
@@ -114,8 +130,15 @@ export function formatDisplayDate(value: string): string {
   // Full date with optional time/timezone: "2026-03-12", "2026-03-12T14:30:00.000Z", etc.
   if (/^\d{4}-\d{2}-\d{2}/.test(trimmed)) {
     const datePart = trimmed.slice(0, 10);
+    const pubYear = Number.parseInt(datePart.slice(0, 4), 10);
     const date = new Date(`${datePart}T00:00:00`);
     if (!Number.isNaN(date.getTime())) {
+      if (options?.omitCurrentYear && pubYear === currentYear) {
+        return date.toLocaleDateString('en-US', {
+          month: 'short',
+          day: 'numeric',
+        });
+      }
       return date.toLocaleDateString('en-US', {
         month: 'short',
         day: 'numeric',
@@ -124,7 +147,35 @@ export function formatDisplayDate(value: string): string {
     }
   }
 
+  if (options?.omitCurrentYear) {
+    const parsed = new Date(trimmed);
+    if (!Number.isNaN(parsed.getTime())) {
+      const pubYear = parsed.getFullYear();
+      if (pubYear === currentYear) {
+        return parsed.toLocaleDateString('en-US', {
+          month: 'short',
+          day: 'numeric',
+        });
+      }
+      return parsed.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+      });
+    }
+  }
+
   return trimmed;
+}
+
+/**
+ * Formats a post's publication date for display.
+ * When the publication year and current year are the same, omits the year
+ * and renders only the day and month (e.g. "Mar 12").
+ * When they differ, renders the full day-month-year form (e.g. "Mar 12, 2025").
+ */
+export function formatPostDate(value: string, now?: Date): string {
+  return formatDisplayDate(value, { omitCurrentYear: true, now });
 }
 
 /**
