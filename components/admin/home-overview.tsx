@@ -17,7 +17,6 @@ import {
   ExternalLinkIcon,
 } from "@/components/icons";
 import {
-  Button,
   buttonClassName,
   CountStat,
   PageHeader,
@@ -150,19 +149,7 @@ export function HomeOverview({
 
   return (
     <div className="space-y-8">
-      <PageHeader
-        title="Overview"
-        description={`Welcome back, ${userName.split(" ")[0]}. Here is where things stand.`}
-        actions={
-          <Button
-            variant="secondary"
-            onClick={() => onNavigateTab("content")}
-          >
-            Open library
-            <ArrowRightIcon className="h-3.5 w-3.5" />
-          </Button>
-        }
-      />
+      <PageHeader title="Overview" />
 
       {/* Current status */}
       <section aria-labelledby="now-heading">

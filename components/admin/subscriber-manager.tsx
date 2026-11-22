@@ -14,7 +14,6 @@ import { DownloadIcon, SearchIcon, TrashIcon } from "@/components/icons";
 import {
   Badge,
   Button,
-  CountStat,
   PageHeader,
   StatusBadge,
   TextInput,
@@ -95,40 +94,32 @@ export function SubscriberManager({
     <div className="space-y-8">
       <PageHeader
         title="Audience"
-        description="Everyone who subscribed to the newsletter."
         actions={
-          <Button
-            variant="primary"
-            onClick={exportCSV}
-            disabled={subscribers.length === 0}
-          >
-            <DownloadIcon className="h-3.5 w-3.5" />
-            Export CSV
-          </Button>
+          <>
+            {subscribers.length > 0 && (
+              <div className="relative sm:w-64">
+                <SearchIcon className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-mid" />
+                <TextInput
+                  type="search"
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                  placeholder="Search by email…"
+                  aria-label="Search subscribers by email"
+                  className="pl-9"
+                />
+              </div>
+            )}
+            <Button
+              variant="primary"
+              onClick={exportCSV}
+              disabled={subscribers.length === 0}
+            >
+              <DownloadIcon className="h-3.5 w-3.5" />
+              Export CSV
+            </Button>
+          </>
         }
       />
-
-      <section
-        aria-label="Audience counts"
-        className="grid grid-cols-2 gap-3 sm:max-w-md"
-      >
-        <CountStat label="Total subscribers" value={subscribers.length} />
-        <CountStat label="Active subscribers" value={activeCount} />
-      </section>
-
-      {subscribers.length > 0 && (
-        <div className="relative max-w-sm">
-          <SearchIcon className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-mid" />
-          <TextInput
-            type="search"
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search by email…"
-            aria-label="Search subscribers by email"
-            className="pl-9"
-          />
-        </div>
-      )}
 
       {subscribers.length === 0 ? (
         <NoContentState

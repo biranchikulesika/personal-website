@@ -41,7 +41,6 @@ import {
   PageHeader,
   SectionHeading,
   TextInput,
-  Toolbar,
 } from '@/components/admin/ui';
 
 interface Usage {
@@ -100,12 +99,7 @@ export function MediaManager({
     initialOrphanedMedia,
   );
   const [search, setSearch] = useState('');
-  const [activeTag, setActiveTag] = useState<string>('all');
-  const [showOrphanedOnly, setShowOrphanedOnly] = useState(false);
   const [view, setView] = useState<'grid' | 'list'>('grid');
-  const [selectedOrphanedIds, setSelectedOrphanedIds] = useState<Set<string>>(
-    new Set(),
-  );
   const [confirmDelete, setConfirmDelete] = useState<{
     items: MediaItem[];
   } | null>(null);
@@ -139,14 +133,6 @@ export function MediaManager({
   useEffect(() => {
     setSearch(initialSearchQuery);
   }, [initialSearchQuery]);
-
-  const allTags = useMemo(() => {
-    const set = new Set<string>();
-    for (const m of mediaList) {
-      for (const t of tagList(m)) set.add(t);
-    }
-    return Array.from(set).sort();
-  }, [mediaList]);
 
   // Where each asset is referenced: covers, figures, and inline images inside
   // any essay, note, now entry or book — drafts and unpublished items included.
@@ -347,7 +333,7 @@ export function MediaManager({
       setAltText('');
       setFileSize(`${Math.max(1, Math.round(sizeBytes / 1024))} KB`);
       setDimensions(`${width} × ${height}`);
-      setTagsInput(activeTag !== 'all' ? activeTag : '');
+      setTagsInput('');
 
       setIsUploading(true);
     };
@@ -438,18 +424,6 @@ export function MediaManager({
     });
   }
 
-  function toggleOrphanedSelection(id: string) {
-    setSelectedOrphanedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
-        next.add(id);
-      }
-      return next;
-    });
-  }
-
   function requestDelete(items: MediaItem[]) {
     setConfirmDelete({ items });
   }
@@ -482,7 +456,6 @@ export function MediaManager({
         }
       }
       if (ok) {
-        setSelectedOrphanedIds(new Set());
         setConfirmDelete(null);
         setDrawerMedia((current) => {
           if (!current) return null;
@@ -555,20 +528,17 @@ export function MediaManager({
   }, [menuOpenId]);
 
   const filteredMedia = useMemo(() => {
-    const base = showOrphanedOnly ? orphanedList : mediaList;
     const q = search.toLowerCase().trim();
-    return base.filter((m) => {
+    return mediaList.filter((m) => {
       const itemTags = tagList(m);
-      const matchSearch =
+      return (
         !q ||
         m.name.toLowerCase().includes(q) ||
         (m.alt || '').toLowerCase().includes(q) ||
-        itemTags.some((t) => t.includes(q));
-      const matchTag =
-        activeTag === 'all' || itemTags.includes(activeTag.toLowerCase());
-      return matchSearch && matchTag;
+        itemTags.some((t) => t.includes(q))
+      );
     });
-  }, [mediaList, orphanedList, search, activeTag, showOrphanedOnly]);
+  }, [mediaList, search]);
 
   // Drawer: lock scroll, move focus in, Esc closes, arrows page through assets.
   useEffect(() => {
@@ -607,15 +577,6 @@ export function MediaManager({
   const deleteItems = confirmDelete?.items ?? [];
   const deleteUsages = deleteItems.flatMap((item) => usagesFor(item.src));
   const publishedDeleteUsages = deleteUsages.filter((u) => u.published);
-  const selectedOrphanedCount = selectedOrphanedIds.size;
-
-  function tagPillClass(active: boolean) {
-    return `rounded-full px-3 py-1 text-[11px] font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
-      active
-        ? 'bg-accent text-night'
-        : 'border border-tinted/20 bg-night-soft text-gray-mid hover:border-tinted/40 hover:text-paper'
-    }`;
-  }
 
   function markdownFor(media: MediaItem) {
     return `![${media.alt}](${media.src})`;
@@ -651,109 +612,56 @@ export function MediaManager({
 
       <PageHeader
         title="Media"
-        description={`${mediaList.length} asset${mediaList.length === 1 ? '' : 's'} in the library${
-          orphanedList.length > 0 ? ` · ${orphanedList.length} unreferenced in storage` : ''
-        }.`}
         actions={
-          <Button
-            variant="primary"
-            onClick={() => fileInputRef.current?.click()}
-          >
-            <UploadIcon className="h-3.5 w-3.5" />
-            Upload
-          </Button>
+          <div className="flex items-center gap-2">
+            <div className="relative sm:w-72">
+              <SearchIcon className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-mid" />
+              <TextInput
+                type="search"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search name, alt or tags…"
+                aria-label="Search media"
+                className="pl-9"
+              />
+            </div>
+            <div
+              className="inline-flex shrink-0 rounded-lg border border-tinted/30 bg-night p-0.5"
+              role="group"
+              aria-label="View mode"
+            >
+              <button
+                type="button"
+                onClick={() => setView('grid')}
+                aria-pressed={view === 'grid'}
+                aria-label="Grid view"
+                title="Grid view"
+                className={`rounded-md p-1.5 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
+                  view === 'grid'
+                    ? 'bg-post-card text-paper'
+                    : 'text-gray-mid hover:text-paper'
+                }`}
+              >
+                <GridIcon className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setView('list')}
+                aria-pressed={view === 'list'}
+                aria-label="List view"
+                title="List view"
+                className={`rounded-md p-1.5 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
+                  view === 'list'
+                    ? 'bg-post-card text-paper'
+                    : 'text-gray-mid hover:text-paper'
+                }`}
+              >
+                <ListIcon className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
         }
       />
-
-      <Toolbar className="justify-between">
-        <div className="flex flex-wrap items-center gap-1.5">
-          <button
-            type="button"
-            onClick={() => setActiveTag('all')}
-            aria-pressed={activeTag === 'all'}
-            className={tagPillClass(activeTag === 'all')}
-          >
-            All
-          </button>
-          {allTags.map((tag) => (
-            <button
-              key={tag}
-              type="button"
-              onClick={() => setActiveTag(tag)}
-              aria-pressed={activeTag === tag}
-              className={tagPillClass(activeTag === tag)}
-            >
-              {tag}
-            </button>
-          ))}
-          {orphanedSrcs.size > 0 && (
-            <button
-              type="button"
-              onClick={() => {
-                setShowOrphanedOnly((v) => !v);
-                setActiveTag('all');
-              }}
-              aria-pressed={showOrphanedOnly}
-              title="Media assets in the storage bucket that are not used anywhere on the site"
-              className={`rounded-full px-3 py-1 text-[11px] font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
-                showOrphanedOnly
-                  ? 'bg-amber-500/20 text-amber-300 ring-1 ring-amber-500/40'
-                  : 'text-amber-400 ring-1 ring-amber-500/25 hover:bg-amber-500/10'
-              }`}
-            >
-              {orphanedSrcs.size} unreferenced
-            </button>
-          )}
-        </div>
-
-        <div className="flex items-center gap-2">
-          <div className="relative flex-1 sm:w-72 sm:flex-none">
-            <SearchIcon className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-mid" />
-            <TextInput
-              type="search"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search name, alt or tags…"
-              aria-label="Search media"
-              className="pl-9"
-            />
-          </div>
-          <div
-            className="inline-flex shrink-0 rounded-lg border border-tinted/30 bg-night p-0.5"
-            role="group"
-            aria-label="View mode"
-          >
-            <button
-              type="button"
-              onClick={() => setView('grid')}
-              aria-pressed={view === 'grid'}
-              aria-label="Grid view"
-              title="Grid view"
-              className={`rounded-md p-1.5 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
-                view === 'grid'
-                  ? 'bg-post-card text-paper'
-                  : 'text-gray-mid hover:text-paper'
-              }`}
-            >
-              <GridIcon className="h-4 w-4" />
-            </button>
-            <button
-              type="button"
-              onClick={() => setView('list')}
-              aria-pressed={view === 'list'}
-              aria-label="List view"
-              title="List view"
-              className={`rounded-md p-1.5 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
-                view === 'list'
-                  ? 'bg-post-card text-paper'
-                  : 'text-gray-mid hover:text-paper'
-              }`}
-            >
-              <ListIcon className="h-4 w-4" />
-            </button>
-          </div>
-        </div>
-      </Toolbar>
 
       {mediaList.length === 0 && orphanedList.length === 0 ? (
         <NoContentState
@@ -772,29 +680,20 @@ export function MediaManager({
       ) : filteredMedia.length === 0 ? (
         <NoSearchResults
           query={search || undefined}
-          onReset={() => {
-            setSearch('');
-            setActiveTag('all');
-            setShowOrphanedOnly(false);
-          }}
-          resetLabel="Reset filters"
+          onReset={() => setSearch('')}
+          resetLabel="Reset search"
         />
       ) : view === 'grid' ? (
         <ul className="columns-2 gap-3 sm:columns-3 lg:columns-4">
           {filteredMedia.map((media) => {
             const isOrphaned = orphanedSrcs.has(media.src);
-            const isSelected = selectedOrphanedIds.has(media.id);
             const isMenuOpen = menuOpenId === media.id;
             const imageSize = imageSizeFor(media);
 
             return (
               <li
                 key={media.id}
-                className={`group mb-3 break-inside-avoid overflow-hidden rounded-xl border bg-night-soft transition-colors ${
-                  isSelected
-                    ? 'border-amber-500/60'
-                    : 'border-tinted/20 hover:border-tinted/40'
-                }`}
+                className="group mb-3 break-inside-avoid overflow-hidden rounded-xl border border-tinted/20 bg-night-soft transition-colors hover:border-tinted/40"
               >
                 <div className="relative w-full bg-night">
                   <button
@@ -814,28 +713,11 @@ export function MediaManager({
                     />
                   </button>
 
-                  <div className="absolute left-2 top-2 z-10 flex items-center gap-1.5">
-                    {showOrphanedOnly && (
-                      <button
-                        type="button"
-                        onClick={() => toggleOrphanedSelection(media.id)}
-                        aria-label={
-                          isSelected ? `Deselect ${media.name}` : `Select ${media.name}`
-                        }
-                        aria-pressed={isSelected}
-                        className={`flex h-5 w-5 items-center justify-center rounded-full text-[10px] transition-colors ${
-                          isSelected
-                            ? 'bg-amber-600 text-white'
-                            : 'bg-night/80 text-transparent ring-1 ring-tinted/50 hover:ring-amber-500'
-                        }`}
-                      >
-                        <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3} aria-hidden>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
-                        </svg>
-                      </button>
-                    )}
-                    {isOrphaned && <Badge tone="amber">Unreferenced</Badge>}
-                  </div>
+                  {isOrphaned && (
+                    <div className="absolute left-2 top-2 z-10">
+                      <Badge tone="amber">Unreferenced</Badge>
+                    </div>
+                  )}
 
                   <div
                     className={`absolute right-2 top-2 z-20 flex items-center gap-1 transition-opacity focus-within:pointer-events-auto focus-within:opacity-100 group-hover:pointer-events-auto group-hover:opacity-100 ${
@@ -1065,39 +947,11 @@ export function MediaManager({
           </div>
           <div className="flex items-center justify-between border-t border-tinted/20 bg-night-soft/40 px-4 py-2 text-[11px] text-gray-mid">
             <span>
-              {filteredMedia.length} of{' '}
-              {showOrphanedOnly ? orphanedList.length : mediaList.length} assets
+              {filteredMedia.length} of {mediaList.length} assets
             </span>
             <Badge tone="grey">
               {filteredMedia.filter((m) => usagesFor(m.src).length === 0).length} unused
             </Badge>
-          </div>
-        </div>
-      )}
-
-      {/* Bulk action bar for selected unreferenced assets */}
-      {showOrphanedOnly && selectedOrphanedCount > 0 && (
-        <div className="sticky bottom-4 z-30 mx-auto flex max-w-xl items-center justify-between gap-3 rounded-full border border-tinted/20 bg-night-soft px-5 py-2.5 shadow-xl">
-          <span className="text-xs font-semibold text-paper">
-            {selectedOrphanedCount} selected
-          </span>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              onClick={() => setSelectedOrphanedIds(new Set())}
-            >
-              Clear
-            </Button>
-            <Button
-              variant="danger"
-              onClick={() =>
-                requestDelete(
-                  orphanedList.filter((m) => selectedOrphanedIds.has(m.id)),
-                )
-              }
-            >
-              Delete selected
-            </Button>
           </div>
         </div>
       )}

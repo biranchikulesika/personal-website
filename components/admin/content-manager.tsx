@@ -1038,10 +1038,57 @@ export function ContentManager({
       {/* Toast Notification */}
       <ToastView message={toastMessage} />
 
-      <header className="flex items-center justify-between gap-4 border-b border-tinted/20 pb-5">
+      <header className="flex flex-wrap items-center justify-between gap-4 border-b border-tinted/20 pb-5">
         <h1 className="text-2xl font-semibold tracking-tight text-paper">
           Library
         </h1>
+        <div
+          className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5 rounded-lg border border-tinted/20 px-2.5 py-1.5 transition-colors focus-within:border-tinted/40"
+          title="type=essay,note · status=draft,published · persona=builder · sort=updated,desc"
+        >
+          <SearchIcon className="h-3.5 w-3.5 shrink-0 text-gray-mid" />
+          {filterTokens.map((token) => (
+            <span
+              key={token.key}
+              className="inline-flex items-center gap-1 rounded-full border border-tinted/30 bg-post-card py-0.5 pl-2 pr-1 text-[11px] text-paper"
+            >
+              <span className="text-gray-mid">
+                {FILTER_LABELS[token.key]}:
+              </span>
+              {token.values.map(tokenValueLabel).join(", ")}
+              <button
+                type="button"
+                onClick={() => removeFilterToken(token.key)}
+                aria-label={`Remove ${FILTER_LABELS[token.key]} filter`}
+                className="rounded-full p-0.5 text-gray-mid transition-colors hover:bg-tinted/20 hover:text-paper focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+              >
+                <CloseIcon className="h-2.5 w-2.5" />
+              </button>
+            </span>
+          ))}
+          <input
+            type="text"
+            value={queryText}
+            onChange={handleQueryChange}
+            onKeyDown={handleQueryKeyDown}
+            placeholder={
+              filterTokens.length > 0
+                ? "Add another filter…"
+                : "Search or filter: type=essay,note · status=draft · persona=builder · sort=updated,desc"
+            }
+            aria-label="Search and filter library"
+            className="min-w-40 flex-1 bg-transparent py-0.5 text-xs text-paper outline-none placeholder:text-gray-mid/70"
+          />
+          {(filterTokens.length > 0 || queryText) && (
+            <button
+              type="button"
+              onClick={resetFilters}
+              className="shrink-0 rounded px-1 text-[11px] text-gray-mid transition-colors hover:text-paper focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+            >
+              Clear
+            </button>
+          )}
+        </div>
         <div className="flex items-center gap-0.5 rounded-lg border border-tinted/20 p-0.5">
           <button
             type="button"
@@ -1087,54 +1134,6 @@ export function ContentManager({
         />
       ) : (
         <div className="overflow-hidden rounded-xl border border-tinted/20">
-          <div
-            className="flex flex-wrap items-center gap-1.5 border-b border-tinted/20 bg-night-soft/60 px-2.5 py-2 transition-colors focus-within:bg-night-soft"
-            title="type=essay,note · status=draft,published · persona=builder · sort=updated,desc"
-          >
-            <SearchIcon className="h-3.5 w-3.5 shrink-0 text-gray-mid" />
-            {filterTokens.map((token) => (
-              <span
-                key={token.key}
-                className="inline-flex items-center gap-1 rounded-full border border-tinted/30 bg-post-card py-0.5 pl-2 pr-1 text-[11px] text-paper"
-              >
-                <span className="text-gray-mid">
-                  {FILTER_LABELS[token.key]}:
-                </span>
-                {token.values.map(tokenValueLabel).join(", ")}
-                <button
-                  type="button"
-                  onClick={() => removeFilterToken(token.key)}
-                  aria-label={`Remove ${FILTER_LABELS[token.key]} filter`}
-                  className="rounded-full p-0.5 text-gray-mid transition-colors hover:bg-tinted/20 hover:text-paper focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-                >
-                  <CloseIcon className="h-2.5 w-2.5" />
-                </button>
-              </span>
-            ))}
-            <input
-              type="text"
-              value={queryText}
-              onChange={handleQueryChange}
-              onKeyDown={handleQueryKeyDown}
-              placeholder={
-                filterTokens.length > 0
-                  ? "Add another filter…"
-                  : "Search or filter: type=essay,note · status=draft · persona=builder · sort=updated,desc"
-              }
-              aria-label="Search and filter library"
-              className="min-w-40 flex-1 bg-transparent py-0.5 text-xs text-paper outline-none placeholder:text-gray-mid/70"
-            />
-            {(filterTokens.length > 0 || queryText) && (
-              <button
-                type="button"
-                onClick={resetFilters}
-                className="shrink-0 rounded px-1 text-[11px] text-gray-mid transition-colors hover:text-paper focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-              >
-                Clear
-              </button>
-            )}
-          </div>
-
           {visibleItems.length === 0 ? (
             <NoSearchResults
               query={queryText || filterTokens.map(formatLibraryToken).join(" ")}
