@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { ContentService } from '@/lib/services/content.service';
+import { sanitizeErrorMessage } from '@/lib/errors';
 
 export const dynamic = 'force-dynamic';
 
@@ -26,7 +27,7 @@ export async function POST(request: Request) {
       contributionId: result.contribution?.id,
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Internal Server Error';
+    const message = sanitizeErrorMessage(error, 'Internal Server Error');
     return NextResponse.json(
       { error: message },
       { status: 500 },

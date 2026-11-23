@@ -271,7 +271,7 @@ export interface UserSession {
 
 // Contributions & Patronage ---------------------------------------------------
 
-export type ContributionStatus = "pending" | "captured" | "failed";
+export type ContributionStatus = "pending" | "captured" | "failed" | "refunded" | "cancelled";
 
 export interface Contribution {
   id: string;

@@ -279,7 +279,7 @@ export interface Database {
           payment_id: string | null;
           amount: number;
           currency: string;
-          status: "pending" | "captured" | "failed";
+          status: "pending" | "captured" | "failed" | "refunded" | "cancelled";
           name: string;
           email: string | null;
           note: string | null;
@@ -292,7 +292,7 @@ export interface Database {
           payment_id?: string | null;
           amount: number;
           currency?: string;
-          status: "pending" | "captured" | "failed";
+          status: "pending" | "captured" | "failed" | "refunded" | "cancelled";
           name: string;
           email?: string | null;
           note?: string | null;
@@ -305,7 +305,7 @@ export interface Database {
           payment_id?: string | null;
           amount?: number;
           currency?: string;
-          status?: "pending" | "captured" | "failed";
+          status?: "pending" | "captured" | "failed" | "refunded" | "cancelled";
           name?: string;
           email?: string | null;
           note?: string | null;
@@ -338,9 +338,54 @@ export interface Database {
         };
         Relationships: [];
       };
+      processed_webhook_events: {
+        Row: {
+          event_id: string;
+          event: string;
+          created_at: string;
+        };
+        Insert: {
+          event_id: string;
+          event: string;
+          created_at?: string;
+        };
+        Update: {
+          event_id?: string;
+          event?: string;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      rate_limit_counters: {
+        Row: {
+          key: string;
+          count: number;
+          window_start: string;
+        };
+        Insert: {
+          key: string;
+          count: number;
+          window_start: string;
+        };
+        Update: {
+          key?: string;
+          count?: number;
+          window_start?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
-    Functions: Record<string, never>;
+    Functions: {
+      check_rate_limit: {
+        Args: {
+          p_key: string;
+          p_limit: number;
+          p_window_seconds: number;
+        };
+        Returns: boolean;
+      };
+    };
     Enums: {
       content_status: "published" | "unpublished";
     };

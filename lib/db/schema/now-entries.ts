@@ -3,6 +3,7 @@ import {
   text,
   timestamp,
   index,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 import { contentStatusEnum } from "./posts";
@@ -28,7 +29,7 @@ export const nowEntries = pgTable(
   (table) => [
     index("now_entries_status_idx").on(table.status),
     index("now_entries_created_at_idx").on(table.createdAt),
-    index("now_entries_slug_idx").on(table.slug),
+    uniqueIndex("now_entries_slug_idx").on(table.slug),
   ],
 );
 

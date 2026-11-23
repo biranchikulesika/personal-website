@@ -19,49 +19,16 @@ import {
 } from "@/lib/auth/webauthn";
 import type { PasskeyItem } from "@/lib/types";
 import { isAllowedAdminEmail } from "@/lib/auth/admin";
+import { checkRateLimit, rateLimitKey } from "@/lib/rate-limit";
 
 const contentService = new ContentService();
 
 // ── Rate Limiting ──────────────────────────────────────────────────────────
-// In-memory rate limiter: max 5 attempts per 5 minutes per IP.
-const attempts = new Map<string, { count: number; resetAt: number }>();
-
-function getRateLimitKey(ip: string): string {
-  return `login:${ip}`;
-}
-
-function checkRateLimit(ip: string): boolean {
-  const key = getRateLimitKey(ip);
-  const now = Date.now();
-  const record = attempts.get(key);
-
-  if (!record || now > record.resetAt) {
-    attempts.set(key, { count: 1, resetAt: now + 5 * 60 * 1000 });
-    return true;
-  }
-
-  if (record.count >= 5) {
-    return false;
-  }
-
-  record.count++;
-  return true;
-}
-
-function resetRateLimit(ip: string): void {
-  attempts.delete(getRateLimitKey(ip));
-}
-
-async function getClientIp(): Promise<string> {
+async function getScopedRateLimitKey(scope: string): Promise<string> {
   try {
-    const headersList = await headers();
-    return (
-      headersList.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-      headersList.get("x-real-ip") ||
-      "unknown"
-    );
+    return rateLimitKey(await headers(), scope);
   } catch {
-    return "unknown";
+    return rateLimitKey(new Headers(), scope);
   }
 }
 
@@ -108,6 +75,11 @@ export async function signInWithGoogle(): Promise<{
   url?: string;
   error?: string;
 }> {
+  const limitKey = await getScopedRateLimitKey("login:oauth");
+  if (!(await checkRateLimit(limitKey, 10, 300))) {
+    return { error: "Too many attempts. Please try again later." };
+  }
+
   const supabase = await createAuthClient();
   if (!supabase) return { error: "Authentication is not configured" };
 
@@ -126,6 +98,11 @@ export async function signInWithGitHub(): Promise<{
   url?: string;
   error?: string;
 }> {
+  const limitKey = await getScopedRateLimitKey("login:oauth");
+  if (!(await checkRateLimit(limitKey, 10, 300))) {
+    return { error: "Too many attempts. Please try again later." };
+  }
+
   const supabase = await createAuthClient();
   if (!supabase) return { error: "Authentication is not configured" };
 
@@ -151,8 +128,8 @@ export async function generatePasskeyAuthenticationOptionsAction(): Promise<{
   options?: PublicKeyCredentialRequestOptionsJSON;
   error?: string;
 }> {
-  const ip = await getClientIp();
-  if (!checkRateLimit(ip)) {
+  const limitKey = await getScopedRateLimitKey("login:passkey");
+  if (!(await checkRateLimit(limitKey, 5, 300))) {
     return {
       success: false,
       error: "Too many attempts. Please try again later.",
@@ -211,8 +188,8 @@ export async function verifyPasskeyLoginAction(params?: {
   response?: AuthenticationResponseJSON;
   credentialId?: string;
 }): Promise<{ success: boolean; error?: string }> {
-  const ip = await getClientIp();
-  if (!checkRateLimit(ip)) {
+  const limitKey = await getScopedRateLimitKey("login:passkey");
+  if (!(await checkRateLimit(limitKey, 5, 300))) {
     return {
       success: false,
       error: "Too many attempts. Please try again later.",
@@ -364,7 +341,6 @@ export async function verifyPasskeyLoginAction(params?: {
       }
     }
 
-    resetRateLimit(ip);
     return { success: true };
   } catch (err: unknown) {
     return {

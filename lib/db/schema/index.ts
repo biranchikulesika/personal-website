@@ -7,4 +7,5 @@ export * from "./featured";
 export * from "./subscribers";
 export * from "./user-roles";
 export * from "./contributions";
+export * from "./webhook-events";
 export * from "./storage-files";

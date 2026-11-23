@@ -123,7 +123,7 @@ export const MediaItemSchema = z.object({
       (val) =>
         (val.startsWith('/') && !val.startsWith('//') && !val.startsWith('/\\')) ||
         /^https?:\/\//i.test(val) ||
-        /^data:image\/[a-zA-Z0-9+.-]+;base64,/i.test(val),
+        /^data:image\/(png|jpeg|webp|gif|avif);base64,/i.test(val),
       {
         message: 'Media src must be a relative path, HTTP/HTTPS URL, or image data URL',
       },
@@ -146,6 +146,27 @@ export const SlugParamSchema = z.object({
 
 export const IdParamSchema = z.object({
   id: z.string().min(1),
+});
+
+/** Payment identifiers are opaque provider IDs, not PostgREST filters. */
+export const PaymentLookupSchema = z.object({
+  id: z.string().trim().min(1).max(200).regex(/^[A-Za-z0-9_-]+$/),
+});
+
+/** Amounts arrive as whole rupees from the public support form. */
+export const CreateOrderSchema = z.object({
+  amount: z.number().int().min(1).max(100_000),
+});
+
+export const ContributionRequestSchema = z.object({
+  paymentId: z.string().trim().min(1).max(200).regex(/^[A-Za-z0-9_-]+$/),
+  orderId: z.string().trim().max(200).regex(/^[A-Za-z0-9_-]+$/).optional(),
+  signature: z.string().trim().regex(/^[a-fA-F0-9]{64}$/).optional(),
+  amount: z.number().finite().positive().max(1_000_000),
+  name: z.string().trim().max(200).optional(),
+  email: z.string().trim().max(320).email().optional(),
+  note: z.string().trim().max(2000).optional(),
+  source: z.enum(['razorpay', 'manual']).default('razorpay'),
 });
 
 // Newsletter subscription schema -----------------------------------------------

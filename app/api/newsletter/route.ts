@@ -1,10 +1,24 @@
 import { NextResponse } from 'next/server';
 import { ContentService } from '@/lib/services/content.service';
 import { NewsletterSubscriberSchema } from '@/lib/validation';
+import { sanitizeErrorMessage } from '@/lib/errors';
 import { getAuthService } from '@/lib/auth';
+import { checkRateLimit, rateLimitKey } from '@/lib/rate-limit';
 
 export async function POST(request: Request) {
   try {
+    const allowed = await checkRateLimit(
+      rateLimitKey(request, 'newsletter'),
+      5,
+      600
+    );
+    if (!allowed) {
+      return NextResponse.json(
+        { success: false, error: 'Too many requests. Please try again later.' },
+        { status: 429 }
+      );
+    }
+
     const body = await request.json();
     const parsed = NewsletterSubscriberSchema.safeParse(body);
 
@@ -33,8 +47,7 @@ export async function POST(request: Request) {
       },
     });
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : 'Subscription failed';
+    const message = sanitizeErrorMessage(error, 'Subscription failed');
     return NextResponse.json(
       { success: false, error: message },
       { status: 500 }
@@ -62,8 +75,7 @@ export async function GET() {
       subscribers,
     });
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : 'Failed to retrieve subscribers';
+    const message = sanitizeErrorMessage(error, 'Failed to retrieve subscribers');
     return NextResponse.json(
       { success: false, error: message },
       { status: 500 }

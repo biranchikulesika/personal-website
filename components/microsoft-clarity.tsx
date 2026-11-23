@@ -11,8 +11,7 @@ export default function MicrosoftClarity({
 }: MicrosoftClarityProps) {
   const clarityId =
     projectId ||
-    process.env.NEXT_PUBLIC_CLARITY_PROJECT_ID?.trim().replace(/^["']|["']$/g, '') ||
-    'zf44gi147u';
+    process.env.NEXT_PUBLIC_CLARITY_PROJECT_ID?.trim().replace(/^["']|["']$/g, '');
 
   if (!clarityId) {
     return null;

@@ -1,5 +1,6 @@
 import type { NowBook } from '@/lib/types';
 import { Book } from '@/components/ui/book';
+import { isSafeUrl } from '@/lib/utils';
 
 /**
  * BookBlock: a reusable MDX block component rendered from a `<Book ... />`
@@ -7,6 +8,7 @@ import { Book } from '@/components/ui/book';
  * Now page.
  */
 export function BookBlock({ title, author, description, cover, link }: NowBook) {
+  const safeLink = isSafeUrl(link) ? link : undefined;
   return (
     <div className="my-8 flex flex-col items-center gap-6 rounded-2xl border border-tinted/20 bg-night-soft p-5 shadow-md transition-all duration-300 hover:shadow-lg sm:flex-row sm:items-start md:p-6">
       {/* 3D Physical Book Cover */}
@@ -24,11 +26,11 @@ export function BookBlock({ title, author, description, cover, link }: NowBook) 
       {/* Book Metadata */}
       <div className="flex min-w-0 flex-1 flex-col justify-center text-left">
         <h4 className="font-serif text-lg font-normal leading-snug text-paper md:text-xl">
-          {link ? (
+          {safeLink ? (
             <a
-              href={link}
-              target={link.startsWith('http') ? '_blank' : undefined}
-              rel={link.startsWith('http') ? 'noopener noreferrer' : undefined}
+              href={safeLink}
+              target={safeLink.startsWith('http') ? '_blank' : undefined}
+              rel={safeLink.startsWith('http') ? 'noopener noreferrer' : undefined}
               className="transition-colors hover:text-accent"
             >
               {title}

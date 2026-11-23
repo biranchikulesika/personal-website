@@ -10,6 +10,7 @@ import {
   subscribers,
   userRoles,
   contributions,
+  processedWebhookEvents,
   storageFiles,
   type PostSelect,
   type NoteSelect,
@@ -41,6 +42,7 @@ import type {
 import type { ContentRepository } from "./content.repository";
 import { SupabaseContentRepository } from "./supabase-content.repository";
 import { getMediaStorage } from "@/lib/storage";
+import { parseImageDataUrl } from "@/lib/storage/upload";
 import { cleanCoverImageUrl, nowSlug } from "@/lib/utils";
 
 // ── Row Mappers ────────────────────────────────────────────────────────────
@@ -657,13 +659,9 @@ export class DrizzleContentRepository implements ContentRepository {
     // If item.src is a Base64 data URL, upload through MediaStorage abstraction
     if (item.src.startsWith("data:")) {
       try {
-        const matches = item.src.match(
-          /^data:(image\/([a-zA-Z0-9+.-]+));base64,(.+)$/,
-        );
-        if (matches) {
-          const contentType = matches[1];
-          const ext = matches[2] === "jpeg" ? "jpg" : matches[2];
-          const base64Data = matches[3];
+        const image = parseImageDataUrl(item.src);
+        if (image) {
+          const { mimeType: contentType, ext, buffer } = image;
           const cleanItemName = item.name
             .replace(/\.[^/.]+$/, "")
             .replace(/[^a-zA-Z0-9_-]/g, "_");
@@ -671,7 +669,6 @@ export class DrizzleContentRepository implements ContentRepository {
             ? `${cleanItemName}.${ext}`
             : `${Date.now()}-${cleanItemName}.${ext}`;
 
-          const buffer = Buffer.from(base64Data, "base64");
           const storage = getMediaStorage();
           const uploadResult = await storage.upload({
             buffer,
@@ -856,6 +853,24 @@ export class DrizzleContentRepository implements ContentRepository {
   }
 
   // ── Contributions & Patronage ─────────────────────────────────────────────
+
+  async hasWebhookEvent(eventId: string): Promise<boolean> {
+    const rows = await this.db
+      .select({ eventId: processedWebhookEvents.eventId })
+      .from(processedWebhookEvents)
+      .where(eq(processedWebhookEvents.eventId, eventId))
+      .limit(1);
+    return rows.length > 0;
+  }
+
+  async recordWebhookEvent(eventId: string, event: string): Promise<boolean> {
+    const inserted = await this.db
+      .insert(processedWebhookEvents)
+      .values({ eventId, event })
+      .onConflictDoNothing({ target: processedWebhookEvents.eventId })
+      .returning({ eventId: processedWebhookEvents.eventId });
+    return inserted.length > 0;
+  }
 
   async recordContribution(contribution: Contribution): Promise<Contribution> {
     const values = {

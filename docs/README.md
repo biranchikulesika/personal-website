@@ -54,7 +54,7 @@ The application is built with Next.js (App Router), React, TypeScript, Tailwind 
 # Start the local development server
 npm run dev
 
-# Run the automated test suite (221 tests)
+# Run the automated test suite (274 tests)
 npm test
 
 # Run code quality linting

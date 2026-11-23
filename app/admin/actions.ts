@@ -53,15 +53,6 @@ async function assertAdminUser() {
 }
 
 /**
- * Server-side authorization helper that verifies the requesting user has an active authenticated session.
- * Throws an Error if unauthenticated.
- */
-async function assertAuthenticatedUser() {
-  const authService = getAuthService();
-  return authService.requireUser();
-}
-
-/**
  * Validate input against a Zod schema. Returns the parsed data or throws
  * a descriptive error. Server actions must validate all client-supplied
  * data at the server boundary.
@@ -344,7 +335,7 @@ export async function generateAiMetadataAction(input: {
 // Account & Security Actions --------------------------------------------------
 
 export async function getPasskeysAction(): Promise<PasskeyItem[]> {
-  const user = await assertAuthenticatedUser();
+  const { user } = await assertAdminUser();
   return await contentService.getPasskeys(user.id);
 }
 
@@ -497,7 +488,7 @@ export async function deletePasskeyAction(
   passkeyId: string,
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const user = await assertAuthenticatedUser();
+    const { user } = await assertAdminUser();
     const deleted = await contentService.deletePasskey(user.id, passkeyId);
     safeRevalidatePath('/admin');
     return { success: deleted };
@@ -510,7 +501,7 @@ export async function deletePasskeyAction(
 }
 
 export async function getSessionsAction(): Promise<UserSession[]> {
-  const user = await assertAuthenticatedUser();
+  const { user } = await assertAdminUser();
   return await contentService.getSessions(user.id);
 }
 
@@ -518,18 +509,25 @@ export async function signOutSessionAction(
   sessionId: string,
 ): Promise<{ success: boolean; redirect?: string; error?: string }> {
   try {
-    const user = await assertAuthenticatedUser();
+    const { user } = await assertAdminUser();
 
-    await contentService.deleteSession(user.id, sessionId);
-
-    if (
+    const isCurrentSession =
       sessionId === 'sess-current' ||
       sessionId === 'session-primary' ||
-      sessionId.startsWith('sess-curr')
-    ) {
+      sessionId.startsWith('sess-curr');
+
+    if (isCurrentSession) {
       const authService = getAuthService();
       await authService.signOut('local');
       return { success: true, redirect: '/admin/login' };
+    }
+
+    const revoked = await contentService.deleteSession(user.id, sessionId);
+    if (!revoked) {
+      return {
+        success: false,
+        error: 'Individual remote sessions cannot be revoked. Sign out of all sessions instead.',
+      };
     }
 
     safeRevalidatePath('/admin');
@@ -548,7 +546,7 @@ export async function signOutAllSessionsAction(): Promise<{
   error?: string;
 }> {
   try {
-    const user = await assertAuthenticatedUser();
+    const { user } = await assertAdminUser();
 
     await contentService.deleteAllSessions(user.id);
 
@@ -568,7 +566,7 @@ export async function connectProviderAction(
   provider: 'google' | 'github',
 ): Promise<{ success: boolean; url?: string; error?: string }> {
   try {
-    const user = await assertAuthenticatedUser();
+    const { user } = await assertAdminUser();
     const authService = getAuthService();
     const result = await authService.linkIdentity(provider);
 
@@ -601,7 +599,7 @@ export async function disconnectProviderAction(
   provider: 'google' | 'github',
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const user = await assertAuthenticatedUser();
+    const { user } = await assertAdminUser();
     const identities = user.identities || [];
     const providers = identities.map((i) => i.provider);
 

@@ -14,8 +14,10 @@ const MIME_EXTENSIONS: Record<string, string> = {
   "image/webp": "webp",
   "image/gif": "gif",
   "image/avif": "avif",
-  "image/svg+xml": "svg",
 };
+
+/** Explicit raster allowlist; SVG is excluded because it can execute scripts. */
+export const ALLOWED_IMAGE_MIME = new Set(Object.keys(MIME_EXTENSIONS));
 
 export interface UploadTarget {
   fileName: string;
@@ -60,5 +62,32 @@ export function resolveUploadTarget(input: {
   return {
     fileName: `${stem ? `${stem}-` : "res-"}${date}-${unique}.${ext}`,
     contentType,
+  };
+}
+
+/**
+ * Validates an editor-supplied base64 image before it reaches storage.
+ * Returns null for unsupported types or oversized payloads so callers can keep
+ * the original value instead of persisting an unchecked file.
+ */
+export function parseImageDataUrl(
+  dataUrl: string,
+): { mimeType: string; ext: string; buffer: Buffer } | null {
+  const match = dataUrl.match(
+    /^data:(image\/[a-z0-9.+-]+);base64,([a-zA-Z0-9+/=]+)$/i,
+  );
+  if (!match) return null;
+
+  const mimeType = match[1].toLowerCase();
+  if (!ALLOWED_IMAGE_MIME.has(mimeType)) return null;
+  if (match[2].length > Math.ceil((MAX_UPLOAD_BYTES * 4) / 3) + 4) return null;
+
+  const buffer = Buffer.from(match[2], "base64");
+  if (buffer.byteLength === 0 || buffer.byteLength > MAX_UPLOAD_BYTES) return null;
+
+  return {
+    mimeType,
+    ext: mimeType === "image/jpeg" ? "jpg" : mimeType.slice("image/".length),
+    buffer,
   };
 }

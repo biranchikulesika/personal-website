@@ -10,6 +10,24 @@ import { ContentService } from "../lib/services/content.service";
 import { InMemoryTestContentRepository } from "./in-memory-test-content-repository";
 import { setContentRepositoryForTesting } from "../lib/repositories";
 
+/** Stub only the Razorpay REST host; no real payment calls in tests. */
+function stubRazorpayOrder(orderId: string, amountPaise: number) {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (input, init) => {
+    const url = typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
+    if (url.startsWith("https://api.razorpay.com/v1/orders/")) {
+      return new Response(
+        JSON.stringify({ id: orderId, amount: amountPaise, currency: "INR" }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      );
+    }
+    return originalFetch(input, init);
+  };
+  return () => {
+    globalThis.fetch = originalFetch;
+  };
+}
+
 // ── Cryptographic Signature Verification ───────────────────────────────────
 
 test("verifyPaymentSignature returns true for valid HMAC signature", () => {
@@ -193,6 +211,68 @@ test("confirmPayment idempotently stores contribution in database", async () => 
   );
 });
 
+test("client callback never overwrites a captured contribution's amount", async () => {
+  const repo = new InMemoryTestContentRepository();
+  const service = new ContentService(repo);
+
+  await service.recordContribution({
+    id: "pay_CAPTURED_001",
+    paymentId: "pay_CAPTURED_001",
+    amount: 500,
+    currency: "INR",
+    status: "captured",
+    name: "Real Patron",
+    createdAt: new Date().toISOString(),
+    source: "razorpay",
+  });
+
+  const result = await service.confirmPayment({
+    paymentId: "pay_CAPTURED_001",
+    amount: 999999,
+    source: "manual",
+  });
+
+  assert.equal(result.amount, 500, "client-supplied amount must not overwrite a confirmed payment");
+  assert.equal(result.status, "captured");
+});
+
+test("a delayed failed webhook cannot downgrade a captured contribution", async () => {
+  const repo = new InMemoryTestContentRepository();
+  const service = new ContentService(repo);
+  const savedSecret = process.env.RAZORPAY_WEBHOOK_SECRET;
+  const secret = "secret_monotonic_test";
+  process.env.RAZORPAY_WEBHOOK_SECRET = secret;
+
+  try {
+    await service.recordContribution({
+      id: "pay_DOWNGRADE_001",
+      paymentId: "pay_DOWNGRADE_001",
+      amount: 700,
+      currency: "INR",
+      status: "captured",
+      name: "Patron",
+      createdAt: new Date().toISOString(),
+      source: "razorpay",
+    });
+
+    const rawPayload = JSON.stringify({
+      event: "payment.failed",
+      payload: {
+        payment: { entity: { id: "pay_DOWNGRADE_001", amount: 70000, currency: "INR" } },
+      },
+    });
+    const signature = crypto.createHmac("sha256", secret).update(rawPayload).digest("hex");
+
+    const result = await service.processRazorpayWebhook(rawPayload, signature);
+    assert.equal(result.success, true);
+    assert.equal(result.contribution?.status, "captured", "captured status is terminal");
+    assert.equal(result.contribution?.amount, 700, "authoritative amount must be preserved");
+  } finally {
+    if (savedSecret) process.env.RAZORPAY_WEBHOOK_SECRET = savedSecret;
+    else delete process.env.RAZORPAY_WEBHOOK_SECRET;
+  }
+});
+
 test("processRazorpayWebhook idempotently processes events and stores to DB", async () => {
   const repo = new InMemoryTestContentRepository();
   const service = new ContentService(repo);
@@ -250,6 +330,69 @@ test("processRazorpayWebhook idempotently processes events and stores to DB", as
   );
 
   delete process.env.RAZORPAY_WEBHOOK_SECRET;
+});
+
+test("processRazorpayWebhook deduplicates by event id and handles refunds", async () => {
+  const repo = new InMemoryTestContentRepository();
+  const service = new ContentService(repo);
+  const webhookSecret = "secret_webhook_dedup";
+  process.env.RAZORPAY_WEBHOOK_SECRET = webhookSecret;
+
+  async function deliver(payload: Record<string, unknown>) {
+    const raw = JSON.stringify(payload);
+    const signature = crypto.createHmac("sha256", webhookSecret).update(raw).digest("hex");
+    return service.processRazorpayWebhook(raw, signature);
+  }
+
+  try {
+    const captured = await deliver({
+      event: "payment.captured",
+      event_id: "evt_dedup_1",
+      payload: {
+        payment: {
+          entity: {
+            id: "pay_DEDUP_1",
+            order_id: "order_DEDUP_1",
+            amount: 100000,
+            created_at: 1711900000,
+          },
+        },
+      },
+    });
+    assert.equal(captured.success, true);
+    assert.equal(captured.contribution?.status, "captured");
+
+    // Same event id with a different status must be ignored.
+    const replay = await deliver({
+      event: "payment.failed",
+      event_id: "evt_dedup_1",
+      payload: {
+        payment: {
+          entity: {
+            id: "pay_DEDUP_1",
+            order_id: "order_DEDUP_1",
+            amount: 100000,
+            created_at: 1711900000,
+          },
+        },
+      },
+    });
+    assert.equal(replay.contribution, null);
+    assert.equal((await service.getContribution("pay_DEDUP_1"))?.status, "captured");
+
+    // Refunds are terminal and map to the same payment.
+    const refund = await deliver({
+      event: "refund.created",
+      event_id: "evt_refund_1",
+      payload: {
+        refund: { entity: { payment_id: "pay_DEDUP_1", amount: 100000 } },
+      },
+    });
+    assert.equal(refund.contribution?.status, "refunded");
+    assert.equal((await service.getContribution("pay_DEDUP_1"))?.status, "refunded");
+  } finally {
+    delete process.env.RAZORPAY_WEBHOOK_SECRET;
+  }
 });
 
 test("getContribution retrieves contribution by id, paymentId, or orderId", async () => {
@@ -345,6 +488,9 @@ test("POST /api/contributions enforces signature check when RAZORPAY_KEY_SECRET 
 
   const secret = "key_secret_test_12345";
   process.env.RAZORPAY_KEY_SECRET = secret;
+  process.env.RAZORPAY_KEY_ID = "rzp_test_stub";
+  const restoreFetch = stubRazorpayOrder("order_VALID_123", 1000);
+  try {
 
   // 1. Missing signature when secret is set -> rejects 400
   const unsignedReq = new Request("http://localhost:3000/api/contributions", {
@@ -395,8 +541,65 @@ test("POST /api/contributions enforces signature check when RAZORPAY_KEY_SECRET 
   });
   const validRes = await POST(validReq);
   assert.equal(validRes.status, 200);
+  const validJson = await validRes.json();
+  assert.equal(validJson.contribution.amount, 10, "server order amount wins over client input");
 
   delete process.env.RAZORPAY_KEY_SECRET;
+  } finally {
+    restoreFetch();
+  }
+});
+
+test("POST /api/contributions omits donor email and note; GET validates id", async () => {
+  const repo = new InMemoryTestContentRepository();
+  setContentRepositoryForTesting(repo);
+  const { POST, GET } = await import("../app/api/contributions/route");
+
+  const savedSecret = process.env.RAZORPAY_KEY_SECRET;
+  const secret = "key_secret_pii_test";
+  process.env.RAZORPAY_KEY_SECRET = secret;
+  process.env.RAZORPAY_KEY_ID = "rzp_test_stub";
+  const restoreFetch = stubRazorpayOrder("order_PII_123", 1200);
+
+  try {
+    const orderId = "order_PII_123";
+    const paymentId = "pay_PII_123";
+    const signature = crypto
+      .createHmac("sha256", secret)
+      .update(`${orderId}|${paymentId}`)
+      .digest("hex");
+
+    const res = await POST(
+      new Request("http://localhost:3000/api/contributions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          paymentId,
+          orderId,
+          signature,
+          amount: 1200,
+          name: "Private Donor",
+          email: "private@example.com",
+          note: "do not echo this",
+          source: "razorpay",
+        }),
+      }),
+    );
+    assert.equal(res.status, 200);
+    const json = await res.json();
+    assert.equal(json.contribution.email, undefined);
+    assert.equal(json.contribution.note, undefined);
+    assert.equal(json.contribution.status, "pending", "client callback is not authoritative");
+
+    const injection = await GET(
+      new Request("http://localhost:3000/api/contributions?id=x,status.eq.captured"),
+    );
+    assert.equal(injection.status, 400);
+  } finally {
+    restoreFetch();
+    if (savedSecret) process.env.RAZORPAY_KEY_SECRET = savedSecret;
+    else delete process.env.RAZORPAY_KEY_SECRET;
+  }
 });
 
 test("POST /api/contributions rejects invalid requests", async () => {

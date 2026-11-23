@@ -8,7 +8,8 @@ import { SITE_CONFIG } from "@/lib/config/site";
 import { ContentService } from "@/lib/services/content.service";
 import { cleanCoverImageUrl, stripMarkdown, textSnippet } from "@/lib/utils";
 import { ImageResponse } from "next/og";
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { checkRateLimit, rateLimitKey } from "@/lib/rate-limit";
 import fs from "node:fs";
 import path from "node:path";
 import sharp from "sharp";
@@ -53,6 +54,17 @@ export async function OPTIONS() {
  * Dynamic OG image generation with high-performance response caching.
  */
 export async function GET(request: NextRequest): Promise<Response> {
+  // shortcut: low-stakes read fails open if the shared store is down; no per-instance fallback is used.
+  const allowed = await checkRateLimit(rateLimitKey(request, "og"), 60, 60, {
+    failOpen: true,
+  });
+  if (!allowed) {
+    return NextResponse.json(
+      { error: "Too many requests. Please try again later." },
+      { status: 429 },
+    );
+  }
+
   const cacheKey = request.nextUrl.search || "?type=home";
   const cached = OG_RESPONSE_CACHE.get(cacheKey);
 
@@ -2246,7 +2258,10 @@ async function resolveCoverImage(
   if (trimmed.startsWith("/")) {
     try {
       const cleanPath = trimmed.replace(/^\/+/, "");
-      const localFilePath = path.join(process.cwd(), "public", cleanPath);
+      const publicDir = path.resolve(process.cwd(), "public");
+      const localFilePath = path.resolve(publicDir, cleanPath);
+      // Contain the read inside public/ — crafted cover values must not escape it.
+      if (!localFilePath.startsWith(publicDir + path.sep)) return null;
       if (fs.existsSync(localFilePath)) {
         const ext = path.extname(localFilePath).toLowerCase();
         const mime =
@@ -2301,6 +2316,9 @@ async function resolveCoverImage(
 
     const res = await fetch(targetUrl, {
       signal: controller.signal,
+      // Revalidate every hop ourselves; a redirect to a private host must not
+      // bypass the hostname check above.
+      redirect: "error",
       next: { revalidate: 86400 },
     });
     clearTimeout(timeout);

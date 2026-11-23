@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getDailyBackground } from '@/lib/services/pexels.service';
+import { checkRateLimit, rateLimitKey } from '@/lib/rate-limit';
 
 /**
  * GET /api/login-background
@@ -13,7 +14,21 @@ import { getDailyBackground } from '@/lib/services/pexels.service';
  *
  * If Pexels is unavailable or the API key is missing, returns null.
  */
-export async function GET() {
+export async function GET(request: Request) {
+  // shortcut: low-stakes read fails open if the shared store is down; no per-instance fallback is used.
+  const allowed = await checkRateLimit(
+    rateLimitKey(request, 'login-background'),
+    30,
+    60,
+    { failOpen: true }
+  );
+  if (!allowed) {
+    return NextResponse.json(
+      { error: 'Too many requests. Please try again later.' },
+      { status: 429 }
+    );
+  }
+
   const background = await getDailyBackground();
 
   if (!background) {

@@ -22,6 +22,8 @@ import {
   verifyPaymentSignature,
   verifyWebhookSignature,
   parseRazorpayWebhookEvent,
+  getRazorpayOrder,
+  extractWebhookEventId,
 } from '@/lib/razorpay';
 import { getContentRepository } from '@/lib/repositories';
 import type { ContentRepository } from '@/lib/repositories/content.repository';
@@ -247,8 +249,16 @@ export class ContentService {
       throw new Error('Invalid payment parameters: paymentId and positive amount are required');
     }
 
-    // If source is razorpay and key secret is configured, enforce valid signature verification
-    if (source === 'razorpay' && process.env.RAZORPAY_KEY_SECRET) {
+    // A client callback never overwrites a payment already confirmed by a
+    // signed webhook.
+    const existing = await this.repo.getContribution(paymentId);
+    if (existing?.status === 'captured') return existing;
+
+    let verifiedAmount = amount;
+    if (source === 'razorpay') {
+      if (!process.env.RAZORPAY_KEY_SECRET) {
+        throw new Error('Payment verification is not configured on server');
+      }
       if (!orderId || !signature) {
         throw new Error('orderId and signature are required for Razorpay payment verification');
       }
@@ -262,15 +272,25 @@ export class ContentService {
       if (!isValid) {
         throw new Error('Invalid Razorpay payment signature');
       }
+
+      // The client signature only binds order_id|payment_id. Fetch the order
+      // server-side so the client cannot set the recorded amount.
+      const order = await getRazorpayOrder(orderId);
+      if (order.currency !== 'INR') {
+        throw new Error('Unexpected payment currency');
+      }
+      verifiedAmount = order.amount / 100;
     }
 
     const contribution: Contribution = {
       id: paymentId,
       orderId,
       paymentId,
-      amount,
+      amount: verifiedAmount,
       currency: 'INR',
-      status: 'captured',
+      // Only the signed webhook can mark a Razorpay payment as captured; the
+      // amount in this client callback is not authoritative.
+      status: source === 'razorpay' ? 'pending' : 'captured',
       name: name.trim() || 'Anonymous Patron',
       email: email?.trim(),
       note: note?.trim(),
@@ -339,21 +359,38 @@ export class ContentService {
     // 5. Extract event & contribution details
     const { event, contribution } = parseRazorpayWebhookEvent(parsed);
 
-    // 6. Idempotently record contribution if valid
-    if (contribution) {
-      const saved = await this.repo.recordContribution(contribution);
-      return {
-        success: true,
-        event,
-        contribution: saved,
-      };
+    // 6. Replay protection: a signed event id is applied at most once. If the
+    // provider omits an id, fall back to applying the normal state guards.
+    const eventId = extractWebhookEventId(parsed);
+    if (eventId && (await this.repo.hasWebhookEvent(eventId))) {
+      return { success: true, event, contribution: null };
     }
 
-    return {
-      success: true,
-      event,
-      contribution: null,
-    };
+    // 7. Idempotently record contribution if valid.
+    let resultContribution: Contribution | null = null;
+    if (contribution) {
+      const existing = await this.repo.getContribution(contribution.id);
+      // Terminal states win: a delayed/retried `payment.authorized` or
+      // `payment.failed` must never downgrade `captured`, and neither may
+      // overwrite `refunded`/`cancelled`.
+      const isDowngrade =
+        existing?.status === 'captured' &&
+        ['pending', 'failed'].includes(contribution.status);
+      const alreadyFinal =
+        existing && ['refunded', 'cancelled'].includes(existing.status);
+      resultContribution =
+        isDowngrade || (alreadyFinal && existing.status !== contribution.status)
+          ? existing
+          : await this.repo.recordContribution(contribution);
+    }
+
+    // Mark processed only after the state change succeeds, so a failed write
+    // is still retried by Razorpay.
+    if (eventId) {
+      await this.repo.recordWebhookEvent(eventId, event || 'unknown');
+    }
+
+    return { success: true, event, contribution: resultContribution };
   }
 
   // ── Passkeys & Auth ─────────────────────────────────────────────────────

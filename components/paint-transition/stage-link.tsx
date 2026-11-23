@@ -19,6 +19,11 @@ export function StageLink({ href, onClick, children, ...props }: StageLinkProps)
   const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
     // Check if link should open normally (new tab, modifier keys, external)
     const targetHref = typeof href === "string" ? href : href.pathname ?? "/";
+    // Never hand executable schemes to the router or the browser.
+    if (/^(javascript|data|vbscript):/i.test(targetHref)) {
+      e.preventDefault();
+      return;
+    }
     const isExternal =
       targetHref.startsWith("http://") ||
       targetHref.startsWith("https://") ||

@@ -22,6 +22,7 @@ import type {
 } from "@/lib/types";
 import type { ContentRepository } from "./content.repository";
 import { cleanCoverImageUrl, nowSlug } from "@/lib/utils";
+import { parseImageDataUrl } from "@/lib/storage/upload";
 
 // ── Row types (Supabase → TypeScript) ──────────────────────────────────────
 // These represent the raw database row format. The repository maps between
@@ -740,18 +741,12 @@ export class SupabaseContentRepository implements ContentRepository {
     // If item.src is a Base64 data URL, upload to Supabase Storage if available
     if (item.src.startsWith("data:")) {
       try {
-        const matches = item.src.match(
-          /^data:(image\/([a-zA-Z0-9+.-]+));base64,(.+)$/,
-        );
-        if (matches) {
-          const mimeType = matches[1];
-          const ext = matches[2] === "jpeg" ? "jpg" : matches[2];
-          const base64Data = matches[3];
+        const image = parseImageDataUrl(item.src);
+        if (image) {
+          const { mimeType, ext, buffer } = image;
           const cleanItemName = item.name.replace(/\.[^/.]+$/, "").replace(/[^a-zA-Z0-9_-]/g, "_");
           const fileName = item.name.startsWith("res-") ? `${cleanItemName}.${ext}` : `${Date.now()}-${cleanItemName}.${ext}`;
           const storagePath = `uploads/${fileName}`;
-
-          const buffer = Buffer.from(base64Data, "base64");
 
           const { data: uploadData, error: uploadError } = await this.db.storage
             .from("media")
@@ -921,6 +916,29 @@ export class SupabaseContentRepository implements ContentRepository {
 
   // ── Contributions & Patronage ───────────────────────────────────────────
 
+  async hasWebhookEvent(eventId: string): Promise<boolean> {
+    const { data, error } = await this.db
+      .from("processed_webhook_events")
+      .select("event_id")
+      .eq("event_id", eventId)
+      .limit(1);
+    if (error) throw new Error(`Failed to check webhook event: ${error.message}`);
+    return Boolean(data?.length);
+  }
+
+  async recordWebhookEvent(eventId: string, event: string): Promise<boolean> {
+    const { data, error } = await this.db
+      .from("processed_webhook_events")
+      .upsert(
+        { event_id: eventId, event },
+        { onConflict: "event_id", ignoreDuplicates: true },
+      )
+      .select("event_id");
+
+    if (error) throw new Error(`Failed to record webhook event: ${error.message}`);
+    return Boolean(data?.length);
+  }
+
   async recordContribution(contribution: Contribution): Promise<Contribution> {
     const row = {
       id: contribution.id,
@@ -946,26 +964,32 @@ export class SupabaseContentRepository implements ContentRepository {
   }
 
   async getContribution(id: string): Promise<Contribution | null> {
-    const { data, error } = await this.db
-      .from("contributions")
-      .select("*")
-      .or(`id.eq.${id},payment_id.eq.${id},order_id.eq.${id}`)
-      .single();
+    // Bound .eq() filters only: interpolating user input into .or() lets callers
+    // alter the PostgREST filter executed with the service-role key.
+    for (const column of ["id", "payment_id", "order_id"] as const) {
+      const { data, error } = await this.db
+        .from("contributions")
+        .select("*")
+        .eq(column, id)
+        .maybeSingle();
 
-    if (error || !data) return null;
-    return {
-      id: data.id,
-      orderId: data.order_id ?? undefined,
-      paymentId: data.payment_id ?? undefined,
-      amount: data.amount,
-      currency: data.currency,
-      status: data.status,
-      name: data.name,
-      email: data.email ?? undefined,
-      note: data.note ?? undefined,
-      createdAt: data.created_at,
-      source: data.source,
-    };
+      if (error || !data) continue;
+      return {
+        id: data.id,
+        orderId: data.order_id ?? undefined,
+        paymentId: data.payment_id ?? undefined,
+        amount: data.amount,
+        currency: data.currency,
+        status: data.status,
+        name: data.name,
+        email: data.email ?? undefined,
+        note: data.note ?? undefined,
+        createdAt: data.created_at,
+        source: data.source,
+      };
+    }
+
+    return null;
   }
 
   async getContributions(): Promise<Contribution[]> {
@@ -1259,7 +1283,9 @@ export class SupabaseContentRepository implements ContentRepository {
   }
 
   async deleteSession(_userId: string, _sessionId: string): Promise<boolean> {
-    return true;
+    // Supabase's admin API cannot revoke one session by id here. Only the
+    // local "sign out" path is real; never report remote revocation as done.
+    return false;
   }
 
   async deleteAllSessions(userId: string): Promise<boolean> {

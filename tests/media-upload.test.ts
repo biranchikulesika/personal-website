@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
   MAX_UPLOAD_BYTES,
+  parseImageDataUrl,
   resolveUploadTarget,
 } from "../lib/storage/upload";
 
@@ -53,9 +54,11 @@ test("resolveUploadTarget rejects non-images, empty files, and oversized files",
     () => resolveUploadTarget({ name: "evil", contentType: "text/html", size: 10 }),
     /Unsupported image type/,
   );
+  // SVG is rejected outright: scripts in an uploaded SVG execute when the
+  // public object URL is opened directly.
   assert.throws(
-    () => resolveUploadTarget({ name: "x.svg", contentType: "image/svg+xml", size: 0 }),
-    /empty/,
+    () => resolveUploadTarget({ name: "x.svg", contentType: "image/svg+xml", size: 10 }),
+    /Unsupported image type/,
   );
   assert.throws(
     () =>
@@ -66,4 +69,22 @@ test("resolveUploadTarget rejects non-images, empty files, and oversized files",
       }),
     /too large/,
   );
+});
+
+test("parseImageDataUrl rejects SVG and oversized editor images", () => {
+  assert.equal(
+    parseImageDataUrl("data:image/svg+xml;base64,PHN2Zz48c2NyaXB0Pg=="),
+    null,
+    "SVG data URLs must never reach storage",
+  );
+  assert.equal(
+    parseImageDataUrl(`data:image/png;base64,${"A".repeat(MAX_UPLOAD_BYTES * 2)}`),
+    null,
+    "oversized data URLs must be rejected before allocation",
+  );
+
+  const valid = parseImageDataUrl("data:image/png;base64,aGVsbG8=");
+  assert.equal(valid?.mimeType, "image/png");
+  assert.equal(valid?.ext, "png");
+  assert.equal(valid?.buffer.toString(), "hello");
 });

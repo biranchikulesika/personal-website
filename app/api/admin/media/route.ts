@@ -5,6 +5,7 @@ import { ContentService } from "@/lib/services/content.service";
 import { getMediaStorage } from "@/lib/storage";
 import { resolveUploadTarget } from "@/lib/storage/upload";
 import { MediaItemSchema } from "@/lib/validation";
+import { sanitizeErrorMessage } from "@/lib/errors";
 
 /**
  * POST /api/admin/media — multipart media upload.
@@ -88,7 +89,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: true, media });
   } catch (err: unknown) {
     return NextResponse.json(
-      { success: false, error: (err as Error).message || "Failed to upload media" },
+      { success: false, error: sanitizeErrorMessage(err, "Failed to upload media") },
       { status: 400 },
     );
   }

@@ -90,16 +90,16 @@ Next.js loads environment files in the following order of precedence, from highe
 ---
 
 ### `RAZORPAY_KEY_ID` / `NEXT_PUBLIC_RAZORPAY_KEY_ID`
-- **Purpose**: Razorpay public Key ID for patronage checkouts on `/support`.
-- **Used by**: `components/support-page.tsx`.
+- **Purpose**: Razorpay public Key ID for patronage checkouts on `/support`; the server copy is used to create orders via the Razorpay REST API.
+- **Used by**: `components/support-page.tsx`, `app/api/payments/order/route.ts`, and `lib/razorpay.ts`.
 - **Expected format**: `rzp_test_...` or `rzp_live_...`.
-- **Exposure**: Client-safe.
+- **Exposure**: Client-safe (the public copy is returned only to the browser that started checkout).
 - **Required**: Optional (needed only for payment processing).
 
 ---
 
 ### `RAZORPAY_KEY_SECRET`
-- **Purpose**: Razorpay API secret key for HMAC-SHA256 signature verification during client payment confirmation.
+- **Purpose**: Razorpay API secret key for creating/fetching orders and verifying HMAC-SHA256 signatures during payment confirmation.
 - **Used by**: `lib/services/content.service.ts` and `lib/razorpay.ts`.
 - **Exposure**: **Server-only (Secret)**.
 - **Required**: Optional (needed only for payment verification).

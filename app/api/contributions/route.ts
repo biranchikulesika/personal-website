@@ -1,12 +1,39 @@
 import { NextResponse } from 'next/server';
 import { ContentService } from '@/lib/services/content.service';
 import { getAuthService } from '@/lib/auth';
+import { sanitizeErrorMessage } from '@/lib/errors';
+import {
+  ContributionRequestSchema,
+  PaymentLookupSchema,
+} from '@/lib/validation';
+import { checkRateLimit, rateLimitKey } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(request: Request) {
   try {
+    const allowed = await checkRateLimit(
+      rateLimitKey(request, 'contributions'),
+      10,
+      600,
+    );
+    if (!allowed) {
+      return NextResponse.json(
+        { error: 'Too many requests. Please try again later.' },
+        { status: 429 },
+      );
+    }
+
     const body = await request.json();
+    const parsed = ContributionRequestSchema.safeParse(body);
+
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: 'Invalid contribution payload' },
+        { status: 400 },
+      );
+    }
+
     const {
       paymentId,
       orderId,
@@ -15,15 +42,8 @@ export async function POST(request: Request) {
       name,
       email,
       note,
-      source = 'razorpay',
-    } = body;
-
-    if (!paymentId || typeof amount !== 'number' || amount <= 0) {
-      return NextResponse.json(
-        { error: 'paymentId and positive amount are required' },
-        { status: 400 },
-      );
-    }
+      source,
+    } = parsed.data;
 
     // Manual/offline contributions require authenticated administrative privileges
     if (source === 'manual') {
@@ -77,12 +97,20 @@ export async function POST(request: Request) {
       source,
     });
 
+    // Same public shape as GET: never echo donor email or private notes.
     return NextResponse.json({
       success: true,
-      contribution,
+      contribution: {
+        id: contribution.id,
+        amount: contribution.amount,
+        currency: contribution.currency,
+        status: contribution.status,
+        name: contribution.name,
+        createdAt: contribution.createdAt,
+      },
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Failed to confirm payment';
+    const message = sanitizeErrorMessage(error, 'Failed to confirm payment');
     return NextResponse.json(
       { error: message },
       { status: 400 },
@@ -94,16 +122,22 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const id = searchParams.get('id');
 
-  // Prevent unauthenticated dumping of entire contributor database
-  if (!id) {
+  // Prevent unauthenticated dumping of entire contributor database and
+  // reject characters that could alter the lookup query.
+  const lookup = PaymentLookupSchema.safeParse({ id });
+  if (!lookup.success) {
     return NextResponse.json(
-      { error: 'Unauthorized: id parameter is required' },
-      { status: 403 },
+      {
+        error: id
+          ? 'Invalid contribution id'
+          : 'Unauthorized: id parameter is required',
+      },
+      { status: id ? 400 : 403 },
     );
   }
 
   const contentService = new ContentService();
-  const contribution = await contentService.getContribution(id);
+  const contribution = await contentService.getContribution(lookup.data.id);
 
   if (!contribution) {
     return NextResponse.json({ error: 'Contribution not found' }, { status: 404 });

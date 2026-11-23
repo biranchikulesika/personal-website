@@ -376,9 +376,6 @@ export function SupportPageView() {
   }) {
     setIsProcessing(true);
 
-    const receiptId = `BK-${Date.now().toString(36).toUpperCase()}-${Math.floor(
-      1000 + Math.random() * 9000,
-    )}`;
     const formattedDate = new Intl.DateTimeFormat('en-GB', {
       day: 'numeric',
       month: 'long',
@@ -386,7 +383,7 @@ export function SupportPageView() {
     }).format(new Date());
 
     const receiptPayload: ReceiptData = {
-      id: receiptId,
+      id: '',
       amount: numAmount,
       name: details.name.trim() || 'Anonymous Patron',
       email: details.email.trim(),
@@ -394,118 +391,96 @@ export function SupportPageView() {
       date: formattedDate,
     };
 
-    // Helper to persist contribution details idempotently
-    async function persistContribution(payload: {
-      paymentId: string;
-      orderId?: string;
-      signature?: string;
-      amount: number;
-      name: string;
-      email?: string;
-      note?: string;
-      source: 'razorpay' | 'manual';
-    }) {
-      try {
-        await fetch('/api/contributions', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        });
-      } catch {
-        // Webhook fallback ensures eventual consistency if client request drops
-      }
-    }
-
-    // Load Razorpay Checkout dynamically if available
     try {
-      const razorpayKey = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
+      // The server creates the order so the amount cannot be tampered with.
+      const orderResponse = await fetch('/api/payments/order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount: numAmount }),
+      });
+      if (!orderResponse.ok) throw new Error('Unable to start payment');
+      const order = (await orderResponse.json()) as {
+        orderId: string;
+        amount: number;
+        keyId: string;
+      };
+      receiptPayload.amount = order.amount / 100;
 
-      if (razorpayKey && typeof window !== 'undefined') {
-        const loadScript = new Promise<boolean>((resolve) => {
-          if ((window as unknown as { Razorpay?: unknown }).Razorpay) {
-            resolve(true);
-            return;
-          }
-          const script = document.createElement('script');
-          script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-          script.onload = () => resolve(true);
-          script.onerror = () => resolve(false);
-          document.body.appendChild(script);
-        });
-
-        const loaded = await loadScript;
-
-        if (loaded && (window as unknown as { Razorpay?: new (opts: unknown) => { open: () => void } }).Razorpay) {
-          const RazorpayConstructor = (
-            window as unknown as { Razorpay: new (opts: unknown) => { open: () => void } }
-          ).Razorpay;
-
-          const rzp = new RazorpayConstructor({
-            key: razorpayKey,
-            amount: numAmount * 100,
-            currency: 'INR',
-            name: 'Biranchi Kulesika',
-            description: 'Direct Patronage & Support',
-            prefill: {
-              name: details.name || undefined,
-              email: details.email || undefined,
-            },
-            theme: {
-              color: '#d97706',
-            },
-            handler: async function (response: {
-              razorpay_payment_id?: string;
-              razorpay_order_id?: string;
-              razorpay_signature?: string;
-            }) {
-              if (response?.razorpay_payment_id) {
-                receiptPayload.id = response.razorpay_payment_id;
-              }
-              await persistContribution({
-                paymentId: receiptPayload.id,
-                orderId: response?.razorpay_order_id,
-                signature: response?.razorpay_signature,
-                amount: numAmount,
-                name: receiptPayload.name,
-                email: receiptPayload.email,
-                note: receiptPayload.note,
-                source: 'razorpay',
-              });
-              setIsProcessing(false);
-              setIsModalOpen(false);
-              setReceipt(receiptPayload);
-              toast.success('Thank you for your direct patronage and support!');
-            },
-            modal: {
-              ondismiss: function () {
-                setIsProcessing(false);
-              },
-            },
-          });
-
-          rzp.open();
+      const loadScript = new Promise<boolean>((resolve) => {
+        if ((window as unknown as { Razorpay?: unknown }).Razorpay) {
+          resolve(true);
           return;
         }
-      }
-    } catch {
-      // Fallback to direct simulated receipt
-    }
-
-    // Direct payment completion
-    setTimeout(async () => {
-      await persistContribution({
-        paymentId: receiptPayload.id,
-        amount: numAmount,
-        name: receiptPayload.name,
-        email: receiptPayload.email,
-        note: receiptPayload.note,
-        source: 'manual',
+        const script = document.createElement('script');
+        script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+        script.onload = () => resolve(true);
+        script.onerror = () => resolve(false);
+        document.body.appendChild(script);
       });
+
+      if (!(await loadScript)) throw new Error('Payment checkout unavailable');
+      const RazorpayConstructor = (
+        window as unknown as { Razorpay: new (opts: unknown) => { open: () => void } }
+      ).Razorpay;
+
+      const rzp = new RazorpayConstructor({
+        key: order.keyId,
+        amount: order.amount,
+        currency: 'INR',
+        name: 'Biranchi Kulesika',
+        description: 'Direct Patronage & Support',
+        order_id: order.orderId,
+        prefill: {
+          name: details.name || undefined,
+          email: details.email || undefined,
+        },
+        theme: { color: '#d97706' },
+        handler: async function (response: {
+          razorpay_payment_id?: string;
+          razorpay_signature?: string;
+        }) {
+          if (!response?.razorpay_payment_id || !response.razorpay_signature) {
+            setIsProcessing(false);
+            toast.error('Payment could not be verified. Please try again.');
+            return;
+          }
+          // Persist PII only after signature verification succeeds server-side.
+          const saved = await fetch('/api/contributions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              paymentId: response.razorpay_payment_id,
+              orderId: order.orderId,
+              signature: response.razorpay_signature,
+              amount: receiptPayload.amount,
+              name: receiptPayload.name,
+              email: receiptPayload.email,
+              note: receiptPayload.note,
+              source: 'razorpay',
+            }),
+          });
+          setIsProcessing(false);
+          if (!saved.ok) {
+            toast.error('Payment received but confirmation failed. It will appear once settled.');
+            return;
+          }
+          receiptPayload.id = response.razorpay_payment_id;
+          setIsModalOpen(false);
+          setReceipt(receiptPayload);
+          toast.success('Thank you for your direct patronage and support!');
+        },
+        modal: {
+          ondismiss: function () {
+            setIsProcessing(false);
+          },
+        },
+      });
+
+      rzp.open();
+    } catch {
       setIsProcessing(false);
-      setIsModalOpen(false);
-      setReceipt(receiptPayload);
-      toast.success('Thank you for your direct patronage and support!');
-    }, 600);
+      toast.error('Payments are unavailable right now. Please try again later.');
+    }
   }
 
   return (

@@ -10,6 +10,7 @@ import React, {
   useTransition,
 } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import { isSafeUrl } from "@/lib/utils";
 import {
   PaintTransitionOverlay,
   type TransitionPhase,
@@ -132,7 +133,8 @@ export function StageTransitionProvider({
 
   const handleCovered = useCallback(() => {
     setPhase("COVERED");
-    const targetDest = sessionStorage.getItem("__target_dest") || pathname;
+    const storedDest = sessionStorage.getItem("__target_dest");
+    const targetDest = storedDest && isSafeUrl(storedDest) ? storedDest : pathname;
     startTransition(() => {
       router.push(targetDest);
     });

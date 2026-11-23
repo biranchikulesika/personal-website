@@ -8,7 +8,7 @@ The database schema is also declaratively maintained in [`supabase/migrations/20
 
 ## 1. Tables Overview
 
-The database contains 10 tables in the `public` schema:
+The database contains 12 tables in the `public` schema:
 
 | Table | Purpose | Primary Key | Key Indexes and Constraints |
 | :--- | :--- | :--- | :--- |
@@ -21,7 +21,9 @@ The database contains 10 tables in the `public` schema:
 | `user_roles` | Role-based authorization mappings | `user_id` (UUID FK) | `role` (`user`, `content_admin`, `super_admin`) |
 | `storage_files` | Tracked storage assets for orphan detection | `id` (UUID) | UNIQUE(`path`) |
 | `subscribers` | Newsletter subscriber registry | `id` (TEXT) | `email`, CHECK `status` IN ('active', 'unsubscribed') |
-| `contributions` | Patronage and Razorpay payment records | `id` (TEXT) | `payment_id`, `order_id`, `created_at DESC` |
+| `contributions` | Patronage and Razorpay payment records | `id` (TEXT) | UNIQUE(`payment_id`), `order_id`, `created_at DESC` |
+| `rate_limit_counters` | Shared abuse-control counters for Vercel (no Redis) | `key` (TEXT) | `window_start` |
+| `processed_webhook_events` | Razorpay webhook replay protection | `event_id` (TEXT) | `created_at` |
 
 ---
 
@@ -239,6 +241,7 @@ All schema changes must be applied directly to `supabase/migrations/202608300000
    ```bash
    supabase db query --linked -f supabase/migrations/20260830000000_initial_schema.sql
    ```
+   The current migration also creates `check_rate_limit()` and `replace_featured_items()` RPCs. Authentication and newsletter routes fail closed when `check_rate_limit()` is unavailable, so apply this schema to the live project **before** deploying the corresponding app code.
 4. If schema definitions changed, update `lib/db/schema/*.ts` and generate fresh Drizzle migrations:
    ```bash
    npx drizzle-kit generate
@@ -284,7 +287,7 @@ In your hosting provider dashboard (e.g. Vercel Project Settings -> Environment 
 | `NEXT_PUBLIC_SITE_URL` | Canonical domain (e.g. `https://biranchikulesika.com`) | Client-safe |
 | `NEXT_PUBLIC_SUPABASE_URL` | Supabase API gateway (e.g. `https://[ref].supabase.co`) | Client-safe |
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Supabase anonymous public API key (`eyJ...`) | Client-safe |
-| `SUPABASE_SECRET_KEY` | Supabase service-role secret key (required for media uploads and admin access) | Server-only (Secret) |
+| `SUPABASE_SECRET_KEY` | Supabase service-role secret key (used by server-only repositories and storage; admin UI auth uses the publishable key) | Server-only (Secret) |
 
 Optional patronage keys if accepting support:
 - `RAZORPAY_KEY_ID` (public key)

@@ -85,7 +85,7 @@ export function MarkdownYouTube({ id }: { id: string }) {
 /** Legacy `<Video src|path ... />` block: native HTML5 video player. */
 export function MdxVideo({ src, path }: { src?: string; path?: string }) {
   const v = src ?? path;
-  if (!v) return null;
+  if (!isSafeUrl(v)) return null;
   return (
     <div className="my-8 overflow-hidden rounded-xl border border-tinted/20 bg-post-card shadow-md">
       <video className="w-full" src={v} controls preload="metadata" />

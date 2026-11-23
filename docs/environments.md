@@ -122,7 +122,7 @@ Production Host Env     Injected via hosting dashboard / secure key-vault
 ```
 
 ### Safety Rules
-1. **Never commit secrets**: Keys such as `SUPABASE_SERVICE_ROLE_KEY`, `RAZORPAY_KEY_SECRET`, or `ADMIN_PASSWORD_HASH` must never appear in any committed file or Git history.
+1. **Never commit secrets**: Keys such as `SUPABASE_SERVICE_ROLE_KEY`, `RAZORPAY_KEY_SECRET`, or `RAZORPAY_WEBHOOK_SECRET` must never appear in any committed file or Git history.
 2. **Client vs. Server Isolation**: Only variables prefixed with `NEXT_PUBLIC_` are exposed to the browser. All other variables remain strictly on the server.
 3. **Test Isolation**: Automated unit and integration tests run against [`InMemoryTestContentRepository`](file:///home/biranchi/Projects/biranchi/tests/in-memory-test-content-repository.ts). Running `npm test` requires no database connection and cannot accidentally corrupt or leak production data.
 
@@ -143,7 +143,7 @@ npm run lint
 npm run typecheck
 ```
 
-All 221 tests run in memory and complete in under 3 seconds with zero external database dependencies.
+All 274 tests run in memory and complete in under 3 seconds with zero external database dependencies.
 
 ---
 

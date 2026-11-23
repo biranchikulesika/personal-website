@@ -34,12 +34,12 @@ export interface MediaItem {
 Assets are stored in Supabase Storage in the `media` bucket:
 - **Bucket Name**: `media`
 - **Public URL**: Enabled (`public: true`)
-- **Maximum File Size**: 50 MB
-- **Allowed Formats**: JPEG, PNG, WebP, GIF, SVG, PDF
+- **Maximum File Size**: 4 MB per file (`MAX_UPLOAD_BYTES` in `lib/storage/upload.ts`)
+- **Allowed Formats**: JPEG, PNG, WebP, GIF, AVIF (SVG is rejected — it can execute scripts when its object URL is opened directly)
 
 ### Access Policies:
 - **Read**: Public anonymous access via CDN URLs.
-- **Write and Delete**: Restricted to authenticated administrators and the service-role client.
+- **Write and Delete**: Restricted to admins (`is_admin()` RLS policy) and the server-only service-role client.
 
 When uploading an image in the admin panel, Base64 data is converted to an image buffer and uploaded to `media/uploads/<timestamp>-<filename>.<ext>`. The resulting public URL is saved in the database record.
 
@@ -76,7 +76,7 @@ The system tracks storage references to prevent unreferenced files from taking u
 
 ## 5. Dynamic Open Graph Image Generator (`/api/og`)
 
-Social preview images are generated dynamically at the edge using `@vercel/og` (`ImageResponse`):
+Social preview images are generated dynamically using `next/og` (`ImageResponse`):
 - **Resolution**: 1200 × 630 pixels (standard 1.91:1 Open Graph ratio).
 - **Styling**: Night background (`#141413`) with top tri-color accent strip (terracotta `#D97757`, sea-blue `#04A4BA`, sage `#788C5D`).
 - **Typography**: Newsreader serif for headlines, Space Grotesk for technical metadata and branding.

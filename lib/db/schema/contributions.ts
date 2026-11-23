@@ -4,6 +4,7 @@ import {
   numeric,
   timestamp,
   index,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 
@@ -15,6 +16,7 @@ export const contributions = pgTable(
     paymentId: text("payment_id"),
     amount: numeric("amount").notNull(),
     currency: text("currency").notNull().default("INR"),
+    // CHECK in SQL: pending | captured | failed | refunded | cancelled.
     status: text("status").notNull().default("pending"),
     name: text("name").notNull().default("Anonymous Patron"),
     email: text("email"),
@@ -25,7 +27,9 @@ export const contributions = pgTable(
     source: text("source").notNull().default("razorpay"),
   },
   (table) => [
-    index("idx_contributions_payment_id").on(table.paymentId),
+    uniqueIndex("idx_contributions_payment_id")
+      .on(table.paymentId)
+      .where(sql`"payment_id" is not null`),
     index("idx_contributions_order_id").on(table.orderId),
     index("idx_contributions_created_at").on(table.createdAt),
   ],

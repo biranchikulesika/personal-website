@@ -14,17 +14,18 @@ export async function GET(request: Request) {
   const errorDescription = searchParams.get("error_description");
   const provider = searchParams.get("provider");
 
-  // Handle OAuth errors from the provider.
+  // Handle OAuth errors from the provider. Build the query with URLSearchParams
+  // so provider-controlled values cannot inject extra parameters or fragments.
   if (errorParam) {
-    const providerQuery = provider ? `&provider=${provider}` : "";
-    if (errorDescription?.includes("Signups not allowed")) {
-      return NextResponse.redirect(
-        `${origin}/admin/login?error=not_registered${providerQuery}`,
-      );
-    }
-    return NextResponse.redirect(
-      `${origin}/admin/login?error=${errorParam}${providerQuery}`,
+    const params = new URLSearchParams();
+    params.set(
+      "error",
+      errorDescription?.includes("Signups not allowed")
+        ? "not_registered"
+        : errorParam,
     );
+    if (provider) params.set("provider", provider);
+    return NextResponse.redirect(`${origin}/admin/login?${params.toString()}`);
   }
 
   // Exchange the authorization code for a session.
@@ -74,7 +75,13 @@ export async function GET(request: Request) {
           );
         }
 
-        const adminClient = getSupabaseAdmin();
+        let adminClient: ReturnType<typeof getSupabaseAdmin> | null = null;
+        try {
+          adminClient = getSupabaseAdmin();
+        } catch {
+          // Missing service credentials fail closed via the check below.
+          adminClient = null;
+        }
         const role = adminClient
           ? await adminClient
               .from("user_roles")

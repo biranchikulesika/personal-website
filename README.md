@@ -33,9 +33,9 @@ The structure and implementation reflect how I currently build web software. Som
 | **Database & Persistence** | PostgreSQL, Drizzle ORM, Supabase Storage | Portable relational queries via Drizzle ORM (driver: postgres), 10 schema tables, connection pooling. |
 | **Authentication & Access** | Supabase Auth, WebAuthn Passkeys, SimpleWebAuthn | OAuth (Google, GitHub), device biometrics, isolated behind AuthService interface, proxy guard. |
 | **Content Engine** | MDX (@mdx-js/mdx, remark-gfm) | Dynamic evaluation with custom blocks (`<Book/>`, `<Post/>`, `<Note/>`, `<Figure/>`, `<YouTube/>`). |
-| **Payments & Patronage** | Razorpay Node SDK | Cryptographic HMAC-SHA256 signature verification and webhook processing. |
-| **SEO & Social Previews** | @vercel/og, Schema.org JSON-LD | Dynamic edge 1200x630 card generation, sitemap, robots, article and person schemas. |
-| **Testing & Tooling** | node:test, node:assert/strict, tsx, ESLint | Native in-memory test runner (221 tests), zero database dependencies, static linting. |
+| **Payments & Patronage** | Razorpay Checkout + REST + `node:crypto` | Server-created orders, HMAC signature/webhook verification, event dedup; no Razorpay SDK dependency. |
+| **SEO & Social Previews** | `next/og` (`ImageResponse`), Schema.org JSON-LD | Dynamic 1200x630 card generation, sitemap, robots, article and person schemas. |
+| **Testing & Tooling** | node:test, node:assert/strict, tsx, ESLint | Native in-memory test runner, zero database dependencies, static linting. |
 
 ---
 
@@ -92,7 +92,7 @@ The application strictly follows a 4-tier layered architecture with clear bounda
 │   - Drizzle ORM query execution                   - Fast in-memory array│
 │   - Row mappers (snake_case -> camelCase)           storage for tests   │
 │   - Cross-collection slug uniqueness              - Zero database setup │
-│   - Portable across any PostgreSQL host           - 221 tests in < 3s   │
+│   - Portable across any PostgreSQL host           - 274 tests in < 3s   │
 └────────────────────────────────────┬────────────────────────────────────┘
                                      │ Queries via PostgreSQL connection
                                      ▼
@@ -159,7 +159,7 @@ personal-website/
 ├── supabase/             # Database migrations and Supabase CLI configuration
 │   ├── migrations/       # 20260830000000_initial_schema.sql (authoritative reference schema)
 │   └── config.toml       # Local Supabase CLI configuration
-├── tests/                # Automated test suite (15 test files, 221 tests)
+├── tests/                # Automated test suite (20 test files, 274 tests)
 ├── docker-compose.yml    # Optional local PostgreSQL container definition
 ├── drizzle.config.ts     # Drizzle Kit configuration
 ├── next.config.ts        # Next.js configuration, security headers, standalone output
@@ -214,7 +214,7 @@ npm install
 # Start local development server
 npm run dev
 
-# Run automated tests (221 tests)
+# Run automated tests (274 tests)
 npm test
 
 # Run code linter

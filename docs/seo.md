@@ -35,7 +35,7 @@ Applied at the root layout in `app/layout.tsx`:
 
 ## 2. Dynamic Open Graph Cards (`/api/og`)
 
-Social preview cards are generated on demand at the edge using `@vercel/og`, producing 1200 × 630 pixel PNG images matching the dark editorial layout:
+Social preview cards are generated on demand using `next/og`'s `ImageResponse`, producing 1200 × 630 pixel PNG images matching the dark editorial layout:
 
 | Page | API Query | Content Rendered |
 | :--- | :--- | :--- |

@@ -396,13 +396,28 @@ export class InMemoryTestContentRepository implements ContentRepository {
     this.featuredBooks = [...slugs];
   }
 
+  private readonly processedWebhookEvents = new Set<string>();
+
+  async hasWebhookEvent(eventId: string): Promise<boolean> {
+    return this.processedWebhookEvents.has(eventId);
+  }
+
+  async recordWebhookEvent(eventId: string, _event: string): Promise<boolean> {
+    if (this.processedWebhookEvents.has(eventId)) return false;
+    this.processedWebhookEvents.add(eventId);
+    return true;
+  }
+
   async recordContribution(contribution: Contribution): Promise<Contribution> {
     const existing = this.contributions.find(
       (c) =>
         (contribution.paymentId && c.paymentId === contribution.paymentId) ||
         (contribution.orderId && c.orderId === contribution.orderId),
     );
-    if (existing) return existing;
+    if (existing) {
+      Object.assign(existing, contribution);
+      return existing;
+    }
 
     this.contributions.unshift({ ...contribution });
     return contribution;
